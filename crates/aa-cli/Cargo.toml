@@ -1,0 +1,21 @@
+[package]
+name = "aa-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aa-core.workspace = true
+aa-engine.workspace = true
+aa-report.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+
+[[bin]]
+name = "aa"
+path = "src/main.rs"
