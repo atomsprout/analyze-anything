@@ -116,6 +116,8 @@
 #heading(level: 2, numbering: none, outlined: false, w.reading_guide)
 #w.reading_guide_text
 
+#w.grouping_guide
+
 #text(fill: muted, w.scope)
 
 #heading(numbering: none, outlined: false, w.contents)
@@ -171,17 +173,63 @@
   },
 )
 
-#for chapter in d.chapters {
-  heading(chapter.title)
+// Several findings of one rule: the title once, then a row per distinct sentence with the files
+// it holds for. The block may run over a page; each row stays whole.
+#let group(g) = block(
+  width: 100%,
+  breakable: true,
+  above: 10pt,
+  below: 10pt,
+  inset: (left: 9pt, top: 2pt, bottom: 2pt),
+  stroke: (left: 2pt + severity-colour.at(g.severity)),
+  {
+    set par(spacing: 0.6em)
+    block(sticky: true, {
+      badge(severity-mark.at(g.severity), g.label, severity-colour.at(g.severity), filled: g.severity != "info")
+      h(6pt)
+      strong-text(anywhere(g.title))
+      h(6pt)
+      text(size: 8pt, fill: muted, g.count)
+    })
+    for row in g.rows {
+      block(breakable: false, above: 5pt, below: 5pt, width: 100%, {
+        if row.subject != none {
+          code(row.subject, size: 7.5pt, fill: muted)
+          linebreak()
+        }
+        anywhere(row.text)
+        if row.subjects != none {
+          linebreak()
+          text(size: 8pt, fill: muted, row.note + " ")
+          code(row.subjects, size: 7.5pt)
+        }
+      })
+    }
+    if g.not_shown != none {
+      block(above: 5pt, below: 2pt, text(size: 8pt, fill: muted, g.not_shown))
+    }
+  },
+)
+
+#let chapter-body(chapter, empty) = {
   if chapter.findings.len() == 0 {
-    text(fill: muted, w.no_findings_here)
+    text(fill: muted, empty)
   }
   if chapter.note != none {
     block(width: 100%, inset: 8pt, fill: wash, chapter.note)
   }
   for f in chapter.findings {
-    finding(f)
+    if f.group { group(f) } else { finding(f) }
   }
+}
+
+#heading(numbering: none, d.attention.title)
+#if d.attention.findings.len() > 0 { text(fill: muted, d.attention.text) }
+#chapter-body(d.attention, d.attention.text)
+
+#for chapter in d.chapters {
+  heading(chapter.title)
+  chapter-body(chapter, w.no_findings_here)
 }
 
 // ---- File inventory -------------------------------------------------------------------------

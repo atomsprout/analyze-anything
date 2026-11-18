@@ -5,6 +5,7 @@
 //! Neither may execute anything from the input, write outside what the engine hands it, or
 //! print; whatever cannot be established is reported as a [`Limitation`].
 
+use std::collections::BTreeMap;
 use std::io::Read;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -42,6 +43,13 @@ pub trait Tree: Sync {
 
     /// The bytes of the artifact at `path`.
     fn read(&self, path: &str) -> std::io::Result<Bytes>;
+
+    /// Facts about the input as a whole that analyzers have attached so far, by key.
+    /// A tree that keeps none (a test double, say) reports an empty map.
+    fn summary(&self) -> &BTreeMap<String, Value> {
+        static NONE: BTreeMap<String, Value> = BTreeMap::new();
+        &NONE
+    }
 
     /// The artifact at exactly `path`.
     fn get(&self, path: &str) -> Option<&Artifact> {

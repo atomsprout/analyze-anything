@@ -238,8 +238,8 @@ pub const RULES: &[Rule] = &[
         "android.zip-odd-entries",
         "压缩包内有异常条目",
         "Unusual archive entries",
-        "{count} 个条目带有加密标志或使用了存储/Deflate 以外的压缩方式：{entries}。APK 中不应出现这些，部分恶意软件借此干扰分析工具。",
-        "{count} entries carry the encryption flag or a compression method other than stored/deflate: {entries}. Neither belongs in an APK; some malware uses them to break analysis tools.",
+        "{count} 个条目带有加密标志或使用了存储/Deflate 以外的压缩方式：{entries}。Android 会忽略加密标志，并把 Deflate 以外的方式一律当作未压缩读取，而常规 ZIP 工具会因此打不开文件；恶意软件借此躲避分析。本报告按 Android 的方式读取了这些条目。",
+        "{count} entries carry the encryption flag or a compression method other than stored/deflate: {entries}. Android ignores the flag and reads any method but deflate as uncompressed, while ordinary ZIP tools fail on such a file; malware uses this to dodge analysis. This report read the entries the way Android does.",
     ),
     r(
         "android.zip-count-mismatch",

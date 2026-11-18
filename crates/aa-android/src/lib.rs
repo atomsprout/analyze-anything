@@ -28,6 +28,7 @@ mod rules;
 mod sdks;
 mod sigblock;
 mod strpool;
+mod unpack;
 mod x509;
 mod xml;
 mod zipraw;
@@ -152,9 +153,10 @@ pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
 }
 
 /// The unpackers this crate provides, most specific first. APK, AAB and XAPK files are ZIP
-/// archives and are opened by the generic ZIP unpacker.
+/// archives and are opened by the generic ZIP unpacker; the one here takes the packages that
+/// one cannot open but Android can (data in front of the archive, bogus compression methods).
 pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
-    Vec::new()
+    vec![Box::new(unpack::OddApk)]
 }
 
 struct Android;

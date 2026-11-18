@@ -434,7 +434,7 @@ fn full_package_findings() {
     assert_eq!(config["domain_configs"][1]["pins"], 1);
 
     let small = rule(&out, "android.native-16k-pages")[0];
-    assert_eq!(small.params["libraries"], "libsmallpage.so");
+    assert_eq!(small.params["libraries"], "x86_64/libsmallpage.so");
     assert_eq!((small.params["count"].as_u64(), small.params["total"].as_u64()), (Some(1), Some(3)));
     let framework = rule(&out, "android.framework");
     assert!(
@@ -482,6 +482,23 @@ fn zip_tricks_are_seen() {
     let duplicates = rule(&out, "android.zip-duplicate-entries");
     assert_eq!(duplicates[0].params["names"], "classes.dex ×2");
     assert!(rule(&out, "android.zip-header-mismatch")[0].params["entries"].as_str().is_some_and(|e| e.contains("assets/renamed.txt")));
+}
+
+/// "BadPack": a stored manifest with a bogus compression method and compressed size.
+#[test]
+fn bogus_compression_method_is_read_like_android_does() {
+    let (manifest, dex, arsc) = (fixture("AndroidManifest.bin"), fixture("classes.dex"), fixture("resources.arsc"));
+    let mut apk = zipraw::tests::build_zip(b"", &[("AndroidManifest.xml", &manifest), ("classes.dex", &dex), ("resources.arsc", &arsc)]);
+    let first = zipraw::parse(&apk).expect("zip").entries[0].clone();
+    for (at, method_at, size_at) in [(first.local_offset as usize, 8, 18), (first.cd_offset as usize, 10, 20)] {
+        apk[at + method_at..at + method_at + 2].copy_from_slice(&0x1d2au16.to_le_bytes());
+        apk[at + size_at..at + size_at + 4].copy_from_slice(&7u32.to_le_bytes());
+    }
+    let out = analyze(&MemTree::apk("badpack.apk", apk));
+    assert_eq!(rule(&out, "android.package")[0].params["package"], "com.example.aafixture");
+    assert!(has(&out, "android.debuggable"));
+    let odd = rule(&out, "android.zip-odd-entries");
+    assert!(odd[0].params["entries"].as_str().is_some_and(|e| e.contains("AndroidManifest.xml (method 7466")), "{:?}", odd[0].params);
 }
 
 #[test]
@@ -777,6 +794,12 @@ fn hostile_manifest_variants_decode_like_the_original() {
     }
     variants.push(("attribute names", v, "differs from the name of its resource id"));
 
+    // Development aid: `AA_ANDROID_VARIANTS=<dir>` writes the variants out, for trying other decoders on them.
+    if let Ok(dir) = std::env::var("AA_ANDROID_VARIANTS") {
+        for (what, data, _) in &variants {
+            std::fs::write(format!("{dir}/{}.axml", what.replace(' ', "-")), data).expect("write");
+        }
+    }
     for (what, data, anomaly) in variants {
         assert!(crate::axml::looks_like_axml(&data), "{what}: not recognised");
         let doc = crate::axml::parse(&data);

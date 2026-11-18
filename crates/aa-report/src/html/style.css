@@ -186,6 +186,7 @@ main:focus { outline: none; }
 .level.sev-medium .bar > span { background: var(--medium); }
 .level.sev-low .bar > span { background: var(--low); }
 .guide { max-width: 78ch; font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+.guide p + p { margin-top: 6px; }
 .guide h3 { font-size: 14px; color: var(--ink); margin-bottom: 2px; }
 .sumfacts { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px; }
 .sumfacts > summary { cursor: pointer; font-weight: 600; font-size: 14px; }
@@ -255,7 +256,26 @@ a.ref { color: var(--accent); }
   background: var(--sunken); border-radius: 4px; padding: 6px 9px; margin-top: 4px; font-size: 12.5px; line-height: 1.5;
   white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-height: 22em; overflow: auto;
 }
-.pager { display: flex; gap: 8px; margin: 10px 0 0; }
+.pager { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; align-items: center; }
+.pager .rest { font-size: 12.5px; }
+
+/* ----- a rule's findings as one entry ----- */
+.gcount { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.variants { margin-top: 4px; }
+.variant { padding: 6px 0 4px; border-top: 1px dashed var(--line); }
+.variant:first-child { border-top: 0; padding-top: 2px; }
+.shared > summary, .inst > summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.shared > summary .path, .inst > summary .path { color: var(--ink); }
+.insts { margin: 4px 0 2px; padding-left: 14px; border-left: 2px solid var(--line); }
+.inst { padding: 2px 0; }
+.variants > .inst { border-top: 1px dashed var(--line); padding: 5px 0; }
+.variants > .inst:first-child { border-top: 0; }
+.inst > summary .itext { color: var(--ink); font-size: 14px; margin-left: 8px; }
+.inst.flash > summary { box-shadow: 0 0 0 3px var(--accent); border-radius: 3px; }
+.instbody { margin: 6px 0 6px 14px; }
+.instbody .finding { background: var(--bg); padding: 8px 10px; margin-bottom: 2px; }
+.lead { font-size: 14px; margin: -6px 0 12px; max-width: 96ch; }
+#attention .none { max-width: 96ch; }
 
 /* ----- files ----- */
 .ttools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 10px; }
@@ -380,7 +400,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: now
   }
   @page { margin: 14mm 12mm; }
   body { font-size: 10.5pt; }
-  .noprint, .copy, .pager, .toast, .link.jmore, .evidence > summary, button.btn { display: none !important; }
+  .noprint, .copy, .toast, .link.jmore, .evidence > summary, button.btn { display: none !important; }
   .printonly { display: block; }
   .layout { display: block; max-width: none; padding: 0; }
   main { padding: 0; }

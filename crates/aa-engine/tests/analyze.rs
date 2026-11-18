@@ -97,7 +97,7 @@ fn single_file_has_known_digests() {
     assert_eq!(artifact.size, 3);
     assert_eq!(artifact.mime(), "text/plain");
     let rules: Vec<&str> = report.findings.iter().map(|f| f.rule.as_str()).collect();
-    assert_eq!(rules, ["structure.totals"]);
+    assert_eq!(rules, ["overview.kind-file", "overview.attention-none", "structure.totals"]);
     assert!(!report.coverage.truncated);
 }
 
@@ -119,9 +119,11 @@ fn folder_is_listed_in_sorted_order_with_findings() {
     assert_eq!(
         rules,
         [
+            "overview.kind-folder",
+            "overview.attention",
+            "structure.totals",
             "structure.by-type",
             "structure.largest",
-            "structure.totals",
             "content.hosts",
             "content.executable-disguised",
             "content.high-entropy"
@@ -294,6 +296,7 @@ fn cancelled_run_returns_what_was_done() {
     assert!(report.artifacts.is_empty());
     assert!(report.coverage.truncated);
     assert_eq!(codes(&report), ["cancelled"]);
+    assert!(report.findings.is_empty(), "nothing was read, so nothing is concluded");
 }
 
 #[cfg(unix)]

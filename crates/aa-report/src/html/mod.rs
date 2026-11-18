@@ -16,6 +16,7 @@ use aa_core::{Finding, Report, Section, Severity};
 use serde_json::{Map, Value, json};
 
 use crate::doc::{self, Block};
+use crate::group;
 use crate::sanitize::{is_deceptive, visible, visible_line};
 use crate::words::{self, ui};
 use crate::{Lang, RenderError};
@@ -249,8 +250,26 @@ fn view(report: &Report, lang: Lang) -> Result<Value, RenderError> {
             exact_numbers(value, &mut pointer(&format!("a{index}"), key), &mut exact);
         }
     }
+    // What the script needs to show the findings of a rule as one entry exactly as the other
+    // outputs do: each finding's shortened subject, and the order of the rule titles.
+    let mut subjects = vec![Value::Null; report.findings.len()];
+    for section in Section::ALL {
+        for group in group::chapter(report, lang, section) {
+            for instance in group.instances() {
+                subjects[instance.index] = json!(instance.subject);
+            }
+        }
+    }
+    let ranks = |lang: Lang| -> Map<String, Value> {
+        let ids: std::collections::BTreeSet<&str> = report.findings.iter().map(|finding| finding.rule.as_str()).collect();
+        let mut rules: Vec<(String, &str)> = ids.into_iter().map(|rule| (doc::rule_title(report, lang, rule), rule)).collect();
+        rules.sort();
+        rules.into_iter().enumerate().map(|(rank, (_, rule))| (rule.to_string(), json!(rank))).collect()
+    };
     Ok(json!({
         "lang": lang_key(lang),
+        "subjects": subjects,
+        "ranks": { "zh": ranks(Lang::Zh), "en": ranks(Lang::En) },
         "words": { "zh": page_words(Lang::Zh)?, "en": page_words(Lang::En)? },
         "texts": texts,
         "values": values,

@@ -19,6 +19,8 @@ const MEMORY_BUDGET: u64 = 512 * 1024 * 1024;
 
 pub struct BuiltTree {
     pub artifacts: Vec<Artifact>,
+    /// Facts about the input as a whole, filled in as analyzers run.
+    pub summary: BTreeMap<String, serde_json::Value>,
     stores: BTreeMap<String, Store>,
     /// Holds spilled children; removed from disk when the tree is dropped.
     _temp: Option<tempfile::TempDir>,
@@ -27,6 +29,10 @@ pub struct BuiltTree {
 impl Tree for BuiltTree {
     fn artifacts(&self) -> &[Artifact] {
         &self.artifacts
+    }
+
+    fn summary(&self) -> &BTreeMap<String, serde_json::Value> {
+        &self.summary
     }
 
     fn read(&self, path: &str) -> std::io::Result<Bytes> {
@@ -128,7 +134,7 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
     builder.coverage.artifacts_analyzed = builder.artifacts.iter().filter(|a| a.digests.is_some()).count() as u64;
     builder.artifacts.sort_by(|a, b| a.path.cmp(&b.path));
     Built {
-        tree: BuiltTree { artifacts: builder.artifacts, stores: builder.stores, _temp: builder.temp },
+        tree: BuiltTree { artifacts: builder.artifacts, summary: BTreeMap::new(), stores: builder.stores, _temp: builder.temp },
         limitations: builder.limitations,
         coverage: builder.coverage,
     }

@@ -21,11 +21,13 @@ use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
 
+use crate::group::{self, Group, Row};
 use crate::sanitize::{visible, visible_line};
 use crate::words::{self, ui};
 use crate::{Lang, RenderError, doc};
 
-/// Findings typeset per chapter before the rest are counted.
+/// Entries (a rule's findings as one group, or a single finding) typeset per chapter before the
+/// rest are counted.
 pub const FINDINGS_PER_CHAPTER: usize = 200;
 /// Evidence lines typeset per finding before the rest are counted.
 pub const EVIDENCE_PER_FINDING: usize = 5;
@@ -220,17 +222,11 @@ fn pairs(items: Vec<(String, String)>) -> Value {
     items.into_iter().map(|(label, value)| json!([label, line(&value)])).collect()
 }
 
-/// Findings of `section`, most severe first, otherwise in report order.
-pub(crate) fn chapter_findings(report: &Report, section: Section) -> Vec<&Finding> {
-    let mut findings: Vec<&Finding> = report.findings.iter().filter(|f| f.section == section).collect();
-    findings.sort_by_key(|f| std::cmp::Reverse(f.severity));
-    findings
-}
-
 fn finding_view(report: &Report, lang: Lang, finding: &Finding) -> Value {
     let evidence: Vec<Value> = finding.evidence.iter().take(EVIDENCE_PER_FINDING).map(|e| line(&doc::evidence_line(e))).collect();
     let more = finding.evidence.len().saturating_sub(EVIDENCE_PER_FINDING);
     json!({
+        "group": false,
         "severity": words::severity_key(finding.severity),
         "severity_label": words::severity(lang, finding.severity),
         "confidence": words::confidence_key(finding.confidence),
@@ -244,27 +240,64 @@ fn finding_view(report: &Report, lang: Lang, finding: &Finding) -> Value {
     })
 }
 
+/// A group of several findings: its head and the rows the reading formats list.
+fn group_view(lang: Lang, group: &Group) -> Value {
+    let listing = group::listing(group);
+    let rows: Vec<Value> = listing
+        .rows
+        .iter()
+        .map(|row| match row {
+            Row::Single { subject, text } => json!({
+                "subject": line(subject.as_deref().unwrap_or(ui(lang, "subject_none"))),
+                "text": prose(&cut(text, TEXT_LENGTH)),
+                "subjects": Value::Null,
+            }),
+            Row::Shared { text, count, subjects, cut: cut_short } => json!({
+                "subject": Value::Null,
+                "text": prose(&cut(text, TEXT_LENGTH)),
+                "note": group::shared_note(lang, *count),
+                "subjects": line(&format!("{}{}", subjects.join(", "), if *cut_short { " …" } else { "" })),
+            }),
+        })
+        .collect();
+    json!({
+        "group": true,
+        "severity": words::severity_key(group.severity),
+        "label": group::label(lang, group),
+        "title": line(&cut(&group.title, TITLE_LENGTH)),
+        "count": ui(lang, "group_count").replace("{n}", &group::thousands(group.count)),
+        "rows": rows,
+        "not_shown": (listing.not_shown > 0).then(|| group::not_shown_note(lang, listing.not_shown)),
+    })
+}
+
+/// A chapter: its heading with both counts and its first [`FINDINGS_PER_CHAPTER`] entries.
+fn chapter_view(report: &Report, lang: Lang, title: &str, groups: &[Group]) -> Value {
+    let note = (groups.len() > FINDINGS_PER_CHAPTER).then(|| {
+        ui(lang, "pdf_findings_capped").replace("{n}", &groups.len().to_string()).replace("{m}", &FINDINGS_PER_CHAPTER.to_string())
+    });
+    let entries: Vec<Value> = groups
+        .iter()
+        .take(FINDINGS_PER_CHAPTER)
+        .map(|group| match (group.count, group.instances().next()) {
+            (1, Some(only)) => finding_view(report, lang, only.finding),
+            _ => group_view(lang, group),
+        })
+        .collect();
+    json!({ "title": group::heading(lang, title, groups), "count": groups.len(), "note": note, "findings": entries })
+}
+
 /// The report as the template reads it: every string already worded, cut and made safe to show.
 fn view(report: &Report, lang: Lang) -> Value {
     let w = words::words(lang);
     let count = |severity: Severity| report.findings.iter().filter(|f| f.severity == severity).count();
     let chapters: Vec<Value> = Section::ALL
         .into_iter()
-        .map(|section| {
-            let findings = chapter_findings(report, section);
-            let note = (findings.len() > FINDINGS_PER_CHAPTER).then(|| {
-                ui(lang, "pdf_findings_capped")
-                    .replace("{n}", &findings.len().to_string())
-                    .replace("{m}", &FINDINGS_PER_CHAPTER.to_string())
-            });
-            json!({
-                "title": words::section(lang, section),
-                "count": findings.len(),
-                "note": note,
-                "findings": findings.iter().take(FINDINGS_PER_CHAPTER).map(|f| finding_view(report, lang, f)).collect::<Vec<_>>(),
-            })
-        })
+        .map(|section| chapter_view(report, lang, words::section(lang, section), &group::chapter(report, lang, section)))
         .collect();
+    let attention = group::attention(report, lang);
+    let mut attention_view = chapter_view(report, lang, ui(lang, "attention"), &attention);
+    attention_view["text"] = json!(ui(lang, if attention.is_empty() { "attention_none" } else { "attention_text" }));
     let severities: Vec<Value> = [Severity::High, Severity::Medium, Severity::Low, Severity::Info]
         .into_iter()
         .map(|s| json!({ "key": words::severity_key(s), "label": words::severity(lang, s), "count": count(s) }))
@@ -291,6 +324,7 @@ fn view(report: &Report, lang: Lang) -> Value {
             "contents": ui(lang, "contents"),
             "reading_guide": w.reading_guide,
             "reading_guide_text": w.reading_guide_text,
+            "grouping_guide": ui(lang, "grouping_guide"),
             "scope": ui(lang, "pdf_scope"),
             "no_findings_here": w.no_findings_here,
             "evidence": w.evidence,
@@ -307,6 +341,7 @@ fn view(report: &Report, lang: Lang) -> Value {
         "header": pairs(doc::header_items(report, lang)),
         "summary": pairs(doc::summary_items(report, lang)),
         "severities": severities,
+        "attention": attention_view,
         "chapters": chapters,
         "inventory": {
             "head": inventory.head,
@@ -470,18 +505,36 @@ mod tests {
     }
 
     #[test]
-    fn long_chapters_are_cut_most_severe_first_and_say_so() {
-        let file = artifact("a.bin");
-        let mut findings: Vec<Finding> =
-            (0..FINDINGS_PER_CHAPTER + 50).map(|i| finding(&file, Section::Network, Severity::Info, &format!("info-{i}"))).collect();
+    fn a_rule_with_many_findings_is_one_entry_that_says_what_it_leaves_out() {
+        let file = artifact("dir/a.bin");
+        let mut findings: Vec<Finding> = (0..25).map(|i| finding(&file, Section::Network, Severity::Info, &format!("info-{i}"))).collect();
         findings.push(finding(&file, Section::Network, Severity::High, "the-high-one"));
-        let view = view(&report("a.bin", vec![file], findings), Lang::En);
+        let mut report = report("a.bin", vec![file.clone()], findings);
+        report.rules.insert("other.rule".into(), report.rules["test.rule"].clone());
+        report.findings.push(Finding::new(Section::Network, "test", "other.rule", Confidence::Verified, Severity::Low).param("what", "alone").seal());
+        let view = view(&report, Lang::En);
         let chapter = &view["chapters"][7];
-        assert_eq!(chapter["count"], FINDINGS_PER_CHAPTER + 51);
-        assert_eq!(chapter["findings"].as_array().map(Vec::len), Some(FINDINGS_PER_CHAPTER));
-        assert_eq!(chapter["findings"][0]["severity"], "high");
-        assert!(chapter["note"].as_str().is_some_and(|note| note.contains("251") && note.contains("200")));
+        assert_eq!(chapter["title"], json!("Network and endpoints · 2 kinds / 27 findings"));
+        let entries = chapter["findings"].as_array().expect("entries");
+        assert_eq!(entries.len(), 2);
+        // The group holding a High comes first and lists 30 of its 26... all of them.
+        assert_eq!(entries[0]["group"], true);
+        assert_eq!(entries[0]["severity"], "high");
+        assert_eq!(entries[0]["label"], "High × 1 · Info × 25 · Heuristic");
+        assert_eq!(entries[0]["rows"].as_array().map(Vec::len), Some(26));
+        assert!(entries[0]["not_shown"].is_null());
+        // A rule with one finding is typeset as a finding, as before.
+        assert_eq!(entries[1]["group"], false);
+        assert_eq!(view["attention"]["title"], json!("Needs attention · 2 kinds / 2 findings"));
         assert!(view["chapters"][0]["note"].is_null());
+
+        // A group of neutral facts lists ten and counts the rest.
+        report.findings.retain(|f| f.severity == Severity::Info);
+        let view = super::view(&report, Lang::En);
+        let entry = &view["chapters"][7]["findings"][0];
+        assert_eq!(entry["rows"].as_array().map(Vec::len), Some(group::LISTED_INFO));
+        assert!(entry["not_shown"].as_str().is_some_and(|note| note.starts_with("15 more")));
+        assert_eq!(view["attention"]["findings"].as_array().map(Vec::len), Some(0));
     }
 
     #[test]

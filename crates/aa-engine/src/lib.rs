@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aa_core::plugin::{Analyzer, Output, Rule, Tree, Unpacker};
-use aa_core::{Input, InputKind, Limitation, Report, RuleText, SCHEMA_VERSION, Tool};
+use aa_core::{Confidence, Evidence, Input, InputKind, Limitation, Report, RuleText, SCHEMA_VERSION, Section, Severity, Tool};
 use rayon::prelude::*;
 
 /// Bounds that keep a hostile or huge input from exhausting the machine.
@@ -182,7 +182,6 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
 
     let cancelled = || options.cancel.as_ref().is_some_and(|flag| flag.load(Ordering::Relaxed));
     let mut findings = Vec::new();
-    let mut summary = BTreeMap::new();
 
     // File pass: every analyzer looks at every readable artifact. Results come back in artifact
     // order whatever the thread scheduling, so the report does not depend on it.
@@ -205,7 +204,7 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
     let mut named = std::collections::BTreeSet::new();
     for mut out in outputs {
         out.kinds.retain(|(path, _)| named.insert(path.clone()));
-        merge(&mut tree, out, &mut findings, &mut limitations, &mut summary);
+        merge(&mut tree, out, &mut findings, &mut limitations);
     }
 
     // Tree pass: one analyzer at a time, each seeing what the ones before it attached.
@@ -215,18 +214,40 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         }
         let mut out = Output::default();
         guarded(analyzer.as_ref(), None, &mut out, |out| analyzer.analyze_tree(&tree, out));
-        merge(&mut tree, out, &mut findings, &mut limitations, &mut summary);
+        merge(&mut tree, out, &mut findings, &mut limitations);
     }
     if cancelled() && !limitations.iter().any(|l| l.code == "cancelled") {
         limitations.push(Limitation::new("cancelled", None, None));
         coverage.truncated = true;
     }
 
-    findings.sort_by(|a, b| {
-        let key = |f: &aa_core::Finding| {
-            (f.section, std::cmp::Reverse(f.severity), f.rule.clone(), f.evidence.first().map(|e| e.artifact.clone()), f.id.clone())
-        };
-        key(a).cmp(&key(b))
+    // The one statement about the findings as a set. It counts; it does not judge the input.
+    if let Some(first) = tree.artifacts.iter().find(|a| a.parent.is_none()) {
+        let count = |severity| findings.iter().filter(|f: &&aa_core::Finding| f.severity == severity).count();
+        let (high, medium, low, info) = (count(Severity::High), count(Severity::Medium), count(Severity::Low), count(Severity::Info));
+        let rule = if high + medium + low > 0 { "overview.attention" } else { "overview.attention-none" };
+        findings.push(
+            aa_core::Finding::new(Section::Overview, "engine", rule, Confidence::Derived, Severity::Info)
+                .param("high", high)
+                .param("medium", medium)
+                .param("low", low)
+                .param("info", info)
+                .evidence(Evidence::whole(first, high + medium + low))
+                .seal(),
+        );
+    }
+
+    // Within a chapter: most severe first, then in the order the rules are declared, which their
+    // authors chose for reading (what it is, then who made it, then the details).
+    let declared: Vec<&'static str> = {
+        let unpackers = registry.unpackers.iter().flat_map(|u| u.rules().iter());
+        let analyzers = registry.analyzers.iter().flat_map(|a| a.rules().iter());
+        analyzers.chain(unpackers).chain(ENGINE_RULES.iter()).map(|rule| rule.id).collect()
+    };
+    let rank: BTreeMap<&str, usize> = declared.iter().enumerate().rev().map(|(position, id)| (*id, position)).collect();
+    findings.sort_by_cached_key(|f| {
+        let position = rank.get(f.rule.as_str()).copied().unwrap_or(usize::MAX);
+        (f.section, std::cmp::Reverse(f.severity), position, f.rule.clone(), f.evidence.first().map(|e| e.artifact.clone()), f.id.clone())
     });
     findings.dedup_by(|a, b| a.id == b.id);
     limitations.sort();
@@ -256,7 +277,7 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         schema_version: SCHEMA_VERSION,
         tool: Tool { name: "analyze-anything".into(), version: env!("CARGO_PKG_VERSION").into() },
         input: Input { name, kind, sha256 },
-        summary,
+        summary: std::mem::take(&mut tree.summary),
         artifacts: tree.artifacts,
         findings,
         limitations,
@@ -283,13 +304,7 @@ fn guarded(analyzer: &dyn Analyzer, artifact: Option<&str>, out: &mut Output, ca
     }
 }
 
-fn merge(
-    tree: &mut tree::BuiltTree,
-    out: Output,
-    findings: &mut Vec<aa_core::Finding>,
-    limitations: &mut Vec<Limitation>,
-    summary: &mut BTreeMap<String, serde_json::Value>,
-) {
+fn merge(tree: &mut tree::BuiltTree, out: Output, findings: &mut Vec<aa_core::Finding>, limitations: &mut Vec<Limitation>) {
     findings.extend(out.findings);
     limitations.extend(out.limitations);
     let index = |tree: &tree::BuiltTree, path: &str| tree.artifacts.binary_search_by(|a| a.path.as_str().cmp(path)).ok();
@@ -301,7 +316,7 @@ fn merge(
     for fact in out.facts {
         match fact.artifact {
             None => {
-                summary.insert(fact.key, fact.value);
+                tree.summary.insert(fact.key, fact.value);
             }
             Some(path) => {
                 if let Some(i) = index(tree, &path) {
@@ -314,6 +329,20 @@ fn merge(
 
 /// Text for the limitation codes the engine itself records.
 const ENGINE_RULES: &[Rule] = &[
+    Rule {
+        id: "overview.attention",
+        title_zh: "需要关注的结论",
+        title_en: "Findings that need attention",
+        text_zh: "有 {high} 条高、{medium} 条中、{low} 条低严重度的结论，另有 {info} 条中性事实。严重度是每条规则固定的设定，用来排列阅读顺序；这些数字不是对输入是否安全的判定。",
+        text_en: "There are {high} high, {medium} medium and {low} low severity findings, and {info} neutral facts. Severity is fixed per rule and orders the reading; these counts are not a verdict on whether the input is safe.",
+    },
+    Rule {
+        id: "overview.attention-none",
+        title_zh: "需要关注的结论",
+        title_en: "Findings that need attention",
+        text_zh: "没有低、中、高严重度的结论，只有 {info} 条中性事实。这只说明已启用的检查没有命中，不是对输入是否安全的判定。",
+        text_en: "There are no low, medium or high severity findings, only {info} neutral facts. This means no enabled check matched; it is not a verdict on whether the input is safe.",
+    },
     Rule {
         id: "read_failed",
         title_zh: "无法读取",

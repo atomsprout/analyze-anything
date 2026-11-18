@@ -322,7 +322,9 @@
     }
   }
 
-  function findingCard(index, compact) {
+  // `compact` cards sit inside another list (a group row, a file's details) and carry no anchor;
+  // `inPlace` ones are already where "go to this finding" would lead.
+  function findingCard(index, compact, inPlace) {
     var f = R.findings[index];
     var list = el('ol', { class: 'evlist' });
     var details = el('details', { class: 'evidence' },
@@ -339,8 +341,145 @@
         el('span', null, el('span', { class: 'k' }, t('rule')), el('code', null, f.rule)),
         el('span', { class: 'fid' }, el('span', { class: 'k' }, t('finding_id')),
           el('code', { title: f.id }, f.id.slice(0, 16)), copyButton(f.id, t('finding_id'))),
-        compact ? el('button', { type: 'button', class: 'link', onclick: function () { revealFinding(index); } }, t('go_to_finding')) : null),
+        compact && !inPlace ? el('button', { type: 'button', class: 'link', onclick: function () { revealFinding(index); } }, t('go_to_finding')) : null),
       f.evidence.length ? details : null);
+  }
+
+  /* ---------- groups: the findings of one rule as one entry ---------- */
+
+  // Mirrors group.rs: one group per rule, most severe first, then by title (the renderer sends
+  // the title order as ranks, so both sides sort alike); inside a group one variant per distinct
+  // sentence, most severe first, then the sentence most findings share. `indices` must already
+  // be ordered most severe first, as bySection is.
+  var RANK = { high: 0, medium: 1, low: 2, info: 3 };
+  function groupsOf(indices) {
+    var byRule = new Map();
+    indices.forEach(function (i) {
+      var rule = R.findings[i].rule;
+      var g = byRule.get(rule);
+      if (!g) byRule.set(rule, g = { rule: rule, indices: [], variants: [], byText: new Map() });
+      g.indices.push(i);
+      var text = textOf(i);
+      var v = g.byText.get(text);
+      if (!v) { v = { text: text, indices: [] }; g.byText.set(text, v); g.variants.push(v); }
+      v.indices.push(i);
+    });
+    var ranks = V.ranks[lang] || {};
+    var list = Array.from(byRule.values());
+    list.forEach(function (g) {
+      g.severity = R.findings[g.indices[0]].severity;
+      g.variants.sort(function (a, b) {
+        return RANK[R.findings[a.indices[0]].severity] - RANK[R.findings[b.indices[0]].severity] || b.indices.length - a.indices.length;
+      });
+    });
+    list.sort(function (a, b) {
+      return RANK[a.severity] - RANK[b.severity] || (ranks[a.rule] || 0) - (ranks[b.rule] || 0) || (a.rule < b.rule ? -1 : a.rule > b.rule ? 1 : 0);
+    });
+    return list;
+  }
+
+  function subjectNode(index) {
+    var f = R.findings[index];
+    if (!f.evidence.length) return el('span', { class: 'path' }, t('subject_none'));
+    return el('span', { class: 'path', title: f.evidence[0].artifact }, V.subjects[index] || f.evidence[0].artifact);
+  }
+
+  // One finding inside a group: a line that opens into the full finding.
+  function instanceRow(index, withText, compact) {
+    var f = R.findings[index];
+    var body = el('div', { class: 'instbody' });
+    var row = el('details', { class: 'inst', id: compact ? null : 'f-' + index, 'data-index': index },
+      el('summary', null, subjectNode(index), withText ? el('span', { class: 'itext' }, textOf(index)) : null), body);
+    row.addEventListener('toggle', function () {
+      if (row.open && !body.firstChild) body.appendChild(findingCard(index, true, !compact));
+    });
+    return row;
+  }
+
+  function groupCard(g, compact) {
+    var first = compact ? 5 : (g.severity === 'info' ? 10 : 30);
+    var total = g.indices.length;
+    var counts = {}, confidences = {};
+    g.indices.forEach(function (i) {
+      counts[R.findings[i].severity] = (counts[R.findings[i].severity] || 0) + 1;
+      confidences[R.findings[i].confidence] = true;
+    });
+    var host = el('div', { class: 'variants' });
+    var shownVariants = 0;
+    var lists = []; // per variant: {fill(upTo), details}
+    function variantNode(v) {
+      if (v.indices.length === 1) {
+        lists.push(null);
+        return instanceRow(v.indices[0], true, compact);
+      }
+      var list = el('div', { class: 'insts' });
+      var filled = 0;
+      function fill(upTo) {
+        var old = list.querySelector(':scope > .pager');
+        if (old) old.remove();
+        var end = Math.min(v.indices.length, Math.max(upTo, filled));
+        for (; filled < end; filled++) list.appendChild(instanceRow(v.indices[filled], false, compact));
+        if (filled < v.indices.length) {
+          list.appendChild(el('div', { class: 'pager' },
+            el('button', { type: 'button', class: 'btn', onclick: function () { fill(filled + 100); } }, t('show_more', group(Math.min(100, v.indices.length - filled)))),
+            el('button', { type: 'button', class: 'btn', onclick: function () { fill(v.indices.length); } }, t('show_all', group(v.indices.length)))));
+        }
+      }
+      var names = [];
+      for (var k = 0; k < v.indices.length && names.length < 4; k++) {
+        var name = V.subjects[v.indices[k]];
+        if (name && names.indexOf(name) < 0) names.push(name);
+      }
+      var details = el('details', { class: 'shared' },
+        el('summary', null, t('group_shared', group(v.indices.length)) + ': ',
+          el('span', { class: 'path' }, names.join(', ') + (v.indices.length > names.length ? ' …' : ''))), list);
+      details.addEventListener('toggle', function () { if (details.open && !filled) fill(50); });
+      lists.push({ fill: fill, details: details });
+      return el('div', { class: 'variant' }, el('p', { class: 'ftext' }, v.text), details);
+    }
+    function showVariants(upTo) {
+      var old = host.querySelector(':scope > .pager');
+      if (old) old.remove();
+      var end = Math.min(g.variants.length, Math.max(upTo, shownVariants));
+      for (; shownVariants < end; shownVariants++) host.appendChild(variantNode(g.variants[shownVariants]));
+      if (shownVariants < g.variants.length) {
+        var rest = 0;
+        for (var k = shownVariants; k < g.variants.length; k++) rest += g.variants[k].indices.length;
+        host.appendChild(el('div', { class: 'pager' },
+          el('button', { type: 'button', class: 'btn', onclick: function () { showVariants(shownVariants + 50); } }, t('show_more', group(Math.min(50, g.variants.length - shownVariants)))),
+          el('button', { type: 'button', class: 'btn', onclick: function () { showVariants(g.variants.length); } }, t('show_all', group(g.variants.length))),
+          el('span', { class: 'muted rest' }, t('group_rest', group(rest)))));
+      }
+    }
+    showVariants(first);
+    var card = el('article', { class: 'finding group sev-' + g.severity, 'data-rule': g.rule },
+      el('div', { class: 'fhead' },
+        SEVERITIES.filter(function (s) { return counts[s]; }).map(function (s) {
+          var b = badge('severity', s);
+          add(b, ' × ' + group(counts[s]));
+          return b;
+        }),
+        CONFIDENCES.filter(function (c) { return confidences[c]; }).map(function (c) { return badge('confidence', c); }),
+        el(compact ? 'h5' : 'h4', { class: 'ftitle' }, titleOf(g.rule)),
+        el('span', { class: 'gcount' }, t('group_count', group(total)))),
+      host,
+      el('div', { class: 'fmeta' }, el('span', null, el('span', { class: 'k' }, t('rule')), el('code', null, g.rule))));
+    // Brings the row of finding `index` on screen, opening whatever hides it.
+    card.reveal = function (index) {
+      for (var vi = 0; vi < g.variants.length; vi++) {
+        var at = g.variants[vi].indices.indexOf(index);
+        if (at < 0) continue;
+        showVariants(vi + 1);
+        if (lists[vi]) { lists[vi].details.open = true; lists[vi].fill(at + 1); }
+        return doc.getElementById('f-' + index);
+      }
+      return null;
+    };
+    return card;
+  }
+
+  function entryNode(g, compact) {
+    return g.indices.length === 1 ? findingCard(g.indices[0], compact, false) : groupCard(g, compact);
   }
 
   function renderChapter(section) {
@@ -351,7 +490,10 @@
     var hits = matching(section);
     var hidden = state.chapter !== 'all' && state.chapter !== section;
     host.hidden = hidden;
-    host.querySelector('.count').textContent = filtersActive() ? group(hits.length) + ' / ' + group(all.length) : group(all.length);
+    var groups = groupsOf(hits);
+    var count = host.querySelector('.count');
+    count.hidden = all.length === 0;
+    count.textContent = t('chapter_counts', group(groups.length), group(hits.length)) + (filtersActive() ? ' · ' + t('of_total', group(all.length)) : '');
     var nav = doc.getElementById('nav-' + section);
     if (nav) {
       nav.querySelector('.n').textContent = group(hits.length);
@@ -361,17 +503,17 @@
     if (hidden) return hits.length;
     if (!all.length) body.appendChild(el('p', { class: 'none' }, t('no_findings_here')));
     else if (!hits.length) body.appendChild(el('p', { class: 'none' }, t('no_match_chapter', group(all.length))));
-    var limit = Math.min(hits.length, state.shown[section] || PAGE);
+    var limit = Math.min(groups.length, state.shown[section] || PAGE);
     var fragment = doc.createDocumentFragment();
-    for (var i = 0; i < limit; i++) fragment.appendChild(findingCard(hits[i], false));
+    for (var i = 0; i < limit; i++) fragment.appendChild(entryNode(groups[i], false));
     body.appendChild(fragment);
-    if (limit < hits.length) {
-      var rest = hits.length - limit;
+    if (limit < groups.length) {
+      var rest = groups.length - limit;
       body.appendChild(el('div', { class: 'pager' },
         el('button', { type: 'button', class: 'btn', onclick: function () { state.shown[section] = limit + PAGE; renderChapter(section); } },
           t('show_more', group(Math.min(PAGE, rest)))),
         rest > PAGE ? el('button', { type: 'button', class: 'btn', onclick: function () { state.shown[section] = Infinity; renderChapter(section); } },
-          t('show_all', group(hits.length))) : null));
+          t('show_all', group(groups.length))) : null));
     }
     return hits.length;
   }
@@ -418,12 +560,20 @@
   function revealFinding(index) {
     var f = R.findings[index];
     resetFilters();
-    state.shown[f.section] = Math.max(PAGE, bySection[f.section].indexOf(index) + 1);
+    state.shown[f.section] = Infinity;
     renderFindings();
     var card = doc.getElementById('f-' + index);
+    if (!card) {
+      var cards = doc.querySelectorAll('#ch-' + f.section + ' .group');
+      for (var i = 0; i < cards.length && !card; i++) {
+        if (cards[i].getAttribute('data-rule') === f.rule && cards[i].reveal) card = cards[i].reveal(index);
+      }
+    }
     if (!card) return;
+    if (card.tagName === 'DETAILS') card.open = true;
+    else card.setAttribute('tabindex', '-1');
     card.scrollIntoView({ block: 'center' });
-    card.focus({ preventScroll: true });
+    (card.tagName === 'DETAILS' ? card.querySelector('summary') : card).focus({ preventScroll: true });
     card.classList.add('flash');
     setTimeout(function () { card.classList.remove('flash'); }, 1600);
   }
@@ -566,6 +716,7 @@
       el('span', { class: 'tw' + (node.kids && !searching ? ' has' : '') + (node.open ? ' open' : ''), 'aria-hidden': 'true' }),
       el('span', { class: 'nm' + (node.kids ? ' dir' : '') }, searching ? pathOf(node) : (node.name === '' ? '/' : node.name)),
       artifact && artifact.kind ? el('span', { class: 'kd' }, artifact.kind) : null,
+      artifact && artifact.unpacked_by ? el('span', { class: 'kd', title: t('unpacked_by_note', artifact.unpacked_by) }, '⇲ ' + artifact.unpacked_by) : null,
       node.hits ? el('span', { class: 'hc', title: t('findings_citing') }, group(node.hits)) : null,
       el('span', { class: 'sz' }, bytes(artifact ? artifact.size : node.size)));
     row.style.paddingLeft = (8 + (searching ? 0 : Math.min(node.depth, 24) * 14)) + 'px';
@@ -850,10 +1001,22 @@
               meter(R.coverage.artifacts_analyzed, R.coverage.artifacts_total)]),
             field(w.containers, group(R.coverage.containers_unpacked)),
             field(w.bytes_read, [bytes(R.coverage.bytes_analyzed) + ' ', el('span', { class: 'exact' }, group(R.coverage.bytes_analyzed) + ' ' + t('bytes'))])))),
-      el('div', { class: 'guide' }, el('h3', null, w.reading_guide), el('p', null, w.reading_guide_text)),
+      el('div', { class: 'guide' }, el('h3', null, w.reading_guide), el('p', null, w.reading_guide_text), el('p', null, t('grouping_guide_html'))),
       Object.keys(R.summary).length ? el('details', { class: 'sumfacts', id: 'summary-facts' },
         el('summary', null, t('summary_facts'), el('span', { class: 'count' }, Object.keys(R.summary).length)),
         el('p', { class: 'muted' }, t('summary_facts_note')), factsView(R.summary, 's')) : null);
+  }
+
+  // Every finding above "info", whatever the filters say, grouped like the chapters.
+  function attentionSection() {
+    var indices = [];
+    R.findings.forEach(function (f, i) { if (f.severity !== 'info') indices.push(i); });
+    indices.sort(function (a, b) { return RANK[R.findings[a].severity] - RANK[R.findings[b].severity] || a - b; });
+    var groups = groupsOf(indices);
+    return el('section', { id: 'attention', class: 'block' },
+      el('h2', null, t('attention'), indices.length ? el('span', { class: 'count' }, t('chapter_counts', group(groups.length), group(indices.length))) : null),
+      el('p', { class: indices.length ? 'muted lead' : 'none' }, t(indices.length ? 'attention_text' : 'attention_none')),
+      groups.map(function (g) { return entryNode(g, true); }));
   }
 
   function coverageSection() {
@@ -902,6 +1065,7 @@
     return el('nav', { class: 'side noprint', id: 'nav', 'aria-label': t('navigation') },
       el('ul', null,
         item('summary', V.words[lang].summary),
+        item('attention', t('attention'), R.findings.filter(function (f) { return f.severity !== 'info'; }).length),
         el('li', { class: 'sep', role: 'presentation' }, t('chapters')),
         SECTIONS.map(function (s, i) {
           return item('ch-' + s, [el('span', { class: 'num' }, i + 1), sectionName(s)], bySection[s].length, 'nav-' + s);
@@ -967,6 +1131,7 @@
       el('thead', null, el('tr', null, [w.path, w.size, w.kind, w.entropy, 'SHA-256'].map(function (h) { return el('th', null, h); }))),
       el('tbody', null, rows.map(function (a) {
         var kind = a.kind && a.detected ? a.kind + ' (' + a.detected.mime + ')' : a.kind || (a.detected ? a.detected.mime : w.unknown);
+        if (a.unpacked_by) kind += ' · ' + t('unpacked_by_note', a.unpacked_by);
         return el('tr', null, el('td', null, a.path), el('td', { class: 'num' }, group(a.size)), el('td', null, kind),
           el('td', { class: 'num' }, a.entropy == null ? w.unknown : a.entropy.toFixed(4)),
           el('td', { class: 'mono' }, a.digests ? a.digests.sha256 : w.unknown));
@@ -1014,6 +1179,7 @@
         navigation(),
         el('main', { id: 'main', tabindex: '-1' },
           summarySection(),
+          attentionSection(),
           el('section', { id: 'findings', class: 'block' },
             el('h2', null, t('findings_title'), el('span', { class: 'count' }, group(R.findings.length))),
             el('div', { class: 'noprint sticky' }, filterBar()),

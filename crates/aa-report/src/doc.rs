@@ -5,6 +5,7 @@
 use aa_core::{Finding, Limitation, Location, Report, Section, Severity, fill};
 
 use crate::Lang;
+use crate::group::{self, Group, Row};
 use crate::words::{self, Words};
 
 /// Rows shown in the inventory table. The JSON report always holds every file.
@@ -133,12 +134,16 @@ pub fn inventory(report: &Report, lang: Lang) -> Inventory {
         .iter()
         .take(INVENTORY_ROWS)
         .map(|a| {
-            let kind = match (&a.kind, &a.detected) {
+            let mut kind = match (&a.kind, &a.detected) {
                 (Some(kind), Some(detected)) => format!("{kind} ({})", detected.mime),
                 (Some(kind), None) => kind.clone(),
                 (None, Some(detected)) => detected.mime.clone(),
                 (None, None) => w.unknown.to_string(),
             };
+            // A container's kind may be the generic file type; the unpacker says what it really is.
+            if let Some(unpacker) = &a.unpacked_by {
+                kind.push_str(&format!(" · {}", words::ui(lang, "unpacked_by_note").replace("{n}", unpacker)));
+            }
             vec![
                 a.path.clone(),
                 a.size.to_string(),
@@ -213,15 +218,23 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
     }
     doc.heading(3, w.reading_guide);
     doc.paragraph(w.reading_guide_text);
+    doc.paragraph(words::ui(lang, "grouping_guide"));
+
+    let attention = group::attention(report, lang);
+    doc.heading(2, group::heading(lang, words::ui(lang, "attention"), &attention));
+    doc.paragraph(words::ui(lang, if attention.is_empty() { "attention_none" } else { "attention_text" }));
+    for group in &attention {
+        group_blocks(&mut doc, report, lang, &w, group);
+    }
 
     for section in Section::ALL {
-        doc.heading(2, words::section(lang, section));
-        let findings: Vec<&Finding> = report.findings.iter().filter(|f| f.section == section).collect();
-        if findings.is_empty() {
+        let groups = group::chapter(report, lang, section);
+        doc.heading(2, group::heading(lang, words::section(lang, section), &groups));
+        if groups.is_empty() {
             doc.paragraph(w.no_findings_here);
         }
-        for finding in findings {
-            finding_blocks(&mut doc, report, lang, &w, finding);
+        for group in &groups {
+            group_blocks(&mut doc, report, lang, &w, group);
         }
     }
 
@@ -252,6 +265,28 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
     doc
 }
 
+/// A group as list items: a single finding in full, several as one entry with a row per sentence.
+fn group_blocks(doc: &mut Doc, report: &Report, lang: Lang, w: &Words, group: &Group) {
+    if let (1, Some(only)) = (group.count, group.instances().next()) {
+        return finding_blocks(doc, report, lang, w, only.finding);
+    }
+    let count = words::ui(lang, "group_count").replace("{n}", &group::thousands(group.count));
+    doc.item(0, format!("[{}] {} — {count}", group::label(lang, group), group.title));
+    let listing = group::listing(group);
+    for row in listing.rows {
+        match row {
+            Row::Single { subject, text } => doc.item(1, format!("{}: {text}", subject.as_deref().unwrap_or(words::ui(lang, "subject_none")))),
+            Row::Shared { text, count, subjects, cut } => {
+                let more = if cut { " …" } else { "" };
+                doc.item(1, format!("{text} — {}: {}{more}", group::shared_note(lang, count), subjects.join(", ")));
+            }
+        }
+    }
+    if listing.not_shown > 0 {
+        doc.item(1, group::not_shown_note(lang, listing.not_shown));
+    }
+}
+
 fn finding_blocks(doc: &mut Doc, report: &Report, lang: Lang, w: &Words, finding: &Finding) {
     let title = rule_title(report, lang, &finding.rule);
     let text = finding_text(report, lang, finding);
@@ -263,5 +298,5 @@ fn finding_blocks(doc: &mut Doc, report: &Report, lang: Lang, w: &Words, finding
     if !finding.references.is_empty() {
         doc.item(1, format!("{}: {}", w.references, finding.references.join(", ")));
     }
-    doc.item(1, format!("{}: {}", w.finding_id, &finding.id[..finding.id.len().min(16)]));
+    doc.item(1, format!("{}: {}", w.finding_id, finding.id.chars().take(16).collect::<String>()));
 }

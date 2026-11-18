@@ -8,6 +8,7 @@
 //! is a reading document typeset by an embedded Typst (cargo feature `pdf`, on by default).
 
 pub mod doc;
+pub mod group;
 mod html;
 mod markdown;
 #[cfg(feature = "pdf")]

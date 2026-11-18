@@ -227,6 +227,41 @@ pub const UI: &[(&str, &str, &str)] = &[
         "This PDF is for reading and filing: long lists are cut and say so; report.html and report.json hold the complete data.",
     ),
     ("page", "页", "Page"),
+    // Grouped findings
+    ("chapter_counts", "{n} 类 / {m} 条", "{n} kinds / {m} findings"),
+    ("group_count", "共 {n} 条", "{n} findings"),
+    ("group_shared", "同一结论共 {n} 条，涉及", "The same holds {n} times, for"),
+    (
+        "group_not_shown",
+        "本类另有 {n} 条未在此列出；report.html 和 report.json 有全部。",
+        "{n} more of this kind are not listed here; report.html and report.json hold them all.",
+    ),
+    (
+        "grouping_guide",
+        "同一条规则得出的多条结论归并为一条：相同的句子只写一次，后面列出它适用的文件。列表过长时只列出前几项并注明未列出的条数；每一条的证据与结论 ID 见 report.html 或 report.json。",
+        "Findings of the same rule are shown as one entry: a sentence that repeats is written once, followed by the files it holds for. Long lists show their first items and say how many are left out; the evidence and ID of every finding are in report.html and report.json.",
+    ),
+    (
+        "grouping_guide_html",
+        "同一条规则得出的多条结论归并为一条：相同的句子只写一次，后面列出它适用的文件。点开文件名可以看到那一条的证据与结论 ID。",
+        "Findings of the same rule are shown as one entry: a sentence that repeats is written once, followed by the files it holds for. Open a file name to see that finding's evidence and ID.",
+    ),
+    ("attention", "需要关注", "Needs attention"),
+    (
+        "attention_text",
+        "严重度高于“提示”的全部结论，按规则归并，最严重的在前。它们在各自的章节里还会出现一次。",
+        "Every finding above \"Info\", grouped by rule, most severe first. Each appears again in its own chapter.",
+    ),
+    (
+        "attention_none",
+        "没有严重度高于“提示”的结论。这只代表已启用的检查没有命中，不代表没有问题。",
+        "No finding is above \"Info\". This means no enabled check matched, not that nothing is wrong.",
+    ),
+    ("unpacked_by_note", "由 {n} 解包", "unpacked by {n}"),
+    ("same_finding", "同一结论", "Same finding"),
+    ("subject_none", "（无证据）", "(no evidence)"),
+    ("group_rest", "其余 {n} 条尚未列出", "{n} more not listed yet"),
+    ("of_total", "筛选前共 {n} 条", "{n} before filtering"),
     // Controls
     ("skip", "跳到正文", "Skip to content"),
     ("navigation", "报告导航", "Report navigation"),

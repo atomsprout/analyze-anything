@@ -213,38 +213,45 @@ impl Archive {
     }
 }
 
+impl Entry {
+    /// The entry's raw data the way Android reads it: deflate data when the method is 8,
+    /// otherwise the bytes as they are, whatever the method field says. Malware sets bogus
+    /// methods and compressed sizes on stored entries, which stops ZIP tools but not the device.
+    pub fn android_data<'a>(&self, data: &'a [u8]) -> Result<(bool, &'a [u8]), String> {
+        let offset = self.data_offset.ok_or("no readable local header")?;
+        let start = usize::try_from(offset).map_err(|_| "offset out of range")?;
+        let deflated = self.method == 8;
+        let size = if deflated || self.method == 0 { self.compressed_size } else { self.uncompressed_size };
+        let length = usize::try_from(size).map_err(|_| "size out of range")?;
+        let raw = slice_at(data, start, length).ok_or("entry data runs past the file")?;
+        Ok((deflated, raw))
+    }
+}
+
 /// Feeds an entry's uncompressed bytes to `sink` in pieces, never holding more than a buffer.
-/// Fails on an unsupported method, bad deflate data, or more than `limit` bytes.
+/// Fails on bad deflate data or more than `limit` bytes.
 pub fn stream_entry(data: &[u8], entry: &Entry, limit: u64, mut sink: impl FnMut(&[u8])) -> Result<u64, String> {
-    let offset = entry.data_offset.ok_or("no readable local header")?;
-    let start = usize::try_from(offset).map_err(|_| "offset out of range")?;
-    let length = usize::try_from(entry.compressed_size).map_err(|_| "size out of range")?;
-    let raw = slice_at(data, start, length).ok_or("entry data runs past the file")?;
-    match entry.method {
-        0 => {
-            if raw.len() as u64 > limit {
-                return Err("entry is larger than the limit".into());
-            }
-            sink(raw);
-            Ok(raw.len() as u64)
+    let (deflated, raw) = entry.android_data(data)?;
+    if !deflated {
+        if raw.len() as u64 > limit {
+            return Err("entry is larger than the limit".into());
         }
-        8 => {
-            let mut decoder = flate2::read::DeflateDecoder::new(raw);
-            let mut buffer = vec![0u8; 64 * 1024];
-            let mut total = 0u64;
-            loop {
-                let read = decoder.read(&mut buffer).map_err(|e| format!("deflate: {e}"))?;
-                if read == 0 {
-                    return Ok(total);
-                }
-                total += read as u64;
-                if total > limit {
-                    return Err("entry is larger than the limit".into());
-                }
-                sink(&buffer[..read]);
-            }
+        sink(raw);
+        return Ok(raw.len() as u64);
+    }
+    let mut decoder = flate2::read::DeflateDecoder::new(raw);
+    let mut buffer = vec![0u8; 64 * 1024];
+    let mut total = 0u64;
+    loop {
+        let read = decoder.read(&mut buffer).map_err(|e| format!("deflate: {e}"))?;
+        if read == 0 {
+            return Ok(total);
         }
-        other => Err(format!("compression method {other} is not supported")),
+        total += read as u64;
+        if total > limit {
+            return Err("entry is larger than the limit".into());
+        }
+        sink(&buffer[..read]);
     }
 }
 

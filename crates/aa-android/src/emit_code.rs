@@ -707,6 +707,13 @@ fn unity_version(bytes: &[u8]) -> Option<String> {
     })
 }
 
+/// `arm64-v8a/libfoo.so` for a library artifact: the last two parts of its path.
+fn abi_and_name(artifact: &Artifact) -> String {
+    let mut parts: Vec<&str> = artifact.path.rsplitn(3, '/').take(2).collect();
+    parts.reverse();
+    parts.join("/")
+}
+
 fn native_libs(package: &Package, lib_files: &[(&str, &str, &Artifact)], out: &mut Output) {
     if lib_files.is_empty() {
         return;
@@ -779,7 +786,7 @@ fn native_libs(package: &Package, lib_files: &[(&str, &str, &Artifact)], out: &m
     }
     out.fact(anchor, "android.native_libs", json!({ "libraries": rows, "truncated": lib_files.len() > MAX_NATIVE_LIBS }));
     if !small_pages.is_empty() {
-        let names: Vec<&str> = small_pages.iter().map(|(a, _)| a.name()).collect();
+        let names: Vec<String> = small_pages.iter().map(|(a, _)| abi_and_name(a)).collect();
         let mut f = finding(Section::Hardening, "android.native-16k-pages", Confidence::Verified, Severity::Info)
             .param("count", small_pages.len())
             .param("total", checked_64)
@@ -797,10 +804,7 @@ fn native_libs(package: &Package, lib_files: &[(&str, &str, &Artifact)], out: &m
         if list.is_empty() {
             continue;
         }
-        let names: Vec<String> = list
-            .iter()
-            .map(|a| a.path.rsplitn(3, '/').take(2).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join("/"))
-            .collect();
+        let names: Vec<String> = list.iter().map(|a| abi_and_name(a)).collect();
         let mut f = finding(Section::Hardening, rule, Confidence::Verified, severity)
             .param("count", list.len())
             .param("libraries", listed(&names, 8))
