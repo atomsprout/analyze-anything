@@ -31,10 +31,18 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
             .param("version_name", m.version_name.clone().unwrap_or_else(|| "?".into()))
             .param("version_code", m.version_code.map(|c| c.to_string()).unwrap_or_else(|| "?".into()))
             .param(
-                "format",
+                "format_en",
                 match package.kind {
                     PackageKind::Apk => "APK",
-                    PackageKind::Folder => "APK (extracted folder)",
+                    PackageKind::Folder => "APK extracted to a folder",
+                    PackageKind::Bundle => "Android App Bundle",
+                },
+            )
+            .param(
+                "format_zh",
+                match package.kind {
+                    PackageKind::Apk => "APK",
+                    PackageKind::Folder => "已解压到文件夹的 APK",
                     PackageKind::Bundle => "Android App Bundle",
                 },
             )
@@ -73,7 +81,8 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
             Some(value) => out.finding(
                 finding(Section::Identity, "android.app-label", Confidence::Verified, Severity::Info)
                     .param("label", value.clone())
-                    .param("source", label.reference.clone().unwrap_or_else(|| "literal".into()))
+                    .param("source_en", label.reference.clone().unwrap_or_else(|| "a literal in the manifest".into()))
+                    .param("source_zh", label.reference.clone().unwrap_or_else(|| "清单中的字面值".into()))
                     .evidence(attr(file, "application@android:label", label.reference.clone().unwrap_or_else(|| value.clone()))),
             ),
             None => out.limitation(
@@ -88,9 +97,10 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
         let mut f = finding(Section::Identity, "android.sdk-levels", Confidence::Verified, Severity::Info)
             .param("min", sdk_label(min))
             .param(
-                "target",
+                "target_en",
                 m.target_sdk.map(sdk_label).unwrap_or_else(|| format!("{} (not declared; the minimum applies)", sdk_label(min))),
             )
+            .param("target_zh", m.target_sdk.map(sdk_label).unwrap_or_else(|| format!("{}（未声明，按最低版本计）", sdk_label(min))))
             .param("compile", m.compile_sdk.map(sdk_label).unwrap_or_else(|| "?".into()));
         f = match m.min_sdk {
             Some(v) => f.evidence(attr(file, "uses-sdk@android:minSdkVersion", v)),
@@ -240,7 +250,7 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
         .param(
             "rules",
             match (&app.full_backup_content, &app.data_extraction_rules) {
-                (None, None) => "none".to_string(),
+                (None, None) => "-".to_string(),
                 (a, b) => [a.as_ref().and_then(|t| t.shown()), b.as_ref().and_then(|t| t.shown())]
                     .into_iter()
                     .flatten()
@@ -314,10 +324,14 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
         let user_domains: Vec<&str> =
             config.domain_configs.iter().filter(|c| c.trusts_user_cas).flat_map(|c| c.domains.iter().map(|(d, _)| d.as_str())).collect();
         if config.base_trusts_user_cas || !user_domains.is_empty() {
-            let scope = if config.base_trusts_user_cas { "all connections".to_string() } else { listed(&user_domains, 10) };
+            let domains = listed(&user_domains, 10);
             out.finding(
                 finding(Section::Hardening, "android.trust-user-cas", Confidence::Verified, Severity::Medium)
-                    .param("scope", scope)
+                    .param(
+                        "scope_en",
+                        if config.base_trusts_user_cas { "all connections".to_string() } else { format!("the domains {domains}") },
+                    )
+                    .param("scope_zh", if config.base_trusts_user_cas { "所有连接".to_string() } else { format!("域名 {domains}") })
                     .reference("CWE-295")
                     .reference("MASVS-NETWORK-1")
                     .evidence(Evidence::field(config_file, "trust-anchors/certificates@src", "user")),
@@ -342,7 +356,7 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
                 .param("domains", listed(&pinned, 10))
                 .param(
                     "expiration",
-                    if expirations.is_empty() { "none".to_string() } else { expirations.into_iter().collect::<Vec<_>>().join(", ") },
+                    if expirations.is_empty() { "-".to_string() } else { expirations.into_iter().collect::<Vec<_>>().join(", ") },
                 )
                 .reference("MASVS-NETWORK-2");
             for domain in pinned.iter().take(10) {
@@ -454,6 +468,8 @@ pub fn permissions(package: &Package, m: &Manifest, out: &mut Output) {
                         .evidence(evidence),
                 );
             }
+            // A permission the app defines itself is covered by the finding on defined permissions.
+            _ if known.is_none() && third.is_none() && declared.contains_key(requested.name.as_str()) => {}
             Level::Normal => normal.push((requested.name.as_str(), evidence)),
             Level::Signature => signature.push((requested.name.as_str(), evidence)),
             Level::Unknown => other.push((requested.name.as_str(), evidence)),

@@ -151,6 +151,27 @@ const API_GROUPS: &[ApiGroup] = &[
     },
 ];
 
+/// Class-descriptor prefixes of libraries whose TLS classes are not reported one by one.
+const KNOWN_TLS_LIBRARIES: &[&str] = &[
+    "Lokhttp3/",
+    "Lcom/squareup/okhttp/",
+    "Lcom/android/okhttp/",
+    "Lorg/conscrypt/",
+    "Lcom/android/org/conscrypt/",
+    "Lcom/google/android/gms/",
+    "Lorg/bouncycastle/",
+    "Lorg/spongycastle/",
+    "Lorg/apache/http/",
+    "Lio/netty/",
+    "Lio/grpc/",
+    "Lio/ktor/",
+    "Lorg/chromium/",
+    "Lorg/eclipse/jetty/",
+    "Lcom/sun/",
+    "Lsun/",
+    "Ljavax/",
+];
+
 fn dex_order(name: &str) -> (u32, &str) {
     // classes.dex, classes2.dex, … in the order the runtime loads them.
     let number = name
@@ -364,7 +385,8 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
         let mut f = finding(section, rule, Confidence::Derived, Severity::Info)
             .param("name", sdk.name)
             .param("vendor", sdk.vendor)
-            .param("category", sdk.category.as_str());
+            .param("category_en", sdk.category.as_str())
+            .param("category_zh", sdk.category.as_str_zh());
         if sdk.category.is_tracker() {
             f = f.reference("MASVS-PRIVACY-1");
         }
@@ -391,11 +413,13 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
             continue;
         }
         let detail = framework_detail(package, framework.name, &lib_files);
-        framework_rows.push(json!({ "name": framework.name, "vendor": framework.vendor, "detail": detail }));
+        framework_rows.push(json!({ "name": framework.name, "vendor": framework.vendor, "detail": detail.as_ref().map(|d| d.0.clone()) }));
+        let (detail_en, detail_zh) = detail.map(|(en, zh)| (format!(": {en}"), format!("：{zh}"))).unwrap_or_default();
         let mut f = finding(Section::Composition, "android.framework", Confidence::Derived, Severity::Info)
             .param("name", framework.name)
             .param("vendor", framework.vendor)
-            .param("detail", detail.clone().unwrap_or_else(|| "-".into()));
+            .param("detail_en", detail_en)
+            .param("detail_zh", detail_zh);
         for hit in hits.into_iter().take(3) {
             f = f.evidence(hit);
         }
@@ -470,8 +494,15 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
     ] {
         let mut classes: Vec<String> = Vec::new();
         let mut evidence = Vec::new();
+        let mut in_libraries = 0usize;
         for (artifact, dex) in parsed {
             for class in pick(dex) {
+                // Implementations inside well-known network and crypto libraries are their
+                // ordinary machinery; they are counted, not listed.
+                if KNOWN_TLS_LIBRARIES.iter().any(|prefix| class.starts_with(prefix)) {
+                    in_libraries += 1;
+                    continue;
+                }
                 if evidence.len() < 10 {
                     evidence.push(Evidence::field(artifact, "class_defs", class.clone()));
                 }
@@ -483,7 +514,8 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
         }
         let mut f = finding(Section::Code, rule, Confidence::Heuristic, Severity::Low)
             .param("count", classes.len())
-            .param("classes", listed(&classes, 6));
+            .param("classes", listed(&classes, 6))
+            .param("in_libraries", in_libraries);
         for reference in references {
             f = f.reference(reference);
         }
@@ -550,13 +582,13 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
     }
 }
 
-/// Version or build details of a framework, where a cheap look finds them.
-fn framework_detail(package: &Package, name: &str, lib_files: &[(&str, &str, &Artifact)]) -> Option<String> {
+/// Version or build details of a framework, where a cheap look finds them: `(English, Chinese)`.
+fn framework_detail(package: &Package, name: &str, lib_files: &[(&str, &str, &Artifact)]) -> Option<(String, String)> {
     let lib = |file: &str| lib_files.iter().find(|(_, f, _)| *f == file).map(|(_, _, a)| *a);
     let has_lib = |file: &str| lib(file).is_some();
+    let mut parts: Vec<(String, String)> = Vec::new();
     match name {
         "Flutter" => {
-            let mut parts = Vec::new();
             // The engine embeds the Dart SDK version as `3.5.4 (stable) (date) on "android_arm64"`.
             if let Some(engine) = lib("libflutter.so").filter(|a| a.size <= MAX_SEARCHED)
                 && let Ok(bytes) = package.tree.read(&engine.path)
@@ -569,53 +601,55 @@ fn framework_detail(package: &Package, name: &str, lib_files: &[(&str, &str, &Ar
                             .map_or(0, |p| p + 1);
                         let version = String::from_utf8_lossy(&bytes[start..at]);
                         if version.split('.').count() >= 3 && version.len() <= 32 && version.starts_with(|c: char| c.is_ascii_digit()) {
-                            parts.push(format!("Dart {version}{}", String::from_utf8_lossy(channel)));
+                            let text = format!("Dart {version}{}", String::from_utf8_lossy(channel));
+                            parts.push((
+                                format!("{text} (version string in libflutter.so)"),
+                                format!("{text}（libflutter.so 中的版本字符串）"),
+                            ));
                             break;
                         }
                     }
                 }
             }
             if has_lib("libapp.so") {
-                parts.push("release build (AOT snapshot libapp.so)".into());
+                parts.push(("release build (AOT snapshot libapp.so)".into(), "发布构建（AOT 快照 libapp.so）".into()));
             } else if package.file("assets/flutter_assets/kernel_blob.bin").is_some() {
-                parts.push("debug build (kernel_blob.bin, JIT)".into());
+                parts.push(("debug build (kernel_blob.bin, JIT)".into(), "调试构建（kernel_blob.bin，JIT）".into()));
             }
-            (!parts.is_empty()).then(|| parts.join("; "))
         }
         "React Native" => {
-            let mut parts = Vec::new();
             if let Some(bytes) = package.read("assets/index.android.bundle") {
                 // Hermes bytecode starts with a fixed magic followed by the bytecode version.
                 if bytes.len() >= 12 && bytes[..8] == [0xc6, 0x1f, 0xbc, 0x03, 0xc1, 0x03, 0x19, 0x1f] {
                     let version = u32::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]);
-                    parts.push(format!("Hermes bytecode version {version}"));
+                    parts.push((
+                        format!("the bundle is Hermes bytecode version {version}"),
+                        format!("代码包是 Hermes 字节码（版本 {version}）"),
+                    ));
                 } else {
-                    parts.push("JavaScript bundle in source form".into());
+                    parts.push(("the bundle is JavaScript in source form".into(), "代码包是 JavaScript 源码形式".into()));
                 }
             }
             if has_lib("libhermes.so") {
-                parts.push("Hermes engine".into());
+                parts.push(("Hermes engine".into(), "Hermes 引擎".into()));
             } else if has_lib("libjsc.so") {
-                parts.push("JavaScriptCore engine".into());
+                parts.push(("JavaScriptCore engine".into(), "JavaScriptCore 引擎".into()));
             }
-            (!parts.is_empty()).then(|| parts.join("; "))
         }
         "Unity" => {
-            let mut parts = Vec::new();
             if has_lib("libil2cpp.so") {
-                parts.push("IL2CPP scripting backend".to_string());
+                parts.push(("IL2CPP scripting backend".into(), "IL2CPP 脚本后端".into()));
             } else if lib_files.iter().any(|(_, f, _)| f.starts_with("libmono")) {
-                parts.push("Mono scripting backend".to_string());
+                parts.push(("Mono scripting backend".into(), "Mono 脚本后端".into()));
             }
             for file in ["assets/bin/Data/data.unity3d", "assets/bin/Data/globalgamemanagers", "assets/bin/Data/unity default resources"] {
                 if let Some(bytes) = package.read(file)
                     && let Some(version) = unity_version(&bytes[..bytes.len().min(4096)])
                 {
-                    parts.push(format!("Unity {version}"));
+                    parts.push((format!("Unity {version}"), format!("Unity {version}")));
                     break;
                 }
             }
-            (!parts.is_empty()).then(|| parts.join("; "))
         }
         "Xamarin / .NET for Android" => {
             let assemblies: Vec<&str> = package.files.keys().filter_map(|n| n.strip_prefix("assemblies/")).collect();
@@ -623,25 +657,35 @@ fn framework_detail(package: &Package, name: &str, lib_files: &[(&str, &str, &Ar
             let maui = assemblies.iter().any(|n| n.starts_with("Microsoft.Maui"))
                 || lib_files.iter().any(|(_, f, _)| f.contains("Microsoft.Maui"));
             let forms = assemblies.iter().any(|n| n.starts_with("Xamarin.Forms"));
-            let mut parts = Vec::new();
             if maui {
-                parts.push(".NET MAUI".to_string());
+                parts.push((".NET MAUI".into(), ".NET MAUI".into()));
             } else if forms {
-                parts.push("Xamarin.Forms".to_string());
+                parts.push(("Xamarin.Forms".into(), "Xamarin.Forms".into()));
             }
             if blob {
-                parts.push("assemblies in an assembly store (assemblies.blob)".to_string());
+                parts.push((
+                    "assemblies packed in an assembly store (assemblies.blob)".into(),
+                    "程序集打包在 assembly store（assemblies.blob）中".into(),
+                ));
             } else if !assemblies.is_empty() {
-                parts.push(format!("{} assemblies", assemblies.iter().filter(|n| n.ends_with(".dll")).count()));
+                let count = assemblies.iter().filter(|n| n.ends_with(".dll")).count();
+                parts.push((format!("{count} assemblies"), format!("{count} 个程序集")));
             }
-            (!parts.is_empty()).then(|| parts.join("; "))
         }
         "Kotlin" => {
             let modules = package.files.keys().filter(|n| n.starts_with("META-INF/") && n.ends_with(".kotlin_module")).count();
-            (modules > 0).then(|| format!("{modules} kotlin_module files"))
+            if modules > 0 {
+                parts.push((format!("{modules} kotlin_module files"), format!("{modules} 个 kotlin_module 文件")));
+            }
         }
-        _ => None,
+        _ => {}
     }
+    if parts.is_empty() {
+        return None;
+    }
+    let en = parts.iter().map(|(en, _)| en.as_str()).collect::<Vec<_>>().join("; ");
+    let zh = parts.iter().map(|(_, zh)| zh.as_str()).collect::<Vec<_>>().join("；");
+    Some((en, zh))
 }
 
 /// A Unity version such as `2021.3.16f1` or `6000.0.23f1` among the first bytes of a data file.
@@ -686,7 +730,7 @@ fn native_libs(package: &Package, lib_files: &[(&str, &str, &Artifact)], out: &m
         .iter()
         .filter_map(|(abi, libs)| {
             let missing: Vec<&str> = all.difference(libs).copied().collect();
-            (!missing.is_empty()).then(|| format!("{abi} lacks {}", listed(&missing, 5)))
+            (!missing.is_empty()).then(|| format!("{abi}: −{}", listed(&missing, 5)))
         })
         .collect();
     if by_abi.len() > 1 && !gaps.is_empty() {

@@ -43,6 +43,26 @@ impl Category {
         }
     }
 
+    pub fn as_str_zh(self) -> &'static str {
+        match self {
+            Category::Analytics => "统计分析",
+            Category::Ads => "广告",
+            Category::Attribution => "归因/安装来源追踪",
+            Category::CrashReporting => "崩溃上报/性能监控",
+            Category::Push => "消息推送",
+            Category::Engagement => "用户运营/客服",
+            Category::Payments => "支付",
+            Category::SocialLogin => "社交登录/分享",
+            Category::Auth => "身份认证",
+            Category::Maps => "地图/定位",
+            Category::Rtc => "实时音视频/即时通讯",
+            Category::HotFix => "热修复/动态更新",
+            Category::Framework => "应用框架",
+            Category::Security => "安全/风控",
+            Category::Library => "通用库",
+        }
+    }
+
     /// Categories whose purpose is to collect data about users or devices.
     pub fn is_tracker(self) -> bool {
         matches!(self, Category::Analytics | Category::Ads | Category::Attribution)

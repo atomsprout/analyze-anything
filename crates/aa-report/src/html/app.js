@@ -849,7 +849,7 @@
             field(t('files_analyzed'), [group(R.coverage.artifacts_analyzed) + ' / ' + group(R.coverage.artifacts_total),
               meter(R.coverage.artifacts_analyzed, R.coverage.artifacts_total)]),
             field(w.containers, group(R.coverage.containers_unpacked)),
-            field(w.bytes_read, [bytes(R.coverage.bytes_analyzed) + ' ', el('span', { class: 'nowrap' }, '(' + group(R.coverage.bytes_analyzed) + ')')])))),
+            field(w.bytes_read, [bytes(R.coverage.bytes_analyzed) + ' ', el('span', { class: 'exact' }, group(R.coverage.bytes_analyzed) + ' ' + t('bytes'))])))),
       el('div', { class: 'guide' }, el('h3', null, w.reading_guide), el('p', null, w.reading_guide_text)),
       Object.keys(R.summary).length ? el('details', { class: 'sumfacts', id: 'summary-facts' },
         el('summary', null, t('summary_facts'), el('span', { class: 'count' }, Object.keys(R.summary).length)),

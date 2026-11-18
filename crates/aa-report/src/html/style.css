@@ -83,7 +83,7 @@ button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .muted { color: var(--muted); }
-.nowrap { white-space: nowrap; }
+.exact { display: block; color: var(--muted); font-size: 12.5px; }
 .offscreen { position: fixed; left: -9999px; top: 0; }
 .printonly { display: none; }
 

@@ -778,18 +778,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
                     .evidence(Evidence::bytes(file, offset, before, hex(rd.bytes(offset, before.min(16)).unwrap_or(&[])))),
             );
         }
-        if after > 0 {
-            out.finding(
-                finding(Section::Anomalies, "binary.pe-data-after-signature", Confidence::Verified, Severity::Low)
-                    .param("size", after)
-                    .evidence(Evidence::bytes(
-                        file,
-                        offset + size - after,
-                        after,
-                        hex(rd.bytes(offset + size - after, after.min(16)).unwrap_or(&[])),
-                    )),
-            );
-        }
+        // Data after the certificate table is reported by aa-windows, which verifies the signature.
+        let _ = (size, after);
     }
     if let Some(at) = upx {
         out.finding(
@@ -806,22 +796,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         );
     }
 
-    // Provenance: only whether a signature is attached. Verifying it is aa-windows' job.
-    match security.filter(|_| security_valid) {
-        Some((offset, size)) => out.finding(
-            finding(Section::Provenance, "binary.pe-signature-present", Confidence::Verified, Severity::Info)
-                .param("size", size)
-                .evidence(Evidence::bytes(file, offset, size, "certificate table")),
-        ),
-        None => {
-            out.finding(finding(Section::Provenance, "binary.pe-unsigned", Confidence::Verified, Severity::Low).evidence(Evidence::bytes(
-                file,
-                directories_at + 32,
-                8,
-                "security directory empty",
-            )))
-        }
-    }
+    // Whether a signature is attached is in the `binary.pe` fact; aa-windows verifies it and reports on it.
+    let _ = (security, security_valid, directories_at);
 
     // Hardening. A file without executable sections (resources only) has nothing to protect.
     let mut hardening = serde_json::Map::new();

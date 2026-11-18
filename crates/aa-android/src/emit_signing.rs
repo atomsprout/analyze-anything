@@ -160,9 +160,18 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
                     .param("scheme", "v1 (JAR)")
                     .param("signers", v1.signers.len())
                     .param(
-                        "details",
+                        "details_en",
                         format!(
-                            "{} files match the manifest digests ({}); signature {}",
+                            "{} files match their {} digests in the manifest; signature algorithm {}",
+                            v1.entries_checked,
+                            v1.manifest_digest_algorithms.join(", "),
+                            v1.signers.iter().filter_map(|s| s.signature_algorithm.clone()).collect::<Vec<_>>().join(", ")
+                        ),
+                    )
+                    .param(
+                        "details_zh",
+                        format!(
+                            "{} 个文件与清单中的 {} 摘要一致；签名算法 {}",
                             v1.entries_checked,
                             v1.manifest_digest_algorithms.join(", "),
                             v1.signers.iter().filter_map(|s| s.signature_algorithm.clone()).collect::<Vec<_>>().join(", ")
@@ -228,18 +237,20 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
             // The newest scheme a device understands is the one it uses.
             best_signers = scheme.signers.iter().filter_map(|s| s.certificates.first()).map(|c| c.sha256.clone()).collect();
             let algorithms: BTreeSet<&str> = scheme.signers.iter().flat_map(|s| s.algorithms.iter().map(String::as_str)).collect();
-            let sdk = scheme.signers.first().and_then(|s| s.min_sdk.zip(s.max_sdk)).map(|(min, max)| {
-                if max == u32::MAX || max == i32::MAX as u32 {
-                    format!("; for API {min} and later")
-                } else {
-                    format!("; for API {min} to {max}")
+            let algorithms = algorithms.into_iter().collect::<Vec<_>>().join(", ");
+            let (sdk_en, sdk_zh) = match scheme.signers.first().and_then(|s| s.min_sdk.zip(s.max_sdk)) {
+                Some((min, max)) if max == u32::MAX || max == i32::MAX as u32 => {
+                    (format!("; applies to API {min} and later"), format!("；适用于 API {min} 及以上"))
                 }
-            });
+                Some((min, max)) => (format!("; applies to API {min} to {max}"), format!("；适用于 API {min} 至 {max}")),
+                None => (String::new(), String::new()),
+            };
             out.finding(
                 finding(Section::Provenance, "android.signature-verified", Confidence::Verified, Severity::Info)
                     .param("scheme", label)
                     .param("signers", scheme.signers.len())
-                    .param("details", format!("{}{}", algorithms.into_iter().collect::<Vec<_>>().join(", "), sdk.unwrap_or_default()))
+                    .param("details_en", format!("the content digest matches and the signature is valid; algorithm {algorithms}{sdk_en}"))
+                    .param("details_zh", format!("内容摘要一致、签名有效；算法 {algorithms}{sdk_zh}"))
                     .evidence(evidence),
             );
         }
@@ -485,7 +496,11 @@ fn certificate_findings(container: &Artifact, certificate: &Certificate, used_by
     out.finding(
         finding(Section::Provenance, "android.signing-certificate", Confidence::Verified, Severity::Info)
             .param("subject", certificate.subject.clone())
-            .param("issuer", if certificate.self_issued { "self-signed".to_string() } else { certificate.issuer.clone() })
+            .param(
+                "issuer_en",
+                if certificate.self_issued { "same as the subject (self-signed)".to_string() } else { certificate.issuer.clone() },
+            )
+            .param("issuer_zh", if certificate.self_issued { "与主体相同（自签名）".to_string() } else { certificate.issuer.clone() })
             .param("serial", certificate.serial.clone())
             .param("not_before", certificate.not_before.clone().unwrap_or_else(|| "?".into()))
             .param("not_after", certificate.not_after.clone().unwrap_or_else(|| "?".into()))

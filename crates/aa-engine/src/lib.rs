@@ -200,7 +200,11 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
             out
         })
         .collect();
-    for out in outputs {
+    // In the file pass the first analyzer to recognise an artifact names it: analyzers run in
+    // registration order, most general knowledge of the format first, and cannot see each other.
+    let mut named = std::collections::BTreeSet::new();
+    for mut out in outputs {
+        out.kinds.retain(|(path, _)| named.insert(path.clone()));
         merge(&mut tree, out, &mut findings, &mut limitations, &mut summary);
     }
 

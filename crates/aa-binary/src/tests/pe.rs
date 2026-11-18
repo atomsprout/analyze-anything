@@ -52,7 +52,7 @@ fn msvc_style_64_bit_matches_llvm_readobj() {
     ] {
         assert_eq!(severity(&out, rule), Severity::Info, "{rule}");
     }
-    assert_eq!(severity(&out, "binary.pe-unsigned"), Severity::Low);
+    assert_eq!(fact(&out, "binary.hardening")["signature_present"], false);
     assert!(!has(&out, "binary.pe-overlay") && !has(&out, "binary.pe-safeseh") && !has(&out, "binary.pe-no-safeseh"));
     assert!(out.limitations.is_empty());
     assert_eq!(cross::check(&fixture("pe_msvc64.exe"), &out), "pe");
@@ -152,7 +152,6 @@ fn certificate_table_is_presence_only_and_not_an_overlay() {
     bytes[entry..entry + 4].copy_from_slice(&start.to_le_bytes());
     bytes[entry + 4..entry + 8].copy_from_slice(&size.to_le_bytes());
     let out = run_bytes("signed.exe", &bytes);
-    assert!(has(&out, "binary.pe-signature-present") && !has(&out, "binary.pe-unsigned"));
     assert!(!has(&out, "binary.pe-overlay"), "a certificate table alone is not unexplained data");
     assert_eq!(fact(&out, "binary.pe")["certificate_table"], json!({ "offset": start, "size": size }));
     assert_eq!(fact(&out, "binary.overlay")["certificate_table_only"], true);
@@ -161,7 +160,6 @@ fn certificate_table_is_presence_only_and_not_an_overlay() {
     // Bytes after the signature are outside what it covers.
     bytes.extend_from_slice(b"appended after signing");
     let out = run_bytes("signed.exe", &bytes);
-    assert_eq!(severity(&out, "binary.pe-data-after-signature"), Severity::Low);
     assert_eq!(fact(&out, "binary.overlay")["after_signature_size"], 22);
 
     // A certificate table that points past the end of the file is a limitation, not a signature.
@@ -170,7 +168,7 @@ fn certificate_table_is_presence_only_and_not_an_overlay() {
     broken[entry..entry + 4].copy_from_slice(&0x00ff_0000u32.to_le_bytes());
     broken[entry + 4..entry + 8].copy_from_slice(&64u32.to_le_bytes());
     let out = run_bytes("broken.exe", &broken);
-    assert!(has(&out, "binary.pe-unsigned"));
+    assert_eq!(fact(&out, "binary.hardening")["signature_present"], false);
     assert!(out.limitations.iter().any(|l| l.detail.as_deref().is_some_and(|d| d.contains("certificate table"))));
 }
 

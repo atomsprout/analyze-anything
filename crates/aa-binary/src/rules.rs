@@ -214,27 +214,6 @@ pub const RULES: &[Rule] = &[
         text_en: "{size} bytes follow the last section (at offset {offset}) and belong to no section. Installers and self-extractors usually keep their payload there; the PE headers do not describe it.",
     },
     Rule {
-        id: "binary.pe-data-after-signature",
-        title_zh: "签名之后还有数据",
-        title_en: "Data after the signature",
-        text_zh: "证书表之后还有 {size} 字节数据。这部分数据不在 Authenticode 签名的保护范围内，可以在不破坏签名的情况下被修改。",
-        text_en: "{size} bytes follow the certificate table. They are not covered by the Authenticode signature and can be changed without breaking it.",
-    },
-    Rule {
-        id: "binary.pe-signature-present",
-        title_zh: "带有 Authenticode 签名数据",
-        title_en: "Authenticode signature data present",
-        text_zh: "文件带有证书表（{size} 字节），即附有 Authenticode 签名数据。这里只确认它存在，没有验证签名是否有效。",
-        text_en: "The file has a certificate table ({size} bytes), that is, Authenticode signature data. Only its presence is established here; the signature was not verified.",
-    },
-    Rule {
-        id: "binary.pe-unsigned",
-        title_zh: "没有 Authenticode 签名",
-        title_en: "No Authenticode signature",
-        text_zh: "文件没有证书表，即没有内嵌的 Authenticode 签名。它仍可能通过目录文件（catalog）签名，这一点从文件本身看不出来。",
-        text_en: "The file has no certificate table, so it carries no embedded Authenticode signature. It may still be signed through a catalog file, which the file itself cannot show.",
-    },
-    Rule {
         id: "binary.writable-executable",
         title_zh: "同时可写可执行的内存区域",
         title_en: "Memory region both writable and executable",

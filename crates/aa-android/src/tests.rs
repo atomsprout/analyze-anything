@@ -299,7 +299,7 @@ fn certificates_and_rotation() {
     let certificate = rule(&out, "android.signing-certificate")[0];
     assert_eq!(certificate.params["subject"], "CN=Android Debug, O=Android, C=US");
     assert_eq!(certificate.params["key"], "RSA 2048");
-    assert_eq!(certificate.params["issuer"], "self-signed");
+    assert_eq!(certificate.params["issuer_en"], "same as the subject (self-signed)");
     // The fingerprints apksigner printed.
     let reference = String::from_utf8(fixture("debug.apksigner.txt")).expect("text");
     for (label, param) in [("SHA-256", "sha256"), ("SHA-1", "sha1")] {
@@ -421,9 +421,10 @@ fn full_package_findings() {
     assert_eq!(small.params["libraries"], "libsmallpage.so");
     assert_eq!((small.params["count"].as_u64(), small.params["total"].as_u64()), (Some(1), Some(3)));
     let framework = rule(&out, "android.framework");
-    assert!(framework.iter().any(
-        |f| f.params["name"] == "React Native" && f.params["detail"].as_str().is_some_and(|d| d.contains("Hermes bytecode version 96"))
-    ));
+    assert!(
+        framework.iter().any(|f| f.params["name"] == "React Native"
+            && f.params["detail_en"].as_str().is_some_and(|d| d.contains("Hermes bytecode version 96")))
+    );
 
     // Every finding has evidence and a rule with text.
     for finding in &out.findings {
@@ -486,7 +487,7 @@ fn extracted_folder_is_a_package_without_signature_check() {
     }
     let out = analyze(&tree.finish());
     assert!(has(&out, "android.package") && has(&out, "android.debuggable") && has(&out, "android.dex-summary"));
-    assert_eq!(rule(&out, "android.package")[0].params["format"], "APK (extracted folder)");
+    assert_eq!(rule(&out, "android.package")[0].params["format_en"], "APK extracted to a folder");
     assert!(out.limitations.iter().any(|l| l.code == "android.signature-not-checked"));
     assert!(!has(&out, "android.signature-verified") && !has(&out, "android.unsigned"));
 }
@@ -505,7 +506,7 @@ fn app_bundle_base_module() {
     let out = analyze(&tree.finish());
     assert!(out.kinds.contains(&("app.aab".to_string(), "aab".to_string())));
     assert_eq!(rule(&out, "android.package").len(), 1);
-    assert_eq!(rule(&out, "android.package")[0].params["format"], "Android App Bundle");
+    assert_eq!(rule(&out, "android.package")[0].params["format_en"], "Android App Bundle");
     assert_eq!(rule(&out, "android.app-label")[0].params["label"], "Example");
     assert!(has(&out, "android.debuggable") && has(&out, "android.dex-summary"));
     assert_eq!(rule(&out, "android.bundle-modules")[0].params["modules"], "base, feature");
