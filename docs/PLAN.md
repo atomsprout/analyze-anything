@@ -1,6 +1,6 @@
 # Analyze Anything — 调研与规划
 
-> 状态：规划稿 v0.1（2026-11-18）
+> 状态：规划稿 v0.2（2026-11-18）
 > 一句话定位：**输入电脑上的任意产物（文件 / 文件夹 / 压缩包 / 安装包 / 应用包），输出一份可靠、可溯源、多维度的分析报告（PDF / HTML / Markdown / TXT）。** 使用 Rust 开发，单一静态二进制，离线可用。
 
 ---
@@ -12,22 +12,22 @@
 | 项目 | 它是什么 | 值得借鉴 | 与我们的差异 |
 |---|---|---|---|
 | **REA**（Reverse Engineer Anything，`morluto/rea`，MIT，Node.js） | 给 AI Agent 用的 MCP 服务器 + CLI。把 Ghidra / IDA / Hopper / JADX / Apktool / Binwalk 等包装成工具，让 Agent 交互式地反编译、追踪、验证假设 | ① 每个结论都带 **证据 + 局限 + 未知项**；② 结果在服务端做 schema 校验；③ 覆盖面的"目标清单"（ELF/PE/Mach-O、.NET、APK、Flutter、Electron、PyInstaller、IL2CPP、Godot、WASM…）可作为我们的格式路线图 | REA 是 **交互式、Agent 驱动、依赖外部重型工具**，没有固定的"报告"产物；我们是 **确定性、一次跑完、零外部依赖、以报告为交付物** |
+| **Craft Anything**（`storytold/craft-anything`，MIT OR Apache-2.0，**纯 Rust**，约 28 万行，early alpha） | "看懂任意软件并重建一个自己的"：Research → Build → Check 循环。约 314 个检查工具，同时暴露为 CLI 子命令与 MCP 工具，另有 egui 桌面端与 WASM 版。默认 clean-room 模式（只看外观行为），`--deep` 才读代码与文件 | **与我们技术栈最接近，是首要参考**：① `crates/evidence` 的证据模型 —— 置信度 `Observed / Derived / Inferred`、权威来源 `Authority`、`Limitation`、`Coverage`、一等公民的 `Unknown`（"absence is not proof"），证据 ID = 规范化 JSON 的 SHA-256；② `crates/formats` 自研了大量解析器（Mach-O、PE、ELF、DEX、AXML、ARSC、APK 签名、Authenticode、codesign、plist、nib、asset catalog、asar、.NET、PyInstaller、IL2CPP、Unity/Unreal/Godot…），底层库拆在 `storytold/craft-libs`（craft-pe / craft-macho / craft-elf / craft-dex / craft-zip / craft-plist…）；③ 全工作区 `unsafe_code = "forbid"`、`cargo-deny`、`docs/pitfalls.md` 的工程纪律 | 目标是**重建软件**，由 Agent 驱动；报告只是附带工具（`core_report_write`）。**不覆盖** DMG / NSIS / Inno / MSI 等安装包，没有 provisioning profile、Tracker/SDK 指纹、加固评估、PDF 输出，也没有"一条命令出完整报告"的固定流水线 |
 | **CLI-Anything**（`HKUDS/CLI-Anything`，Apache-2.0） | 用 7 阶段流水线把任意软件包装成 Agent 可调用的 CLI | ① 固定阶段的流水线思路；② "Agent-native"：全部命令支持 `--json`、附带 SKILL.md | 目标不同（生成 CLI 而非分析产物）。我们借鉴其"对 Agent 友好"的接口设计 |
 | **MobSF**（Python） | 移动应用静态/动态安全分析，输出 PDF/JSON 报告 | 报告章节是事实标准：权限、组件导出、签名、二进制加固（PIE/Canary/NX/RELRO）、硬编码密钥、URL/域名、Tracker（Exodus 库）、APKiD 加壳识别 | 只覆盖移动端，部署重（Docker + JDK），无桌面格式 |
 | **reknife / rbat / binsec**（Rust） | 基于 goblin + yara-x + iced-x86 的二进制体检工具 | 证明了纯 Rust 技术栈可行 | 只看单个可执行文件，不处理"包"，无完整报告 |
 | **binwalk v3**（Rust）/ unblob | 递归识别并提取嵌入数据 | 递归解包、熵分析 | 面向固件，不解读语义 |
 | **Detect-It-Easy / APKiD / capa / FLOSS** | 编译器/加壳识别、能力识别、混淆字符串还原 | 规则库与识别思路 | 各管一段，无统一报告 |
 
-> 说明：未检索到名为 "Craft Anything" 的项目，按最接近的 **CLI-Anything** 处理；如果你指的是别的仓库，把链接给我，我再补充对比。
-
 **空白点（我们的机会）**：目前没有一个工具同时满足 ——
-① 纯 Rust 单文件、离线、跨平台；② 同时覆盖 IPA / APK / Windows 安装包 / 已安装程序目录 / .app / DMG；③ 递归拆包后做**跨文件关联**；④ 以**证据链可溯源的报告**为最终交付物。
+① 以**报告**（而非 Agent 交互或软件重建）为交付物的固定流水线；② 同时覆盖 IPA / APK / Windows 安装包 / 已安装程序目录 / .app / DMG；③ 递归拆包后做**跨文件关联**；④ 纯 Rust 单文件、离线、PDF/HTML/MD/TXT 四种输出。
 
 ### 1.2 Rust 生态可用性（版本为 2026-11-18 crates.io 实测）
 
 | 能力 | 首选 crate | 许可证 | 备注 |
 |---|---|---|---|
 | ELF / PE / Mach-O 解析 | `goblin` 0.10.7（辅以 `object` 0.41） | MIT | 成熟，fat binary 支持 |
+| 备选：Craft Anything 的底层库 | `storytold/craft-libs`（craft-pe / craft-macho / craft-elf / craft-dex / craft-zip / craft-plist / craft-sniff） | 待核实（主仓库为 MIT OR Apache-2.0） | 仅 git 依赖、未发布到 crates.io、更新极快；优点是带宽容模式（lenient）和 serde 输出，且 DEX 比 crates.io 上的更新。M0 评估后决定是否按 rev 锁定引用 |
 | Apple 代码签名 / entitlements | `apple-codesign` 0.29 | MPL-2.0 | 依赖较重，放在 feature 后面；或自行解析 SuperBlob |
 | plist / provisioning profile | `plist` 1.10 + `cms` + `x509-parser` 0.18 | MIT / Apache | mobileprovision 是 CMS 包裹的 plist |
 | DMG | `apple-dmg` 0.5 / `dmgwiz` 1.1 + `hfsplus` 0.4 + `apfs` 0.4 | MIT | **风险点**：APFS、加密 DMG 覆盖度需 spike 验证 |
@@ -106,12 +106,13 @@ aa selftest                       # 用内置样本自检
 1. **证据优先的数据模型**。报告中每一条结论（Finding）都必须携带：
    - `evidence[]`：来源文件（在解包树中的完整路径）、字节偏移 / 结构字段名、原始值、该文件的 SHA-256
    - `method`：由哪个分析器、哪条规则（含规则版本）得出
-   - `confidence`：三级 ——
+   - `id`：结论规范化 JSON 的 SHA-256（借鉴 Craft Anything）—— 同一观察永远得到同一 ID，任何篡改可检测，也让 `aa explain <ID>` 和两份报告的 diff 变得简单
+   - `confidence`：三级（与 Craft Anything 的 Observed / Derived / Inferred 对应，便于将来互通）——
      - **Verified 已验证**：直接从规范定义的结构读出或经密码学校验（如"签名校验通过""Info.plist 中 CFBundleIdentifier = …"）
      - **Derived 推导**：由已验证事实确定性推出（如"链接了 libswiftCore → 含 Swift 代码"）
      - **Heuristic 启发式**：模式匹配 / 规则命中（如"疑似 AWS 密钥""疑似 UPX 加壳"），报告中明确标注，并给出误报提示
 2. **无证据不成文**。渲染层只能引用 IR 中的 Finding；模板里不允许出现无 Finding ID 支撑的断言性文字。
-3. **如实声明盲区**。每份报告固定有"分析覆盖度与局限"章节：哪些文件解析失败、哪些被加密（FairPlay / 加密 DMG）、哪些因超限被跳过、哪些分析器未启用。**"没发现"与"没检查"严格区分**。
+3. **如实声明盲区**。未解决的问题作为一等公民 `Unknown` 记录（"是什么没搞清楚 + 用什么手段可以搞清楚"）；每个分析器输出 `Coverage`（已检查 / 总量）。每份报告固定有"分析覆盖度与局限"章节：哪些文件解析失败、哪些被加密（FairPlay / 加密 DMG）、哪些因超限被跳过、哪些分析器未启用。**"没发现"与"没检查"严格区分**。
 4. **确定性与可复现**。同一输入 + 同一版本 + 同一规则库 ⇒ 字节级相同的 `report.json`（排序稳定、无时间戳进入正文、并行结果归并有序）。报告页眉记录：工具版本、规则库版本、输入 SHA-256、命令行参数。
 5. **核心流程不使用 LLM**。事实抽取 100% 由确定性代码完成。LLM 仅作为后期**可选**的"解读层"（见 §8），且只能读取 IR、必须逐句引用 Finding ID，在报告中单独成章并标注"AI 生成"。
 6. **对照验证（差分测试）**。CI 中把我们的结果与权威工具对比：`codesign -dvvv` / `apksigner verify` / `aapt2 dump` / `sigcheck` / `otool` / `readelf` / MobSF。不一致即视为 bug。
@@ -242,7 +243,7 @@ IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取�
 
 | 里程碑 | 内容 | 验收 |
 |---|---|---|
-| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、CI（fmt/clippy/test/deny）；**4 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 | `aa analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 |
+| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、CI（fmt/clippy/test/deny）；**5 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 ⑤ `craft-libs` 与 goblin / apk-info 的对比选型 | `aa analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 |
 | **M1 通用层 + 四种渲染**（约 2 周） | 产物树、zip/tar/7z 递归解包与限额、通用内容分析（字符串、URL、密钥、熵）、规则引擎、md/txt/html/pdf 渲染器 | 对任意文件夹/压缩包产出完整四格式报告 |
 | **M2 原生二进制**（约 2 周） | PE / Mach-O / ELF：头、节、导入导出、加固、符号、语言/编译器/框架识别、依赖库 | 与 `otool`/`readelf`/`dumpbin` 差分一致 |
 | **M3 Apple 全家桶**（约 2–3 周） | `.app` / `.ipa` / `.dmg` / `.pkg`：Info.plist、代码签名校验、entitlements、provisioning profile、PrivacyInfo、frameworks、FairPlay 加密检测 | 与 `codesign -dvvv --entitlements` 差分一致 |
@@ -295,13 +296,14 @@ IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取�
 2. **格式优先级**：默认 M3(Apple) → M4(Android) → M5(Windows)；可按你的实际工作频率调整。
 3. **报告语言**：默认中英双语可切换，中文为默认。
 4. **AI 解读层**：默认 v1.0 不含，v1.x 作为可选项加入。
-5. **"Craft Anything"** 具体指哪个项目（见 §1.1 说明）。
+5. **是否复用 Craft Anything 的代码**：默认"借鉴设计、不直接依赖主仓库"（它是 early alpha，接口变动快，且整体面向重建而非报告）；底层的 `craft-libs` 在 M0 评估，合适则按 commit 锁定引用并在 NOTICE 中署名。
 
 ---
 
 ## 参考来源
 
 - REA：<https://github.com/morluto/rea> ；InfoQ 报道 <https://www.infoq.com/news/2026/10/reverse-engineer-anything/>
+- Craft Anything：<https://github.com/storytold/craft-anything>（已克隆源码阅读：`crates/evidence`、`crates/formats`、`docs/tools.md`）
 - CLI-Anything：<https://github.com/HKUDS/CLI-Anything> ；论文 <https://arxiv.org/html/2606.03854v1>
 - MobSF：<https://github.com/MobSF/Mobile-Security-Framework-MobSF>
 - Rust crate 版本与许可证：crates.io（2026-11-18 通过 `cargo info` 核实）
