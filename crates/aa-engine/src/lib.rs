@@ -125,6 +125,7 @@ impl Registry {
         registry.analyzers.extend(aa_apple::analyzers());
         registry.analyzers.extend(aa_windows::analyzers());
         registry.analyzers.extend(aa_android::analyzers());
+        registry.analyzers.extend(aa_correlate::analyzers());
         registry
     }
 

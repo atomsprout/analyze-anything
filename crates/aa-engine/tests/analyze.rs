@@ -96,7 +96,8 @@ fn single_file_has_known_digests() {
     assert_eq!(report.input.sha256.as_deref(), Some(digests.sha256.as_str()));
     assert_eq!(artifact.size, 3);
     assert_eq!(artifact.mime(), "text/plain");
-    assert!(report.findings.is_empty());
+    let rules: Vec<&str> = report.findings.iter().map(|f| f.rule.as_str()).collect();
+    assert_eq!(rules, ["structure.totals"]);
     assert!(!report.coverage.truncated);
 }
 
@@ -115,7 +116,19 @@ fn folder_is_listed_in_sorted_order_with_findings() {
     assert_eq!(empty.mime(), "application/x-empty");
 
     let rules: Vec<&str> = report.findings.iter().map(|f| f.rule.as_str()).collect();
-    assert_eq!(rules, ["content.hosts", "content.executable-disguised", "content.high-entropy"]);
+    assert_eq!(
+        rules,
+        [
+            "structure.by-type",
+            "structure.largest",
+            "structure.totals",
+            "content.hosts",
+            "content.executable-disguised",
+            "content.high-entropy"
+        ]
+    );
+    assert_eq!(report.summary["structure.totals"]["files"], 4);
+    assert_eq!(report.summary["structure.largest"][0]["path"], "a.bin");
     assert!(report.findings.iter().all(|f| f.id.len() == 64));
     assert_eq!(report.summary["content.hosts"]["hosts"][0]["host"], "example.com");
 }
@@ -180,6 +193,10 @@ fn nested_containers_are_opened_all_the_way_down() {
     );
     assert_eq!(report.coverage.containers_unpacked, 4);
     assert!(!report.coverage.truncated);
+    let totals = &report.summary["structure.totals"];
+    assert_eq!(totals["max_depth"], 4);
+    assert_eq!(totals["files"], 2, "only deep.txt and note.txt are content; the rest are containers");
+    assert_eq!(totals["bytes"], 5);
 }
 
 #[test]
@@ -229,6 +246,7 @@ fn duplicate_entry_names_are_both_kept() {
     assert_eq!(paths(&report), ["dup.tar.gz", "dup.tar.gz/dup.tar", "dup.tar.gz/dup.tar/a.txt", "dup.tar.gz/dup.tar/a.txt (2)"]);
     assert_eq!(report.artifacts[2].size, 5);
     assert_eq!(report.artifacts[3].size, 6);
+    assert!(!report.summary.contains_key("structure.duplicates"), "same name, different content");
 }
 
 #[test]
@@ -334,4 +352,41 @@ fn a_failing_analyzer_does_not_stop_the_run() {
     let b = report.artifacts.iter().find(|a| a.path == "b.txt").expect("b.txt");
     assert_eq!(b.kind, None, "output of a failed call is discarded whole");
     assert!(report.findings.iter().any(|f| f.rule == "content.hosts"), "other analyzers still ran");
+}
+
+#[test]
+fn identical_files_are_grouped() {
+    let (_dir, path) = write_input("twins.zip", &zip_of(&[("a/one.bin", &noise(5000)), ("b/two.bin", &noise(5000)), ("c.txt", b"other")]));
+    let report = run(&path, &Options::default());
+    let duplicates = &report.summary["structure.duplicates"];
+    assert_eq!(duplicates["total_groups"], 1);
+    assert_eq!(duplicates["wasted_bytes"], 5000);
+    assert_eq!(duplicates["groups"][0]["paths"], serde_json::json!(["twins.zip/a/one.bin", "twins.zip/b/two.bin"]));
+}
+
+/// Every archive format opens to the same two files, byte for byte, as the system tools packed.
+#[test]
+fn every_archive_format_unpacks_to_the_original_bytes() {
+    let data = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-unpack/tests/data");
+    let samples = [
+        ("sample.zip", "sample.zip", "zip"),
+        ("sample.7z", "sample.7z", "7z"),
+        ("sample.tar", "sample.tar", "tar"),
+        ("sample.tar.gz", "sample.tar.gz/sample.tar", "gzip"),
+        ("sample.tar.bz2", "sample.tar.bz2/sample.tar", "bzip2"),
+        ("sample.tar.xz", "sample.tar.xz/sample.tar", "xz"),
+        ("sample.tar.zst", "sample.tar.zst/sample.tar", "zstd"),
+    ];
+    for (file, root, kind) in samples {
+        let report = run(&data.join(file), &Options::default());
+        assert_eq!(report.artifacts[0].kind.as_deref(), Some(kind), "{file}");
+        let sha256 = |path: String| {
+            let artifact = report.artifacts.iter().find(|a| a.path == path).unwrap_or_else(|| panic!("{file}: no {path}"));
+            artifact.digests.as_ref().expect("digests").sha256.clone()
+        };
+        // Digests of the two files as `sha256sum` reports them for the originals.
+        assert_eq!(sha256(format!("{root}/a.txt")), "a013aeaf2dce832ec132dfbce6afcb4e1a6a6b72a50f76e4a6fe0885b2a7d4e7", "{file}");
+        assert_eq!(sha256(format!("{root}/sub/b.bin")), "9a2ef41ddd562fadaa764d10516043d58caf9f5e0b14cd3ff5ac4ff30ab3be11", "{file}");
+        assert!(report.limitations.is_empty(), "{file}: {:?}", report.limitations);
+    }
 }

@@ -27,6 +27,7 @@ aa-binary.workspace = true
 aa-apple.workspace = true
 aa-windows.workspace = true
 aa-android.workspace = true
+aa-correlate.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

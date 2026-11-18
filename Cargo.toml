@@ -19,6 +19,7 @@ aa-binary = { path = "crates/aa-binary" }
 aa-apple = { path = "crates/aa-apple" }
 aa-windows = { path = "crates/aa-windows" }
 aa-android = { path = "crates/aa-android" }
+aa-correlate = { path = "crates/aa-correlate" }
 rayon = "1"
 memmap2 = "0.9"
 regex = "1"
