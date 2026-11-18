@@ -63,8 +63,6 @@ pub struct Volume<'a> {
     disk: &'a dyn Disk,
     pub block_size: u64,
     pub name: Option<String>,
-    /// True for HFSX (`HX`), which may be case-sensitive.
-    pub hfsx: bool,
     /// Extents beyond the first eight: `(file id, fork type, first block of the run) -> extents`.
     overflow: BTreeMap<(u32, u8, u32), Vec<(u32, u32)>>,
     pub files: Vec<File>,
@@ -175,7 +173,6 @@ impl<'a> Volume<'a> {
             disk,
             block_size,
             name: None,
-            hfsx: signature == b"HX",
             overflow: BTreeMap::new(),
             files: Vec::new(),
             inodes: BTreeMap::new(),
@@ -332,9 +329,11 @@ impl<'a> Volume<'a> {
     fn content<'f>(&'f self, file: &'f File) -> Result<&'f File, String> {
         match file.link_to {
             None => Ok(file),
-            Some(inode) => {
-                self.inodes.get(&inode).and_then(|index| self.private.get(*index)).ok_or_else(|| format!("hard link target iNode{inode} is missing"))
-            }
+            Some(inode) => self
+                .inodes
+                .get(&inode)
+                .and_then(|index| self.private.get(*index))
+                .ok_or_else(|| format!("hard link target iNode{inode} is missing")),
         }
     }
 

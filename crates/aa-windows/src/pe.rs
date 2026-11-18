@@ -31,7 +31,6 @@ pub const DIR_TLS: usize = 9;
 pub const DIR_DELAY_IMPORT: usize = 13;
 pub const DIR_CLR: usize = 14;
 
-pub const SCN_CNT_CODE: u32 = 0x20;
 pub const SCN_MEM_EXECUTE: u32 = 0x2000_0000;
 pub const SCN_MEM_WRITE: u32 = 0x8000_0000;
 
@@ -79,14 +78,10 @@ pub struct Pe<'a> {
     pub is64: bool,
     pub entry_point: u32,
     pub image_base: u64,
-    pub section_alignment: u32,
-    pub file_alignment: u32,
-    pub size_of_image: u32,
     pub size_of_headers: u32,
     pub checksum: u32,
     pub checksum_offset: usize,
     pub subsystem: u16,
-    pub dll_characteristics: u16,
     /// `(rva or file offset, size)` of each data directory present.
     pub directories: Vec<(u32, u32)>,
     /// File offset of the first data directory entry.
@@ -105,7 +100,6 @@ pub struct ImportFunction {
 #[derive(Debug, Clone)]
 pub struct ImportDll {
     pub name: String,
-    pub delayed: bool,
     pub functions: Vec<ImportFunction>,
 }
 
@@ -220,14 +214,10 @@ impl<'a> Pe<'a> {
         };
         let entry_point = u32_at(data, opt + 16).ok_or(short)?;
         let image_base = if is64 { u64_at(data, opt + 24).ok_or(short)? } else { u64::from(u32_at(data, opt + 28).ok_or(short)?) };
-        let section_alignment = u32_at(data, opt + 32).ok_or(short)?;
-        let file_alignment = u32_at(data, opt + 36).ok_or(short)?;
-        let size_of_image = u32_at(data, opt + 56).ok_or(short)?;
         let size_of_headers = u32_at(data, opt + 60).ok_or(short)?;
         let checksum_offset = opt + 64;
         let checksum = u32_at(data, checksum_offset).ok_or(short)?;
         let subsystem = u16_at(data, opt + 68).ok_or(short)?;
-        let dll_characteristics = u16_at(data, opt + 70).ok_or(short)?;
         let count_offset = opt + if is64 { 108 } else { 92 };
         let directories_offset = count_offset + 4;
         // The count is capped both by the format (16) and by the room the optional header has.
@@ -267,14 +257,10 @@ impl<'a> Pe<'a> {
             is64,
             entry_point,
             image_base,
-            section_alignment,
-            file_alignment,
-            size_of_image,
             size_of_headers,
             checksum,
             checksum_offset,
             subsystem,
-            dll_characteristics,
             directories,
             directories_offset,
             sections,
@@ -421,7 +407,7 @@ impl<'a> Pe<'a> {
                 // The lookup table survives binding; fall back to the address table.
                 let thunks = if lookup != 0 { lookup } else { address_table };
                 let list = self.thunks(thunks, &mut functions, &mut imports.truncated);
-                imports.dlls.push(ImportDll { name, delayed: false, functions: list });
+                imports.dlls.push(ImportDll { name, functions: list });
             }
         }
         if let Some((rva, _)) = self.directory(DIR_DELAY_IMPORT) {
@@ -445,7 +431,7 @@ impl<'a> Pe<'a> {
                 }
                 let Some(name) = self.cstr(name_rva, 256) else { continue };
                 let list = self.thunks(names, &mut functions, &mut imports.truncated);
-                imports.dlls.push(ImportDll { name, delayed: true, functions: list });
+                imports.dlls.push(ImportDll { name, functions: list });
             }
         }
         imports
@@ -564,7 +550,8 @@ impl<'a> Pe<'a> {
             } else {
                 ResId::Id(id)
             };
-            let target = if target & 0x8000_0000 != 0 { Target::Dir((target & 0x7fff_ffff) as usize) } else { Target::Data(target as usize) };
+            let target =
+                if target & 0x8000_0000 != 0 { Target::Dir((target & 0x7fff_ffff) as usize) } else { Target::Data(target as usize) };
             entries.push((id, target));
         }
         entries

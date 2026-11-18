@@ -25,7 +25,6 @@ use crate::der::{self, Reader, TAG_INTEGER, TAG_OCTET_STRING, TAG_OID, TAG_SEQUE
 use crate::pe::{Pe, u16_at, u32_at};
 
 const OID_SIGNED_DATA: &str = "1.2.840.113549.1.7.2";
-const OID_CONTENT_TYPE: &str = "1.2.840.113549.1.9.3";
 const OID_MESSAGE_DIGEST: &str = "1.2.840.113549.1.9.4";
 const OID_SIGNING_TIME: &str = "1.2.840.113549.1.9.5";
 const OID_COUNTERSIGNATURE: &str = "1.2.840.113549.1.9.6";
@@ -248,7 +247,7 @@ impl Timestamp {
             "covers_signature": self.covers_signature.json(),
             "content_digest": self.content_digest.json(),
             "signature": self.signature.json(),
-            "chain": self.chain,
+            "issuers": self.chain.iter().skip(1).map(|c| c.get("subject").cloned().unwrap_or_default()).collect::<Vec<_>>(),
             "chain_check": self.chain_check.json(),
         })
     }
@@ -273,7 +272,6 @@ pub struct Signature {
     pub signer: Option<Value>,
     pub signer_name: Option<String>,
     pub signer_subject: Option<String>,
-    pub signer_issuer: Option<String>,
     pub signer_self_issued: bool,
     pub signer_validity: Option<(String, String)>,
     /// Signer first, then each issuer found among the embedded certificates.
@@ -290,11 +288,6 @@ pub struct Signature {
 }
 
 impl Signature {
-    /// File digest, content digest and signature all verified.
-    pub fn verified(&self) -> bool {
-        self.file_digest.passed() && self.content_digest.passed() && self.signature.passed()
-    }
-
     /// The time of the first verified timestamp.
     pub fn trusted_time(&self) -> Option<&str> {
         self.timestamps.iter().find(|t| t.verified()).and_then(|t| t.time.as_deref())
@@ -321,7 +314,8 @@ impl Signature {
                 "chain": self.chain_check.json(),
             },
             "signer": self.signer,
-            "chain": self.chain,
+            // The certificates above the signer, nearest first.
+            "issuers": self.chain.iter().skip(1).collect::<Vec<_>>(),
             "chain_reaches_embedded_root": self.chain_reaches_root,
             "program_name": self.program_name,
             "more_info_url": self.more_info_url,
@@ -601,7 +595,7 @@ fn build_chain<'c, 'a>(signer: &'c Certificate<'a>, bag: &'c [Certificate<'a>]) 
     let mut chain = vec![signer];
     let mut check = Check::Passed;
     let mut current = signer;
-    let mut note = |result: Check, check: &mut Check| match result {
+    let note = |result: Check, check: &mut Check| match result {
         Check::Passed => {}
         Check::Failed => *check = Check::Failed,
         Check::NotChecked(why) => {
@@ -709,7 +703,6 @@ fn read_signed_data<'a>(
         signer: signer.map(Certificate::json),
         signer_name: signer.map(|c| c.display_name().to_string()),
         signer_subject: signer.map(|c| c.subject.clone()),
-        signer_issuer: signer.map(|c| c.issuer.clone()),
         signer_self_issued: signer.is_some_and(Certificate::self_issued),
         signer_validity: signer.and_then(|c| Some((c.not_before.clone()?, c.not_after.clone()?))),
         chain: chain.iter().map(|c| c.json()).collect(),

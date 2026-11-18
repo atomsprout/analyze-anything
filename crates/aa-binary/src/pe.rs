@@ -18,12 +18,31 @@ use crate::lang::{self, Region};
 const MAX_DESCRIPTORS: u64 = 4096;
 /// Imported functions read per library at most.
 const MAX_THUNKS: u64 = 65_536;
+/// Imported functions read in total, so descriptors that all point at one long table cannot
+/// keep the parser busy.
+const MAX_IMPORTS: u64 = 1_000_000;
+/// Exported names read at most.
+const MAX_EXPORTS: u64 = 1_000_000;
 /// COFF symbols looked at for toolchain markers.
 const MAX_COFF_SYMBOLS: u64 = 2_000_000;
 
 const DIRECTORIES: [&str; 16] = [
-    "export", "import", "resource", "exception", "security", "basereloc", "debug", "architecture", "globalptr", "tls", "load_config",
-    "bound_import", "iat", "delay_import", "clr", "reserved",
+    "export",
+    "import",
+    "resource",
+    "exception",
+    "security",
+    "basereloc",
+    "debug",
+    "architecture",
+    "globalptr",
+    "tls",
+    "load_config",
+    "bound_import",
+    "iat",
+    "delay_import",
+    "clr",
+    "reserved",
 ];
 
 const CHARACTERISTICS: &[(u64, &str)] = &[
@@ -108,7 +127,7 @@ fn subsystem_name(subsystem: u16) -> Option<&'static str> {
 }
 
 /// Seconds since 1970 as `YYYY-MM-DDThh:mm:ssZ`.
-fn utc(seconds: u32) -> String {
+pub fn utc(seconds: u32) -> String {
     let days = i64::from(seconds / 86_400);
     let rest = seconds % 86_400;
     // Days-to-civil conversion (Howard Hinnant's algorithm), valid for the whole u32 range.
@@ -140,7 +159,6 @@ struct Image<'a> {
     sections: Vec<SectionHeader>,
     size_of_headers: u64,
     image_base: u64,
-    wide: bool,
 }
 
 impl Image<'_> {
@@ -246,7 +264,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             })
         })
         .collect();
-    let image = Image { rd, sections, size_of_headers: u64::from(size_of_headers), image_base, wide };
+    let image = Image { rd, sections, size_of_headers: u64::from(size_of_headers), image_base };
 
     let arch = machine_name(machine);
     let arch_text = arch.map_or_else(|| format!("machine {}", hx(u64::from(machine))), str::to_string);
@@ -313,10 +331,12 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     let mut libraries: Vec<(String, &'static str, u64)> = Vec::new();
     let thunk_size: u64 = if wide { 8 } else { 4 };
     let ordinal_bit: u64 = if wide { 1 << 63 } else { 1 << 31 };
+    let mut thunks_left = MAX_IMPORTS;
     let mut walk_thunks = |library: &str, thunks: u64| -> u64 {
         let Some(start) = image.offset(thunks) else { return 0 };
         let mut count = 0;
-        for i in 0..MAX_THUNKS {
+        for i in 0..MAX_THUNKS.min(thunks_left) {
+            thunks_left -= 1;
             let at = start + i * thunk_size;
             let Some(value) = rd.word(at, wide).filter(|v| *v != 0) else { break };
             count += 1;
@@ -400,7 +420,10 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
                     rd.u32(at + 36).and_then(|r| image.offset(u64::from(r))),
                 );
                 if let (Some(function_table), Some(name_table), Some(ordinal_table)) = tables {
-                    for i in 0..u64::from(names) {
+                    if u64::from(names) > MAX_EXPORTS {
+                        problems.malformed(format!("the export table declares {names} names; only the first {MAX_EXPORTS} were read"));
+                    }
+                    for i in 0..u64::from(names).min(MAX_EXPORTS) {
                         let (Some(name_rva), Some(index)) = (rd.u32(name_table + i * 4), rd.u16(ordinal_table + i * 2)) else {
                             problems.malformed("the export name table runs past the end of the file");
                             break;
@@ -530,14 +553,16 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     }
     let overlay = (accounted < rd.len()).then(|| {
         let (offset, size) = (accounted, rd.len() - accounted);
+        let certificate = security.filter(|(start, _)| security_valid && *start >= offset);
+        let before = certificate.map_or(size, |(start, _)| start - offset);
+        let after = certificate.map_or(0, |(start, length)| rd.len() - (start + length));
         // Signing pads the file to eight bytes before the certificate table.
-        let certificate_only = security_valid && security.is_some_and(|(cert, cert_size)| cert < offset + 8 && cert + cert_size >= rd.len());
-        let payload = if security_valid { security.map_or(size, |(cert, _)| cert.saturating_sub(offset).min(size)) } else { size };
-        (offset, size, certificate_only, payload)
+        let unexplained = before > if certificate.is_some() { 7 } else { 0 };
+        (offset, size, before, after, unexplained)
     });
 
     let library_names: Vec<String> = libraries.iter().map(|(name, _, _)| name.clone()).collect();
-    let toolchain = lang::detect(&rd, &marks, &library_names, &regions);
+    let toolchain = lang::detect(&rd, &marks, &library_names, &regions, &[]);
     let go_build_id = if toolchain.has("Go") { lang::go_build_id(data) } else { None };
     let mingw = rich.is_none() && linker.0 == 2 && image.sections.iter().any(|s| s.name == ".CRT" || s.name == ".idata");
 
@@ -606,11 +631,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         "binary.sections",
         json!({ "sections": section_values, "total": section_count, "truncated": usize::from(section_count) > image.sections.len() }),
     );
-    let library_values: Vec<Value> = libraries
-        .iter()
-        .take(MAX_LIBRARIES)
-        .map(|(name, kind, count)| json!({ "name": name, "kind": kind, "functions": count }))
-        .collect();
+    let library_values: Vec<Value> =
+        libraries.iter().take(MAX_LIBRARIES).map(|(name, kind, count)| json!({ "name": name, "kind": kind, "functions": count })).collect();
     out.fact(file, "binary.libraries", json!({ "libraries": library_values, "truncated": libraries.len() > MAX_LIBRARIES }));
     let (import_total, export_total) = (imports.total, exports.total);
     if imports_read {
@@ -642,16 +664,17 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             "debug_stripped_flag": characteristics & 0x200 != 0,
         }),
     );
-    if let Some((offset, size, certificate_only, payload)) = overlay {
+    if let Some((offset, size, before, after, unexplained)) = overlay {
         out.fact(
             file,
             "binary.overlay",
             json!({
                 "offset": offset,
                 "size": size,
-                "certificate_table_only": certificate_only,
-                "payload_size": payload,
-                "entropy": rd.bytes(offset, payload).and_then(entropy),
+                "payload_size": before,
+                "after_signature_size": after,
+                "certificate_table_only": !unexplained && after == 0,
+                "entropy": rd.bytes(offset, before).and_then(entropy),
             }),
         );
     }
@@ -671,8 +694,13 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             .evidence(Evidence::bytes(file, coff, 20, hex(rd.bytes(coff, 20).unwrap_or(&[]))))
             .evidence(Evidence::bytes(file, opt + 68, 2, subsystem)),
     );
+    let timestamp_rule = match (repro, timestamp) {
+        (true, _) => "binary.pe-timestamp-hash",
+        (false, 0) => "binary.pe-timestamp-zero",
+        _ => "binary.pe-timestamp",
+    };
     out.finding(
-        finding(Section::Identity, if repro { "binary.pe-timestamp-hash" } else { "binary.pe-timestamp" }, Confidence::Verified, Severity::Info)
+        finding(Section::Identity, timestamp_rule, Confidence::Verified, Severity::Info)
             .param("raw", timestamp)
             .param("utc", utc(timestamp))
             .evidence(Evidence::bytes(file, coff + 4, 4, timestamp)),
@@ -689,6 +717,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     if dwarf {
         out.finding(
             finding(Section::Code, "binary.debug-info", Confidence::Verified, Severity::Info)
+                .param("label", "")
                 .param("what", "DWARF sections")
                 .evidence(Evidence::field(file, "section names", ".debug_*")),
         );
@@ -697,6 +726,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     // Composition.
     if !libraries.is_empty() {
         let mut f = finding(Section::Composition, "binary.libraries", Confidence::Verified, Severity::Info)
+            .param("label", "")
             .param("count", libraries.len())
             .param("sample", sample(&library_names, 8));
         for name in library_names.iter().take(8) {
@@ -705,13 +735,20 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         out.finding(f);
     }
     if imports_read || export_total > 0 {
-        crate::emit_symbols(file, out, false, None, Some((import_total, export_total)), "");
+        crate::emit_symbols(file, out, None, None, Some((import_total, export_total)), "");
     }
     if let Some((major, minor, flags, at)) = clr {
         out.finding(
             finding(Section::Composition, "binary.pe-dotnet", Confidence::Verified, Severity::Info)
-                .param("runtime", format!("{major}.{minor}"))
-                .param("kind", if flags & 1 != 0 { "IL only" } else { "mixed native and IL" })
+                .param("version", format!("{major}.{minor}"))
+                .param(
+                    "kind",
+                    match (flags & 1 != 0, flags & 2 != 0) {
+                        (true, false) => "IL only: the machine type in the PE header does not restrict where it runs",
+                        (true, true) => "IL only, marked as requiring a 32-bit process",
+                        (false, _) => "mixed native and IL code",
+                    },
+                )
                 .evidence(Evidence::bytes(file, at, 20, format!("flags {}", hx(u64::from(flags))))),
         );
     }
@@ -732,17 +769,33 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     }
 
     // Structure and anomalies.
-    if let Some((offset, size, false, payload)) = overlay {
-        out.finding(
-            finding(Section::Structure, "binary.pe-overlay", Confidence::Verified, Severity::Info)
-                .param("offset", offset)
-                .param("size", payload)
-                .param("total", size)
-                .evidence(Evidence::bytes(file, offset, payload, hex(rd.bytes(offset, payload.min(16)).unwrap_or(&[])))),
-        );
+    if let Some((offset, size, before, after, unexplained)) = overlay {
+        if unexplained {
+            out.finding(
+                finding(Section::Structure, "binary.pe-overlay", Confidence::Verified, Severity::Info)
+                    .param("offset", offset)
+                    .param("size", before)
+                    .evidence(Evidence::bytes(file, offset, before, hex(rd.bytes(offset, before.min(16)).unwrap_or(&[])))),
+            );
+        }
+        if after > 0 {
+            out.finding(
+                finding(Section::Anomalies, "binary.pe-data-after-signature", Confidence::Verified, Severity::Low)
+                    .param("size", after)
+                    .evidence(Evidence::bytes(
+                        file,
+                        offset + size - after,
+                        after,
+                        hex(rd.bytes(offset + size - after, after.min(16)).unwrap_or(&[])),
+                    )),
+            );
+        }
     }
     if let Some(at) = upx {
-        out.finding(finding(Section::Anomalies, "binary.packed-upx", Confidence::Heuristic, Severity::Low).evidence(Evidence::bytes(file, at, 8, "UPX")));
+        out.finding(
+            finding(Section::Anomalies, "binary.packed-upx", Confidence::Heuristic, Severity::Low)
+                .evidence(Evidence::bytes(file, at, 8, "UPX")),
+        );
     }
     for (name, e, offset, size) in high_entropy.iter().take(4) {
         out.finding(
@@ -760,10 +813,14 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
                 .param("size", size)
                 .evidence(Evidence::bytes(file, offset, size, "certificate table")),
         ),
-        None => out.finding(
-            finding(Section::Provenance, "binary.pe-unsigned", Confidence::Verified, Severity::Low)
-                .evidence(Evidence::bytes(file, directories_at + 32, 8, "security directory empty")),
-        ),
+        None => {
+            out.finding(finding(Section::Provenance, "binary.pe-unsigned", Confidence::Verified, Severity::Low).evidence(Evidence::bytes(
+                file,
+                directories_at + 32,
+                8,
+                "security directory empty",
+            )))
+        }
     }
 
     // Hardening. A file without executable sections (resources only) has nothing to protect.
@@ -781,17 +838,22 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         if aslr {
             out.finding(hard("binary.pe-aslr", Confidence::Verified, Severity::Info));
         } else if flag(DYNAMIC_BASE) {
-            out.finding(
-                hard("binary.pe-aslr-no-relocs", Confidence::Verified, Severity::Medium)
-                    .evidence(Evidence::bytes(file, coff + 18, 2, "IMAGE_FILE_RELOCS_STRIPPED")),
-            );
+            out.finding(hard("binary.pe-aslr-no-relocs", Confidence::Verified, Severity::Medium).evidence(Evidence::bytes(
+                file,
+                coff + 18,
+                2,
+                "IMAGE_FILE_RELOCS_STRIPPED",
+            )));
         } else {
             out.finding(hard("binary.pe-no-aslr", Confidence::Verified, Severity::Medium));
         }
         if wide {
             hardening.insert("high_entropy_va".into(), flag(HIGH_ENTROPY_VA).into());
-            let (rule, severity) =
-                if flag(HIGH_ENTROPY_VA) { ("binary.pe-high-entropy-va", Severity::Info) } else { ("binary.pe-no-high-entropy-va", Severity::Low) };
+            let (rule, severity) = if flag(HIGH_ENTROPY_VA) {
+                ("binary.pe-high-entropy-va", Severity::Info)
+            } else {
+                ("binary.pe-no-high-entropy-va", Severity::Low)
+            };
             out.finding(hard(rule, Confidence::Verified, severity));
         }
         hardening.insert("dep".into(), flag(NX_COMPAT).into());
@@ -804,10 +866,12 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         }
         hardening.insert("cet_compat".into(), cet.map(|(on, _)| on).into());
         if let Some((true, at)) = cet {
-            out.finding(
-                finding(Section::Hardening, "binary.pe-cet", Confidence::Verified, Severity::Info)
-                    .evidence(Evidence::bytes(file, at, 4, "IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT")),
-            );
+            out.finding(finding(Section::Hardening, "binary.pe-cet", Confidence::Verified, Severity::Info).evidence(Evidence::bytes(
+                file,
+                at,
+                4,
+                "IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT",
+            )));
         }
 
         // The checks below concern native code the compiler instruments; IL-only .NET images
@@ -894,37 +958,37 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
 }
 
 /// A GUID in the usual text form: the first three fields are little-endian integers.
-fn guid_text(bytes: &[u8]) -> String {
+pub fn guid_text(bytes: &[u8]) -> String {
     let field = |range: std::ops::Range<usize>, reverse: bool| {
         let part = bytes.get(range).unwrap_or(&[]);
-        if reverse { part.iter().rev().map(|b| format!("{b:02X}")).collect::<String>() } else { part.iter().map(|b| format!("{b:02X}")).collect() }
+        if reverse {
+            part.iter().rev().map(|b| format!("{b:02X}")).collect::<String>()
+        } else {
+            part.iter().map(|b| format!("{b:02X}")).collect()
+        }
     };
     format!("{}-{}-{}-{}-{}", field(0..4, true), field(4..6, true), field(6..8, true), field(8..10, false), field(10..16, false))
 }
 
-struct Rich {
-    offset: u64,
-    length: u64,
-    key: u32,
+pub struct Rich {
+    pub offset: u64,
+    pub length: u64,
+    pub key: u32,
     /// `{ product_id, build, count }` per tool record, in file order.
-    entries: Vec<Value>,
+    pub entries: Vec<Value>,
 }
 
 /// Decodes the Rich header: records XOR-ed with a key, between a `DanS` marker and `Rich`.
-fn rich_header(rd: &Rd, lfanew: u64) -> Option<Rich> {
+pub fn rich_header(rd: &Rd, lfanew: u64) -> Option<Rich> {
     let stub = rd.bytes(0, lfanew.min(4096))?;
     let end = memchr::memmem::find(stub, b"Rich")? as u64;
     let key = rd.u32(end + 4)?;
     let mut entries = Vec::new();
     let mut at = end;
-    // Walk back two words at a time until the marker; real headers have a few dozen records.
+    // Records are word pairs and the marker starts a pair, so walk back two words at a time until the marker; real headers have a few dozen records.
     for _ in 0..512 {
         at = at.checked_sub(8)?;
         let (a, b) = (rd.u32(at)? ^ key, rd.u32(at + 4)? ^ key);
-        if b == 0x536e_6144 {
-            at += 4;
-            break;
-        }
         if a == 0x536e_6144 {
             break;
         }

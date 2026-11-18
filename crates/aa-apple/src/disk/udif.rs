@@ -370,7 +370,16 @@ mod tests {
 
     #[test]
     fn block_table_with_huge_count_is_refused() {
-        let koly = Koly { offset: 0, version: 4, flags: 0, data_fork_offset: 0, data_fork_length: 0, xml_offset: 0, xml_length: 0, sector_count: 0 };
+        let koly = Koly {
+            offset: 0,
+            version: 4,
+            flags: 0,
+            data_fork_offset: 0,
+            data_fork_length: 0,
+            xml_offset: 0,
+            xml_length: 0,
+            sector_count: 0,
+        };
         let mut mish = vec![0u8; 204 + 40];
         mish[..4].copy_from_slice(b"mish");
         mish[200..204].copy_from_slice(&u32::MAX.to_be_bytes());
@@ -413,7 +422,8 @@ mod tests {
         assert_eq!(partition.read_vec(500, 30).expect("read")[..12], [9u8; 12]);
         assert!(partition.read_vec(2000, 100).is_err());
         // A chunk whose stored bytes lie outside the file fails without panicking.
-        let broken = Table { chunks: vec![Chunk { kind: ZLIB, start: 0, length: 512, source: 1 << 40, source_length: 10 }], ..table.clone() };
+        let broken =
+            Table { chunks: vec![Chunk { kind: ZLIB, start: 0, length: 512, source: 1 << 40, source_length: 10 }], ..table.clone() };
         assert!(Partition::new(&file, &broken).read_vec(0, 512).is_err());
     }
 }

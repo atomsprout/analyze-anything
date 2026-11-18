@@ -591,7 +591,7 @@ pub mod tests {
     fn huge_entry_count_costs_nothing() {
         let mut data = sample();
         // The first type chunk's entry count.
-        let at = data.windows(4).position(|w| w == [0x01, 0x02, 0x38, 0x00]).expect("type chunk") + 12;
+        let at = data.windows(4).position(|w| w == [0x01, 0x02, 0x30, 0x00]).expect("type chunk") + 12;
         data[at..at + 4].copy_from_slice(&0xffff_ffffu32.to_le_bytes());
         let table = Table::parse(&data).expect("table");
         assert_eq!(table.resolve(0x7f01_0000).and_then(|r| r.value), Some(Value::Str("Example".into())));

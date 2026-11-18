@@ -8,7 +8,7 @@
 use std::borrow::Cow;
 
 /// True for characters that are invisible or change how the text around them is laid out.
-fn is_deceptive(c: char) -> bool {
+pub(crate) fn is_deceptive(c: char) -> bool {
     matches!(
         c,
         '\u{0000}'..='\u{0008}'
@@ -27,17 +27,10 @@ fn is_deceptive(c: char) -> bool {
     )
 }
 
+/// Writes `c` as its code point in brackets, e.g. `[U+202E]`. Plain ASCII, so every font and
+/// every output format can show it.
 fn push_visible(out: &mut String, c: char) {
-    match c {
-        // The Unicode "control pictures" block mirrors the C0 controls one to one.
-        '\u{0000}'..='\u{001f}' => out.push(char::from_u32(0x2400 + c as u32).unwrap_or('\u{fffd}')),
-        '\u{007f}' => out.push('\u{2421}'),
-        _ => {
-            out.push_str("\u{27e6}U+");
-            out.push_str(&format!("{:04X}", c as u32));
-            out.push('\u{27e7}');
-        }
-    }
+    out.push_str(&format!("[U+{:04X}]", c as u32));
 }
 
 /// `text` with every deceptive character replaced by a visible stand-in. Line feeds and tabs stay.
@@ -75,8 +68,8 @@ mod tests {
 
     #[test]
     fn bidi_overrides_and_controls_become_visible() {
-        assert_eq!(visible("a\u{202e}b\u{0000}c\u{007f}\u{200b}"), "a⟦U+202E⟧b␀c␡⟦U+200B⟧");
-        assert_eq!(visible_line("a\nb\tc"), "a␊b␉c");
-        assert_eq!(visible("\u{e0041}"), "⟦U+E0041⟧");
+        assert_eq!(visible("a\u{202e}b\u{0000}c\u{007f}\u{200b}"), "a[U+202E]b[U+0000]c[U+007F][U+200B]");
+        assert_eq!(visible_line("a\nb\tc"), "a[U+000A]b[U+0009]c");
+        assert_eq!(visible("\u{e0041}"), "[U+E0041]");
     }
 }

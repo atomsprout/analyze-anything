@@ -99,10 +99,7 @@ pub fn header_items(report: &Report, lang: Lang) -> Vec<(String, String)> {
         (None, aa_core::InputKind::Directory) => w.not_applicable.to_string(),
         (None, aa_core::InputKind::File) => w.unknown.to_string(),
     };
-    vec![
-        (w.tool.to_string(), format!("{} {}", report.tool.name, report.tool.version)),
-        (w.input_sha256.to_string(), input_sha256),
-    ]
+    vec![(w.tool.to_string(), format!("{} {}", report.tool.name, report.tool.version)), (w.input_sha256.to_string(), input_sha256)]
 }
 
 /// The lines of the summary: what the input is, how much was read, how many findings.

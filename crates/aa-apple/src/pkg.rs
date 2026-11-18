@@ -119,12 +119,12 @@ pub fn xar(bytes: &[u8]) -> Result<Xar, String> {
         .map_err(|e| format!("the table of contents does not decompress: {e}"))?;
     let xml = String::from_utf8_lossy(&xml);
     let options = roxmltree::ParsingOptions { allow_dtd: false, nodes_limit: MAX_TOC_NODES };
-    let document = roxmltree::Document::parse_with_options(&xml, options).map_err(|e| format!("the table of contents is not valid XML: {e}"))?;
+    let document =
+        roxmltree::Document::parse_with_options(&xml, options).map_err(|e| format!("the table of contents is not valid XML: {e}"))?;
     let toc = child(document.root_element(), "toc").ok_or("the table of contents has no <toc> element")?;
 
-    let checksum = child(toc, "checksum").and_then(|node| {
-        Some((node.attribute("style")?.to_ascii_lowercase(), number(node, "offset")?, number(node, "size")?))
-    });
+    let checksum = child(toc, "checksum")
+        .and_then(|node| Some((node.attribute("style")?.to_ascii_lowercase(), number(node, "offset")?, number(node, "size")?)));
     let mut signatures = Vec::new();
     for node in toc.children().filter(|c| c.is_element() && matches!(c.tag_name().name(), "signature" | "x-signature")) {
         let (Some(offset), Some(size)) = (number(node, "offset"), number(node, "size")) else { continue };
@@ -174,7 +174,11 @@ pub fn xar(bytes: &[u8]) -> Result<Xar, String> {
             offset: data.and_then(|d| number(d, "offset")),
             length: data.and_then(|d| number(d, "length")).unwrap_or(0),
             size: data.and_then(|d| number(d, "size")).unwrap_or(0),
-            encoding: data.and_then(|d| child(d, "encoding")).and_then(|e| e.attribute("style")).unwrap_or("application/octet-stream").to_string(),
+            encoding: data
+                .and_then(|d| child(d, "encoding"))
+                .and_then(|e| e.attribute("style"))
+                .unwrap_or("application/octet-stream")
+                .to_string(),
             extracted_checksum,
         });
     }
@@ -352,7 +356,12 @@ impl<'a> Pbzx<'a> {
             return None;
         }
         let chunk_size = be64(bytes, 4)?;
-        Some(Pbzx { rest: &bytes[12..], chunk: std::io::Cursor::new(Vec::new()), chunk_size: chunk_size.clamp(1 << 16, 1 << 30), more: true })
+        Some(Pbzx {
+            rest: &bytes[12..],
+            chunk: std::io::Cursor::new(Vec::new()),
+            chunk_size: chunk_size.clamp(1 << 16, 1 << 30),
+            more: true,
+        })
     }
 
     fn next_chunk(&mut self) -> std::io::Result<bool> {
@@ -391,7 +400,7 @@ impl Read for Pbzx<'_> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::io::Write;
 
     use super::*;
@@ -416,8 +425,20 @@ mod tests {
     }
 
     fn odc_entry(name: &str, mode: u32, data: &[u8]) -> Vec<u8> {
-        let mut out = format!("070707{:06o}{:06o}{:06o}{:06o}{:06o}{:06o}{:06o}{:011o}{:06o}{:011o}", 1, 2, mode, 0, 0, 1, 0, 0, name.len() + 1, data.len())
-            .into_bytes();
+        let mut out = format!(
+            "070707{:06o}{:06o}{:06o}{:06o}{:06o}{:06o}{:06o}{:011o}{:06o}{:011o}",
+            1,
+            2,
+            mode,
+            0,
+            0,
+            1,
+            0,
+            0,
+            name.len() + 1,
+            data.len()
+        )
+        .into_bytes();
         out.extend_from_slice(name.as_bytes());
         out.push(0);
         out.extend_from_slice(data);
@@ -484,7 +505,7 @@ mod tests {
         assert!(cpio(&mut &bad_digits[..], &mut Collect::default()).is_err());
     }
 
-    fn xar_archive(toc: &str, heap: &[u8]) -> Vec<u8> {
+    pub fn xar_archive(toc: &str, heap: &[u8]) -> Vec<u8> {
         let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
         encoder.write_all(toc.as_bytes()).expect("write");
         let packed = encoder.finish().expect("finish");

@@ -256,6 +256,8 @@ pub const UI: &[(&str, &str, &str)] = &[
         "Structured data the analyzers recorded about the input as a whole, keyed analyzer.name.",
     ),
     // Findings
+    ("findings_title", "结论", "Findings"),
+    ("file_size", "大小", "Size"),
     ("filters", "筛选", "Filters"),
     ("search", "搜索", "Search"),
     ("search_findings", "搜索结论：标题、内容、路径、证据、ID…", "Search findings: title, text, path, evidence, ID…"),

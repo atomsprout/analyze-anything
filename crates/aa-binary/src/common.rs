@@ -96,7 +96,8 @@ pub fn entropy(bytes: &[u8]) -> Option<f64> {
     }
     let total = bytes.len() as f64;
     let bits: f64 = counts.iter().filter(|c| **c > 0).map(|c| *c as f64 / total).map(|p| -p * p.log2()).sum();
-    Some((bits * 1000.0).round() / 1000.0)
+    // A single repeated byte sums to negative zero; report plain zero.
+    Some(if bits <= 0.0 { 0.0 } else { (bits * 1000.0).round() / 1000.0 })
 }
 
 /// Entropy of regions of one binary, refusing to re-read the file more than a few times over when
@@ -213,8 +214,31 @@ pub struct Marks {
 
 /// libc functions `_FORTIFY_SOURCE` replaces with checked variants.
 const FORTIFIABLE: &[&str] = &[
-    "fgets", "fread", "gets", "memcpy", "memmove", "mempcpy", "memset", "pread", "read", "readlink", "recv", "recvfrom", "snprintf",
-    "sprintf", "stpcpy", "stpncpy", "strcat", "strcpy", "strncat", "strncpy", "vsnprintf", "vsprintf", "wcscpy", "wcsncpy", "wmemcpy",
+    "fgets",
+    "fread",
+    "gets",
+    "memcpy",
+    "memmove",
+    "mempcpy",
+    "memset",
+    "pread",
+    "read",
+    "readlink",
+    "recv",
+    "recvfrom",
+    "snprintf",
+    "sprintf",
+    "stpcpy",
+    "stpncpy",
+    "strcat",
+    "strcpy",
+    "strncat",
+    "strncpy",
+    "vsnprintf",
+    "vsprintf",
+    "wcscpy",
+    "wcsncpy",
+    "wmemcpy",
 ];
 
 impl Marks {
@@ -234,10 +258,15 @@ impl Marks {
             "__gxx_personality_v0" | "__gxx_personality_seh0" | "__gxx_personality_sj0" | "__cxa_throw" | "__cxa_begin_catch" => {
                 at(&mut self.cxx)
             }
-            "rust_begin_unwind" | "rust_eh_personality" | "__rust_alloc" | "__rust_dealloc" | "rust_panic" | "__rustc::rust_begin_unwind" => {
-                at(&mut self.rust)
+            "rust_begin_unwind"
+            | "rust_eh_personality"
+            | "__rust_alloc"
+            | "__rust_dealloc"
+            | "rust_panic"
+            | "__rustc::rust_begin_unwind" => at(&mut self.rust),
+            "runtime.main" | "runtime.goexit" | "runtime.gcStart" | "runtime.buildVersion" | "go:buildid" | "go.buildid" => {
+                at(&mut self.go)
             }
-            "runtime.main" | "runtime.goexit" | "runtime.gcStart" | "runtime.buildVersion" | "go:buildid" | "go.buildid" => at(&mut self.go),
             "objc_msgSend" => self.objc_msgsend = true,
             "swift_retain" | "swift_release" | "swift_allocObject" | "swift_once" => at(&mut self.swift),
             _ => {}

@@ -209,7 +209,11 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     let os_abi = rd.u8(7)?;
     let e_type = rd.u16(16)?;
     let machine = rd.u16(18)?;
-    let (entry, phoff, shoff, tail) = if wide { (rd.u64(24)?, rd.u64(32)?, rd.u64(40)?, 48) } else { (rd.word(24, false)?, rd.word(28, false)?, rd.word(32, false)?, 36) };
+    let (entry, phoff, shoff, tail) = if wide {
+        (rd.u64(24)?, rd.u64(32)?, rd.u64(40)?, 48)
+    } else {
+        (rd.word(24, false)?, rd.word(28, false)?, rd.word(32, false)?, 36)
+    };
     let e_flags = rd.u32(tail)?;
     let phentsize = u64::from(rd.u16(tail + 6)?);
     let mut phnum = u64::from(rd.u16(tail + 8)?);
@@ -222,7 +226,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     // Section headers. Counts too large for the 16-bit fields live in section 0.
     let mut sections: Vec<SectionHeader> = Vec::new();
     let mut sections_cut = false;
-    if shoff != 0 && shentsize >= min_sh {
+    if shoff != 0 && shoff < rd.len() && shentsize >= min_sh {
         if shnum == 0 {
             shnum = rd.word(shoff + if wide { 32 } else { 20 }, wide).unwrap_or(0);
         }
@@ -245,7 +249,14 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
                 let (flags, addr, offset, size, link, entsize) = if wide {
                     (rd.u64(at + 8)?, rd.u64(at + 16)?, rd.u64(at + 24)?, rd.u64(at + 32)?, rd.u32(at + 40)?, rd.u64(at + 56)?)
                 } else {
-                    (rd.word(at + 8, false)?, rd.word(at + 12, false)?, rd.word(at + 16, false)?, rd.word(at + 20, false)?, rd.u32(at + 24)?, rd.word(at + 36, false)?)
+                    (
+                        rd.word(at + 8, false)?,
+                        rd.word(at + 12, false)?,
+                        rd.word(at + 16, false)?,
+                        rd.word(at + 20, false)?,
+                        rd.u32(at + 24)?,
+                        rd.word(at + 36, false)?,
+                    )
                 };
                 Some((name, SectionHeader { name: String::new(), kind, flags, addr, offset, size, link, entsize }))
             })
@@ -266,13 +277,13 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         if names.is_none() && !sections.is_empty() {
             problems.malformed("the section name table index is out of range; sections are unnamed");
         }
-    } else if shoff != 0 {
+    } else if shoff != 0 && shoff < rd.len() {
         problems.malformed(format!("the section header entry size is {shentsize}, smaller than the format requires"));
     }
 
     // Program headers.
     let mut segments: Vec<Segment> = Vec::new();
-    if phoff != 0 && phnum != 0 {
+    if phoff != 0 && phoff < rd.len() && phnum != 0 {
         if phentsize < min_ph {
             problems.malformed(format!("the program header entry size is {phentsize}, smaller than the format requires"));
         } else {
@@ -324,7 +335,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
 
     // Dynamic section.
     let mut dynamic = Dynamic::default();
-    if let Some(segment) = segments.iter().find(|s| s.kind == PT_DYNAMIC) {
+    if let Some(segment) = segments.iter().find(|s| s.kind == PT_DYNAMIC && s.offset < rd.len()) {
         dynamic.present = true;
         let step = if wide { 16 } else { 8 };
         let count = (segment.filesz / step).min(MAX_DYNAMIC);
@@ -371,13 +382,17 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         match dynamic.strtab {
             Some((base, size)) => {
                 for (tag, value, at) in strings {
-                    let Some(string) = (value < size).then(|| rd.cstr(base.saturating_add(value), base.saturating_add(size))).flatten() else {
+                    let Some(string) = (value < size).then(|| rd.cstr(base.saturating_add(value), base.saturating_add(size))).flatten()
+                    else {
                         problems.malformed("a dynamic entry names a string outside the dynamic string table");
                         continue;
                     };
                     let split = |s: &str| s.split(':').map(str::to_string).collect::<Vec<_>>();
                     match tag {
-                        DT_NEEDED => dynamic.needed.push(string),
+                        // Kept well past what the fact shows, so the count in the finding is right
+                        // for any real file, but not without bound.
+                        DT_NEEDED if dynamic.needed.len() < 4 * MAX_LIBRARIES => dynamic.needed.push(string),
+                        DT_NEEDED => {}
                         DT_SONAME => dynamic.soname = Some(string),
                         DT_RPATH => {
                             dynamic.rpath = split(&string);
@@ -420,7 +435,9 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             if name_index == 0 || u64::from(name_index) >= strings.1 {
                 continue;
             }
-            let Some(name) = rd.cstr(strings.0.saturating_add(u64::from(name_index)), strings.0.saturating_add(strings.1)) else { continue };
+            let Some(name) = rd.cstr(strings.0.saturating_add(u64::from(name_index)), strings.0.saturating_add(strings.1)) else {
+                continue;
+            };
             if name.is_empty() {
                 continue;
             }
@@ -453,11 +470,12 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     } else if let (Some(symtab), Some(strings)) = (dynamic.symtab.and_then(to_offset), dynamic.strtab) {
         // Without section headers the size of the dynamic symbol table is not stored. The SysV
         // hash table records it; failing that, the table conventionally ends where the strings begin.
-        let from_hash = dynamic.hash.and_then(to_offset).and_then(|at| rd.u32(at + 4)).map(|n| u64::from(n) * symsize);
+        let from_hash = dynamic.hash.and_then(to_offset).and_then(|at| rd.u32(at.checked_add(4)?)).map(|n| u64::from(n) * symsize);
         let size = from_hash.or_else(|| strings.0.checked_sub(symtab));
         match size {
             Some(size) => dynsym_count = Some(walk((symtab, size), strings, true, problems)),
-            None => problems.undetermined("the dynamic symbol table has no recorded size (no section headers, no DT_HASH); imports were not read"),
+            None => problems
+                .undetermined("the dynamic symbol table has no recorded size (no section headers, no DT_HASH); imports were not read"),
         }
     }
     let symtab_count = table_of(SHT_SYMTAB).map(|(table, strings)| walk(table, strings, false, problems));
@@ -482,9 +500,10 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         while at.saturating_add(12) <= end && notes_read < MAX_NOTES {
             notes_read += 1;
             let (Some(namesz), Some(descsz), Some(kind)) = (rd.u32(at), rd.u32(at + 4), rd.u32(at + 8)) else { break };
+            // Name and descriptor each start on an alignment boundary counted from the note's start.
             let pad = |n: u64| n.div_ceil(align) * align;
             let name_at = at + 12;
-            let desc_at = name_at.saturating_add(pad(u64::from(namesz)));
+            let desc_at = at.saturating_add(pad(12 + u64::from(namesz)));
             let next = desc_at.saturating_add(pad(u64::from(descsz)));
             let (Some(name), Some(desc)) = (rd.bytes(name_at, u64::from(namesz)), rd.bytes(desc_at, u64::from(descsz))) else { break };
             if desc_at.saturating_add(u64::from(descsz)) > end {
@@ -565,7 +584,9 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             regions.push(Region { name: section.name.clone(), offset: section.offset, size: section.size });
         }
         let name = section.name.as_str();
-        if name.starts_with(".debug_") || name.starts_with(".zdebug_") || name == ".stab" || name == ".gdb_index" {
+        // `.debug_gdb_scripts` names helper scripts for a debugger and stays in stripped files;
+        // it is not debug information.
+        if (name.starts_with(".debug_") || name.starts_with(".zdebug_") || name == ".stab") && name != ".debug_gdb_scripts" {
             debug_sections.insert(section.name.clone());
         }
         if name == ".comment"
@@ -600,7 +621,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     }
 
     let libraries: Vec<String> = dynamic.needed.clone();
-    let toolchain = lang::detect(&rd, &marks, &libraries, &regions);
+    let idents: Vec<String> = comment.iter().map(|(ident, _)| ident.clone()).collect();
+    let toolchain = lang::detect(&rd, &marks, &libraries, &regions, &idents);
     if go_build_id.is_none() && toolchain.has("Go") {
         go_build_id = lang::go_build_id(data);
     }
@@ -692,6 +714,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     if let Some((id, at)) = &build_id {
         out.finding(
             finding(Section::Identity, "binary.build-id", Confidence::Verified, Severity::Info)
+                .param("label", "")
                 .param("kind", "GNU build ID")
                 .param("id", id.as_str())
                 .evidence(Evidence::bytes(file, *at, id.len() as u64 / 2, id.as_str())),
@@ -701,6 +724,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     // Composition.
     if !libraries.is_empty() {
         let mut f = finding(Section::Composition, "binary.libraries", Confidence::Verified, Severity::Info)
+            .param("label", "")
             .param("count", libraries.len())
             .param("sample", sample(&libraries, 8));
         for name in libraries.iter().take(8) {
@@ -708,10 +732,11 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         }
         out.finding(f);
     } else if is_static {
-        out.finding(
-            finding(Section::Composition, "binary.static", Confidence::Verified, Severity::Info)
-                .evidence(Evidence::field(file, "program headers", "no PT_DYNAMIC, no PT_INTERP")),
-        );
+        out.finding(finding(Section::Composition, "binary.static", Confidence::Verified, Severity::Info).evidence(Evidence::field(
+            file,
+            "program headers",
+            "no PT_DYNAMIC, no PT_INTERP",
+        )));
     }
     toolchain.emit(file, 0, "", out);
     for (ident, at) in comment.iter().take(8) {
@@ -723,7 +748,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     }
     if let Some(at) = packed_upx {
         out.finding(
-            finding(Section::Anomalies, "binary.packed-upx", Confidence::Heuristic, Severity::Low).evidence(Evidence::bytes(file, at, 4, "UPX")),
+            finding(Section::Anomalies, "binary.packed-upx", Confidence::Heuristic, Severity::Low)
+                .evidence(Evidence::bytes(file, at, 4, "UPX")),
         );
     }
     for (name, e, offset, size) in high_entropy.iter().take(4) {
@@ -736,7 +762,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
     }
 
     // Code.
-    crate::emit_symbols(file, out, stripped, symtab_count, imports_known.then_some((import_total, export_total)), "");
+    let counts = imports_known.then_some((import_total, export_total)).filter(|counts| *counts != (0, 0));
+    crate::emit_symbols(file, out, Some(stripped), symtab_count, counts, "");
     if has_debug || debuglink.is_some() {
         let what = match (&debuglink, has_debug) {
             (Some(link), false) => format!("separate debug file {link} (.gnu_debuglink)"),
@@ -744,6 +771,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         };
         out.finding(
             finding(Section::Code, "binary.debug-info", Confidence::Verified, Severity::Info)
+                .param("label", "")
                 .param("what", what.as_str())
                 .evidence(Evidence::field(file, "section names", what.as_str())),
         );
@@ -760,8 +788,12 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             "pie-executable" => {
                 hardening.insert("pie".into(), true.into());
                 let f = match pie_flag {
-                    Some((value, at)) => hard("binary.elf-pie", Confidence::Verified, Severity::Info)
-                        .evidence(Evidence::bytes(file, at, if wide { 16 } else { 8 }, format!("DT_FLAGS_1 = {}", hx(value)))),
+                    Some((value, at)) => hard("binary.elf-pie", Confidence::Verified, Severity::Info).evidence(Evidence::bytes(
+                        file,
+                        at,
+                        if wide { 16 } else { 8 },
+                        format!("DT_FLAGS_1 = {}", hx(value)),
+                    )),
                     // ET_DYN with a program interpreter and no library name: the rule `file` uses.
                     None => hard("binary.elf-pie", Confidence::Derived, Severity::Info),
                 };
@@ -781,11 +813,14 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             Some(stack) => {
                 let executable = stack.flags & 1 != 0;
                 hardening.insert("nx".into(), (!executable).into());
-                let (rule, severity) = if executable { ("binary.elf-nx-disabled", Severity::Medium) } else { ("binary.elf-nx", Severity::Info) };
-                out.finding(
-                    hard(rule, Confidence::Verified, severity)
-                        .evidence(Evidence::bytes(file, stack.at, phentsize, format!("PT_GNU_STACK flags {}", rwx(stack.flags)))),
-                );
+                let (rule, severity) =
+                    if executable { ("binary.elf-nx-disabled", Severity::Medium) } else { ("binary.elf-nx", Severity::Info) };
+                out.finding(hard(rule, Confidence::Verified, severity).evidence(Evidence::bytes(
+                    file,
+                    stack.at,
+                    phentsize,
+                    format!("PT_GNU_STACK flags {}", rwx(stack.flags)),
+                )));
             }
             None if segments.is_empty() => {
                 hardening.insert("nx".into(), Value::Null);
@@ -793,10 +828,12 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             }
             None => {
                 hardening.insert("nx".into(), Value::Null);
-                out.finding(
-                    hard("binary.elf-nx-unmarked", Confidence::Verified, Severity::Low)
-                        .evidence(Evidence::bytes(file, phoff, phentsize * segments.len() as u64, "no PT_GNU_STACK program header")),
-                );
+                out.finding(hard("binary.elf-nx-unmarked", Confidence::Verified, Severity::Low).evidence(Evidence::bytes(
+                    file,
+                    phoff,
+                    phentsize * segments.len() as u64,
+                    "no PT_GNU_STACK program header",
+                )));
             }
         }
 
@@ -815,20 +852,27 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
                 }
                 (Some(relro), None) => {
                     hardening.insert("relro".into(), "partial".into());
-                    out.finding(
-                        hard("binary.elf-relro-partial", Confidence::Verified, Severity::Low)
-                            .evidence(Evidence::bytes(file, relro.at, phentsize, "PT_GNU_RELRO, no BIND_NOW")),
-                    );
+                    out.finding(hard("binary.elf-relro-partial", Confidence::Verified, Severity::Low).evidence(Evidence::bytes(
+                        file,
+                        relro.at,
+                        phentsize,
+                        "PT_GNU_RELRO, no BIND_NOW",
+                    )));
                 }
                 (None, _) => {
                     hardening.insert("relro".into(), "none".into());
                     // Without a dynamic section there are no run-time relocations to protect.
-                    let (rule, severity) =
-                        if dynamic.present { ("binary.elf-relro-none", Severity::Medium) } else { ("binary.elf-relro-static", Severity::Info) };
-                    out.finding(
-                        hard(rule, Confidence::Verified, severity)
-                            .evidence(Evidence::bytes(file, phoff, phentsize * segments.len() as u64, "no PT_GNU_RELRO program header")),
-                    );
+                    let (rule, severity) = if dynamic.present {
+                        ("binary.elf-relro-none", Severity::Medium)
+                    } else {
+                        ("binary.elf-relro-static", Severity::Info)
+                    };
+                    out.finding(hard(rule, Confidence::Verified, severity).evidence(Evidence::bytes(
+                        file,
+                        phoff,
+                        phentsize * segments.len() as u64,
+                        "no PT_GNU_RELRO program header",
+                    )));
                 }
             }
         }
@@ -846,9 +890,20 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
                         .evidence(Evidence::bytes(file, *at, symsize, symbol.as_str())),
                 );
             }
+            // A Go program has no C code unless it links a C library, which a static one does not.
+            None if !symbols_visible && is_static && toolchain.has("Go") => {
+                hardening.insert("canary".into(), false.into());
+                out.finding(
+                    hard("binary.no-canary-safe-language", Confidence::Heuristic, Severity::Info)
+                        .param("language", "Go")
+                        .param("label", "")
+                        .evidence(Evidence::field(file, "toolchain marker", "statically linked Go program")),
+                );
+            }
             None if !symbols_visible => {
                 hardening.insert("canary".into(), Value::Null);
-                problems.undetermined("stack canary: the file has no symbols to look for __stack_chk_fail in (stripped and statically linked)");
+                problems
+                    .undetermined("stack canary: the file has no symbols to look for __stack_chk_fail in (stripped and statically linked)");
             }
             None => {
                 hardening.insert("canary".into(), false.into());
@@ -893,13 +948,19 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
         hardening.insert("runpath".into(), (!dynamic.runpath.is_empty()).into());
         if let Some(at) = dynamic.path_at.filter(|_| !paths.is_empty()) {
             // A relative or temporary directory lets whoever controls it supply a library.
-            let risky = paths.iter().any(|p| p.is_empty() || p.starts_with("/tmp") || !(p.starts_with('/') || p.starts_with("$ORIGIN") || p.starts_with("${ORIGIN}")));
+            let risky = paths.iter().any(|p| {
+                p.is_empty() || p.starts_with("/tmp") || !(p.starts_with('/') || p.starts_with("$ORIGIN") || p.starts_with("${ORIGIN}"))
+            });
             let kind = if dynamic.runpath.is_empty() { "RPATH" } else { "RUNPATH" };
             out.finding(
-                hard(if risky { "binary.elf-rpath-risky" } else { "binary.elf-rpath" }, Confidence::Verified, if risky { Severity::Medium } else { Severity::Low })
-                    .param("kind", kind)
-                    .param("paths", paths.join(":"))
-                    .evidence(Evidence::bytes(file, at, if wide { 16 } else { 8 }, paths.join(":"))),
+                hard(
+                    if risky { "binary.elf-rpath-risky" } else { "binary.elf-rpath" },
+                    Confidence::Verified,
+                    if risky { Severity::Medium } else { Severity::Low },
+                )
+                .param("kind", kind)
+                .param("paths", paths.join(":"))
+                .evidence(Evidence::bytes(file, at, if wide { 16 } else { 8 }, paths.join(":"))),
             );
         }
 

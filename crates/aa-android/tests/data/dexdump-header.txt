@@ -1,0 +1,23 @@
+DEX file header:
+magic               : 'dex\n035\0'
+checksum            : 07556050
+signature           : f282...c881
+file_size           : 2164
+header_size         : 112
+link_size           : 0
+link_off            : 0 (0x000000)
+string_ids_size     : 48
+string_ids_off      : 112 (0x000070)
+type_ids_size       : 21
+type_ids_off        : 304 (0x000130)
+proto_ids_size      : 14
+proto_ids_off       : 388 (0x000184)
+field_ids_size      : 0
+field_ids_off       : 0 (0x000000)
+method_ids_size     : 18
+method_ids_off      : 556 (0x00022c)
+class_defs_size     : 2
+class_defs_off      : 700 (0x0002bc)
+data_size           : 1400
+data_off            : 764 (0x0002fc)
+

@@ -150,7 +150,7 @@ pub fn find_volumes(disk: &dyn Disk) -> Vec<(u64, u64, VolumeKind)> {
             return found;
         };
         let (count, size) = (count.min(256) as u64, size as u64);
-        if size < 48 || size > 4096 {
+        if !(48..=4096).contains(&size) {
             return found;
         }
         let Some(table_at) = first.checked_mul(512) else { return found };

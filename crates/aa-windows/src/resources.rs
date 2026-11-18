@@ -112,9 +112,12 @@ pub fn parse_version(data: &[u8]) -> Option<VersionInfo> {
             "VarFileInfo" => {
                 for var in children(data, block.children, block.end, false) {
                     if var.key == "Translation" {
-                        info.translations.extend(var.value.chunks_exact(4).take(64).map(|pair| {
-                            (u16::from_le_bytes([pair[0], pair[1]]), u16::from_le_bytes([pair[2], pair[3]]))
-                        }));
+                        info.translations.extend(
+                            var.value
+                                .chunks_exact(4)
+                                .take(64)
+                                .map(|pair| (u16::from_le_bytes([pair[0], pair[1]]), u16::from_le_bytes([pair[2], pair[3]]))),
+                        );
                     }
                 }
             }

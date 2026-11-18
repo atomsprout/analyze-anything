@@ -1,8 +1,9 @@
 #!/bin/sh
 # Rebuilds every fixture in this folder. Needs: mingw-w64, osslsigncode (>= 2.6), openssl, nsis,
-# wixl + msitools, gcab, p7zip-full, cabextract, python3.
+# wixl + msitools, gcab, p7zip-full, cabextract, exiftool, mono-mcs + mono-utils, python3.
 #
-#   apt-get install -y mingw-w64 osslsigncode nsis wixl msitools gcab p7zip-full cabextract
+#   apt-get install -y mingw-w64 osslsigncode nsis wixl msitools gcab p7zip-full cabextract \
+#     libimage-exiftool-perl mono-mcs mono-utils
 #
 # Keys and certificates are generated on the spot and thrown away, so every run produces
 # different signatures. The reference tools' output is stored next to each fixture (*.ref.txt)
@@ -18,6 +19,15 @@ cp "$here"/src/* .
 x86_64-w64-mingw32-windres hello.rc -O coff -o hello.res
 x86_64-w64-mingw32-gcc -Os -s -o hello.exe hello.c hello.res -lws2_32 -ladvapi32
 cp hello.exe "$here/hello.exe"
+exiftool -s -CompanyName -ProductName -FileDescription -FileVersion -ProductVersion -OriginalFileName -InternalName -LegalCopyright \
+  -FileVersionNumber -ProductVersionNumber hello.exe > "$here/hello.version.ref.txt"
+
+# --- a small .NET assembly (Mono's C# compiler) -----------------------------------------------
+mcs -nologo -out:dotnet.exe dotnet.cs
+cp dotnet.exe "$here/dotnet.exe"
+{
+  monodis --assembly dotnet.exe; monodis --assemblyref dotnet.exe; monodis --implmap dotnet.exe; monodis --typedef dotnet.exe
+} > "$here/dotnet.ref.txt" 2>/dev/null
 
 # --- a throwaway PKI: root, RSA and ECDSA code-signing leaves, a timestamp authority ---------
 openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.crt -days 7300 \

@@ -1,0 +1,10 @@
+CompanyName                     : Fixture Works
+ProductName                     : Hello Fixture
+FileDescription                 : Analyze Anything test program
+FileVersion                     : 1.2.3.4
+ProductVersion                  : 1.2
+OriginalFileName                : hello.exe
+InternalName                    : hello
+LegalCopyright                  : (c) Fixture Works
+FileVersionNumber               : 1.2.3.4
+ProductVersionNumber            : 1.2.0.0

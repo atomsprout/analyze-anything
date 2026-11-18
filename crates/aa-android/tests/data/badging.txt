@@ -1,0 +1,28 @@
+package: name='com.example.aafixture' versionCode='42' versionName='1.2.3' platformBuildVersionName='6.0.1' platformBuildVersionCode='23'
+sdkVersion:'21'
+targetSdkVersion:'23'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.CAMERA'
+uses-permission: name='android.permission.READ_CONTACTS' maxSdkVersion='22'
+uses-permission: name='android.permission.SYSTEM_ALERT_WINDOW'
+uses-permission: name='android.permission.INSTALL_PACKAGES'
+uses-permission: name='com.example.aafixture.permission.OPEN'
+application-label:'AA Fixture'
+application-label-zh:'分析样例'
+application: label='AA Fixture' icon=''
+application-debuggable
+launchable-activity: name='com.example.aafixture.MainActivity'  label='' icon=''
+feature-group: label=''
+  uses-feature: name='android.hardware.camera'
+  uses-feature: name='android.hardware.faketouch'
+  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'
+provides-component:'accessibility'
+main
+other-activities
+other-receivers
+other-services
+supports-screens: 'small' 'normal' 'large' 'xlarge'
+supports-any-density: 'true'
+locales: '--_--' 'zh'
+densities: '160'
+native-code: 'arm64-v8a' 'x86_64'

@@ -204,6 +204,30 @@ mod tests {
     }
 
     #[test]
+    fn lzvn_and_lzfse_blocks() {
+        // The encoder emits a bare LZVN block ("bvxn") for small inputs and LZFSE ("bvx2") for large ones.
+        let small: Vec<u8> = b"hello hello hello hello ".iter().cycle().take(1500).copied().collect();
+        let mut stream = Vec::new();
+        lzfse_rust::encode_bytes(&small, &mut stream).expect("encode");
+        assert_eq!(&stream[..4], b"bvxn");
+        // The raw LZVN payload is what decmpfs types 7 and 8 store.
+        let payload = &stream[12..stream.len() - 4];
+        assert_eq!(expand(&attribute(7, small.len() as u64, payload), no_fork).expect("lzvn"), small);
+        // Type 8: the same payload as one block in the resource fork.
+        let mut fork = 8u32.to_le_bytes().to_vec();
+        fork.extend_from_slice(&(8 + payload.len() as u32).to_le_bytes());
+        fork.extend_from_slice(payload);
+        assert_eq!(expand(&attribute(8, small.len() as u64, &[]), || Ok(fork.clone())).expect("lzvn fork"), small);
+        // A wrong expected size is an error, not silently accepted.
+        assert!(expand(&attribute(7, small.len() as u64 + 1, payload), no_fork).is_err());
+
+        let large: Vec<u8> = (0..20000u32).map(|i| (i * 7 % 251) as u8).collect();
+        let mut stream = Vec::new();
+        lzfse_rust::encode_bytes(&large, &mut stream).expect("encode");
+        assert_eq!(expand(&attribute(11, large.len() as u64, &stream), no_fork).expect("lzfse"), large);
+    }
+
+    #[test]
     fn malformed_attributes_are_errors() {
         assert!(expand(b"", no_fork).is_err());
         assert!(expand(b"fpmc", no_fork).is_err());

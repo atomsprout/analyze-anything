@@ -67,15 +67,6 @@ impl<'a> Tlv<'a> {
         Some(bytes)
     }
 
-    /// A small non-negative INTEGER.
-    pub fn small_integer(&self) -> Option<u64> {
-        let bytes = self.integer_bytes()?;
-        if bytes.len() > 8 || self.content.first().is_some_and(|b| b & 0x80 != 0) {
-            return None;
-        }
-        Some(bytes.iter().fold(0u64, |acc, &b| (acc << 8) | u64::from(b)))
-    }
-
     /// The bytes of a BIT STRING with no unused bits.
     pub fn bit_string(&self) -> Option<&'a [u8]> {
         if self.tag != TAG_BIT_STRING {
@@ -158,15 +149,6 @@ impl<'a> Reader<'a> {
         Reader { data }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    /// The bytes not yet read.
-    pub fn rest(&self) -> &'a [u8] {
-        self.data
-    }
-
     /// The next element, whatever it is.
     pub fn any(&mut self) -> Result<Tlv<'a>, String> {
         let (tlv, used) = read(self.data, 0)?;
@@ -188,11 +170,6 @@ impl<'a> Reader<'a> {
         }
         self.data = &self.data[used..];
         Some(tlv)
-    }
-
-    /// The tag of the next element, without consuming it.
-    pub fn peek_tag(&self) -> Option<u8> {
-        self.data.first().copied()
     }
 }
 
@@ -268,7 +245,7 @@ mod tests {
         let (tlv, rest) = parse_prefix(&[0x30, 0x03, 0x02, 0x01, 0x05, 0xff]).expect("definite");
         assert_eq!(tlv.content, &[0x02, 0x01, 0x05]);
         assert_eq!(rest, &[0xff]);
-        assert_eq!(tlv.children().any().expect("child").small_integer(), Some(5));
+        assert_eq!(tlv.children().any().expect("child").integer_bytes(), Some(&[5u8][..]));
 
         let (tlv, rest) = parse_prefix(&[0x30, 0x80, 0x02, 0x01, 0x05, 0x00, 0x00, 0xaa]).expect("indefinite");
         assert_eq!(tlv.content, &[0x02, 0x01, 0x05]);

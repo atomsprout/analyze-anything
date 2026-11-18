@@ -29,6 +29,12 @@ use crate::{Lang, RenderError, doc};
 pub const FINDINGS_PER_CHAPTER: usize = 200;
 /// Evidence lines typeset per finding before the rest are counted.
 pub const EVIDENCE_PER_FINDING: usize = 5;
+/// Characters of a finding's title and of its sentence typeset before they are cut. With the
+/// evidence limit, this keeps every finding shorter than a page.
+const TITLE_LENGTH: usize = 200;
+const TEXT_LENGTH: usize = 1500;
+/// Characters of any other single line (a path in the inventory, a limitation) before it is cut.
+const LINE_LENGTH: usize = 400;
 /// Characters of the input name shown in the running page header.
 const HEADER_NAME_LENGTH: usize = 70;
 
@@ -105,11 +111,15 @@ fn message(diagnostics: &[SourceDiagnostic]) -> String {
     diagnostics.iter().map(|d| d.message.as_str()).collect::<Vec<_>>().join("; ")
 }
 
+/// Typesets `report` into pages.
+fn compile(report: &Report, lang: Lang) -> Result<PagedDocument, RenderError> {
+    let world = ReportWorld::new(serde_json::to_vec(&view(report, lang))?);
+    typst::compile::<PagedDocument>(&world).output.map_err(|errors| RenderError::Pdf(message(&errors)))
+}
+
 /// Renders `report` as a PDF in `lang`.
 pub fn render(report: &Report, lang: Lang) -> Result<Vec<u8>, RenderError> {
-    let world = ReportWorld::new(serde_json::to_vec(&view(report, lang))?);
-    let compiled = typst::compile::<PagedDocument>(&world).output;
-    let result = compiled.map_err(|errors| RenderError::Pdf(message(&errors))).and_then(|document| {
+    let result = compile(report, lang).and_then(|document| {
         let options = typst_pdf::PdfOptions {
             // A fixed identifier and no timestamp: the bytes depend on the report alone.
             ident: Smart::Custom("analyze-anything-report"),
@@ -131,8 +141,83 @@ fn cut(text: &str, length: usize) -> String {
     out
 }
 
+/// Characters in a row without a place to break the line before the row is split.
+const UNBROKEN_RUN: usize = 16;
+/// Characters between two break points inside a split row.
+const PIECE_LENGTH: usize = 8;
+
+/// True for characters a line never needs help breaking at: spaces, and CJK text, which may break
+/// between any two characters.
+fn breaks_itself(c: char) -> bool {
+    c.is_whitespace() || c >= '\u{2e80}'
+}
+
+/// True for marks that attach to the character before them and must stay with it.
+fn is_combining(c: char) -> bool {
+    matches!(c, '\u{0300}'..='\u{036f}' | '\u{1ab0}'..='\u{1aff}' | '\u{1dc0}'..='\u{1dff}' | '\u{20d0}'..='\u{20ff}')
+}
+
+/// Splits `text` into pieces between which the template allows a line break.
+///
+/// Hashes and paths have no spaces, and Typst would let them run off the page. Marking the break
+/// points with zero-width spaces would put those characters into the PDF's text, so a search for
+/// a hash would fail; pieces joined by gaps too small to see leave the text as it is. Only long
+/// rows of characters without a natural break are split.
+fn pieces(text: &str) -> Vec<String> {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = Vec::new();
+    let mut piece = String::new();
+    let mut i = 0;
+    while i < chars.len() {
+        if breaks_itself(chars[i]) {
+            piece.push(chars[i]);
+            i += 1;
+            continue;
+        }
+        let end = chars[i..].iter().position(|c| breaks_itself(*c)).map_or(chars.len(), |n| i + n);
+        if end - i <= UNBROKEN_RUN {
+            piece.extend(&chars[i..end]);
+        } else {
+            // Break after separators where there are any; where a stretch has none (a hash), every
+            // few characters.
+            let mut since_break = 0;
+            let mut since_separator = 0;
+            for (j, c) in chars[i..end].iter().enumerate() {
+                piece.push(*c);
+                since_break += 1;
+                since_separator += 1;
+                let at_separator = matches!(c, '/' | '\\' | '.' | '_' | '-' | '=' | ':' | ',' | ';' | '@' | '&' | '?' | '+' | '%' | '|');
+                if at_separator {
+                    since_separator = 0;
+                }
+                let next = chars.get(i + j + 1).copied().filter(|_| i + j + 1 < end);
+                let wanted = (at_separator && since_break >= 2) || (since_separator >= UNBROKEN_RUN && since_break >= PIECE_LENGTH);
+                if wanted && next.is_some_and(|n| !is_combining(n)) {
+                    out.push(std::mem::take(&mut piece));
+                    since_break = 0;
+                }
+            }
+        }
+        i = end;
+    }
+    if !piece.is_empty() {
+        out.push(piece);
+    }
+    out
+}
+
+/// Report text for a single line of the template: deceptive characters shown, break points marked.
+fn line(text: &str) -> Value {
+    json!(pieces(&visible_line(text)))
+}
+
+/// Report text that may hold line breaks of its own.
+fn prose(text: &str) -> Value {
+    json!(pieces(&visible(text)))
+}
+
 fn pairs(items: Vec<(String, String)>) -> Value {
-    items.into_iter().map(|(label, value)| json!([label, visible_line(&value)])).collect()
+    items.into_iter().map(|(label, value)| json!([label, line(&value)])).collect()
 }
 
 /// Findings of `section`, most severe first, otherwise in report order.
@@ -143,20 +228,19 @@ pub(crate) fn chapter_findings(report: &Report, section: Section) -> Vec<&Findin
 }
 
 fn finding_view(report: &Report, lang: Lang, finding: &Finding) -> Value {
-    let evidence: Vec<String> =
-        finding.evidence.iter().take(EVIDENCE_PER_FINDING).map(|e| visible_line(&doc::evidence_line(e)).into_owned()).collect();
+    let evidence: Vec<Value> = finding.evidence.iter().take(EVIDENCE_PER_FINDING).map(|e| line(&doc::evidence_line(e))).collect();
     let more = finding.evidence.len().saturating_sub(EVIDENCE_PER_FINDING);
     json!({
         "severity": words::severity_key(finding.severity),
         "severity_label": words::severity(lang, finding.severity),
         "confidence": words::confidence_key(finding.confidence),
         "confidence_label": words::confidence(lang, finding.confidence),
-        "title": visible_line(&doc::rule_title(report, lang, &finding.rule)),
-        "text": visible(&doc::finding_text(report, lang, finding)),
+        "title": line(&cut(&doc::rule_title(report, lang, &finding.rule), TITLE_LENGTH)),
+        "text": prose(&cut(&doc::finding_text(report, lang, finding), TEXT_LENGTH)),
         "evidence": evidence,
         "more_evidence": (more > 0).then(|| ui(lang, "more_evidence").replace("{n}", &more.to_string())),
-        "references": visible_line(&finding.references.join(", ")),
-        "id": visible_line(&finding.id.chars().take(16).collect::<String>()),
+        "references": line(&cut(&finding.references.join(", "), LINE_LENGTH)),
+        "id": line(&finding.id.chars().take(16).collect::<String>()),
     })
 }
 
@@ -186,15 +270,15 @@ fn view(report: &Report, lang: Lang) -> Value {
         .map(|s| json!({ "key": words::severity_key(s), "label": words::severity(lang, s), "count": count(s) }))
         .collect();
     let inventory = doc::inventory(report, lang);
-    let inventory_rows: Vec<Vec<String>> =
-        inventory.rows.iter().map(|row| row.iter().map(|cell| visible_line(cell).into_owned()).collect()).collect();
+    let inventory_rows: Vec<Vec<Value>> =
+        inventory.rows.iter().map(|row| row.iter().map(|cell| line(&cut(cell, LINE_LENGTH))).collect()).collect();
     let limitations: Vec<Value> = doc::limitation_groups(report, lang)
         .into_iter()
         .map(|group| {
             json!({
-                "title": visible_line(&group.title),
-                "text": visible(&group.text),
-                "items": group.items.iter().map(|item| visible_line(item).into_owned()).collect::<Vec<_>>(),
+                "title": line(&cut(&group.title, TITLE_LENGTH)),
+                "text": prose(&cut(&group.text, TEXT_LENGTH)),
+                "items": group.items.iter().map(|item| line(&cut(item, LINE_LENGTH))).collect::<Vec<_>>(),
                 "more": group.more,
             })
         })
@@ -216,9 +300,10 @@ fn view(report: &Report, lang: Lang) -> Value {
             "coverage": w.coverage,
             "no_limitations": w.no_limitations,
         },
-        "input_name": visible_line(&report.input.name),
-        "header_name": visible_line(&cut(&report.input.name, HEADER_NAME_LENGTH)),
-        "tool": visible_line(&format!("{} {}", report.tool.name, report.tool.version)),
+        "document_title": format!("{}: {}", w.title, visible_line(&report.input.name)),
+        "input_name": line(&cut(&report.input.name, TITLE_LENGTH)),
+        "header_name": line(&cut(&report.input.name, HEADER_NAME_LENGTH)),
+        "tool": line(&format!("{} {}", report.tool.name, report.tool.version)),
         "header": pairs(doc::header_items(report, lang)),
         "summary": pairs(doc::summary_items(report, lang)),
         "severities": severities,
@@ -234,4 +319,179 @@ fn view(report: &Report, lang: Lang) -> Value {
             "limitations": limitations,
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use aa_core::{Artifact, Confidence, Coverage, Evidence, Input, InputKind, RuleText, Tool};
+    use typst::layout::{Frame, FrameItem};
+
+    use super::*;
+
+    fn artifact(path: &str) -> Artifact {
+        Artifact {
+            path: path.to_string(),
+            parent: None,
+            size: 3,
+            digests: None,
+            detected: None,
+            kind: None,
+            entropy: None,
+            unpacked_by: None,
+            facts: BTreeMap::new(),
+        }
+    }
+
+    fn report(name: &str, artifacts: Vec<Artifact>, findings: Vec<Finding>) -> Report {
+        let text =
+            RuleText {
+                title_zh: "标题".into(), title_en: "Title".into(), text_zh: "看到 {what}。".into(), text_en: "Saw {what}.".into()
+            };
+        Report {
+            schema_version: aa_core::SCHEMA_VERSION,
+            tool: Tool { name: "analyze-anything".into(), version: "0.0.1".into() },
+            input: Input { name: name.to_string(), kind: InputKind::File, sha256: Some("ab".repeat(32)) },
+            summary: BTreeMap::new(),
+            coverage: Coverage {
+                artifacts_total: artifacts.len() as u64,
+                artifacts_analyzed: artifacts.len() as u64,
+                ..Default::default()
+            },
+            artifacts,
+            findings,
+            limitations: Vec::new(),
+            rules: BTreeMap::from([("test.rule".to_string(), text)]),
+        }
+    }
+
+    fn finding(artifact: &Artifact, section: Section, severity: Severity, what: &str) -> Finding {
+        Finding::new(section, "test", "test.rule", Confidence::Heuristic, severity)
+            .param("what", what)
+            .evidence(Evidence::field(artifact, what, what))
+            .seal()
+    }
+
+    fn frame_text(frame: &Frame, out: &mut String) {
+        for (_, item) in frame.items() {
+            match item {
+                FrameItem::Text(text) => out.push_str(&text.text),
+                FrameItem::Group(group) => frame_text(&group.frame, out),
+                _ => {}
+            }
+        }
+    }
+
+    /// Everything the pages show, in drawing order, with nothing between the pieces.
+    fn typeset(report: &Report, lang: Lang) -> (usize, String) {
+        let document = compile(report, lang).expect("the report typesets");
+        let mut text = String::new();
+        document.pages.iter().for_each(|page| frame_text(&page.frame, &mut text));
+        (document.pages.len(), text.split_whitespace().collect())
+    }
+
+    fn squeeze(text: &str) -> String {
+        text.split_whitespace().collect()
+    }
+
+    #[test]
+    fn pieces_put_the_text_back_together() {
+        for text in [
+            "",
+            "short",
+            "一段没有空格的中文不需要帮助",
+            &"a".repeat(100),
+            "dir/sub.dir/file-name_with.parts=1&x",
+            "e\u{0301}".repeat(30).as_str(),
+        ] {
+            let pieces = pieces(text);
+            assert_eq!(pieces.concat(), *text);
+            assert!(pieces.iter().all(|piece| !piece.is_empty()));
+        }
+        assert_eq!(pieces("short and usual words"), ["short and usual words"]);
+        assert!(pieces(&"f".repeat(64)).iter().all(|piece| piece.chars().count() <= UNBROKEN_RUN));
+        assert_eq!(pieces("application/x-executable"), ["application/", "x-", "executable"]);
+        assert!(pieces(&"e\u{0301}".repeat(30)).iter().all(|piece| !piece.starts_with('\u{0301}')));
+    }
+
+    #[test]
+    fn markup_in_report_text_is_typeset_as_the_characters_it_is() {
+        let hostile = [
+            "#eval(\"1+1\") *bold* _emph_ $x^2$ `raw` <label> @cite",
+            "#import \"@preview/cetz:0.3.0\": *",
+            "#read(\"/etc/passwd\") #include \"report.json\"",
+            "] ) } // /* \\ #panic(\"x\")",
+        ];
+        let artifacts: Vec<Artifact> = hostile.iter().map(|text| artifact(&format!("dir/{text}"))).collect();
+        let findings = artifacts.iter().zip(hostile).map(|(a, text)| finding(a, Section::Anomalies, Severity::High, text)).collect();
+        let mut report = report(hostile[0], artifacts, findings);
+        report.rules.insert(
+            "test.rule".into(),
+            RuleText {
+                title_zh: hostile[0].into(),
+                title_en: hostile[0].into(),
+                text_zh: format!("{} {{what}}", hostile[1]),
+                text_en: format!("{} {{what}}", hostile[1]),
+            },
+        );
+        report.limitations.push(aa_core::Limitation::new(hostile[2], Some(hostile[3]), Some(hostile[0].into())));
+        for lang in [Lang::Zh, Lang::En] {
+            let (_, text) = typeset(&report, lang);
+            for raw in hostile {
+                assert!(text.contains(&squeeze(raw)), "{raw} was not typeset literally");
+            }
+        }
+    }
+
+    #[test]
+    fn characters_that_hide_or_reorder_text_are_spelled_out() {
+        let file = artifact("evil\u{202e}fdp.exe");
+        let findings = vec![finding(&file, Section::Anomalies, Severity::Medium, "a\u{200b}b")];
+        let (_, text) = typeset(&report("x\u{2066}y", vec![file], findings), Lang::En);
+        assert!(text.contains("evil[U+202E]fdp.exe") && text.contains("a[U+200B]b") && text.contains("x[U+2066]y"));
+        assert!(!text.contains(['\u{202e}', '\u{200b}', '\u{2066}']));
+    }
+
+    #[test]
+    fn both_languages_are_typeset_with_their_own_words() {
+        let file = artifact("a.bin");
+        let report = report("a.bin", vec![file.clone()], vec![finding(&file, Section::Network, Severity::Low, "x")]);
+        let (_, zh) = typeset(&report, Lang::Zh);
+        let (_, en) = typeset(&report, Lang::En);
+        for word in ["分析报告", "摘要", "目录", "网络与端点", "覆盖度与局限", "看到x。", "启发式"] {
+            assert!(zh.contains(word), "no {word} in the Chinese PDF");
+        }
+        for word in ["Analysisreport", "Contents", "Networkandendpoints", "Coverageandlimitations", "Sawx.", "Heuristic"] {
+            assert!(en.contains(word), "no {word} in the English PDF");
+        }
+        // The page footer counts pages: "1 / n".
+        assert!(en.contains("1/"));
+    }
+
+    #[test]
+    fn long_chapters_are_cut_most_severe_first_and_say_so() {
+        let file = artifact("a.bin");
+        let mut findings: Vec<Finding> =
+            (0..FINDINGS_PER_CHAPTER + 50).map(|i| finding(&file, Section::Network, Severity::Info, &format!("info-{i}"))).collect();
+        findings.push(finding(&file, Section::Network, Severity::High, "the-high-one"));
+        let view = view(&report("a.bin", vec![file], findings), Lang::En);
+        let chapter = &view["chapters"][7];
+        assert_eq!(chapter["count"], FINDINGS_PER_CHAPTER + 51);
+        assert_eq!(chapter["findings"].as_array().map(Vec::len), Some(FINDINGS_PER_CHAPTER));
+        assert_eq!(chapter["findings"][0]["severity"], "high");
+        assert!(chapter["note"].as_str().is_some_and(|note| note.contains("251") && note.contains("200")));
+        assert!(view["chapters"][0]["note"].is_null());
+    }
+
+    #[test]
+    fn the_world_serves_nothing_but_the_template_and_the_report() {
+        let world = ReportWorld::new(b"{}".to_vec());
+        let other = FileId::new(None, VirtualPath::new("/etc/passwd"));
+        assert!(world.source(other).is_err() && world.file(other).is_err());
+        assert!(world.file(world.main()).is_err(), "the template is source, not data");
+        assert!(world.source(world.data_id).is_err(), "the data is not source");
+        assert!(world.today(None).is_none());
+        assert_eq!(fonts().fonts.len(), 2);
+    }
 }

@@ -35,7 +35,6 @@ const RECORD_DIR_ENTRY: u64 = 9;
 const FS_UNENCRYPTED: u64 = 1;
 const INCOMPAT_CASE_INSENSITIVE: u64 = 1;
 const INCOMPAT_NORMALIZATION_INSENSITIVE: u64 = 8;
-const INCOMPAT_SEALED: u64 = 0x20;
 
 /// The Fletcher-64 checksum APFS stores in the first eight bytes of every object.
 fn checksum_ok(block: &[u8]) -> bool {
@@ -63,12 +62,7 @@ impl Container<'_> {
 
     /// Visits every leaf record of the B-tree rooted at block `root`, as `(key, value)`.
     /// `resolve` turns the child ids of inner nodes into block addresses.
-    fn walk(
-        &self,
-        root: u64,
-        resolve: &dyn Fn(u64) -> Option<u64>,
-        visit: &mut dyn FnMut(&[u8], &[u8]) -> bool,
-    ) -> Result<(), String> {
+    fn walk(&self, root: u64, resolve: &dyn Fn(u64) -> Option<u64>, visit: &mut dyn FnMut(&[u8], &[u8]) -> bool) -> Result<(), String> {
         let mut pending = vec![(root, 0usize)];
         let mut seen = BTreeSet::new();
         let mut physical = false;
@@ -131,7 +125,11 @@ impl Container<'_> {
                     }
                 } else {
                     let child = le64(value, 0).ok_or_else(bad)?;
-                    let child = if physical { child } else { resolve(child).ok_or_else(|| format!("child object {child} is not in the object map"))? };
+                    let child = if physical {
+                        child
+                    } else {
+                        resolve(child).ok_or_else(|| format!("child object {child} is not in the object map"))?
+                    };
                     children.push((child, depth + 1));
                 }
             }
@@ -189,8 +187,6 @@ enum Attribute {
 pub struct Volume<'a> {
     container: Container<'a>,
     pub name: String,
-    pub case_sensitive: bool,
-    pub sealed: bool,
     inodes: BTreeMap<u64, Inode>,
     /// `(stream id, logical offset) -> (length, block)`; block 0 is a hole.
     extents: BTreeMap<(u64, u64), (u64, u64)>,
@@ -387,17 +383,7 @@ impl<'a> Volume<'a> {
             }
         }
         files.sort_by(|a, b| a.path.cmp(&b.path));
-        Ok(Volume {
-            container,
-            name: name.unwrap_or_default(),
-            case_sensitive: incompatible & INCOMPAT_CASE_INSENSITIVE == 0,
-            sealed: incompatible & INCOMPAT_SEALED != 0,
-            inodes,
-            extents,
-            attributes,
-            files,
-            damage,
-        })
+        Ok(Volume { container, name: name.unwrap_or_default(), inodes, extents, attributes, files, damage })
     }
 
     /// The runs of data stream `id`, in logical order, with holes made explicit.

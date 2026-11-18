@@ -25,9 +25,14 @@ p384 = { version = "0.13", default-features = false, features = ["ecdsa", "std"]
 roxmltree = "0.20"
 # NSIS installers: header, script and embedded files (Apache-2.0).
 nsis = "0.6.1"
+# Inno Setup installers: headers, record streams and file extraction (Apache-2.0).
+innospect = "0.2"
 # MSI databases and cabinets (MIT).
 msi = "0.11"
 cfb = "0.16"
-cab = "0.6"
+lzxd = "0.2"
+memchr = "2"
+regex.workspace = true
 
 [dev-dependencies]
+aa-unpack.workspace = true

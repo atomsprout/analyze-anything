@@ -73,13 +73,14 @@ impl Toolchain {
     pub fn emit(&self, file: &Artifact, base: u64, label: &str, out: &mut Output) {
         for language in &self.languages {
             let rule = if language.confidence == Confidence::Heuristic { "binary.language-heuristic" } else { "binary.language" };
-            let basis = format!("{label}{}", language.basis);
+            let basis = language.basis.as_str();
             let evidence = match language.at {
-                Some((offset, length)) => Evidence::bytes(file, base + offset, length, basis.clone()),
-                None => Evidence::field(file, "toolchain marker", basis.clone()),
+                Some((offset, length)) if length > 0 => Evidence::bytes(file, base + offset, length, basis),
+                _ => Evidence::field(file, format!("{label}toolchain marker"), basis),
             };
             out.finding(
                 finding(Section::Composition, rule, language.confidence, Severity::Info)
+                    .param("label", label)
                     .param("language", language.name)
                     .param("basis", basis)
                     .evidence(evidence),
@@ -111,8 +112,9 @@ impl Toolchain {
     }
 }
 
-/// Reads every marker. `libraries` are the names of linked libraries; `regions` the sections.
-pub fn detect(rd: &Rd, marks: &Marks, libraries: &[String], regions: &[Region]) -> Toolchain {
+/// Reads every marker. `libraries` are the names of linked libraries, `regions` the sections,
+/// `idents` the compiler identification strings of an ELF `.comment` section.
+pub fn detect(rd: &Rd, marks: &Marks, libraries: &[String], regions: &[Region], idents: &[String]) -> Toolchain {
     let mut found = Toolchain::default();
     let section = |wanted: &[&str]| regions.iter().find(|r| wanted.iter().any(|w| r.name == *w));
     let section_prefix = |prefix: &[&str]| regions.iter().find(|r| prefix.iter().any(|p| r.name.starts_with(p)));
@@ -142,6 +144,9 @@ pub fn detect(rd: &Rd, marks: &Marks, libraries: &[String], regions: &[Region]) 
     }
     if let Some(region) = section(&[".rustc", "__rustc"]) {
         found.add("Rust", Confidence::Derived, format!("section {}", region.name), Some((region.offset, region.size.min(32))));
+    }
+    if let Some(ident) = idents.iter().find(|i| i.starts_with("rustc version ")) {
+        found.add("Rust", Confidence::Derived, format!("compiler identification \"{ident}\""), None);
     }
     found.rustc_commit = rustc_commit(rd.data);
     if let Some((commit, offset)) = &found.rustc_commit {
@@ -236,8 +241,20 @@ fn go_buildinfo(rd: &Rd, region: Option<&Region>) -> Option<(Value, u64)> {
                 (Some("build"), Some(setting), _) => {
                     // Linker and compiler flags can carry arbitrary text; keep the settings that
                     // describe the build, not the ones that may embed values.
-                    const KEPT: &[&str] =
-                        &["-compiler", "-buildmode", "CGO_ENABLED", "GOARCH", "GOOS", "GOAMD64", "GOARM", "GOARM64", "vcs", "vcs.revision", "vcs.time", "vcs.modified"];
+                    const KEPT: &[&str] = &[
+                        "-compiler",
+                        "-buildmode",
+                        "CGO_ENABLED",
+                        "GOARCH",
+                        "GOOS",
+                        "GOAMD64",
+                        "GOARM",
+                        "GOARM64",
+                        "vcs",
+                        "vcs.revision",
+                        "vcs.time",
+                        "vcs.modified",
+                    ];
                     if let Some((key, val)) = setting.split_once('=')
                         && KEPT.contains(&key)
                     {

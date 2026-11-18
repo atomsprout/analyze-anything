@@ -19,13 +19,17 @@
 #let sans = ("Noto Sans SC",)
 #let mono = ("JetBrains Mono", "Noto Sans SC")
 
-// Hashes and paths have no spaces to break at: allow a break after every character.
-#let anywhere(s) = s.clusters().join(sym.zws)
+// Text from the report arrives as a list of pieces; a line may break between two of them. The
+// gap adds a break point without adding a character (a zero-width space would end up in the
+// PDF's text), so a hash that fits on one line is still found by searching for it. The gap is
+// invisibly small but not zero: Typst drops spacing of exactly zero.
+#let gap = h(0.001pt)
+#let anywhere(pieces) = if pieces.len() == 0 { "" } else { pieces.join(gap) }
 // Only one weight of the text font is embedded; a hairline stroke stands in for bold.
 #let strong-text(body, fill: ink) = text(stroke: 0.22pt + fill, fill: fill, body)
 #let code(s, size: 0.92em, fill: ink) = text(font: mono, size: size, fill: fill, anywhere(s))
 
-#set document(title: w.title + ": " + d.input_name, author: d.tool, date: none)
+#set document(title: d.document_title, date: none)
 #set page(
   paper: "a4",
   margin: (x: 18mm, top: 24mm, bottom: 20mm),
@@ -45,7 +49,7 @@
     set text(size: 7.5pt, fill: muted)
     grid(
       columns: (1fr, auto),
-      d.tool, counter(page).display("1 / 1", both: true),
+      anywhere(d.tool), counter(page).display("1 / 1", both: true),
     )
   },
 )
@@ -72,9 +76,7 @@
 // ---- Title ----------------------------------------------------------------------------------
 
 #text(size: 9pt, fill: muted, tracking: 0.6pt, w.title)
-#v(-4pt)
-#block(text(size: 21pt, stroke: 0.3pt + ink, anywhere(d.input_name)))
-#v(-2pt)
+#block(above: 8pt, below: 14pt, text(size: 21pt, stroke: 0.3pt + ink, anywhere(d.input_name)))
 #grid(
   columns: (auto, 1fr),
   column-gutter: 10pt,
@@ -130,9 +132,10 @@
   text(size: 7.5pt, fill: if filled { white } else { colour }, mark + " " + label),
 )
 
+// A finding stays on one page. The renderer cuts its text and evidence so it always fits.
 #let finding(f) = block(
   width: 100%,
-  breakable: true,
+  breakable: false,
   above: 10pt,
   below: 10pt,
   inset: (left: 9pt, top: 2pt, bottom: 2pt),
@@ -146,7 +149,7 @@
       h(6pt)
       strong-text(anywhere(f.title))
     })
-    block(anywhere(f.text))
+    block(above: 6pt, below: 6pt, anywhere(f.text))
     set text(size: 8pt, fill: muted)
     for line in f.evidence {
       block(above: 4pt, below: 4pt, grid(
@@ -159,7 +162,7 @@
       block(above: 4pt, below: 4pt, f.more_evidence)
     }
     block(above: 4pt, {
-      if f.references != "" {
+      if f.references.len() > 0 {
         w.references + " " + text(fill: ink, anywhere(f.references))
         h(10pt)
       }
@@ -188,17 +191,18 @@
 #{
   set text(size: 7pt)
   table(
-    columns: (1fr, auto, 20%, auto, 27%),
+    // The last column is as wide as half a SHA-256, so a digest takes two lines.
+    columns: (1fr, auto, 17%, auto, 136pt),
     align: (left, right, left, right, left),
     inset: (x: 4pt, y: 3.5pt),
     stroke: (x, y) => (bottom: 0.4pt + faint, top: if y == 0 { 0.8pt + ink } else { none }),
     table.header(..d.inventory.head.map(cell => table.cell(fill: wash, text(fill: muted, cell)))),
     ..d.inventory.rows.map(row => (
       code(row.at(0), size: 1em),
-      row.at(1),
+      anywhere(row.at(1)),
       anywhere(row.at(2)),
-      row.at(3),
-      code(row.at(4), size: 1em, fill: muted),
+      anywhere(row.at(3)),
+      code(row.at(4), size: 0.9em, fill: muted),
     )).flatten(),
   )
 }
@@ -222,14 +226,13 @@
 
 #for group in d.coverage.limitations {
   heading(level: 2, numbering: none, outlined: false, anywhere(group.title))
-  if group.text != "" {
-    group.text
-  }
+  anywhere(group.text)
   set text(size: 8.5pt)
-  for item in group.items {
-    block(above: 5pt, below: 5pt, inset: (left: 9pt), stroke: (left: 0.6pt + faint), anywhere(item))
-  }
-  if group.more != none {
-    block(above: 5pt, inset: (left: 9pt), text(fill: muted, group.more))
-  }
+  list(
+    marker: text(fill: muted, "–"),
+    spacing: 5pt,
+    indent: 2pt,
+    ..group.items.map(anywhere),
+    ..if group.more != none { (text(fill: muted, group.more),) },
+  )
 }

@@ -1,0 +1,2 @@
+DOES NOT VERIFY
+ERROR: JAR signer KEY.RSA: JAR signature META-INF/KEY.SF indicates the APK is signed using APK Signature Scheme v2 but no such signature was found. Signature stripped?
