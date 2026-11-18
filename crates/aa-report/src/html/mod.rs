@@ -251,7 +251,7 @@ fn view(report: &Report, lang: Lang) -> Result<Value, RenderError> {
         }
     }
     // What the script needs to show the findings of a rule as one entry exactly as the other
-    // outputs do: each finding's shortened subject, and the order of the rule titles.
+    // outputs do: each finding's shortened subject. The order comes from the report itself.
     let mut subjects = vec![Value::Null; report.findings.len()];
     for section in Section::ALL {
         for group in group::chapter(report, lang, section) {
@@ -260,16 +260,9 @@ fn view(report: &Report, lang: Lang) -> Result<Value, RenderError> {
             }
         }
     }
-    let ranks = |lang: Lang| -> Map<String, Value> {
-        let ids: std::collections::BTreeSet<&str> = report.findings.iter().map(|finding| finding.rule.as_str()).collect();
-        let mut rules: Vec<(String, &str)> = ids.into_iter().map(|rule| (doc::rule_title(report, lang, rule), rule)).collect();
-        rules.sort();
-        rules.into_iter().enumerate().map(|(rank, (_, rule))| (rule.to_string(), json!(rank))).collect()
-    };
     Ok(json!({
         "lang": lang_key(lang),
         "subjects": subjects,
-        "ranks": { "zh": ranks(Lang::Zh), "en": ranks(Lang::En) },
         "words": { "zh": page_words(Lang::Zh)?, "en": page_words(Lang::En)? },
         "texts": texts,
         "values": values,

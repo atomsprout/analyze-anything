@@ -511,13 +511,15 @@ mod tests {
         findings.push(finding(&file, Section::Network, Severity::High, "the-high-one"));
         let mut report = report("a.bin", vec![file.clone()], findings);
         report.rules.insert("other.rule".into(), report.rules["test.rule"].clone());
-        report.findings.push(Finding::new(Section::Network, "test", "other.rule", Confidence::Verified, Severity::Low).param("what", "alone").seal());
+        report
+            .findings
+            .push(Finding::new(Section::Network, "test", "other.rule", Confidence::Verified, Severity::Low).param("what", "alone").seal());
         let view = view(&report, Lang::En);
         let chapter = &view["chapters"][7];
         assert_eq!(chapter["title"], json!("Network and endpoints · 2 kinds / 27 findings"));
         let entries = chapter["findings"].as_array().expect("entries");
         assert_eq!(entries.len(), 2);
-        // The group holding a High comes first and lists 30 of its 26... all of them.
+        // The group holding a High comes first; with 26 findings it is under the cap of 30.
         assert_eq!(entries[0]["group"], true);
         assert_eq!(entries[0]["severity"], "high");
         assert_eq!(entries[0]["label"], "High × 1 · Info × 25 · Heuristic");

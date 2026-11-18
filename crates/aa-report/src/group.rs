@@ -2,7 +2,7 @@
 //!
 //! A real report holds hundreds of findings that say the same thing about different files. Every
 //! readable output groups them the same way, and this module is the one place that decides how:
-//! a chapter is a list of [`Group`]s, one per rule; a group is a list of [`Variant`]s, one per
+//! a chapter is a list of [`Group`]s, one per rule, in the order the report first mentions them; a group is a list of [`Variant`]s, one per
 //! distinct sentence; a variant lists the findings that share that sentence.
 //!
 //! So "ASLR is on" is written once, followed by the files it holds for, instead of 475 times.
@@ -46,13 +46,15 @@ pub struct Variant<'a> {
 /// The findings of one rule.
 #[derive(Debug, Clone)]
 pub struct Group<'a> {
+    /// Position in [`Report::findings`] of the group's first finding.
+    pub first: usize,
     pub rule: &'a str,
     pub title: String,
     /// The highest severity among the findings.
     pub severity: Severity,
     /// Number of findings.
     pub count: usize,
-    /// Most severe first, then the sentence shared by the most findings, then report order.
+    /// In the order their first finding appears in the group.
     pub variants: Vec<Variant<'a>>,
 }
 
@@ -106,7 +108,10 @@ fn short_subjects(paths: &[&str]) -> BTreeMap<String, String> {
 
 /// Groups `findings` (each with its position in the report) by rule.
 ///
-/// Groups come most severe first, then by title, then by rule id.
+/// Groups come in the order their first finding appears in the report. The engine orders a
+/// chapter's findings most severe first, then as the analyzers declared their rules — an order
+/// chosen for reading — so the groups inherit it. Inside a group the findings keep report order,
+/// except that anything above `Info` is listed before `Info`.
 pub fn groups<'a>(report: &'a Report, lang: Lang, findings: impl Iterator<Item = (usize, &'a Finding)>) -> Vec<Group<'a>> {
     let mut by_rule: BTreeMap<&str, Vec<(usize, &Finding)>> = BTreeMap::new();
     for (index, finding) in findings {
@@ -130,11 +135,8 @@ pub fn groups<'a>(report: &'a Report, lang: Lang, findings: impl Iterator<Item =
                 let subject = subject_path(finding).and_then(|path| short.get(path).cloned());
                 variants[at].instances.push(Instance { index: *index, finding, subject });
             }
-            variants.sort_by_key(|variant| {
-                let severity = variant.instances.iter().map(|i| i.finding.severity).max().unwrap_or(Severity::Info);
-                (std::cmp::Reverse(severity), std::cmp::Reverse(variant.instances.len()))
-            });
             Group {
+                first: members.iter().map(|(index, _)| *index).min().unwrap_or(0),
                 rule,
                 title: rule_title(report, lang, rule),
                 severity: members.iter().map(|(_, finding)| finding.severity).max().unwrap_or(Severity::Info),
@@ -143,7 +145,7 @@ pub fn groups<'a>(report: &'a Report, lang: Lang, findings: impl Iterator<Item =
             }
         })
         .collect();
-    out.sort_by(|a, b| b.severity.cmp(&a.severity).then_with(|| a.title.cmp(&b.title)).then_with(|| a.rule.cmp(b.rule)));
+    out.sort_by_key(|group| group.first);
     out
 }
 
@@ -244,7 +246,12 @@ pub fn listing(group: &Group) -> Listing {
                 subjects.push(subject.clone());
             }
         }
-        rows.push(Row::Shared { text: variant.text.clone(), count: variant.instances.len(), subjects, cut: take < variant.instances.len() });
+        rows.push(Row::Shared {
+            text: variant.text.clone(),
+            count: variant.instances.len(),
+            subjects,
+            cut: take < variant.instances.len(),
+        });
     }
     let shown = group.listed() - left;
     Listing { rows, not_shown: group.count - shown }
@@ -272,6 +279,95 @@ mod tests {
         assert_eq!(short["b/y/lib.so"], "b/y/lib.so");
         assert_eq!(short["a/y/other.so"], "…/other.so");
         assert_eq!(short["top.bin"], "top.bin");
+    }
+
+    fn sample() -> Report {
+        use aa_core::{Artifact, Coverage, Evidence, Input, InputKind, RuleText, Tool};
+        let file = |path: &str| Artifact {
+            path: path.into(),
+            parent: None,
+            size: 1,
+            digests: None,
+            detected: None,
+            kind: None,
+            entropy: None,
+            unpacked_by: None,
+            facts: BTreeMap::new(),
+        };
+        let files: Vec<Artifact> = (0..50).map(|i| file(&format!("d/f{i:02}"))).collect();
+        let finding = |rule: &str, severity: Severity, file: &Artifact, n: u64| {
+            Finding::new(Section::Code, "t", rule, Confidence::Derived, severity).param("n", n).evidence(Evidence::whole(file, 0)).seal()
+        };
+        let mut findings: Vec<Finding> = files.iter().map(|f| finding("b.same", Severity::Info, f, 0)).collect();
+        findings.push(finding("z.high", Severity::High, &files[0], 0));
+        findings.push(finding("a.low", Severity::Low, &files[1], 1));
+        findings.push(finding("a.low", Severity::Info, &files[2], 2));
+        findings.push(finding("a.low", Severity::Low, &files[3], 2));
+        findings.extend(files.iter().take(45).enumerate().map(|(i, f)| finding("c.each", Severity::Low, f, i as u64)));
+        let text =
+            |title: &str| RuleText { title_zh: title.into(), title_en: title.into(), text_zh: "n={n}".into(), text_en: "n={n}".into() };
+        Report {
+            schema_version: aa_core::SCHEMA_VERSION,
+            tool: Tool { name: "t".into(), version: "0".into() },
+            input: Input { name: "d".into(), kind: InputKind::Directory, sha256: None },
+            summary: BTreeMap::new(),
+            artifacts: files,
+            findings,
+            limitations: Vec::new(),
+            coverage: Coverage::default(),
+            rules: BTreeMap::from([
+                ("b.same".into(), text("Same")),
+                ("z.high".into(), text("Alarming")),
+                ("a.low".into(), text("Mixed")),
+                ("c.each".into(), text("Each differs")),
+            ]),
+        }
+    }
+
+    #[test]
+    fn groups_come_in_report_order_and_hold_every_finding() {
+        let report = sample();
+        let groups = chapter(&report, Lang::En, Section::Code);
+        assert_eq!(groups.iter().map(|g| g.title.as_str()).collect::<Vec<_>>(), ["Same", "Alarming", "Mixed", "Each differs"]);
+        assert_eq!(groups.iter().map(|g| g.count).collect::<Vec<_>>(), [50, 1, 3, 45]);
+        let mut indices: Vec<usize> = groups.iter().flat_map(|g| g.instances().map(|i| i.index)).collect();
+        indices.sort_unstable();
+        assert_eq!(indices, (0..report.findings.len()).collect::<Vec<_>>());
+        assert_eq!(heading(Lang::Zh, "代码洞察", &groups), "代码洞察 · 4 类 / 99 条");
+        assert_eq!(heading(Lang::Zh, "代码洞察", &[]), "代码洞察");
+        assert_eq!(attention(&report, Lang::En).iter().map(|g| g.count).collect::<Vec<_>>(), [1, 2, 45]);
+    }
+
+    #[test]
+    fn inside_a_group_anything_above_info_comes_first_otherwise_report_order() {
+        let report = sample();
+        let groups = chapter(&report, Lang::En, Section::Code);
+        let mixed = &groups[2];
+        assert_eq!(label(Lang::En, mixed), "Low × 2 · Info × 1 · Derived");
+        // The report lists Low n=1, Info n=2, Low n=2: the Low findings move ahead of the Info one.
+        assert_eq!(mixed.variants.iter().map(|v| v.text.as_str()).collect::<Vec<_>>(), ["n=1", "n=2"]);
+        assert_eq!(mixed.variants[1].instances.iter().map(|i| i.finding.severity).collect::<Vec<_>>(), [Severity::Low, Severity::Info]);
+        assert_eq!(mixed.variants[1].instances[0].subject.as_deref(), Some("…/f03"));
+    }
+
+    #[test]
+    fn listings_stop_at_the_cap_and_count_what_they_leave_out() {
+        let report = sample();
+        let groups = chapter(&report, Lang::En, Section::Code);
+        // Fifty neutral facts with one sentence: one row naming ten files.
+        let same = listing(&groups[0]);
+        assert_eq!(same.not_shown, 40);
+        assert!(matches!(&same.rows[..], [Row::Shared { count: 50, subjects, cut: true, .. }] if subjects.len() == LISTED_INFO));
+        assert_eq!(
+            not_shown_note(Lang::En, same.not_shown),
+            "40 more of this kind are not listed here; report.html and report.json hold them all."
+        );
+        // Forty-five Low findings that all differ: thirty rows.
+        let each = listing(&groups[3]);
+        assert_eq!((each.rows.len(), each.not_shown), (LISTED_ABOVE_INFO, 15));
+        assert!(each.rows.iter().all(|row| matches!(row, Row::Single { subject: Some(_), .. })));
+        // A small group is listed whole.
+        assert_eq!(listing(&groups[2]).not_shown, 0);
     }
 
     #[test]

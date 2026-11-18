@@ -221,7 +221,7 @@ impl Entry {
         let offset = self.data_offset.ok_or("no readable local header")?;
         let start = usize::try_from(offset).map_err(|_| "offset out of range")?;
         let deflated = self.method == 8;
-        let size = if deflated || self.method == 0 { self.compressed_size } else { self.uncompressed_size };
+        let size = if deflated { self.compressed_size } else { self.uncompressed_size };
         let length = usize::try_from(size).map_err(|_| "size out of range")?;
         let raw = slice_at(data, start, length).ok_or("entry data runs past the file")?;
         Ok((deflated, raw))

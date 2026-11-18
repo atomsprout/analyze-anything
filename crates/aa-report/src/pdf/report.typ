@@ -223,13 +223,15 @@
   }
 }
 
-#heading(numbering: none, d.attention.title)
-#if d.attention.findings.len() > 0 { text(fill: muted, d.attention.text) }
-#chapter-body(d.attention, d.attention.text)
-
-#for chapter in d.chapters {
+// The overview opens the report; what needs attention follows it, before the other chapters.
+#for (index, chapter) in d.chapters.enumerate() {
   heading(chapter.title)
   chapter-body(chapter, w.no_findings_here)
+  if index == 0 {
+    heading(numbering: none, d.attention.title)
+    if d.attention.findings.len() > 0 { text(fill: muted, d.attention.text) }
+    chapter-body(d.attention, d.attention.text)
+  }
 }
 
 // ---- File inventory -------------------------------------------------------------------------

@@ -808,3 +808,35 @@ fn hostile_manifest_variants_decode_like_the_original() {
         assert_eq!(manifest.to_json(1000), reference, "{what}");
     }
 }
+
+/// A packer's library next to the app's own files: reported as a heuristic, with the limitation
+/// that the visible code is only the shell. Framework markers are matched the same way.
+#[test]
+fn packer_and_framework_markers() {
+    let archive = zipraw::parse(FULL).expect("zip");
+    let mut tree = MemTree::default();
+    tree.add("x.apk", None, b"PK".to_vec());
+    tree.artifacts[0].kind = Some("zip".into());
+    tree.artifacts[0].unpacked_by = Some("zip".into());
+    for entry in &archive.entries {
+        tree.add(&format!("x.apk/{}", entry.name), Some("x.apk"), zipraw::read_entry(FULL, entry, 1 << 26).expect("entry"));
+    }
+    tree.add("x.apk/lib/arm64-v8a/libjiagu_a64.so", Some("x.apk"), crate::elf::tests::sample(0x1000, 7, true));
+    tree.add("x.apk/lib/arm64-v8a/libflutter.so", Some("x.apk"), b"\x7fELF junk 3.5.4 (stable) (Wed Oct 16) on \"android_arm64\"".to_vec());
+    tree.add("x.apk/lib/arm64-v8a/libapp.so", Some("x.apk"), b"\x7fELF".to_vec());
+    tree.add("x.apk/assets/flutter_assets/AssetManifest.json", Some("x.apk"), b"{}".to_vec());
+    let out = analyze(&tree.finish());
+    let packer = rule(&out, "android.packer");
+    assert_eq!(packer.len(), 1);
+    assert_eq!(packer[0].params["name"], "360 Jiagu (360 加固)");
+    assert_eq!(packer[0].confidence, aa_core::Confidence::Heuristic);
+    assert!(out.limitations.iter().any(|l| l.code == "android.packed-code-hidden"));
+    let flutter = rule(&out, "android.framework").into_iter().find(|f| f.params["name"] == "Flutter").expect("flutter");
+    assert_eq!(
+        flutter.params["detail_en"],
+        ": Dart 3.5.4 (stable) (version string in libflutter.so); release build (AOT snapshot libapp.so)"
+    );
+    // The packer's library has a writable and executable segment and text relocations.
+    assert!(has(&out, "android.native-rwx-segment") && has(&out, "android.native-text-relocations"));
+    assert_eq!(rule(&out, "android.native-rwx-segment")[0].params["libraries"], "arm64-v8a/libjiagu_a64.so");
+}

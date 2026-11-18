@@ -347,34 +347,27 @@
 
   /* ---------- groups: the findings of one rule as one entry ---------- */
 
-  // Mirrors group.rs: one group per rule, most severe first, then by title (the renderer sends
-  // the title order as ranks, so both sides sort alike); inside a group one variant per distinct
-  // sentence, most severe first, then the sentence most findings share. `indices` must already
-  // be ordered most severe first, as bySection is.
+  // Mirrors group.rs: one group per rule, in the order the report first mentions each rule (the
+  // engine puts the most severe first, then the analyzers' reading order); inside a group one
+  // variant per distinct sentence, in order of appearance. `indices` must already list anything
+  // above "info" before "info" and otherwise keep report order, as bySection does.
   var RANK = { high: 0, medium: 1, low: 2, info: 3 };
   function groupsOf(indices) {
     var byRule = new Map();
     indices.forEach(function (i) {
       var rule = R.findings[i].rule;
       var g = byRule.get(rule);
-      if (!g) byRule.set(rule, g = { rule: rule, indices: [], variants: [], byText: new Map() });
+      if (!g) byRule.set(rule, g = { rule: rule, first: i, indices: [], variants: [], byText: new Map() });
+      if (i < g.first) g.first = i;
       g.indices.push(i);
       var text = textOf(i);
       var v = g.byText.get(text);
       if (!v) { v = { text: text, indices: [] }; g.byText.set(text, v); g.variants.push(v); }
       v.indices.push(i);
     });
-    var ranks = V.ranks[lang] || {};
     var list = Array.from(byRule.values());
-    list.forEach(function (g) {
-      g.severity = R.findings[g.indices[0]].severity;
-      g.variants.sort(function (a, b) {
-        return RANK[R.findings[a.indices[0]].severity] - RANK[R.findings[b.indices[0]].severity] || b.indices.length - a.indices.length;
-      });
-    });
-    list.sort(function (a, b) {
-      return RANK[a.severity] - RANK[b.severity] || (ranks[a.rule] || 0) - (ranks[b.rule] || 0) || (a.rule < b.rule ? -1 : a.rule > b.rule ? 1 : 0);
-    });
+    list.forEach(function (g) { g.severity = R.findings[g.indices[0]].severity; });
+    list.sort(function (a, b) { return a.first - b.first; });
     return list;
   }
 
@@ -525,6 +518,8 @@
     if (status) status.textContent = t('showing', group(total), group(R.findings.length));
     var reset = doc.getElementById('freset');
     if (reset) reset.hidden = !filtersActive();
+    var attention = doc.getElementById('attention');
+    if (attention) attention.hidden = state.chapter !== 'all';
     var none = doc.getElementById('fnone');
     if (none) none.hidden = total > 0 || R.findings.length === 0;
     SEVERITIES.concat(CONFIDENCES).forEach(function (key) {
@@ -1013,8 +1008,8 @@
     R.findings.forEach(function (f, i) { if (f.severity !== 'info') indices.push(i); });
     indices.sort(function (a, b) { return RANK[R.findings[a].severity] - RANK[R.findings[b].severity] || a - b; });
     var groups = groupsOf(indices);
-    return el('section', { id: 'attention', class: 'block' },
-      el('h2', null, t('attention'), indices.length ? el('span', { class: 'count' }, t('chapter_counts', group(groups.length), group(indices.length))) : null),
+    return el('section', { id: 'attention', class: 'chapter' },
+      el('h3', null, el('span', { class: 'num', 'aria-hidden': 'true' }, '!'), t('attention'), indices.length ? el('span', { class: 'count' }, t('chapter_counts', group(groups.length), group(indices.length))) : null),
       el('p', { class: indices.length ? 'muted lead' : 'none' }, t(indices.length ? 'attention_text' : 'attention_none')),
       groups.map(function (g) { return entryNode(g, true); }));
   }
@@ -1065,10 +1060,11 @@
     return el('nav', { class: 'side noprint', id: 'nav', 'aria-label': t('navigation') },
       el('ul', null,
         item('summary', V.words[lang].summary),
-        item('attention', t('attention'), R.findings.filter(function (f) { return f.severity !== 'info'; }).length),
         el('li', { class: 'sep', role: 'presentation' }, t('chapters')),
         SECTIONS.map(function (s, i) {
-          return item('ch-' + s, [el('span', { class: 'num' }, i + 1), sectionName(s)], bySection[s].length, 'nav-' + s);
+          var entry = item('ch-' + s, [el('span', { class: 'num' }, i + 1), sectionName(s)], bySection[s].length, 'nav-' + s);
+          return s !== 'overview' ? entry : [entry, item('attention', [el('span', { class: 'num' }, '!'), t('attention')],
+            R.findings.filter(function (f) { return f.severity !== 'info'; }).length)];
         }),
         el('li', { class: 'sep', role: 'presentation' }),
         item('files', V.words[lang].inventory, R.artifacts.length),
@@ -1179,15 +1175,16 @@
         navigation(),
         el('main', { id: 'main', tabindex: '-1' },
           summarySection(),
-          attentionSection(),
           el('section', { id: 'findings', class: 'block' },
             el('h2', null, t('findings_title'), el('span', { class: 'count' }, group(R.findings.length))),
             el('div', { class: 'noprint sticky' }, filterBar()),
             el('p', { class: 'none', id: 'fnone', hidden: true }, t('no_match')),
             SECTIONS.map(function (s, i) {
-              return el('section', { class: 'chapter', id: 'ch-' + s },
+              var chapter = el('section', { class: 'chapter', id: 'ch-' + s },
                 el('h3', null, el('span', { class: 'num' }, i + 1), sectionName(s), el('span', { class: 'count' })),
                 el('div', { class: 'chbody' }));
+              // The overview opens the report; what needs attention follows it directly.
+              return s === 'overview' ? [chapter, attentionSection()] : chapter;
             })),
           filesSection(),
           coverageSection(),

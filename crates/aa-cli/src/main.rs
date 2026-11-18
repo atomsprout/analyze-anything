@@ -106,6 +106,8 @@ enum FormatArg {
     Html,
     Pdf,
     Sarif,
+    /// A CycloneDX software bill of materials
+    Sbom,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -171,6 +173,11 @@ fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
                 let mut bytes = serde_json::to_vec_pretty(&sarif::sarif(report, language)).map_err(|e| e.to_string())?;
                 bytes.push(b'\n');
                 ("report.sarif", bytes)
+            }
+            FormatArg::Sbom => {
+                let mut bytes = serde_json::to_vec_pretty(&aa_export::cyclonedx::cyclonedx(report)).map_err(|e| e.to_string())?;
+                bytes.push(b'\n');
+                ("sbom.cdx.json", bytes)
             }
         };
         let path = output.out.join(name);

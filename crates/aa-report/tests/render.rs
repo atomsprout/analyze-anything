@@ -311,7 +311,7 @@ fn html_static_copy_holds_the_whole_reading_content() {
         "File inventory",
         "Coverage and limitations",
     ] {
-        assert!(fallback.contains(&format!(">{chapter}</h2>")), "no chapter {chapter}");
+        assert!(fallback.contains(&format!(">{chapter}</h2>")) || fallback.contains(&format!(">{chapter} · ")), "no chapter {chapter}");
     }
     assert_eq!(fallback.matches("Test rule: Saw thing").count(), report.findings.len());
     assert!(fallback.contains("Could not be read (1)"));
@@ -374,7 +374,147 @@ fn html_handles_a_large_report() {
     let fallback = between(&page, "<div id=\"static\">", "<div id=\"app\"");
     assert_eq!(fallback.matches("<tr>").count(), aa_report::doc::INVENTORY_ROWS + 1);
     assert!(fallback.contains("report.json"));
-    assert_eq!(fallback.matches("测试规则: ").count(), 1500);
+    // Each chapter holds one rule: one entry per chapter, plus the one under "needs attention".
+    assert_eq!(fallback.matches("] 测试规则 — ").count(), 13);
+    assert!(fallback.contains("共 125 条") && fallback.contains("本类另有 95 条未在此列出"));
+}
+
+fn text_of(report: &Report, format: Format, lang: Lang) -> String {
+    String::from_utf8(render(report, format, lang).expect("renders")).expect("UTF-8")
+}
+
+/// A report with a rule that hits many files, one that hits a few with differing sentences, and
+/// rules that hit once.
+fn repetitive() -> Report {
+    let files: Vec<Artifact> = (0..40).map(|i| artifact(&format!("app/lib{}/mod{i:02}.dll", i % 2), 100)).collect();
+    let mut findings = Vec::new();
+    for file in &files {
+        findings.push(
+            Finding::new(Section::Hardening, "t", "h.aslr", Confidence::Verified, Severity::Info).evidence(Evidence::whole(file, 1)).seal(),
+        );
+    }
+    for (i, file) in files.iter().enumerate().take(35) {
+        findings.push(
+            Finding::new(Section::Hardening, "t", "h.nocfg", Confidence::Verified, Severity::Low)
+                .param("arch", if i < 33 { "x64" } else { "x86" })
+                .evidence(Evidence::whole(file, 0))
+                .seal(),
+        );
+    }
+    findings.push(
+        Finding::new(Section::Hardening, "t", "h.weak", Confidence::Heuristic, Severity::High)
+            .evidence(Evidence::whole(&files[3], 0))
+            .seal(),
+    );
+    findings.push(
+        Finding::new(Section::Hardening, "t", "h.note", Confidence::Derived, Severity::Info).evidence(Evidence::whole(&files[4], 0)).seal(),
+    );
+    // As the engine orders a chapter: most severe first, otherwise as found.
+    findings.sort_by_key(|finding| std::cmp::Reverse(finding.severity));
+    let mut report = report("app", files, findings, Vec::new());
+    report.rules.insert("h.aslr".into(), rule("已启用 ASLR", "ASLR is on", "加载地址可以随机化。", "The load address can be randomized."));
+    report.rules.insert("h.nocfg".into(), rule("未启用 CFG", "CFG is off", "{arch} 映像没有启用 CFG。", "The {arch} image has no CFG."));
+    report.rules.insert("h.weak".into(), rule("弱签名", "Weak signature", "签名算法过时。", "The signature algorithm is outdated."));
+    report.rules.insert("h.note".into(), rule("备注", "A note", "只出现一次。", "Seen once."));
+    report
+}
+
+#[test]
+fn findings_of_one_rule_are_one_entry_in_markdown_and_text() {
+    let report = repetitive();
+    let markdown = text_of(&report, Format::Markdown, Lang::En);
+    let text = text_of(&report, Format::Text, Lang::En);
+
+    // The chapter heading counts both; groups come in the order the report first mentions them.
+    assert!(markdown.contains("## Hardening · 4 kinds / 77 findings"));
+    let chapter = &markdown[markdown.find("## Hardening").expect("chapter")..markdown.find("## Network").expect("next chapter")];
+    let order: Vec<usize> =
+        ["Weak signature", "CFG is off", "ASLR is on", "A note"].iter().map(|title| chapter.find(title).expect("title")).collect();
+    assert!(order.is_sorted(), "{order:?}");
+
+    // A rule that hit once reads as before: the sentence, its evidence, its id.
+    assert!(chapter.contains("- \\[High · Heuristic\\] Weak signature: The signature algorithm is outdated.\n  - Evidence: app/lib1/mod03.dll = 0\n  - Finding ID: "));
+
+    // One sentence shared by 40 files is written once; neutral facts list ten and count the rest.
+    assert_eq!(chapter.matches("The load address can be randomized.").count(), 1);
+    assert!(chapter.contains("- \\[Info × 40 · Verified\\] ASLR is on — 40 findings\n  - The load address can be randomized. — The same holds 40 times, for: …/mod00.dll, …/mod01.dll,"));
+    assert!(chapter.contains("…/mod09.dll …\n  - 30 more of this kind are not listed here; report.html and report.json hold them all.\n"));
+    let aslr = &chapter[chapter.find("ASLR is on").expect("group")..chapter.find("A note").expect("next group")];
+    assert!(!aslr.contains("mod10.dll"));
+
+    // Anything above Info lists thirty, sentence by sentence in report order.
+    let cfg = &chapter[chapter.find("CFG is off").expect("group")..chapter.find("ASLR is on").expect("next group")];
+    assert!(cfg.starts_with("CFG is off — 35 findings\n  - The x64 image has no CFG. — The same holds 33 times, for: "));
+    assert!(cfg.contains("…/mod29.dll …\n  - 5 more of this kind are not listed here"));
+    assert!(!cfg.contains("x86"));
+
+    // "Needs attention" follows the overview and holds only what is above Info.
+    let attention = &markdown
+        [markdown.find("## Needs attention · 2 kinds / 36 findings").expect("attention")..markdown.find("## Identity").expect("chapters")];
+    assert!(attention.contains("Weak signature") && attention.contains("CFG is off") && !attention.contains("ASLR is on"));
+    assert!(markdown.find("## Overview").expect("overview") < markdown.find("## Needs attention").expect("attention"));
+
+    // Text says the same, line for line.
+    let strip = |line: &str| line.trim_start_matches([' ', '-', '*', '#']).replace('\\', "");
+    let from_markdown: Vec<String> = markdown.lines().filter(|l| !l.is_empty() && !l.starts_with('|')).map(strip).collect();
+    let from_text: Vec<String> =
+        text.lines().filter(|l| !l.is_empty() && !l.contains('\t') && !l.chars().all(|c| c == '=' || c == '-')).map(strip).collect();
+    assert_eq!(from_markdown, from_text);
+}
+
+#[test]
+fn nothing_above_info_is_said_plainly() {
+    let mut report = repetitive();
+    report.findings.retain(|f| f.severity == Severity::Info);
+    let markdown = text_of(&report, Format::Markdown, Lang::Zh);
+    assert!(markdown.contains("## 需要关注\n\n没有严重度高于“提示”的结论。这只代表已启用的检查没有命中，不代表没有问题。\n"));
+    let page = html(&report, Lang::En);
+    assert!(between(&page, "<div id=\"static\">", "<div id=\"app\"").contains("No finding is above &quot;Info&quot;."));
+}
+
+#[test]
+fn html_carries_what_the_script_needs_to_group_alike() {
+    let report = repetitive();
+    let page = html(&report, Lang::En);
+    let view: Value = serde_json::from_str(between(&page, "id=\"view-data\">", "</script>")).expect("view");
+    // Every finding is still in the page, with its shortened subject.
+    assert_eq!(view["subjects"].as_array().map(Vec::len), Some(report.findings.len()));
+    assert!(view["subjects"].as_array().is_some_and(|subjects| subjects.contains(&json!("…/mod00.dll"))));
+    assert!(view.get("ranks").is_none(), "groups follow report order; the script needs no order of its own");
+    // The static copy is grouped too.
+    let fallback = between(&page, "<div id=\"static\">", "<div id=\"app\"");
+    assert_eq!(fallback.matches("The load address can be randomized.").count(), 1);
+    assert!(fallback.contains("Hardening · 4 kinds / 77 findings</h2>"));
+}
+
+#[test]
+fn a_container_names_its_unpacker_next_to_its_kind() {
+    let mut report = full();
+    report.artifacts[0].kind = Some("pe".into());
+    report.artifacts[0].unpacked_by = Some("nsis".into());
+    assert!(text_of(&report, Format::Markdown, Lang::En).contains("| pe (application/octet-stream) · unpacked by nsis |"));
+    assert!(text_of(&report, Format::Text, Lang::Zh).contains("pe (application/octet-stream) · 由 nsis 解包"));
+}
+
+#[test]
+fn fifty_thousand_files_and_five_thousand_findings_stay_fast() {
+    let report = large(50_000, 5_000);
+    let started = std::time::Instant::now();
+    let markdown = text_of(&report, Format::Markdown, Lang::Zh);
+    let text = text_of(&report, Format::Text, Lang::Zh);
+    let page = html(&report, Lang::Zh);
+    assert!(started.elapsed().as_secs() < 60, "took {:?}", started.elapsed());
+    // Grouped, the reading formats stay short however many findings there are.
+    assert!(markdown.lines().count() < 1500, "{} lines", markdown.lines().count());
+    assert!(text.lines().count() < 1500);
+    assert!(page.len() > 10_000_000);
+    #[cfg(feature = "pdf")]
+    {
+        let started = std::time::Instant::now();
+        let bytes = render(&report, Format::Pdf, Lang::Zh).expect("pdf");
+        assert!(started.elapsed().as_secs() < 120, "took {:?}", started.elapsed());
+        assert!(bytes.len() < 4_000_000);
+    }
 }
 
 #[cfg(feature = "pdf")]

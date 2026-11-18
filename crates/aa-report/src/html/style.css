@@ -274,7 +274,7 @@ a.ref { color: var(--accent); }
 .inst.flash > summary { box-shadow: 0 0 0 3px var(--accent); border-radius: 3px; }
 .instbody { margin: 6px 0 6px 14px; }
 .instbody .finding { background: var(--bg); padding: 8px 10px; margin-bottom: 2px; }
-.lead { font-size: 14px; margin: -6px 0 12px; max-width: 96ch; }
+.lead { font-size: 14px; margin: -4px 0 10px; max-width: 96ch; }
 #attention .none { max-width: 96ch; }
 
 /* ----- files ----- */

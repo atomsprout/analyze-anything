@@ -249,8 +249,8 @@ pub const UI: &[(&str, &str, &str)] = &[
     ("attention", "需要关注", "Needs attention"),
     (
         "attention_text",
-        "严重度高于“提示”的全部结论，按规则归并，最严重的在前。它们在各自的章节里还会出现一次。",
-        "Every finding above \"Info\", grouped by rule, most severe first. Each appears again in its own chapter.",
+        "严重度高于“提示”的全部结论，按规则归并。它们在各自的章节里还会出现一次。",
+        "Every finding above \"Info\", grouped by rule. Each appears again in its own chapter.",
     ),
     (
         "attention_none",

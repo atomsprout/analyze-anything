@@ -220,13 +220,6 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
     doc.paragraph(w.reading_guide_text);
     doc.paragraph(words::ui(lang, "grouping_guide"));
 
-    let attention = group::attention(report, lang);
-    doc.heading(2, group::heading(lang, words::ui(lang, "attention"), &attention));
-    doc.paragraph(words::ui(lang, if attention.is_empty() { "attention_none" } else { "attention_text" }));
-    for group in &attention {
-        group_blocks(&mut doc, report, lang, &w, group);
-    }
-
     for section in Section::ALL {
         let groups = group::chapter(report, lang, section);
         doc.heading(2, group::heading(lang, words::section(lang, section), &groups));
@@ -235,6 +228,15 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
         }
         for group in &groups {
             group_blocks(&mut doc, report, lang, &w, group);
+        }
+        // The overview is the opening summary; what needs attention follows it directly.
+        if section == Section::Overview {
+            let attention = group::attention(report, lang);
+            doc.heading(2, group::heading(lang, words::ui(lang, "attention"), &attention));
+            doc.paragraph(words::ui(lang, if attention.is_empty() { "attention_none" } else { "attention_text" }));
+            for group in &attention {
+                group_blocks(&mut doc, report, lang, &w, group);
+            }
         }
     }
 
@@ -275,7 +277,9 @@ fn group_blocks(doc: &mut Doc, report: &Report, lang: Lang, w: &Words, group: &G
     let listing = group::listing(group);
     for row in listing.rows {
         match row {
-            Row::Single { subject, text } => doc.item(1, format!("{}: {text}", subject.as_deref().unwrap_or(words::ui(lang, "subject_none")))),
+            Row::Single { subject, text } => {
+                doc.item(1, format!("{}: {text}", subject.as_deref().unwrap_or(words::ui(lang, "subject_none"))))
+            }
             Row::Shared { text, count, subjects, cut } => {
                 let more = if cut { " …" } else { "" };
                 doc.item(1, format!("{text} — {}: {}{more}", group::shared_note(lang, count), subjects.join(", ")));

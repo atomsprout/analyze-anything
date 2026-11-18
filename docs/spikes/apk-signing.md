@@ -36,6 +36,19 @@ present verifies, nothing is stripped, and a v1 signature exists when the manife
 `minSdkVersion` is below 24. That is the rule `apksigner verify` applies by default, and it is
 what the tests compare.
 
+## Getting at the file Android sees
+
+Two of the checks above only make sense on the package as the platform reads it, which is not
+always what a ZIP library sees. `crates/aa-android/src/unpack.rs` adds an unpacker that runs
+before the generic ZIP one and claims a file only when it has an `AndroidManifest.xml` in its
+central directory and one of these traits: it does not start with a ZIP header (the Janus
+layout: `v1-janus.apk` is otherwise not opened at all), or an entry has a compression method
+other than stored/deflate or the encryption flag. Android reads any method but deflate as
+stored, with the uncompressed size, and ignores the flag; `unzip` and the `zip` crate refuse
+such entries ("BadPack"). The same reading rules are used for the v1 entry digests. A hand-made
+package with a stored manifest marked as method `0x1d2a` is rejected by `unzip` and analyzed in
+full here; no real malware sample was tested.
+
 ## Differences from apksigner, by design
 
 - **Every signature is verified**, not only the strongest one a given platform would pick, and
