@@ -169,6 +169,9 @@ key rsa RSA 2048 "CN=AA Fixture, O=Analyze Anything, C=XX" SHA256withRSA
 key ec EC 256 "CN=AA Fixture EC, O=Analyze Anything, C=XX" SHA256withECDSA
 key debug RSA 2048 "CN=Android Debug, O=Android, C=US" SHA256withRSA
 key weak RSA 1024 "CN=AA Weak Key, C=XX" SHA1withRSA
+key dsa DSA 2048 "CN=AA Fixture DSA, C=XX" SHA256withDSA
+key ec384 EC 384 "CN=AA Fixture P-384, C=XX" SHA384withECDSA
+key rsa4096 RSA 4096 "CN=AA Fixture RSA 4096, C=XX" SHA512withRSA
 KS="--ks-pass pass:password --key-pass pass:password --ks-key-alias key"
 sign() { # output, keystore, extra flags...
     out=$1; ks=$2; shift 2
@@ -181,6 +184,10 @@ sign v2-ec.apk ec --min-sdk-version 24 --v1-signing-enabled false --v2-signing-e
 sign v3-ec.apk ec --min-sdk-version 28 --v1-signing-enabled false --v2-signing-enabled false --v3-signing-enabled true
 sign debug.apk debug --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled false
 sign weak.apk weak --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled false --v3-signing-enabled false
+# Other key types: DSA, EC P-384 and RSA 4096 (the last two make apksigner use SHA-512 digests).
+sign dsa.apk dsa --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled false
+sign ec384.apk ec384 --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true
+sign rsa4096.apk rsa4096 --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true
 # Key rotation: rsa is the old key, ec the new one.
 apksigner rotate --out lineage --old-signer --ks rsa.jks $KS --new-signer --ks ec.jks $KS
 apksigner sign --ks rsa.jks $KS --next-signer --ks ec.jks $KS --lineage lineage --min-sdk-version 21 \
@@ -290,7 +297,7 @@ PY
 # file <TAB> apksigner verify succeeded (yes/no) <TAB> v1 <TAB> v2 <TAB> v3 <TAB> signer #1 certificate SHA-256
 # v2-ec and v3-ec have no v1 signature, so they verify only for the Android versions that know
 # their scheme; the manifest's minSdkVersion 21 is overridden for them.
-SIGNED="v1 v1v2 v1v2v3 v2-ec v3-ec debug weak rotated full v1-entry-modified v1v2-entry-modified v1v2v3-entry-modified
+SIGNED="v1 v1v2 v1v2v3 v2-ec v3-ec debug weak dsa ec384 rsa4096 rotated full v1-entry-modified v1v2-entry-modified v1v2v3-entry-modified
  v3-ec-entry-modified v1v2-appended v1-appended v1v2-block-modified v1v2-stripped v1-janus"
 : > expected.tsv
 for f in $SIGNED; do

@@ -257,7 +257,7 @@ fn signatures_agree_with_apksigner() {
         }
         rows += 1;
     }
-    assert_eq!(rows, 18);
+    assert_eq!(rows, 21);
 }
 
 #[test]
@@ -284,6 +284,7 @@ fn each_tampering_is_blamed_on_the_right_check() {
     assert!(has(&out, "android.signature-stripped") && has(&out, "android.v1-only"));
     let out = run("v1-janus.apk");
     assert!(has(&out, "android.janus") && has(&out, "android.signature-verified"));
+    assert!(fact(&out, "android.zip")["leading_padding_entries"].is_null());
     assert!(rule(&out, "android.janus")[0].references.contains(&"CVE-2017-13156".to_string()));
     let out = run("unsigned.apk");
     assert!(has(&out, "android.unsigned"));
@@ -324,6 +325,21 @@ fn certificates_and_rotation() {
 
     let out = run("v3-ec.apk");
     assert_eq!(rule(&out, "android.signing-certificate")[0].params["key"], "EC P-256");
+
+    // The other key types, with the algorithms apksigner chose for them.
+    for (file, key, algorithm) in [
+        ("dsa.apk", "DSA 2048", "DSA with SHA2-256"),
+        ("ec384.apk", "EC P-384", "ECDSA with SHA2-512"),
+        ("rsa4096.apk", "RSA 4096", "RSASSA-PKCS1-v1_5 with SHA2-512"),
+    ] {
+        let out = run(file);
+        assert_eq!(rule(&out, "android.signing-certificate")[0].params["key"], key);
+        let v2 = &fact(&out, "android.signing")["schemes"][0];
+        assert_eq!(v2["signers"][0]["algorithms"][0], algorithm, "{file}");
+        assert_eq!(v2["signers"][0]["content_digest"]["status"], "passed", "{file}");
+        assert_eq!(v2["signers"][0]["signature"]["status"], "passed", "{file}");
+        assert_eq!(fact(&out, "android.signing")["v1"]["verified"], true, "{file}");
+    }
 }
 
 #[test]
@@ -678,4 +694,94 @@ fn sample_report() {
         "analysis_ms": elapsed.as_millis() as u64,
     });
     std::fs::write(target, serde_json::to_vec_pretty(&report).expect("json")).expect("write");
+}
+
+/// The tricks malware plays on manifest decoders, applied to the fixture manifest: each variant
+/// must decode to the same manifest as the original, as it does on a device.
+#[test]
+fn hostile_manifest_variants_decode_like_the_original() {
+    use crate::manifest::{NoResources, extract};
+    let original = fixture("AndroidManifest.bin");
+    let reference = extract(&crate::axml::parse(&original), &NoResources).expect("manifest").to_json(1000);
+    let u16_at = |d: &[u8], at: usize| u16::from_le_bytes([d[at], d[at + 1]]);
+    let u32_at = |d: &[u8], at: usize| u32::from_le_bytes([d[at], d[at + 1], d[at + 2], d[at + 3]]);
+    let fix_size = |d: &mut Vec<u8>| {
+        let size = d.len() as u32;
+        d[4..8].copy_from_slice(&size.to_le_bytes());
+    };
+    let pool_size = u32_at(&original, 12) as usize;
+    let mut variants: Vec<(&str, Vec<u8>, &str)> = Vec::new();
+
+    // 1. A wrong file type.
+    let mut v = original.clone();
+    v[0..2].copy_from_slice(&0u16.to_le_bytes());
+    variants.push(("file type", v, "file type"));
+
+    // 2. A string count far beyond the pool.
+    let mut v = original.clone();
+    v[16..20].copy_from_slice(&0x7fff_ffffu32.to_le_bytes());
+    variants.push(("string count", v, "more strings"));
+
+    // 3. Unknown flag bits in the string pool.
+    let mut v = original.clone();
+    let flags = u32_at(&v, 24) | 0xdead_0000;
+    v[24..28].copy_from_slice(&flags.to_le_bytes());
+    variants.push(("pool flags", v, "flag bits"));
+
+    // 4. A chunk of unknown type between the string pool and the rest.
+    let mut v = original[..8 + pool_size].to_vec();
+    v.extend_from_slice(&[0x77, 0x77, 8, 0, 16, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    v.extend_from_slice(&original[8 + pool_size..]);
+    fix_size(&mut v);
+    variants.push(("extra chunk", v, "unknown type"));
+
+    // 5. A file size field that claims more than the file holds.
+    let mut v = original.clone();
+    v[4..8].copy_from_slice(&0x00ff_ffffu32.to_le_bytes());
+    variants.push(("file size", v, "file size field"));
+
+    // 6. Attribute records of 24 bytes instead of 20, with junk in the extra bytes.
+    let mut v = original[..8].to_vec();
+    let mut pos = 8;
+    while pos + 8 <= original.len() {
+        let (kind, header, size) = (u16_at(&original, pos), usize::from(u16_at(&original, pos + 2)), u32_at(&original, pos + 4) as usize);
+        let chunk = &original[pos..pos + size];
+        if kind == 0x0102 {
+            let count = usize::from(u16_at(chunk, header + 12));
+            let mut rebuilt = chunk[..header + 20].to_vec();
+            rebuilt[header + 10..header + 12].copy_from_slice(&24u16.to_le_bytes());
+            for i in 0..count {
+                rebuilt.extend_from_slice(&chunk[header + 20 + i * 20..header + 40 + i * 20]);
+                rebuilt.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
+            }
+            let new_size = rebuilt.len() as u32;
+            rebuilt[4..8].copy_from_slice(&new_size.to_le_bytes());
+            v.extend_from_slice(&rebuilt);
+        } else {
+            v.extend_from_slice(chunk);
+        }
+        pos += size;
+    }
+    fix_size(&mut v);
+    variants.push(("attribute size", v, "attribute records are 24 bytes"));
+
+    // 7. Attribute name strings wiped: names must come from the resource ids.
+    let mut v = original.clone();
+    for name in ["versionCode", "minSdkVersion", "debuggable", "exported", "permission", "authorities"] {
+        let needle: Vec<u8> = name.encode_utf16().flat_map(u16::to_le_bytes).collect();
+        let at = v.windows(needle.len()).position(|w| w == needle.as_slice()).unwrap_or_else(|| panic!("{name} not in the pool"));
+        // Keep the length prefix, replace the characters.
+        for (i, byte) in v[at..at + needle.len()].iter_mut().enumerate() {
+            *byte = if i % 2 == 0 { b'x' } else { 0 };
+        }
+    }
+    variants.push(("attribute names", v, "differs from the name of its resource id"));
+
+    for (what, data, anomaly) in variants {
+        assert!(crate::axml::looks_like_axml(&data), "{what}: not recognised");
+        let doc = crate::axml::parse(&data);
+        assert!(doc.anomalies.iter().any(|a| a.contains(anomaly)), "{what}: anomalies {:?}", doc.anomalies);
+        let manifest = extract(&doc, &NoResources).unwrap_or_else(|| panic!("{what}: no manifest"));
+        assert_eq!(manifest.to_json(1000), reference, "{what}");
+    }
 }

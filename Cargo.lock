@@ -60,6 +60,7 @@ version = "0.0.1"
 dependencies = [
  "aa-core",
  "aa-engine",
+ "aa-export",
  "aa-report",
  "clap",
  "serde_json",

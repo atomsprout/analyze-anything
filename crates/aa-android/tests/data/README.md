@@ -18,6 +18,7 @@ manifest rules, two Java classes compiled with `javac` and `dx`, three native li
 | `v2-ec.apk`, `v3-ec.apk` | Signed with an EC P-256 key, v2 only / v3 only (no v1). |
 | `debug.apk` | Signed with a certificate named `CN=Android Debug, O=Android, C=US`. |
 | `weak.apk` | Signed v1 with an RSA 1024 key and a SHA1withRSA certificate. |
+| `dsa.apk`, `ec384.apk`, `rsa4096.apk` | Signed with a DSA 2048, an EC P-384 and an RSA 4096 key. The last two carry SHA-512 content digests. |
 | `rotated.apk` | v1+v2 with the RSA key, v3 with the EC key and a rotation lineage RSA → EC (`apksigner rotate`). |
 | `*-entry-modified.apk` | One byte of `classes.dex` flipped after signing. |
 | `v1-appended.apk`, `v1v2-appended.apk` | Eight bytes appended after the ZIP end record. |

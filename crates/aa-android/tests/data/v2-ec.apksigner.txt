@@ -6,11 +6,11 @@ Verified using v4 scheme (APK Signature Scheme v4): false
 Verified for SourceStamp: false
 Number of signers: 1
 Signer #1 certificate DN: CN=AA Fixture EC, O=Analyze Anything, C=XX
-Signer #1 certificate SHA-256 digest: 3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
-Signer #1 certificate SHA-1 digest: abec8fbde79a4684df91cfa794d5dbd1baff0367
-Signer #1 certificate MD5 digest: 9b03169742000be436b426e6bc758374
+Signer #1 certificate SHA-256 digest: fe8691d5c4850e12c430798dc77842e187839b771984ec147438134b9df6e9c3
+Signer #1 certificate SHA-1 digest: a7f90f18a204546a95b2786161d41879bc2a32aa
+Signer #1 certificate MD5 digest: 24e2d84bcb9394ba52c703f3af6e62ea
 Signer #1 key algorithm: EC
 Signer #1 key size (bits): 256
-Signer #1 public key SHA-256 digest: 3b8a08a0acbbdb065c2d4ad02959b06e2815275be2a41458b1077604f2008089
-Signer #1 public key SHA-1 digest: 09258737e6811570162815cc1a31a0849cd64c02
-Signer #1 public key MD5 digest: 99abc85bafc08f387187f1126de255b9
+Signer #1 public key SHA-256 digest: 9644b9dedc02b4f4780cccb59818097a87d36be5d95f724fd4282abdef969775
+Signer #1 public key SHA-1 digest: 46dae309819867230f5f646122c956a0fbc66805
+Signer #1 public key MD5 digest: 5b813b79dfd31ffa40fff52ce60d69dd

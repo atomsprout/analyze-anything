@@ -471,8 +471,8 @@ pub const RULES: &[Rule] = &[
         "android.extract-native-libs",
         "原生库的安装方式",
         "How native libraries are installed",
-        "android:extractNativeLibs={value}：为 false 时原生库不解压，直接从 APK 中加载（要求库在 APK 内不压缩并按页对齐）。",
-        "android:extractNativeLibs={value}: when false, native libraries are loaded straight from the APK instead of being extracted (they must be stored uncompressed and page-aligned).",
+        "android:extractNativeLibs={value}：{meaning_zh}。",
+        "android:extractNativeLibs={value}: {meaning_en}.",
     ),
     r(
         "android.legacy-external-storage",

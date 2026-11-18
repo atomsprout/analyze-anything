@@ -114,7 +114,8 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
         }
         out.finding(f);
     }
-    if let Some(class) = m.application.as_ref().and_then(|a| a.name.as_ref()) {
+    // Naming the platform's own class is the same as naming none.
+    if let Some(class) = m.application.as_ref().and_then(|a| a.name.as_ref()).filter(|c| *c != "android.app.Application") {
         out.finding(
             finding(Section::Identity, "android.application-class", Confidence::Verified, Severity::Info)
                 .param("class", class.clone())
@@ -377,6 +378,22 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
         out.finding(
             finding(Section::Hardening, "android.extract-native-libs", Confidence::Verified, Severity::Info)
                 .param("value", extract)
+                .param(
+                    "meaning_en",
+                    if extract {
+                        "native libraries are copied out of the APK at install"
+                    } else {
+                        "native libraries are loaded straight from the APK, which needs them stored uncompressed and page-aligned"
+                    },
+                )
+                .param(
+                    "meaning_zh",
+                    if extract {
+                        "安装时把原生库从 APK 中解压出来"
+                    } else {
+                        "原生库不解压，直接从 APK 中加载（要求库在 APK 内不压缩并按页对齐）"
+                    },
+                )
                 .evidence(attr(file, "application@android:extractNativeLibs", extract)),
         );
     }
@@ -793,9 +810,9 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
         .iter()
         .filter(|c| matches!(c.kind, ComponentKind::Activity))
         .filter(|c| {
-            c.task_affinity
-                .as_deref()
-                .is_some_and(|a| !a.is_empty() && !own.is_empty() && !a.starts_with(own) && a.contains('.') && !a.starts_with(':'))
+            c.task_affinity.as_deref().is_some_and(|a| {
+                !a.is_empty() && !own.is_empty() && !a.starts_with(own) && a.contains('.') && !a.starts_with(':') && !a.starts_with('.')
+            })
         })
         .filter(|c| matches!(c.launch_mode, Some(2..=4)))
         .collect();

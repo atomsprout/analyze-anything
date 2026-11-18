@@ -540,7 +540,8 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
             .iter()
             .filter(|(c, _)| {
                 let upper = c.to_ascii_uppercase();
-                upper.contains("/ECB")
+                // `RSA/ECB/…` is only how the Java API spells RSA; there is no block mode involved.
+                (upper.contains("/ECB") && !upper.starts_with("RSA"))
                     || upper.starts_with("DES")
                     || upper.starts_with("RC4")
                     || upper.starts_with("ARCFOUR")

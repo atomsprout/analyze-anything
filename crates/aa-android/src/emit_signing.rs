@@ -117,7 +117,8 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
     };
     let mut verified_schemes: Vec<&'static str> = Vec::new();
     let mut failed_schemes: Vec<String> = Vec::new();
-    let mut best_signers: Vec<String> = Vec::new();
+    // Signers of the newest scheme that verified: (rank of the scheme, certificate fingerprints).
+    let mut best_signers: (u8, Vec<String>) = (0, Vec::new());
 
     if let Some(v1) = &v1 {
         let name = "v1";
@@ -154,7 +155,7 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
             );
         } else {
             verified_schemes.push(name);
-            best_signers = v1.signers.iter().filter_map(|s| s.signer_certificate.as_ref()).map(|c| c.sha256.clone()).collect();
+            best_signers = (1, v1.signers.iter().filter_map(|s| s.signer_certificate.as_ref()).map(|c| c.sha256.clone()).collect());
             out.finding(
                 finding(Section::Provenance, "android.signature-verified", Confidence::Verified, Severity::Info)
                     .param("scheme", "v1 (JAR)")
@@ -235,7 +236,14 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
         } else {
             verified_schemes.push(name);
             // The newest scheme a device understands is the one it uses.
-            best_signers = scheme.signers.iter().filter_map(|s| s.certificates.first()).map(|c| c.sha256.clone()).collect();
+            let rank = match scheme.id {
+                sigblock::ID_V2 => 2,
+                sigblock::ID_V3 => 3,
+                _ => 4,
+            };
+            if rank > best_signers.0 {
+                best_signers = (rank, scheme.signers.iter().filter_map(|s| s.certificates.first()).map(|c| c.sha256.clone()).collect());
+            }
             let algorithms: BTreeSet<&str> = scheme.signers.iter().flat_map(|s| s.algorithms.iter().map(String::as_str)).collect();
             let algorithms = algorithms.into_iter().collect::<Vec<_>>().join(", ");
             let (sdk_en, sdk_zh) = match scheme.signers.first().and_then(|s| s.min_sdk.zip(s.max_sdk)) {
@@ -486,8 +494,9 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
             "v4_idsig": idsig.map(|a| a.path.clone()),
         }),
     );
-    best_signers.sort();
-    best_signers
+    let mut signers = best_signers.1;
+    signers.sort();
+    signers
 }
 
 fn certificate_findings(container: &Artifact, certificate: &Certificate, used_by: &BTreeSet<&'static str>, out: &mut Output) {
@@ -554,6 +563,25 @@ fn certificate_findings(container: &Artifact, certificate: &Certificate, used_by
     }
 }
 
+/// Newer Android build tools pad the start of an APK with nameless, empty local entries that the
+/// central directory does not list. Returns how many there are when the bytes before the first
+/// listed entry are exactly such entries, `None` when they are anything else (or there are none).
+fn leading_padding_entries(bytes: &[u8], archive: &zipraw::Archive) -> Option<u32> {
+    let first = usize::try_from(archive.first_local_offset.filter(|o| *o > 0)?).ok()?;
+    let (mut pos, mut count) = (0usize, 0u32);
+    while pos < first {
+        let header = bytes.get(pos..pos.checked_add(30)?)?;
+        let field = |at: usize| usize::from(u16::from_le_bytes([header[at], header[at + 1]]));
+        let sizes_zero = header[18..26].iter().all(|b| *b == 0);
+        if &header[..4] != b"PK\x03\x04" || field(26) != 0 || !sizes_zero {
+            return None;
+        }
+        pos = pos.checked_add(30 + field(28))?;
+        count += 1;
+    }
+    (pos == first).then_some(count)
+}
+
 fn archive_checks(container: &Artifact, bytes: &[u8], archive: &zipraw::Archive, out: &mut Output) {
     let duplicates = archive.duplicate_names();
     if !duplicates.is_empty() {
@@ -580,7 +608,8 @@ fn archive_checks(container: &Artifact, bytes: &[u8], archive: &zipraw::Archive,
         }
         out.finding(f);
     }
-    if let Some(first) = archive.first_local_offset.filter(|o| *o > 0) {
+    let padding_entries = leading_padding_entries(bytes, archive);
+    if let Some(first) = archive.first_local_offset.filter(|o| *o > 0 && padding_entries.is_none()) {
         let dex = bytes.starts_with(b"dex\n");
         let head = &bytes[..bytes.len().min(8)];
         if dex {
@@ -639,10 +668,45 @@ fn archive_checks(container: &Artifact, bytes: &[u8], archive: &zipraw::Archive,
             "central_directory_offset": archive.cd_offset,
             "end_record_offset": archive.eocd_offset,
             "bytes_before_first_entry": archive.first_local_offset,
+            "leading_padding_entries": padding_entries,
             "bytes_after_end_record": archive.trailing_bytes,
             "zip64": archive.zip64,
             "duplicate_names": duplicates.iter().take(100).map(|(n, c)| json!({ "name": n, "count": c })).collect::<Vec<_>>(),
             "local_header_mismatches": mismatched.len(),
         }),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn padding_entries_are_told_from_other_prefix_data() {
+        let plain = zipraw::tests::build_zip(b"", &[("a", b"1")]);
+        assert_eq!(leading_padding_entries(&plain, &zipraw::parse(&plain).expect("zip")), None);
+        // A nameless empty local header with a 6-byte extra field, as zipflinger writes for alignment.
+        let mut padding = b"PK\x03\x04".to_vec();
+        padding.extend_from_slice(&[0; 22]);
+        padding.extend_from_slice(&[0, 0, 6, 0]);
+        padding.extend_from_slice(&[0; 6]);
+        let padded = zipraw::tests::build_zip(&padding, &[("a", b"1")]);
+        assert_eq!(leading_padding_entries(&padded, &zipraw::parse(&padded).expect("zip")), Some(1));
+        let junk = zipraw::tests::build_zip(b"dex\n035\0 and more", &[("a", b"1")]);
+        assert_eq!(leading_padding_entries(&junk, &zipraw::parse(&junk).expect("zip")), None);
+        let mut cut = padding.clone();
+        cut.truncate(20);
+        let short = zipraw::tests::build_zip(&cut, &[("a", b"1")]);
+        assert_eq!(leading_padding_entries(&short, &zipraw::parse(&short).expect("zip")), None);
+    }
+
+    #[test]
+    fn install_check_follows_apksigner_rules() {
+        assert!(install_check(&["v1", "v2"], &[], true, true, false, 21).0);
+        assert!(!install_check(&["v2"], &[], false, true, false, 21).0);
+        assert!(install_check(&["v2"], &[], false, true, false, 24).0);
+        assert!(!install_check(&["v1"], &["v2: bad".to_string()], true, true, false, 21).0);
+        assert!(!install_check(&["v1"], &[], true, false, true, 21).0);
+        assert!(!install_check(&[], &[], false, false, false, 21).0);
+    }
 }

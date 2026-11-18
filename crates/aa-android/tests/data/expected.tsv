@@ -1,12 +1,15 @@
-v1.apk	yes	true	false	false	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
-v1v2.apk	yes	true	true	false	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
-v1v2v3.apk	yes	true	true	true	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
-v2-ec.apk	yes	false	true	false	3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
-v3-ec.apk	yes	false	false	true	3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
-debug.apk	yes	true	true	false	f331ae39646038e24212e82d13812ff578241d8732de5dc17cbd63efdad5eaf3
-weak.apk	yes	true	false	false	c38365737ddcf955c2232810f772e1faa77eac6212178eaad45cc20f66a3f160
-rotated.apk	yes	true	true	true	3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
-full.apk	yes	true	true	true	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
+v1.apk	yes	true	false	false	09d73171847b560daaa7d8b42aed2974525693ed3bef9d02aff5b4026a4193d8
+v1v2.apk	yes	true	true	false	09d73171847b560daaa7d8b42aed2974525693ed3bef9d02aff5b4026a4193d8
+v1v2v3.apk	yes	true	true	true	09d73171847b560daaa7d8b42aed2974525693ed3bef9d02aff5b4026a4193d8
+v2-ec.apk	yes	false	true	false	fe8691d5c4850e12c430798dc77842e187839b771984ec147438134b9df6e9c3
+v3-ec.apk	yes	false	false	true	fe8691d5c4850e12c430798dc77842e187839b771984ec147438134b9df6e9c3
+debug.apk	yes	true	true	false	081b4e6ee7693e1e6cecdb18d61b626687031e63851b6bce65ef0a3bf31678b2
+weak.apk	yes	true	false	false	6a380ec4aedc02222f91b17c2f60e05ff8c928c7e4ec7125ae65dbf3fec8fc60
+dsa.apk	yes	true	true	false	a614eadd66723f607021a4491ba1bd0c73cebf7840cd39da4863fb80cc560d02
+ec384.apk	yes	true	true	true	501cbed615cd257ff56f0020d512851a75040dd07509dc156959433e8996da58
+rsa4096.apk	yes	true	true	true	b9c35d7849c69554b58ee426847155eac1459fcab884ae1c3d6f46dfeb812ef3
+rotated.apk	yes	true	true	true	fe8691d5c4850e12c430798dc77842e187839b771984ec147438134b9df6e9c3
+full.apk	yes	true	true	true	09d73171847b560daaa7d8b42aed2974525693ed3bef9d02aff5b4026a4193d8
 v1-entry-modified.apk	no				
 v1v2-entry-modified.apk	no				
 v1v2v3-entry-modified.apk	no				
@@ -15,4 +18,4 @@ v1v2-appended.apk	no
 v1-appended.apk	no				
 v1v2-block-modified.apk	no				
 v1v2-stripped.apk	no				
-v1-janus.apk	yes	true	false	false	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
+v1-janus.apk	yes	true	false	false	09d73171847b560daaa7d8b42aed2974525693ed3bef9d02aff5b4026a4193d8

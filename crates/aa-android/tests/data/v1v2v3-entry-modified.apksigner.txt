@@ -1,2 +1,2 @@
 DOES NOT VERIFY
-ERROR: APK Signature Scheme v3 signer #1: APK integrity check failed. CHUNKED_SHA256 digest mismatch. Expected: <7964908259f674b2e1e5c381c0806e0a7768c2e4c4bf8fba131a5e5b320dec0d>, actual: <e77423a2ebc1425144c0865557c5dbec035c701ce3624763a0830ddb044ffce8>
+ERROR: APK Signature Scheme v3 signer #1: APK integrity check failed. CHUNKED_SHA256 digest mismatch. Expected: <279fd753c4eb1e937efc0500dd1c09948f5a621eac59ed677630ac357278b105>, actual: <f210ff36ba9242dc2c9749ad9702c2e364d1fd7884165f814d1d22d385558892>

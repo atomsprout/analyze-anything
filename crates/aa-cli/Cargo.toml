@@ -18,6 +18,7 @@ pdf = ["aa-report/pdf"]
 aa-core.workspace = true
 aa-engine.workspace = true
 aa-report = { path = "../aa-report", default-features = false }
+aa-export.workspace = true
 serde_json.workspace = true
 clap.workspace = true
 
