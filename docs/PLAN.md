@@ -1,6 +1,6 @@
 # Analyze Anything — 调研与规划
 
-> 状态：规划稿 v0.4（2026-11-18）
+> 状态：规划稿 v0.5（2026-11-18）
 > 一句话定位：**输入电脑上的任意产物（文件 / 文件夹 / 压缩包 / 安装包 / 应用包），输出一份可靠、可溯源、多维度的分析报告（PDF / HTML / Markdown / TXT）。** 使用 Rust 开发，单一静态二进制，离线可用。
 
 ---
@@ -19,6 +19,27 @@
 | **reknife / rbat / binsec**（Rust） | 基于 goblin + yara-x + iced-x86 的二进制体检工具 | 证明了纯 Rust 技术栈可行 | 只看单个可执行文件，不处理"包"，无完整报告 |
 | **binwalk v3**（Rust）/ unblob | 递归识别并提取嵌入数据 | 递归解包、熵分析 | 面向固件，不解读语义 |
 | **Detect-It-Easy / APKiD / capa / FLOSS** | 编译器/加壳识别、能力识别、混淆字符串还原 | 规则库与识别思路 | 各管一段，无统一报告 |
+
+### 1.1.1 第二轮搜索补充（2026-11-18，仅依据仓库简介与 README，未读源码）
+
+| 项目 | 语言 / 规模 | 是什么 | 对我们的参考价值 |
+|---|---|---|---|
+| **reverify**（`2akouwu/reverify`） | ★1.3k | "模型提出结论，确定性工具逐条核验" | 与 §8 的 AI 解读层思路一致；做 v1.x 解读层时重点参考其核验机制 |
+| **knife / reknife**（`bl4ckr0ss3/knife`） | Rust，★412 | 终端优先的 PE / ELF / Mach-O 逆向工具箱，CLI + TUI + MCP，YARA 走 yara-x | 与 M2 范围最接近的 Rust 同类；参考其子命令划分与 MCP 暴露方式 |
+| **binskim**（`microsoft/binskim`） | C#，★869 | 微软的 PE / ELF 二进制安全合规检查，规则有编号，输出 SARIF | 加固检查的**规则清单与判定标准**（§5 第 6 章）；考虑增加 SARIF 输出便于接入 CI |
+| **checksec.rs**（`etke/checksec.rs`） | Rust，★122 | ELF / PE / Mach-O 三平台 checksec | 加固项判定逻辑的直接对照（也可作差分测试基准） |
+| **capa**（`mandiant/capa`） | Python，★6.3k | 用规则识别可执行文件的"能力"（如"会截屏""会注入进程"），映射 ATT&CK | 行为画像的规则组织方式；规则库为 Apache-2.0，可评估格式兼容 |
+| **APEX**（`mlab-sh/apex`） | Rust，★2，GPL-3.0 | APK / AAB / XAPK / IPA 的 15 个分析器 + 加权评分，结论映射 CWE / OWASP MASVS / ATT&CK；证据包带 SHA-256 清单与 RFC 3161 时间戳 | ① 结论映射到 MASVS / CWE 的做法；② 报告清单哈希 + `verify` 命令。**GPL，只看思路不看代码** |
+| **ReArk**（`lkimuk/ReArk`） | C++，★977 | 鸿蒙 NEXT（HAP/APP/ABC）、Android、iOS 包的逆向与 AI 辅助分析 | 提醒：**鸿蒙 HAP** 是值得列入 v1.x 的输入格式 |
+| **MachOExplorer**（`everettjf/machoexplorer`） | Rust，★647 | Mach-O 结构浏览器 | M3 的 Mach-O 字段展示参考 |
+| **disrobe**（`1-3-7/disrobe`） | Rust，★174 | Python 反编译、PyInstaller 等解包与去混淆 | PyInstaller / Python 打包程序的解包参考（v1.x） |
+| **Kuna**（`Noelo-Lab/kuna`） | Rust，★907 | 面向 Agent 的反编译器，自 Ghidra 移植 | 若将来 `deep` 档要做伪代码，这是纯 Rust 的候选对接对象 |
+| **binsider**（`orhun/binsider`） | Rust，★4.5k | ELF 的终端交互式分析 | 仅 ELF；TUI 交互参考 |
+| **cwe_checker**（`fkie-cad/cwe_checker`） | Rust，★1.4k | 在二进制中查找 CWE 漏洞模式（依赖 Ghidra） | 超出 v1.0 范围，记录备查 |
+| APKHunt / APKDeepLens / apkAnalyzer | Python | 各类 APK 静态扫描器，输出 HTML / PDF / SARIF | M5 的检查项清单对照 |
+| ida-pro-mcp / GhidraMCP / Open ReverseLab / Eleven | — | 把 IDA / Ghidra / x64dbg / Frida 接给 Agent 的 MCP 桥 | 与 REA 同类，交互式逆向，不出报告；与我们互补 |
+
+**这一轮的结论**：仍然没有发现"任意桌面/移动产物 → 一份带证据的完整报告"的同类；最接近的 MobSF（仅移动端、Python）和 APEX（仅移动端、IPA 只跑 3 个分析器）都不覆盖 Windows 安装包、macOS 应用和 DMG。由此新增三项计划内容：结论映射到 **OWASP MASVS / CWE** 编号（M3–M5）、**SARIF** 输出（M6）、报告清单哈希与 `aa verify`（M6）；鸿蒙 HAP 与 PyInstaller 列入 v1.x。
 
 **空白点（我们的机会）**：目前没有一个工具同时满足 ——
 ① 以**报告**（而非 Agent 交互或软件重建）为交付物的固定流水线；② 同时覆盖 IPA / APK / Windows 安装包 / 已安装程序目录 / .app / DMG；③ 递归拆包后做**跨文件关联**；④ 纯 Rust 单文件、离线、PDF/HTML/MD/TXT 四种输出。
@@ -249,8 +270,8 @@ IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取�
 | **M3 Apple 全家桶**（约 2–3 周） | `.app` / `.ipa` / `.dmg` / `.pkg`：Info.plist、代码签名校验、entitlements、provisioning profile、PrivacyInfo、frameworks、FairPlay 加密检测 | 与 `codesign -dvvv --entitlements` 差分一致 |
 | **M4 Windows**（约 3 周） | Authenticode、版本资源、manifest、.NET、NSIS / Inno / MSI 安装包语义（安装了什么、写了哪些注册表、是否自启动）、已安装目录、Electron(asar)；PE 结构合法性校验与加壳初筛、按类别归纳导入 API 的行为画像（网络 / 加密 / 进程间通信 / 持久化）；内核驱动（.sys）识别与基础信息 | 与 `sigcheck` / 7-Zip 清单差分一致 |
 | **M5 Android**（约 2–3 周） | APK / AAB / XAPK：Manifest、resources、签名 v1–v4 校验、DEX 结构、native libs、SDK/Tracker 指纹、加壳识别 | 与 `apksigner` / `aapt2` 差分一致；与 MobSF 报告项对照 |
-| **M6 关联、评估与打磨**（约 2 周） | 跨产物关联、风险评分、SBOM 导出、报告视觉打磨、fuzz、性能、发布（各平台预编译二进制） | v1.0 |
-| **M7 生态（v1.x）** | MCP server / SKILL.md（供 Claude Code 等 Agent 调用）、可选 LLM 解读层、两个版本的 diff 报告、Linux 包格式、可选对接 Ghidra | |
+| **M6 关联、评估与打磨**（约 2 周） | 跨产物关联、风险评分、SBOM 导出、SARIF 输出、输出清单哈希与 `aa verify`、报告视觉打磨、fuzz、性能、发布（各平台预编译二进制） | v1.0 |
+| **M7 生态（v1.x）** | MCP server / SKILL.md（供 Claude Code 等 Agent 调用）、可选 LLM 解读层、两个版本的 diff 报告、Linux 包格式、鸿蒙 HAP、PyInstaller 等打包程序、可选对接 Ghidra | |
 
 格式顺序已确定为 **Apple → Windows → Android**（2026-11-18 确认）。
 
