@@ -1,75 +1,36 @@
-//! Reads one file once, computing its size, digests, entropy and detected type.
+//! Measures an artifact's bytes: size, digests, entropy and detected type.
 
-use std::io::Read;
-use std::path::Path;
-
-use aa_core::{Artifact, Detected, Digests};
+use aa_core::{Detected, Digests};
 use md5::Md5;
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 
-/// Leading bytes kept for type detection and as evidence.
-pub const HEAD_LENGTH: usize = 8192;
+/// Leading bytes used for type detection.
+const HEAD_LENGTH: usize = 8192;
 
 pub struct Scanned {
-    pub artifact: Artifact,
-    /// The first bytes of the file, up to [`HEAD_LENGTH`].
-    pub head: Vec<u8>,
-    /// The error text when the file could not be read in full.
-    pub failure: Option<String>,
+    pub digests: Digests,
+    /// `None` for an empty artifact.
+    pub entropy: Option<f64>,
+    pub detected: Detected,
 }
 
-pub fn scan(path: &str, on_disk: &Path) -> Scanned {
-    let mut artifact = Artifact { path: path.to_string(), parent: None, size: 0, digests: None, detected: None, entropy: None };
-    let mut head = Vec::new();
-    match read(on_disk, &mut head) {
-        Ok(read) => {
-            artifact.size = read.size;
-            artifact.digests = Some(read.digests);
-            artifact.entropy = entropy(&read.counts, read.size);
-            artifact.detected = Some(detect(&head));
-            Scanned { artifact, head, failure: None }
-        }
-        Err(error) => {
-            // Size from metadata is still worth showing; digests and entropy stay unknown.
-            artifact.size = std::fs::symlink_metadata(on_disk).map(|m| m.len()).unwrap_or(0);
-            Scanned { artifact, head, failure: Some(error.to_string()) }
-        }
-    }
-}
-
-struct Read1 {
-    size: u64,
-    digests: Digests,
-    counts: [u64; 256],
-}
-
-fn read(on_disk: &Path, head: &mut Vec<u8>) -> std::io::Result<Read1> {
-    let mut file = std::fs::File::open(on_disk)?;
+pub fn scan(bytes: &[u8]) -> Scanned {
     let (mut md5, mut sha1, mut sha256) = (Md5::new(), Sha1::new(), Sha256::new());
     let mut counts = [0u64; 256];
-    let mut size = 0u64;
-    let mut buffer = vec![0u8; 256 * 1024];
-    loop {
-        let count = file.read(&mut buffer)?;
-        if count == 0 {
-            break;
-        }
-        let chunk = &buffer[..count];
-        if head.len() < HEAD_LENGTH {
-            let wanted = (HEAD_LENGTH - head.len()).min(count);
-            head.extend_from_slice(&chunk[..wanted]);
-        }
+    for chunk in bytes.chunks(1024 * 1024) {
         md5.update(chunk);
         sha1.update(chunk);
         sha256.update(chunk);
         for byte in chunk {
             counts[*byte as usize] += 1;
         }
-        size += count as u64;
     }
-    let digests = Digests { md5: hex::encode(md5.finalize()), sha1: hex::encode(sha1.finalize()), sha256: hex::encode(sha256.finalize()) };
-    Ok(Read1 { size, digests, counts })
+    Scanned {
+        digests: Digests { md5: hex::encode(md5.finalize()), sha1: hex::encode(sha1.finalize()), sha256: hex::encode(sha256.finalize()) },
+        entropy: entropy(&counts, bytes.len() as u64),
+        detected: detect(&bytes[..bytes.len().min(HEAD_LENGTH)]),
+    }
 }
 
 /// Shannon entropy in bits per byte, rounded to four decimals so reports compare exactly.
@@ -112,12 +73,10 @@ fn text_kind(head: &[u8]) -> &'static str {
         rest = after.split_once("-->").map(|(_, after)| after).unwrap_or("").trim_start();
     }
     let opening: String = rest.chars().take(14).collect::<String>().to_ascii_lowercase();
-    if opening.starts_with("<svg") {
+    if opening.starts_with("<svg") || opening.starts_with("<!doctype svg") {
         "image/svg+xml"
     } else if opening.starts_with("<!doctype html") || opening.starts_with("<html") {
         "text/html"
-    } else if opening.starts_with("<!doctype svg") {
-        "image/svg+xml"
     } else if declared_xml {
         "text/xml"
     } else {

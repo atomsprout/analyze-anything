@@ -52,6 +52,7 @@ struct Output {
 enum FormatArg {
     Json,
     Md,
+    Txt,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -75,13 +76,14 @@ impl ProgressSink for StderrProgress {
         // Progress is a courtesy; a closed stderr must not stop the analysis.
         let _ = match event {
             Event::Reading { index, total, path } if self.live => write!(err, "\r\x1b[K[{index}/{total}] {path}"),
-            Event::Reading { .. } | Event::Listed { .. } => Ok(()),
+            Event::Unpacked { path, children } if self.live => write!(err, "\r\x1b[K{path}: {children}"),
+            Event::Analyzing { artifacts } if self.live => write!(err, "\r\x1b[K… {artifacts}"),
             Event::Warning { code, path } => {
                 let clear = if self.live { "\r\x1b[K" } else { "" };
                 writeln!(err, "{clear}warning: {code}{}", path.map(|p| format!(": {p}")).unwrap_or_default())
             }
             Event::Finished if self.live => write!(err, "\r\x1b[K"),
-            Event::Finished => Ok(()),
+            _ => Ok(()),
         };
     }
 }
@@ -101,6 +103,7 @@ fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
         let format = match format {
             FormatArg::Json => Format::Json,
             FormatArg::Md => Format::Markdown,
+            FormatArg::Txt => Format::Text,
         };
         let bytes = aa_report::render(report, format, lang).map_err(|e| e.to_string())?;
         let path = output.out.join(format!("report.{}", format.extension()));

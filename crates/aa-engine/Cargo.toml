@@ -18,6 +18,18 @@ md-5.workspace = true
 hex.workspace = true
 infer.workspace = true
 thiserror.workspace = true
+tempfile.workspace = true
+rayon.workspace = true
+memmap2.workspace = true
+aa-unpack.workspace = true
+aa-content.workspace = true
+aa-binary.workspace = true
+aa-apple.workspace = true
+aa-windows.workspace = true
+aa-android.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+zip.workspace = true
+tar.workspace = true
+flate2.workspace = true

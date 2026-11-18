@@ -1,13 +1,20 @@
-//! Data model shared by every part of Analyze Anything.
+//! Data model and extension points shared by every part of Analyze Anything.
 //!
 //! A [`Report`] is the single source of truth: every human-readable output (Markdown, text, HTML,
 //! PDF) is rendered from it and from nothing else. A report holds the artifact tree, the findings
-//! drawn from it, and the limitations of the analysis. Each [`Finding`] carries the evidence it
-//! rests on and a [`Confidence`] level, and its id is the SHA-256 of its canonical JSON, so the
-//! same observation always gets the same id.
+//! drawn from it, the limitations of the analysis, and the text of every rule it mentions, so a
+//! report can be rendered again later without the program version that wrote it.
+//!
+//! Each [`Finding`] carries the evidence it rests on and a [`Confidence`] level, and its id is the
+//! SHA-256 of its canonical JSON, so the same observation always gets the same id.
 //!
 //! Rules that keep reports reproducible: no timestamps, no absolute paths, stable ordering, and a
 //! value that could not be established is `None`, never zero or an empty string.
+//!
+//! Formats are added through [`plugin`]: an [`plugin::Unpacker`] opens a container into child
+//! artifacts, an [`plugin::Analyzer`] turns artifacts into findings and facts.
+
+pub mod plugin;
 
 use std::collections::BTreeMap;
 
@@ -16,7 +23,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 /// Version of the report layout. Bump on any breaking change to the JSON shape.
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 /// How sure a finding is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -30,7 +37,7 @@ pub enum Confidence {
     Heuristic,
 }
 
-/// How much a finding matters to the reader.
+/// How much a finding matters to the reader. `Info` is a neutral fact, not a problem.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Severity {
@@ -40,21 +47,52 @@ pub enum Severity {
     High,
 }
 
-/// The report chapter a finding belongs to.
+/// The report chapter a finding belongs to, in the order chapters appear.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Section {
+    /// What the input is, in a few lines.
+    Overview,
+    /// Name, identifiers, version, platform.
     Identity,
+    /// Who signed it, and whether the signature holds.
     Provenance,
+    /// What it is made of on disk: layout, sizes, nesting.
     Structure,
+    /// Languages, frameworks, libraries, SDKs.
     Composition,
+    /// Permissions, entitlements, declared capabilities, installer actions.
     Capabilities,
+    /// Compiler and platform protections.
     Hardening,
+    /// URLs, hosts, addresses.
     Network,
+    /// Embedded keys, tokens, credentials.
     Secrets,
+    /// Trackers and data collection.
     Privacy,
+    /// Symbols, classes, notable strings.
     Code,
+    /// Things that look wrong or unusual.
     Anomalies,
+}
+
+impl Section {
+    /// Every section, in report order.
+    pub const ALL: [Section; 12] = [
+        Section::Overview,
+        Section::Identity,
+        Section::Provenance,
+        Section::Structure,
+        Section::Composition,
+        Section::Capabilities,
+        Section::Hardening,
+        Section::Network,
+        Section::Secrets,
+        Section::Privacy,
+        Section::Code,
+        Section::Anomalies,
+    ];
 }
 
 /// Where in an artifact a piece of evidence was read.
@@ -63,7 +101,7 @@ pub enum Section {
 pub enum Location {
     /// A byte range in the artifact.
     Bytes { offset: u64, length: u64 },
-    /// A named field of a parsed structure, e.g. `Info.plist:CFBundleIdentifier`.
+    /// A named field of a parsed structure, e.g. `CFBundleIdentifier`.
     Field(String),
     /// The artifact as a whole (its name, size or digest).
     Whole,
@@ -81,6 +119,32 @@ pub struct Evidence {
     pub value: Value,
 }
 
+impl Evidence {
+    fn of(artifact: &Artifact, location: Location, value: impl Into<Value>) -> Self {
+        Evidence {
+            artifact: artifact.path.clone(),
+            sha256: artifact.digests.as_ref().map(|d| d.sha256.clone()),
+            location,
+            value: value.into(),
+        }
+    }
+
+    /// Evidence read from a byte range of `artifact`.
+    pub fn bytes(artifact: &Artifact, offset: u64, length: u64, value: impl Into<Value>) -> Self {
+        Self::of(artifact, Location::Bytes { offset, length }, value)
+    }
+
+    /// Evidence read from a named field of a structure parsed out of `artifact`.
+    pub fn field(artifact: &Artifact, field: impl Into<String>, value: impl Into<Value>) -> Self {
+        Self::of(artifact, Location::Field(field.into()), value)
+    }
+
+    /// Evidence about `artifact` as a whole.
+    pub fn whole(artifact: &Artifact, value: impl Into<Value>) -> Self {
+        Self::of(artifact, Location::Whole, value)
+    }
+}
+
 /// A conclusion about the input, with the evidence behind it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Finding {
@@ -89,16 +153,48 @@ pub struct Finding {
     pub section: Section,
     /// Analyzer that produced the finding, e.g. `content`.
     pub analyzer: String,
-    /// Stable rule id, e.g. `content.high-entropy`. Also the key of the message text.
+    /// Stable rule id, e.g. `content.high-entropy`. The key of the rule's text in [`Report::rules`].
     pub rule: String,
-    /// Values the message text refers to.
+    /// Values the rule's text refers to as `{name}`.
     pub params: BTreeMap<String, Value>,
     pub confidence: Confidence,
     pub severity: Severity,
+    /// Identifiers in outside catalogues, e.g. `CWE-798`, `MASVS-STORAGE-2`.
+    pub references: Vec<String>,
     pub evidence: Vec<Evidence>,
 }
 
 impl Finding {
+    /// Starts a finding. Add params and evidence, then call [`Finding::seal`].
+    pub fn new(section: Section, analyzer: &str, rule: &str, confidence: Confidence, severity: Severity) -> Self {
+        Finding {
+            id: String::new(),
+            section,
+            analyzer: analyzer.to_string(),
+            rule: rule.to_string(),
+            params: BTreeMap::new(),
+            confidence,
+            severity,
+            references: Vec::new(),
+            evidence: Vec::new(),
+        }
+    }
+
+    pub fn param(mut self, name: &str, value: impl Into<Value>) -> Self {
+        self.params.insert(name.to_string(), value.into());
+        self
+    }
+
+    pub fn reference(mut self, reference: &str) -> Self {
+        self.references.push(reference.to_string());
+        self
+    }
+
+    pub fn evidence(mut self, evidence: Evidence) -> Self {
+        self.evidence.push(evidence);
+        self
+    }
+
     /// Computes and stores the id. Call once, after every other field is final.
     pub fn seal(mut self) -> Self {
         self.id = String::new();
@@ -110,12 +206,18 @@ impl Finding {
 /// Something the analysis could not establish or deliberately left out.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Limitation {
-    /// Stable machine code, e.g. `read_failed`, `symlink_skipped`, `limit_reached`.
+    /// Stable machine code, e.g. `read_failed`. The key of its text in [`Report::rules`].
     pub code: String,
     /// Artifact path it applies to; `None` when it applies to the whole run.
     pub artifact: Option<String>,
     /// Technical detail, such as the operating system's error text.
     pub detail: Option<String>,
+}
+
+impl Limitation {
+    pub fn new(code: &str, artifact: Option<&str>, detail: Option<String>) -> Self {
+        Limitation { code: code.to_string(), artifact: artifact.map(str::to_string), detail }
+    }
 }
 
 /// Digests of an artifact's bytes.
@@ -135,19 +237,50 @@ pub struct Detected {
     pub usual_extension: Option<String>,
 }
 
-/// One node of the artifact tree: a file of the input, or something unpacked from one.
+/// One node of the artifact tree: a file of the input, or a file unpacked from one.
+///
+/// A container's children live under its path: the files of `app.ipa` are `app.ipa/Payload/…`.
+/// Folders are not artifacts; they exist only as path prefixes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Artifact {
     /// Path inside the tree, with `/` separators, relative to the input.
     pub path: String,
-    /// Path of the artifact this one was unpacked from; `None` for files of the input itself.
+    /// Path of the container this was unpacked from; `None` for files of the input itself.
     pub parent: Option<String>,
     pub size: u64,
     /// `None` when the bytes could not be read; a limitation says why.
     pub digests: Option<Digests>,
     pub detected: Option<Detected>,
+    /// What the artifact is, once something recognised it: `zip`, `apk`, `macho`, `nsis`, …
+    pub kind: Option<String>,
     /// Shannon entropy of the bytes, 0.0 to 8.0. `None` for empty or unreadable artifacts.
     pub entropy: Option<f64>,
+    /// Id of the unpacker that opened this artifact into children, if one did.
+    pub unpacked_by: Option<String>,
+    /// Structured data analyzers read from the artifact, keyed `<analyzer>.<name>`.
+    pub facts: BTreeMap<String, Value>,
+}
+
+impl Artifact {
+    /// The file name: the part of the path after the last `/`.
+    pub fn name(&self) -> &str {
+        self.path.rsplit('/').next().unwrap_or(&self.path)
+    }
+
+    /// The lowercase extension of the file name, without the dot.
+    pub fn extension(&self) -> Option<String> {
+        self.name().rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase())
+    }
+
+    /// The detected MIME type, or an empty string when the bytes were not read.
+    pub fn mime(&self) -> &str {
+        self.detected.as_ref().map(|d| d.mime.as_str()).unwrap_or("")
+    }
+
+    /// True when `kind` is set to `kind`.
+    pub fn is(&self, kind: &str) -> bool {
+        self.kind.as_deref() == Some(kind)
+    }
 }
 
 /// Whether the input was a single file or a folder.
@@ -178,14 +311,27 @@ pub struct Tool {
 /// How much of the input was examined.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Coverage {
-    /// Artifacts found in the tree.
+    /// Artifacts in the tree, unpacked ones included.
     pub artifacts_total: u64,
     /// Artifacts whose bytes were read in full.
     pub artifacts_analyzed: u64,
-    /// Bytes read.
+    /// Bytes read, unpacked data included.
     pub bytes_analyzed: u64,
+    /// Containers that were opened into child artifacts.
+    pub containers_unpacked: u64,
     /// True when the run stopped early (a limit was hit or it was cancelled).
     pub truncated: bool,
+}
+
+/// The words for one rule or limitation code, in each language.
+///
+/// `text` may refer to a finding's params as `{name}`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuleText {
+    pub title_zh: String,
+    pub title_en: String,
+    pub text_zh: String,
+    pub text_en: String,
 }
 
 /// The complete result of one analysis run.
@@ -194,10 +340,14 @@ pub struct Report {
     pub schema_version: u32,
     pub tool: Tool,
     pub input: Input,
+    /// Facts about the input as a whole, keyed `<analyzer>.<name>`.
+    pub summary: BTreeMap<String, Value>,
     pub artifacts: Vec<Artifact>,
     pub findings: Vec<Finding>,
     pub limitations: Vec<Limitation>,
     pub coverage: Coverage,
+    /// Text of every rule and limitation code this report mentions.
+    pub rules: BTreeMap<String, RuleText>,
 }
 
 /// JSON with object keys in sorted order and no insignificant whitespace.
@@ -211,26 +361,56 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
     hex::encode(Sha256::digest(bytes))
 }
 
+/// Fills the `{name}` placeholders of a rule's text from a finding's params.
+///
+/// Strings are inserted as they are, other values as JSON. A placeholder without a param is left
+/// in place, so a mistake in a rule shows up in the report instead of vanishing.
+pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
+    let mut out = String::with_capacity(template.len());
+    let mut rest = template;
+    while let Some(open) = rest.find('{') {
+        out.push_str(&rest[..open]);
+        let after = &rest[open + 1..];
+        match after.find('}').map(|close| (&after[..close], &after[close + 1..])) {
+            Some((name, tail)) if params.contains_key(name) => {
+                match &params[name] {
+                    Value::String(text) => out.push_str(text),
+                    other => out.push_str(&other.to_string()),
+                }
+                rest = tail;
+            }
+            _ => {
+                out.push('{');
+                rest = after;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn sample() -> Finding {
-        Finding {
-            id: String::new(),
-            section: Section::Anomalies,
-            analyzer: "content".into(),
-            rule: "content.high-entropy".into(),
-            params: BTreeMap::from([("entropy".to_string(), Value::from(7.9))]),
-            confidence: Confidence::Heuristic,
-            severity: Severity::Info,
-            evidence: vec![Evidence {
-                artifact: "a.bin".into(),
-                sha256: Some("00".into()),
-                location: Location::Whole,
-                value: Value::from(7.9),
-            }],
+    fn artifact() -> Artifact {
+        Artifact {
+            path: "a.bin".into(),
+            parent: None,
+            size: 1,
+            digests: None,
+            detected: None,
+            kind: None,
+            entropy: None,
+            unpacked_by: None,
+            facts: BTreeMap::new(),
         }
+    }
+
+    fn sample() -> Finding {
+        Finding::new(Section::Anomalies, "content", "content.high-entropy", Confidence::Heuristic, Severity::Info)
+            .param("entropy", 7.9)
+            .evidence(Evidence::whole(&artifact(), 7.9))
     }
 
     #[test]
@@ -250,5 +430,20 @@ mod tests {
         let mut other = sample();
         other.evidence[0].artifact = "b.bin".into();
         assert_ne!(sample().seal().id, other.seal().id);
+    }
+
+    #[test]
+    fn fill_replaces_known_placeholders_only() {
+        let params = BTreeMap::from([("name".to_string(), Value::from("x")), ("n".to_string(), Value::from(3))]);
+        assert_eq!(fill("{name} has {n} of {missing} {", &params), "x has 3 of {missing} {");
+        assert_eq!(fill("no placeholders", &params), "no placeholders");
+    }
+
+    #[test]
+    fn artifact_name_and_extension() {
+        let mut a = artifact();
+        a.path = "x.ipa/Payload/App.app/Info.PLIST".into();
+        assert_eq!(a.name(), "Info.PLIST");
+        assert_eq!(a.extension().as_deref(), Some("plist"));
     }
 }

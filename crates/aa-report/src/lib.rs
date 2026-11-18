@@ -1,18 +1,23 @@
 //! Turns a [`Report`] into files people read.
 //!
 //! Renderers only restate what the report holds: every sentence about the input comes from an
-//! artifact, a finding or a limitation in it.
+//! artifact, a finding or a limitation in it, worded by the rule text the report carries.
+//!
+//! Markdown and plain text are written from one [`doc::Doc`], so they always say the same thing.
 
+pub mod doc;
 mod markdown;
-mod text;
+mod plain;
+pub mod words;
 
 use aa_core::Report;
 
-/// Output formats available so far. Plain text, HTML and PDF follow in the next milestone.
+/// Output formats.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
     Json,
     Markdown,
+    Text,
 }
 
 impl Format {
@@ -21,6 +26,7 @@ impl Format {
         match self {
             Format::Json => "json",
             Format::Markdown => "md",
+            Format::Text => "txt",
         }
     }
 }
@@ -47,6 +53,7 @@ pub fn render(report: &Report, format: Format, lang: Lang) -> Result<Vec<u8>, Re
             bytes.push(b'\n');
             Ok(bytes)
         }
-        Format::Markdown => Ok(markdown::render(report, lang).into_bytes()),
+        Format::Markdown => Ok(markdown::write(&doc::build(report, lang)).into_bytes()),
+        Format::Text => Ok(plain::write(&doc::build(report, lang)).into_bytes()),
     }
 }
