@@ -163,8 +163,20 @@ pub fn analyze_with(registry: &Registry, input: &Path, options: &Options, sink: 
             resolved.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "/".into())
         }
     };
+    let built = tree::build(tree::Roots::Disk { input, kind, name: &name }, options, &registry.unpackers, sink);
+    Ok(run(registry, built, name, kind, options, sink))
+}
 
-    let built = tree::build(input, kind, &name, options, &registry.unpackers, sink);
+/// Analyzes a single file held in memory, named `name`. Nothing is read from disk.
+pub fn analyze_bytes(registry: &Registry, name: &str, bytes: Vec<u8>, options: &Options, sink: &mut dyn ProgressSink) -> Report {
+    // A name with separators would put the file in a folder of the tree; keep the last part.
+    let name = name.rsplit(['/', '\\']).next().filter(|n| !n.is_empty()).unwrap_or("input").to_string();
+    let built = tree::build(tree::Roots::Memory { name: &name, bytes: Arc::new(bytes) }, options, &registry.unpackers, sink);
+    run(registry, built, name, InputKind::File, options, sink)
+}
+
+/// Runs the analyzers over a built tree and assembles the report.
+fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, options: &Options, sink: &mut dyn ProgressSink) -> Report {
     let (mut tree, mut limitations, mut coverage) = (built.tree, built.limitations, built.coverage);
     sink.event(Event::Analyzing { artifacts: tree.artifacts.len() as u64 });
 
@@ -236,7 +248,7 @@ pub fn analyze_with(registry: &Registry, input: &Path, options: &Options, sink: 
         InputKind::Directory => None,
     };
     sink.event(Event::Finished);
-    Ok(Report {
+    Report {
         schema_version: SCHEMA_VERSION,
         tool: Tool { name: "analyze-anything".into(), version: env!("CARGO_PKG_VERSION").into() },
         input: Input { name, kind, sha256 },
@@ -246,7 +258,7 @@ pub fn analyze_with(registry: &Registry, input: &Path, options: &Options, sink: 
         limitations,
         coverage,
         rules,
-    })
+    }
 }
 
 /// Runs one analyzer call, turning a panic into a limitation instead of a crash.

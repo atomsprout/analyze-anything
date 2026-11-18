@@ -66,14 +66,15 @@ struct Child {
     store: Store,
 }
 
-pub fn build(
-    input: &Path,
-    kind: InputKind,
-    name: &str,
-    options: &Options,
-    unpackers: &[Box<dyn Unpacker>],
-    sink: &mut dyn ProgressSink,
-) -> Built {
+/// The top-level files of a run and where their bytes are.
+pub enum Roots<'a> {
+    /// A file or folder on disk.
+    Disk { input: &'a Path, kind: InputKind, name: &'a str },
+    /// A single file held in memory.
+    Memory { name: &'a str, bytes: Arc<Vec<u8>> },
+}
+
+pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>], sink: &mut dyn ProgressSink) -> Built {
     let mut builder = Builder {
         options,
         unpackers,
@@ -89,22 +90,23 @@ pub fn build(
         unpacked_bytes: 0,
         reported: BTreeSet::new(),
     };
-    let files = match kind {
-        InputKind::File => vec![walk::Entry { path: name.to_string(), on_disk: input.to_path_buf() }],
-        InputKind::Directory => {
+    let files: Vec<(String, Store)> = match roots {
+        Roots::Memory { name, bytes } => vec![(name.to_string(), Store::Memory(bytes))],
+        Roots::Disk { input, kind: InputKind::File, name } => vec![(name.to_string(), Store::Disk(input.to_path_buf()))],
+        Roots::Disk { input, kind: InputKind::Directory, .. } => {
             let listing = walk::list(input, builder.options.limits.max_files);
             for limitation in &listing.limitations {
                 builder.sink.event(Event::Warning { code: limitation.code.clone(), path: limitation.artifact.clone() });
             }
             builder.limitations.extend(listing.limitations);
             builder.coverage.truncated |= listing.truncated;
-            listing.entries
+            listing.entries.into_iter().map(|entry| (entry.path, Store::Disk(entry.on_disk))).collect()
         }
     };
     let total = files.len() as u64;
     builder.sink.event(Event::Listed { files: total });
     let mut disk_bytes = 0u64;
-    for (position, file) in files.iter().enumerate() {
+    for (position, (path, store)) in files.iter().enumerate() {
         let stop = if builder.cancelled() {
             Some("cancelled")
         } else if disk_bytes >= builder.options.limits.max_total_bytes {
@@ -117,9 +119,9 @@ pub fn build(
             builder.stop(code, None, Some(detail));
             break;
         }
-        builder.sink.event(Event::Reading { index: position as u64 + 1, total, path: file.path.clone() });
-        builder.taken.insert(file.path.clone());
-        let size = builder.ingest(Child { path: file.path.clone(), store: Store::Disk(file.on_disk.clone()) }, None, 0);
+        builder.sink.event(Event::Reading { index: position as u64 + 1, total, path: path.clone() });
+        builder.taken.insert(path.clone());
+        let size = builder.ingest(Child { path: path.clone(), store: store.clone() }, None, 0);
         disk_bytes += size;
     }
     builder.coverage.artifacts_total = builder.artifacts.len() as u64;

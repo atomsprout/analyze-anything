@@ -390,3 +390,12 @@ fn every_archive_format_unpacks_to_the_original_bytes() {
         assert!(report.limitations.is_empty(), "{file}: {:?}", report.limitations);
     }
 }
+
+#[test]
+fn bytes_in_memory_give_the_same_report_as_the_file_on_disk() {
+    let bytes = zip_of(&[("docs/readme.txt", b"see https://inner.example.org/"), ("data.bin", &noise(9000))]);
+    let (_dir, path) = write_input("pack.zip", &bytes);
+    let from_disk = run(&path, &Options::default());
+    let from_memory = aa_engine::analyze_bytes(&Registry::standard(), "some/dir/pack.zip", bytes, &Options::default(), &mut NoProgress);
+    assert_eq!(serde_json::to_string(&from_disk).expect("json"), serde_json::to_string(&from_memory).expect("json"));
+}
