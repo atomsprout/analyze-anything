@@ -1,0 +1,60 @@
+PE checksum   : 0000D097
+
+
+Signature Index: 0  (Primary Signature)
+
+Message digest algorithm  : SHA256
+Current message digest    : 14711947BB73ADB02E8FEC02D8BE6359803D385F7BAA85AA6554065E5358731D 
+Calculated message digest : 14711947BB73ADB02E8FEC02D8BE6359803D385F7BAA85AA6554065E5358731D 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: /CN=Fixture Self Signed
+		Issuer : /CN=Fixture Self Signed
+		Serial : 06829A8A4BD367B20709292C2B72DE37A62F16D7
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:56 2026 GMT
+			notAfter : Nov 15 22:13:56 2036 GMT
+
+Message digest algorithm: SHA256
+
+Authenticated attributes:
+	Signing time: Nov 19 22:13:56 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: A54D30CB204254BF28A3265384C963BFB7E34B53EE38269A2B7973B8B85A3CBC 
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp is not available
+
+Signing certificate chain verified using:
+	------------------
+	Signer #0:
+		Subject: /CN=Fixture Self Signed
+		Issuer : /CN=Fixture Self Signed
+		Serial : 06829A8A4BD367B20709292C2B72DE37A62F16D7
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:56 2026 GMT
+			notAfter : Nov 15 22:13:56 2036 GMT
+
+	Error: self-signed certificate
+
+PKCS7_verify error
+
+Failed signing certificate chain retrieved from the signature:
+	------------------
+	Signer #0:
+		Subject: /CN=Fixture Self Signed
+		Issuer : /CN=Fixture Self Signed
+		Serial : 06829A8A4BD367B20709292C2B72DE37A62F16D7
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:56 2026 GMT
+			notAfter : Nov 15 22:13:56 2036 GMT
+
+40290DC1167F0000:error:10800075:PKCS7 routines:PKCS7_verify:certificate verify error:../crypto/pkcs7/pk7_smime.c:296:Verify error: self-signed certificate
+Signature verification: failed
+
+Number of verified signatures: 1
+Failed

@@ -1,0 +1,70 @@
+
+7-Zip 23.01 (x64) : Copyright (c) 1999-2023 Igor Pavlov : 2023-06-20
+ 64-bit locale=C.UTF-8 Threads:4 OPEN_MAX:20000
+
+Scanning the drive for archives:
+1 file, 107772 bytes (106 KiB)
+
+Listing archive: nsis-bzip2-ansi.exe
+
+--
+Path = nsis-bzip2-ansi.exe
+Type = Nsis
+Physical Size = 107772
+Method = BZip2
+Solid = +
+Headers Size = 3653
+Embedded Stub Size = 96768
+SubType = NSIS-3
+
+----------
+Path = hello.exe
+Size = 18432
+Packed Size = 11000
+Modified = 2026-11-18 22:13:54.0000000
+Attributes = 
+Method = BZip2
+Solid = +
+Offset = 0
+
+Path = readme.txt
+Size = 16
+Packed Size = 
+Modified = 2026-11-18 22:13:56.0000000
+Attributes = 
+Method = BZip2
+Solid = +
+Offset = 18436
+
+Path = data/copy.txt
+Size = 16
+Packed Size = 
+Modified = 2026-11-18 22:13:56.0000000
+Attributes = 
+Method = BZip2
+Solid = +
+Offset = 18436
+
+Path = data/payload.bin
+Size = 20000
+Packed Size = 
+Modified = 2026-11-18 22:13:56.0000000
+Attributes = 
+Method = BZip2
+Solid = +
+Offset = 18456
+
+Path = uninstall.exe
+Size = 
+Packed Size = 
+Modified = 
+Attributes = 
+Method = BZip2
+Solid = +
+Offset = 38460
+
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./data/copy.txt
+86999324511ad84c69f01938832689a50bebda2d4c65061db2e73b4b0857e831  ./data/payload.bin
+8ef99ee24e624a606b58cb48ed436a7e224a8d5036e02d502dd758cd8cfe5ca3  ./hello.exe
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./readme.txt
+a06b5ca15d8ced50e20e07a57aeb8656c6a3dc7554a3d354acf922b35a1a78f6  ./uninstall.exe

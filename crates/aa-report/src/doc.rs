@@ -91,43 +91,46 @@ pub fn evidence_line(evidence: &aa_core::Evidence) -> String {
     format!("{}{place} = {shown}", evidence.artifact)
 }
 
-pub fn build(report: &Report, lang: Lang) -> Doc {
+/// The lines under the title: which tool wrote the report and the digest of the input.
+pub fn header_items(report: &Report, lang: Lang) -> Vec<(String, String)> {
     let w = words::words(lang);
-    let mut doc = Doc::default();
-    doc.heading(1, format!("{}: {}", w.title, report.input.name));
-    doc.item(0, format!("{}: {} {}", w.tool, report.tool.name, report.tool.version));
     let input_sha256 = match (&report.input.sha256, report.input.kind) {
         (Some(sha256), _) => sha256.clone(),
         (None, aa_core::InputKind::Directory) => w.not_applicable.to_string(),
         (None, aa_core::InputKind::File) => w.unknown.to_string(),
     };
-    doc.item(0, format!("{}: {input_sha256}", w.input_sha256));
+    vec![
+        (w.tool.to_string(), format!("{} {}", report.tool.name, report.tool.version)),
+        (w.input_sha256.to_string(), input_sha256),
+    ]
+}
 
-    doc.heading(2, w.summary);
-    doc.item(0, format!("{}: {}", w.input, words::input_kind(lang, report.input.kind)));
-    doc.item(0, format!("{}: {} / {}", w.artifacts, report.coverage.artifacts_analyzed, report.coverage.artifacts_total));
-    doc.item(0, format!("{}: {}", w.containers, report.coverage.containers_unpacked));
-    doc.item(0, format!("{}: {}", w.bytes_read, report.coverage.bytes_analyzed));
+/// The lines of the summary: what the input is, how much was read, how many findings.
+pub fn summary_items(report: &Report, lang: Lang) -> Vec<(String, String)> {
+    let w = words::words(lang);
     let count = |severity| report.findings.iter().filter(|f| f.severity == severity).count();
     let by_severity = [Severity::High, Severity::Medium, Severity::Low, Severity::Info]
         .map(|s| format!("{} {}", words::severity(lang, s), count(s)))
         .join(" · ");
-    doc.item(0, format!("{}: {} ({}: {by_severity})", w.findings, report.findings.len(), w.by_severity));
-    doc.heading(3, w.reading_guide);
-    doc.paragraph(w.reading_guide_text);
+    vec![
+        (w.input.to_string(), words::input_kind(lang, report.input.kind).to_string()),
+        (w.artifacts.to_string(), format!("{} / {}", report.coverage.artifacts_analyzed, report.coverage.artifacts_total)),
+        (w.containers.to_string(), report.coverage.containers_unpacked.to_string()),
+        (w.bytes_read.to_string(), report.coverage.bytes_analyzed.to_string()),
+        (w.findings.to_string(), format!("{} ({}: {by_severity})", report.findings.len(), w.by_severity)),
+    ]
+}
 
-    for section in Section::ALL {
-        doc.heading(2, words::section(lang, section));
-        let findings: Vec<&Finding> = report.findings.iter().filter(|f| f.section == section).collect();
-        if findings.is_empty() {
-            doc.paragraph(w.no_findings_here);
-        }
-        for finding in findings {
-            finding_blocks(&mut doc, report, lang, &w, finding);
-        }
-    }
+/// The inventory table: its head, its rows, and a note when the rows were cut.
+pub struct Inventory {
+    pub head: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+    pub note: Option<String>,
+}
 
-    doc.heading(2, w.inventory);
+/// The first [`INVENTORY_ROWS`] artifacts as table rows.
+pub fn inventory(report: &Report, lang: Lang) -> Inventory {
+    let w = words::words(lang);
     let rows = report
         .artifacts
         .iter()
@@ -149,14 +152,87 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
         })
         .collect();
     let head = [w.path, w.size, w.kind, w.entropy, "SHA-256"].map(str::to_string).to_vec();
-    doc.blocks.push(Block::Table { head, rows });
-    if report.artifacts.len() > INVENTORY_ROWS {
-        doc.paragraph(match lang {
-            Lang::Zh => format!("上表只列出前 {INVENTORY_ROWS} 个文件，共 {} 个；完整清单见 report.json。", report.artifacts.len()),
-            Lang::En => {
-                format!("The table shows the first {INVENTORY_ROWS} of {} files; report.json lists them all.", report.artifacts.len())
+    let note = (report.artifacts.len() > INVENTORY_ROWS).then(|| match lang {
+        Lang::Zh => format!("上表只列出前 {INVENTORY_ROWS} 个文件，共 {} 个；完整清单见 report.json。", report.artifacts.len()),
+        Lang::En => {
+            format!("The table shows the first {INVENTORY_ROWS} of {} files; report.json lists them all.", report.artifacts.len())
+        }
+    });
+    Inventory { head, rows, note }
+}
+
+/// The limitations that share one code.
+pub struct LimitationGroup {
+    /// Title of the code, with the number of limitations in brackets.
+    pub title: String,
+    /// What the code means; empty when the report has no text for it.
+    pub text: String,
+    /// One line per limitation, the first [`LIMITATION_ARTIFACTS`] of them.
+    pub items: Vec<String>,
+    /// How many more there are, when the items were cut.
+    pub more: Option<String>,
+}
+
+/// The limitations grouped by code, codes in sorted order.
+pub fn limitation_groups(report: &Report, lang: Lang) -> Vec<LimitationGroup> {
+    let w = words::words(lang);
+    let mut codes: Vec<&str> = report.limitations.iter().map(|l| l.code.as_str()).collect();
+    codes.sort();
+    codes.dedup();
+    codes
+        .into_iter()
+        .map(|code| {
+            let of_code: Vec<&Limitation> = report.limitations.iter().filter(|l| l.code == code).collect();
+            let items = of_code
+                .iter()
+                .take(LIMITATION_ARTIFACTS)
+                .map(|limitation| {
+                    let subject = limitation.artifact.as_deref().unwrap_or(w.whole_run);
+                    let detail = limitation.detail.as_deref().map(|d| format!(" — {d}")).unwrap_or_default();
+                    format!("{}: {subject}{detail}", w.affected)
+                })
+                .collect();
+            LimitationGroup {
+                title: format!("{} ({})", rule_title(report, lang, code), of_code.len()),
+                text: limitation_text(report, lang, code),
+                items,
+                more: (of_code.len() > LIMITATION_ARTIFACTS).then(|| format!("… +{}", of_code.len() - LIMITATION_ARTIFACTS)),
             }
-        });
+        })
+        .collect()
+}
+
+pub fn build(report: &Report, lang: Lang) -> Doc {
+    let w = words::words(lang);
+    let mut doc = Doc::default();
+    doc.heading(1, format!("{}: {}", w.title, report.input.name));
+    for (label, value) in header_items(report, lang) {
+        doc.item(0, format!("{label}: {value}"));
+    }
+
+    doc.heading(2, w.summary);
+    for (label, value) in summary_items(report, lang) {
+        doc.item(0, format!("{label}: {value}"));
+    }
+    doc.heading(3, w.reading_guide);
+    doc.paragraph(w.reading_guide_text);
+
+    for section in Section::ALL {
+        doc.heading(2, words::section(lang, section));
+        let findings: Vec<&Finding> = report.findings.iter().filter(|f| f.section == section).collect();
+        if findings.is_empty() {
+            doc.paragraph(w.no_findings_here);
+        }
+        for finding in findings {
+            finding_blocks(&mut doc, report, lang, &w, finding);
+        }
+    }
+
+    doc.heading(2, w.inventory);
+    let inventory = inventory(report, lang);
+    doc.blocks.push(Block::Table { head: inventory.head, rows: inventory.rows });
+    if let Some(note) = inventory.note {
+        doc.paragraph(note);
     }
 
     doc.heading(2, w.coverage);
@@ -164,24 +240,16 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
     if report.limitations.is_empty() {
         doc.paragraph(w.no_limitations);
     }
-    let mut codes: Vec<&str> = report.limitations.iter().map(|l| l.code.as_str()).collect();
-    codes.dedup();
-    codes.sort();
-    codes.dedup();
-    for code in codes {
-        let of_code: Vec<&Limitation> = report.limitations.iter().filter(|l| l.code == code).collect();
-        doc.heading(3, format!("{} ({})", rule_title(report, lang, code), of_code.len()));
-        let text = limitation_text(report, lang, code);
-        if !text.is_empty() {
-            doc.paragraph(text);
+    for group in limitation_groups(report, lang) {
+        doc.heading(3, group.title);
+        if !group.text.is_empty() {
+            doc.paragraph(group.text);
         }
-        for limitation in of_code.iter().take(LIMITATION_ARTIFACTS) {
-            let subject = limitation.artifact.as_deref().unwrap_or(w.whole_run);
-            let detail = limitation.detail.as_deref().map(|d| format!(" — {d}")).unwrap_or_default();
-            doc.item(0, format!("{}: {subject}{detail}", w.affected));
+        for item in group.items {
+            doc.item(0, item);
         }
-        if of_code.len() > LIMITATION_ARTIFACTS {
-            doc.item(0, format!("… +{}", of_code.len() - LIMITATION_ARTIFACTS));
+        if let Some(more) = group.more {
+            doc.item(0, more);
         }
     }
     doc

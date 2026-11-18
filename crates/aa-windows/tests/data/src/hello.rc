@@ -1,0 +1,27 @@
+#include <winver.h>
+1 VERSIONINFO
+FILEVERSION 1,2,3,4
+PRODUCTVERSION 1,2,0,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "Fixture Works"
+      VALUE "FileDescription", "Analyze Anything test program"
+      VALUE "FileVersion", "1.2.3.4"
+      VALUE "InternalName", "hello"
+      VALUE "LegalCopyright", "(c) Fixture Works"
+      VALUE "OriginalFilename", "hello.exe"
+      VALUE "ProductName", "Hello Fixture"
+      VALUE "ProductVersion", "1.2"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END
+1 24 "hello.manifest"

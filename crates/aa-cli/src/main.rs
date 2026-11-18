@@ -53,6 +53,8 @@ enum FormatArg {
     Json,
     Md,
     Txt,
+    Html,
+    Pdf,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -104,6 +106,8 @@ fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
             FormatArg::Json => Format::Json,
             FormatArg::Md => Format::Markdown,
             FormatArg::Txt => Format::Text,
+            FormatArg::Html => Format::Html,
+            FormatArg::Pdf => Format::Pdf,
         };
         let bytes = aa_report::render(report, format, lang).map_err(|e| e.to_string())?;
         let path = output.out.join(format!("report.{}", format.extension()));

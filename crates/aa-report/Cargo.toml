@@ -9,7 +9,15 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["pdf"]
+# PDF output through an embedded Typst and two embedded fonts. Adds about 30 MB to the binary.
+pdf = ["dep:typst", "dep:typst-pdf"]
+
 [dependencies]
 aa-core.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+typst = { version = "0.14.2", optional = true }
+typst-pdf = { version = "0.14.2", optional = true }

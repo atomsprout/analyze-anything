@@ -12,3 +12,22 @@ workspace = true
 [dependencies]
 aa-core.workspace = true
 serde_json.workspace = true
+hex.workspace = true
+sha1.workspace = true
+sha2.workspace = true
+md-5.workspace = true
+flate2.workspace = true
+# RSA and ECDSA verification of Authenticode signatures (RustCrypto; MIT OR Apache-2.0).
+rsa = { version = "0.9", default-features = false, features = ["std"] }
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+p384 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+# Manifest and AppxManifest XML (MIT OR Apache-2.0).
+roxmltree = "0.20"
+# NSIS installers: header, script and embedded files (Apache-2.0).
+nsis = "0.6.1"
+# MSI databases and cabinets (MIT).
+msi = "0.11"
+cfb = "0.16"
+cab = "0.6"
+
+[dev-dependencies]

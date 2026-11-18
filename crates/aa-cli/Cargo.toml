@@ -9,10 +9,15 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["pdf"]
+# PDF output. Leave it out (`--no-default-features`) for a much smaller binary.
+pdf = ["aa-report/pdf"]
+
 [dependencies]
 aa-core.workspace = true
 aa-engine.workspace = true
-aa-report.workspace = true
+aa-report = { path = "../aa-report", default-features = false }
 serde_json.workspace = true
 clap.workspace = true
 

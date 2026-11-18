@@ -1,0 +1,133 @@
+PE checksum   : 00009B26
+
+
+Signature Index: 0  (Primary Signature)
+
+Message digest algorithm  : SHA1
+Current message digest    : 26C67744197741F4CFAE070B8EEDAB854F1E4E7A 
+Calculated message digest : 26C67744197741F4CFAE070B8EEDAB854F1E4E7A 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Code Signing
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 176280FB1FB1F14ECA9441B68D29260EDC2E0DA4
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 15 22:13:55 2036 GMT
+
+Message digest algorithm: SHA1
+
+Authenticated attributes:
+	Signing time: Nov 19 22:13:56 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: E09ADD8EDB799BE76E2EF0B4FC7A066E5CDCBC27 
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp is not available
+
+Signing certificate chain verified using:
+	------------------
+	Signer #1:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 201C2F436133518C195E97E1E68C587D3A4A1643
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 13 22:13:55 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Code Signing
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 176280FB1FB1F14ECA9441B68D29260EDC2E0DA4
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 15 22:13:55 2036 GMT
+
+Signature verification: ok
+
+
+Signature Index: 1 
+
+Message digest algorithm  : SHA256
+Current message digest    : 14711947BB73ADB02E8FEC02D8BE6359803D385F7BAA85AA6554065E5358731D 
+Calculated message digest : 14711947BB73ADB02E8FEC02D8BE6359803D385F7BAA85AA6554065E5358731D 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Code Signing
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 176280FB1FB1F14ECA9441B68D29260EDC2E0DA4
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 15 22:13:55 2036 GMT
+
+Message digest algorithm: SHA256
+
+Authenticated attributes:
+	Sequence number: 1
+	Signing time: Nov 19 22:13:56 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: A54D30CB204254BF28A3265384C963BFB7E34B53EE38269A2B7973B8B85A3CBC 
+
+Countersignatures:
+	Timestamp time: Nov 19 22:13:56 2026 GMT
+	Signing time: Nov 18 22:13:56 2026 GMT
+	Hash Algorithm: sha256
+	Issuer: /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+	Serial: 176280FB1FB1F14ECA9441B68D29260EDC2E0DA6
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp verified using:
+	------------------
+	Signer #1:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 201C2F436133518C195E97E1E68C587D3A4A1643
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 13 22:13:55 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Timestamp Authority
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 176280FB1FB1F14ECA9441B68D29260EDC2E0DA6
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:56 2026 GMT
+			notAfter : Nov 15 22:13:56 2036 GMT
+
+
+Timestamp serial number: 26939CD0FC587DCC
+Timestamp Server Signature verification: ok
+Signature verification time: Nov 19 22:13:56 2026 GMT
+Signing certificate chain verified using:
+	------------------
+	Signer #1:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 201C2F436133518C195E97E1E68C587D3A4A1643
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 13 22:13:55 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Code Signing
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 176280FB1FB1F14ECA9441B68D29260EDC2E0DA4
+		Certificate expiration date:
+			notBefore : Nov 18 22:13:55 2026 GMT
+			notAfter : Nov 15 22:13:55 2036 GMT
+
+Signature verification: ok
+
+Number of verified signatures: 2
+Succeeded

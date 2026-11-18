@@ -1,0 +1,70 @@
+
+7-Zip 23.01 (x64) : Copyright (c) 1999-2023 Igor Pavlov : 2023-06-20
+ 64-bit locale=C.UTF-8 Threads:4 OPEN_MAX:20000
+
+Scanning the drive for archives:
+1 file, 108905 bytes (107 KiB)
+
+Listing archive: nsis-zlib.exe
+
+--
+Path = nsis-zlib.exe
+Type = Nsis
+Physical Size = 108905
+Method = Deflate
+Solid = -
+Headers Size = 6054
+Embedded Stub Size = 98816
+SubType = NSIS-3 Unicode
+
+----------
+Path = hello.exe
+Size = 
+Packed Size = 7021
+Modified = 2026-11-18 22:13:54.0000000
+Attributes = 
+Method = Deflate
+Solid = -
+Offset = 0
+
+Path = readme.txt
+Size = 16
+Packed Size = 16
+Modified = 2026-11-18 22:13:56.0000000
+Attributes = 
+Method = Copy
+Solid = -
+Offset = 7025
+
+Path = data/copy.txt
+Size = 16
+Packed Size = 16
+Modified = 2026-11-18 22:13:56.0000000
+Attributes = 
+Method = Copy
+Solid = -
+Offset = 7025
+
+Path = data/payload.bin
+Size = 
+Packed Size = 591
+Modified = 2026-11-18 22:13:56.0000000
+Attributes = 
+Method = Deflate
+Solid = -
+Offset = 7045
+
+Path = uninstall.exe
+Size = 
+Packed Size = 277
+Modified = 
+Attributes = 
+Method = Deflate
+Solid = -
+Offset = 7640
+
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./data/copy.txt
+86999324511ad84c69f01938832689a50bebda2d4c65061db2e73b4b0857e831  ./data/payload.bin
+8ef99ee24e624a606b58cb48ed436a7e224a8d5036e02d502dd758cd8cfe5ca3  ./hello.exe
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./readme.txt
+cf21128a1e7a932acb1b7c9b6f41022a3db0d2f6e3ac7a989ea9d0ffbf11e67e  ./uninstall.exe

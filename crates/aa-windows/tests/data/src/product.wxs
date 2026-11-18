@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="11111111-2222-3333-4444-555555555555" Name="Fixture MSI" Language="1033" Version="3.2.1"
+           Manufacturer="Fixture Works" UpgradeCode="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"/>
+    <Media Id="1" Cabinet="files.cab" EmbedCab="yes"/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="Fixture MSI">
+          <Component Id="MainExe" Guid="11111111-0000-0000-0000-000000000001">
+            <File Id="HelloExe" Name="hello.exe" Source="hello.exe" KeyPath="yes">
+              <Shortcut Id="StartMenu" Directory="ProgramMenuFolder" Name="Fixture MSI" Advertise="no"/>
+            </File>
+            <ServiceInstall Id="Svc" Name="FixtureMsiSvc" DisplayName="Fixture MSI Service" Type="ownProcess" Start="auto"
+                            ErrorControl="normal" Account="LocalSystem" Arguments="--service"/>
+            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="FixtureMsi" Type="string"
+                           Value="[INSTALLDIR]hello.exe --autostart"/>
+          </Component>
+          <Directory Id="DataDir" Name="data">
+            <Component Id="Data" Guid="11111111-0000-0000-0000-000000000002">
+              <File Id="Readme" Name="readme.txt" Source="readme.txt" KeyPath="yes"/>
+              <File Id="Payload" Name="payload.bin" Source="payload.bin"/>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder"/>
+    </Directory>
+    <CustomAction Id="RunAfter" FileKey="HelloExe" ExeCommand="--first-run" Execute="deferred" Impersonate="no" Return="ignore"/>
+    <InstallExecuteSequence>
+      <Custom Action="RunAfter" Before="InstallFinalize">NOT Installed</Custom>
+    </InstallExecuteSequence>
+    <Condition Message="Windows 7 or later is required.">VersionNT &gt;= 601</Condition>
+    <Feature Id="Main" Level="1">
+      <ComponentRef Id="MainExe"/>
+      <ComponentRef Id="Data"/>
+    </Feature>
+  </Product>
+</Wix>
