@@ -106,6 +106,7 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
             "bits": if pe.is64 { 64 } else { 32 },
             "machine": pe.machine,
             "subsystem": subsystem_name(pe.subsystem),
+            "pe_header_offset": pe.pe_offset,
             "timestamp": pe.timestamp,
             "checksum": { "stored": pe.checksum, "computed": computed_checksum },
             "overlay": overlay.map(|(offset, size)| json!({ "offset": offset, "size": size })),
@@ -123,7 +124,7 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
     if let Some(net) = &net {
         dotnet_findings(file, &pe, net, out);
     }
-    triage(file, &pe, &imports, net.is_some(), computed_checksum, out);
+    triage(file, &pe, &imports, net.is_some(), out);
 
     let pinvokes = net.as_ref().map(|n| n.pinvokes.clone()).unwrap_or_default();
     let categories = behaviour::classify(&imports, &pinvokes);
@@ -383,12 +384,9 @@ fn resource_summary(file: &Artifact, pe: &Pe, res: &pe::Resources, out: &mut Out
 }
 
 fn dotnet_findings(file: &Artifact, pe: &Pe, net: &dotnet::DotNet, out: &mut Output) {
-    out.fact(file, "windows.dotnet", net.json());
     if let Some(error) = &net.metadata_error {
         out.limitation("windows.dotnet-unreadable", Some(file), Some(error.clone()));
     }
-    let clr_offset = pe.directory(pe::DIR_CLR).and_then(|(rva, _)| pe.offset_of(rva)).unwrap_or(0) as u64;
-    let name = net.assembly_name.clone().or(net.module.clone()).unwrap_or_else(|| file.name().to_string());
     let mut mode = Vec::new();
     mode.push(if net.il_only { "IL only" } else { "mixed mode (contains native code)" });
     if net.requires_32bit {
@@ -404,17 +402,11 @@ fn dotnet_findings(file: &Artifact, pe: &Pe, net: &dotnet::DotNet, out: &mut Out
     } else {
         "no strong name"
     });
-    out.finding(
-        finding(Section::Composition, "windows.dotnet-assembly", Confidence::Verified, Severity::Info)
-            .param("name", name)
-            .param("version", net.assembly_version.clone().unwrap_or_else(|| "?".into()))
-            .param("framework", net.target_framework.clone().or(net.runtime_version.clone()).unwrap_or_else(|| "?".into()))
-            .param("mode", mode.join(", "))
-            .param("types", net.types.map(Value::from).unwrap_or(Value::Null))
-            .param("methods", net.methods.map(Value::from).unwrap_or(Value::Null))
-            .param("references", net.references.len())
-            .evidence(Evidence::bytes(file, clr_offset, 72, json!({ "assembly": net.assembly_name, "version": net.assembly_version }))),
-    );
+    // The finding is made in the tree pass, where a folder of assemblies becomes one summary.
+    let mut fact = net.json();
+    fact["mode"] = json!(mode.join(", "));
+    fact["clr_header_offset"] = json!(pe.directory(pe::DIR_CLR).and_then(|(rva, _)| pe.offset_of(rva)));
+    out.fact(file, "windows.dotnet", fact);
     if !net.obfuscator_hints.is_empty() {
         let tools: Vec<&str> = {
             let mut tools: Vec<&str> = net.obfuscator_hints.iter().map(|(tool, _)| tool.as_str()).collect();
@@ -431,7 +423,7 @@ fn dotnet_findings(file: &Artifact, pe: &Pe, net: &dotnet::DotNet, out: &mut Out
 }
 
 /// Structure checks and packer triage.
-fn triage(file: &Artifact, pe: &Pe, imports: &pe::Imports, managed: bool, computed_checksum: u32, out: &mut Output) {
+fn triage(file: &Artifact, pe: &Pe, imports: &pe::Imports, managed: bool, out: &mut Output) {
     let section_evidence = |s: &pe::Section, value: Value| Evidence::bytes(file, s.header_offset as u64, 40, value);
 
     // Known packer section names.
@@ -591,25 +583,6 @@ fn triage(file: &Artifact, pe: &Pe, imports: &pe::Imports, managed: bool, comput
                 .param("count", functions)
                 .param("libraries", imports.dlls.iter().map(|d| d.name.as_str()).take(8).collect::<Vec<_>>().join(", "))
                 .evidence(Evidence::bytes(file, offset as u64, 20, json!({ "imports_by_ordinal": by_ordinal }))),
-        );
-    }
-
-    // Only the two values no linker writes by accident are reported; reproducible builds store
-    // a hash in this field, so "implausible dates" are normal.
-    if pe.timestamp == 0 || pe.timestamp == u32::MAX {
-        out.finding(
-            finding(Section::Anomalies, "windows.timestamp-blank", Confidence::Verified, Severity::Info)
-                .param("value", format!("{:#010x}", pe.timestamp))
-                .evidence(Evidence::bytes(file, pe.pe_offset as u64 + 8, 4, format!("{:#010x}", pe.timestamp))),
-        );
-    }
-
-    if pe.checksum != 0 && pe.checksum != computed_checksum {
-        out.finding(
-            finding(Section::Anomalies, "windows.checksum-mismatch", Confidence::Verified, Severity::Info)
-                .param("stored", format!("{:#010x}", pe.checksum))
-                .param("computed", format!("{computed_checksum:#010x}"))
-                .evidence(Evidence::bytes(file, pe.checksum_offset as u64, 4, format!("{:#010x}", pe.checksum))),
         );
     }
 }

@@ -240,11 +240,6 @@ impl<'a> Table<'a> {
         (name, values)
     }
 
-    /// `type/name` of the resource `id`.
-    pub fn name(&self, id: u32) -> Option<String> {
-        self.lookup(id).0
-    }
-
     /// Resolves `id` to its name and a representative value: the default configuration's, or
     /// when there is none (icons often have only density-specific files) the densest one's.
     /// References to other resources are followed, a bounded number of times.
@@ -288,10 +283,12 @@ impl<'a> Table<'a> {
         let mut found = BTreeMap::new();
         for package in &self.packages {
             let (Some(keys), Some(types)) = (&package.keys, &package.types) else { continue };
-            let Some(string_type) = (0..types.len().min(256) as u32).find(|i| types.get(*i).as_deref() == Some("string")) else { continue };
+            let Some(string_type) = (0..types.count().min(256) as u32).find(|i| types.get(*i).as_deref() == Some("string")) else {
+                continue;
+            };
             let type_id = (string_type + 1 + package.type_id_offset) as u8;
             let mut wanted: BTreeMap<u32, String> = BTreeMap::new();
-            for index in 0..keys.len() as u32 {
+            for index in 0..keys.count() as u32 {
                 if let Some(key) = keys.get(index)
                     && names.contains(&key.as_str())
                 {
@@ -346,11 +343,8 @@ fn parse_package<'a>(
 ) -> Option<Package<'a>> {
     let end = start + size;
     let id = u32_at(data, start + 8)?;
-    let name_units: Vec<u16> = slice_at(data, start + 12, 256)?
-        .chunks_exact(2)
-        .map(|c| u16::from_le_bytes([c[0], c[1]]))
-        .take_while(|u| *u != 0)
-        .collect();
+    let name_units: Vec<u16> =
+        slice_at(data, start + 12, 256)?.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).take_while(|u| *u != 0).collect();
     let type_strings = u32_at(data, start + 268)? as usize;
     let key_strings = u32_at(data, start + 276)? as usize;
     // Older tables have a 284-byte header without the type id offset.

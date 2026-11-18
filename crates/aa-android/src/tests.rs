@@ -177,7 +177,8 @@ fn manifest_matches_aapt_badging() {
         }
     }
     assert!(checked >= 8, "badging lines compared: {checked}");
-    let ours: Vec<&str> = fact(&out, "android.permissions")["requested"].as_array().expect("list").iter().filter_map(|p| p["name"].as_str()).collect();
+    let ours: Vec<&str> =
+        fact(&out, "android.permissions")["requested"].as_array().expect("list").iter().filter_map(|p| p["name"].as_str()).collect();
     assert_eq!(ours, permissions);
 }
 
@@ -237,10 +238,12 @@ fn signatures_agree_with_apksigner() {
         } else {
             signing["install_check"]["min_sdk"].as_i64().expect("min sdk")
         };
-        let failed: Vec<String> = signing["failed_schemes"].as_array().expect("list").iter().filter_map(|v| v.as_str().map(str::to_string)).collect();
+        let failed: Vec<String> =
+            signing["failed_schemes"].as_array().expect("list").iter().filter_map(|v| v.as_str().map(str::to_string)).collect();
         let stripped = signing["stripped_schemes"].as_array().is_some_and(|l| !l.is_empty());
         let has_v2_plus = signing["schemes"].as_array().is_some_and(|l| !l.is_empty());
-        let (ours, reasons) = crate::emit_signing::install_check(&verified, &failed, !signing["v1"].is_null(), has_v2_plus, stripped, min_sdk);
+        let (ours, reasons) =
+            crate::emit_signing::install_check(&verified, &failed, !signing["v1"].is_null(), has_v2_plus, stripped, min_sdk);
         assert_eq!(ours, *accepted == "yes", "{file}: apksigner says {accepted}, we say {reasons:?}");
         if *accepted == "yes" {
             assert_eq!(verified.contains(&"v1"), *v1 == "true", "{file} v1");
@@ -260,7 +263,13 @@ fn signatures_agree_with_apksigner() {
 #[test]
 fn each_tampering_is_blamed_on_the_right_check() {
     let run = |file: &str| analyze(&MemTree::apk(file, fixture(file)));
-    let reason = |out: &Output| rule(out, "android.signature-invalid").iter().map(|f| format!("{}: {}", f.params["scheme"], f.params["reason"])).collect::<Vec<_>>().join(" | ");
+    let reason = |out: &Output| {
+        rule(out, "android.signature-invalid")
+            .iter()
+            .map(|f| format!("{}: {}", f.params["scheme"], f.params["reason"]))
+            .collect::<Vec<_>>()
+            .join(" | ")
+    };
 
     let out = run("v1-entry-modified.apk");
     assert!(reason(&out).contains("classes.dex"), "{}", reason(&out));
@@ -309,7 +318,8 @@ fn certificates_and_rotation() {
     assert!(!has(&out, "android.signer-mismatch"));
     assert_eq!(rule(&out, "android.signing-certificate").len(), 2);
     let signing = fact(&out, "android.signing");
-    let lineage = signing["schemes"].as_array().expect("schemes").iter().find(|s| s["scheme"] == "v3").expect("v3")["signers"][0]["lineage"].clone();
+    let lineage =
+        signing["schemes"].as_array().expect("schemes").iter().find(|s| s["scheme"] == "v3").expect("v3")["signers"][0]["lineage"].clone();
     assert_eq!(lineage[1]["signed_by_previous"]["status"], "passed");
 
     let out = run("v3-ec.apk");
@@ -387,7 +397,10 @@ fn full_package_findings() {
     assert_eq!(rule(&out, "android.exported-services")[0].params["components"], "com.example.aafixture.SyncService");
     assert_eq!(rule(&out, "android.exported-providers")[0].params["components"], "com.example.aafixture.OpenProvider");
     assert!(!has(&out, "android.exported-receivers"));
-    assert_eq!(rule(&out, "android.implicit-export")[0].params["components"], "com.example.aafixture.MainActivity, com.example.aafixture.SyncService");
+    assert_eq!(
+        rule(&out, "android.implicit-export")[0].params["components"],
+        "com.example.aafixture.MainActivity, com.example.aafixture.SyncService"
+    );
     let links = fact(&out, "android.deep_links");
     assert_eq!(links["custom_schemes"], serde_json::json!(["aafixture"]));
     assert_eq!(links["app_link_hosts"], serde_json::json!(["fixture.example.com"]));
@@ -408,7 +421,9 @@ fn full_package_findings() {
     assert_eq!(small.params["libraries"], "libsmallpage.so");
     assert_eq!((small.params["count"].as_u64(), small.params["total"].as_u64()), (Some(1), Some(3)));
     let framework = rule(&out, "android.framework");
-    assert!(framework.iter().any(|f| f.params["name"] == "React Native" && f.params["detail"].as_str().is_some_and(|d| d.contains("Hermes bytecode version 96"))));
+    assert!(framework.iter().any(
+        |f| f.params["name"] == "React Native" && f.params["detail"].as_str().is_some_and(|d| d.contains("Hermes bytecode version 96"))
+    ));
 
     // Every finding has evidence and a rule with text.
     for finding in &out.findings {
@@ -456,7 +471,8 @@ fn zip_tricks_are_seen() {
 fn deterministic_output() {
     let run = || {
         let out = analyze(&MemTree::apk("full.apk", FULL.to_vec()));
-        serde_json::to_string(&(out.findings, out.facts.iter().map(|f| (&f.key, &f.value)).collect::<Vec<_>>(), out.kinds, out.limitations)).expect("json")
+        serde_json::to_string(&(out.findings, out.facts.iter().map(|f| (&f.key, &f.value)).collect::<Vec<_>>(), out.kinds, out.limitations))
+            .expect("json")
     };
     assert_eq!(run(), run());
 }
@@ -499,19 +515,30 @@ fn app_bundle_base_module() {
 #[test]
 fn set_of_apks() {
     let mut tree = MemTree::default();
-    let mut xapk = zipraw::tests::build_zip(b"", &[("manifest.json", b"{}")]);
-    xapk.truncate(xapk.len()); // the container's own bytes are not read by the analyzer
-    tree.add("app.xapk", None, xapk);
+    tree.add_zip("set.xapk", None, fixture("set.xapk"));
+    let out = analyze(&tree.finish());
+    assert!(out.kinds.contains(&("set.xapk".to_string(), "xapk".to_string())));
+    assert!(out.kinds.contains(&("set.xapk/config.fixture.apk".to_string(), "apk".to_string())));
+    let set = rule(&out, "android.apk-set");
+    assert_eq!(set[0].params["apks"], 2);
+    assert_eq!(set[0].params["base"], "com.example.aafixture.apk");
+    assert_eq!(set[0].params["splits"], "config.fixture");
+    assert_eq!(set[0].params["package"], "com.example.aafixture");
+    assert!(!has(&out, "android.apk-set-mismatch"));
+    assert_eq!(rule(&out, "android.split-apk").len(), 1);
+    // The split is checked for its signature, not for its (absent) code.
+    assert_eq!(rule(&out, "android.signature-verified").len(), 4);
+    assert_eq!(rule(&out, "android.dex-summary").len(), 1);
+
+    // A container whose APKs come from different signers is called out.
+    let mut tree = MemTree::default();
+    tree.add("app.xapk", None, b"PK".to_vec());
     tree.artifacts[0].kind = Some("zip".into());
     tree.artifacts[0].unpacked_by = Some("zip".into());
     tree.add("app.xapk/manifest.json", Some("app.xapk"), b"{}".to_vec());
     tree.add_zip("app.xapk/base.apk", Some("app.xapk"), fixture("v1v2.apk"));
     tree.add_zip("app.xapk/other.apk", Some("app.xapk"), fixture("debug.apk"));
     let out = analyze(&tree.finish());
-    assert!(out.kinds.contains(&("app.xapk".to_string(), "xapk".to_string())));
-    let set = rule(&out, "android.apk-set");
-    assert_eq!(set[0].params["apks"], 2);
-    // The two fixtures are signed with different keys.
     assert_eq!(rule(&out, "android.apk-set-mismatch")[0].params["signers"], 2);
     assert_eq!(fact(&out, "android.apk_set")["apks"].as_array().map(Vec::len), Some(2));
 }
@@ -530,7 +557,8 @@ fn not_android_is_left_alone() {
 #[test]
 fn damaged_members_do_not_panic() {
     let archive = zipraw::parse(FULL).expect("zip");
-    let members: Vec<(String, Vec<u8>)> = archive.entries.iter().map(|e| (e.name.clone(), zipraw::read_entry(FULL, e, 1 << 26).expect("entry"))).collect();
+    let members: Vec<(String, Vec<u8>)> =
+        archive.entries.iter().map(|e| (e.name.clone(), zipraw::read_entry(FULL, e, 1 << 26).expect("entry"))).collect();
     let build = |target: &str, change: &dyn Fn(&mut Vec<u8>)| {
         let mut tree = MemTree::default();
         // The container's own bytes are left out: signatures are exercised by another test.
@@ -546,7 +574,9 @@ fn damaged_members_do_not_panic() {
         }
         tree.finish()
     };
-    for target in ["AndroidManifest.xml", "resources.arsc", "classes.dex", "res/xml/network_security_config.xml", "lib/x86_64/libfixture.so"] {
+    for target in
+        ["AndroidManifest.xml", "resources.arsc", "classes.dex", "res/xml/network_security_config.xml", "lib/x86_64/libfixture.so"]
+    {
         let size = members.iter().find(|(n, _)| n == target).map(|(_, d)| d.len()).expect("member");
         // Truncations.
         for cut in [0, 1, 7, 8, 9, 27, 28, 64, 111, 112, size / 3, size / 2, size - 1] {
@@ -594,4 +624,57 @@ fn damaged_package_file_does_not_panic() {
         tree.add_zip("x.apk", None, apk[..cut].to_vec());
         let _ = analyze(&tree.finish());
     }
+}
+
+/// Development aid, not a test: analyzes the package named by `AA_ANDROID_SAMPLE` without the
+/// engine and writes a report-shaped JSON to `AA_ANDROID_OUT`. Run with
+/// `cargo test --release -p aa-android -- --ignored sample_report`.
+#[test]
+#[ignore = "needs AA_ANDROID_SAMPLE"]
+fn sample_report() {
+    let (Ok(sample), Ok(target)) = (std::env::var("AA_ANDROID_SAMPLE"), std::env::var("AA_ANDROID_OUT")) else { return };
+    let name = sample.rsplit('/').next().unwrap_or(&sample).to_string();
+    let data = std::fs::read(&sample).expect("sample");
+    let mut tree = MemTree::default();
+    tree.add_zip(&name, None, data);
+    let mut tree = tree.finish();
+    let started = std::time::Instant::now();
+    let out = analyze(&tree);
+    let elapsed = started.elapsed();
+    let mut summary = serde_json::Map::new();
+    for fact in out.facts {
+        match fact.artifact {
+            Some(path) => {
+                if let Some(artifact) = tree.artifacts.iter_mut().find(|a| a.path == path) {
+                    artifact.facts.insert(fact.key, fact.value);
+                }
+            }
+            None => {
+                summary.insert(fact.key, fact.value);
+            }
+        }
+    }
+    for (path, kind) in out.kinds {
+        if let Some(artifact) = tree.artifacts.iter_mut().find(|a| a.path == path) {
+            artifact.kind = Some(kind);
+        }
+    }
+    let texts: Vec<Json> = out
+        .findings
+        .iter()
+        .map(|f| {
+            let rule = crate::rules::RULES.iter().find(|r| r.id == f.rule).expect("rule");
+            serde_json::json!({ "rule": f.rule, "section": f.section, "severity": f.severity, "confidence": f.confidence,
+                "en": aa_core::fill(rule.text_en, &f.params), "zh": aa_core::fill(rule.text_zh, &f.params) })
+        })
+        .collect();
+    let report = serde_json::json!({
+        "artifacts": tree.artifacts.iter().filter(|a| !a.facts.is_empty() || a.kind.is_some()).collect::<Vec<_>>(),
+        "findings": out.findings,
+        "limitations": out.limitations,
+        "summary": summary,
+        "texts": texts,
+        "analysis_ms": elapsed.as_millis() as u64,
+    });
+    std::fs::write(target, serde_json::to_vec_pretty(&report).expect("json")).expect("write");
 }

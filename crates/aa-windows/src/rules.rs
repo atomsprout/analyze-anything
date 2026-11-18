@@ -21,13 +21,13 @@ pub const RULES: &[Rule] = &[
         title_zh: "代码签名（Authenticode）",
         title_en: "Code signatures (Authenticode)",
         text_zh: concat!(
-            "{signed} 个 PE 文件由“{signer}”签名（颁发者：{issuer}；摘要算法：{algorithms}；时间戳：{timestamp}）。",
+            "{signed} 个 PE 文件由“{signer}”签名（颁发者：{issuer}；摘要算法：{algorithms}；其中 {timestamped} 个带时间戳，时间戳机构：{authorities}）。",
             "对这些文件逐一重新计算了 Authenticode 哈希并与签名内的摘要比对、核对了签名属性摘要、用内嵌证书的公钥验证了签名值，",
             "并验证了内嵌证书链各级签名：{verified} 个全部通过。",
             scope_zh!()
         ),
         text_en: concat!(
-            "{signed} PE file(s) are signed by \"{signer}\" (issuer: {issuer}; digest: {algorithms}; timestamp: {timestamp}). ",
+            "{signed} PE file(s) are signed by \"{signer}\" (issuer: {issuer}; digest: {algorithms}; {timestamped} of them timestamped, by: {authorities}). ",
             "For each file the Authenticode hash was recomputed and compared with the signed digest, the signed-attribute digest was checked, ",
             "the signature value was verified with the embedded certificate's public key, and each link of the embedded certificate chain was verified: ",
             "{verified} passed all of these. ",
@@ -205,6 +205,13 @@ pub const RULES: &[Rule] = &[
         text_en: ".NET assembly {name} {version}, targeting {framework}; {mode}. It defines {types} types and {methods} methods and references {references} assemblies.",
     },
     Rule {
+        id: "windows.dotnet-assemblies",
+        title_zh: ".NET 程序集一览",
+        title_en: ".NET assemblies",
+        text_zh: "共有 {count} 个 .NET 程序集，按目标框架或运行时版本分布：{frameworks}。其中 {mixed} 个是混合模式（含本机代码）。每个程序集的名称、版本、引用和 P/Invoke 见事实数据 windows.dotnet。",
+        text_en: "There are {count} .NET assemblies; by target framework or runtime version: {frameworks}. {mixed} of them are mixed-mode (they contain native code). Name, version, references and P/Invokes of each are in the fact windows.dotnet.",
+    },
+    Rule {
         id: "windows.dotnet-obfuscated",
         title_zh: "疑似经过混淆的 .NET 程序集",
         title_en: ".NET assembly looks obfuscated",
@@ -279,15 +286,15 @@ pub const RULES: &[Rule] = &[
         id: "windows.timestamp-blank",
         title_zh: "链接时间戳为空",
         title_en: "Blank link timestamp",
-        text_zh: "PE 头的时间戳是 {value}：被清除了，或链接器没有写入。",
-        text_en: "The PE header timestamp is {value}: wiped, or never written by the linker.",
+        text_zh: "{files} 个文件的 PE 头时间戳是 0 或 0xFFFFFFFF：被清除了，或链接器没有写入（部分工具链默认如此）。",
+        text_en: "The PE header timestamp of {files} file(s) is 0 or 0xFFFFFFFF: wiped, or never written by the linker (the default of some toolchains).",
     },
     Rule {
         id: "windows.checksum-mismatch",
         title_zh: "PE 校验和不符",
         title_en: "PE checksum mismatch",
-        text_zh: "PE 头记录的校验和是 {stored}，按文件内容计算得到 {computed}。文件在链接或签名之后被改动过，或校验和从未正确填写。",
-        text_en: "The PE header records checksum {stored}; the file content gives {computed}. The file was changed after linking or signing, or the checksum was never set correctly.",
+        text_zh: "{files} 个文件的 PE 头校验和与按文件内容计算的结果不一致（见证据）：文件在链接或签名之后被改动过，或校验和从未正确填写。Windows 只对驱动和系统关键 DLL 检查这个值。",
+        text_en: "For {files} file(s) the checksum in the PE header differs from the one computed over the file (see the evidence): the file was changed after linking or signing, or the checksum was never set correctly. Windows checks this value only for drivers and critical system DLLs.",
     },
     // ---- capabilities from imports ------------------------------------------------------------
     Rule {
@@ -528,8 +535,8 @@ pub const RULES: &[Rule] = &[
         id: "windows.electron-fuses",
         title_zh: "Electron fuses",
         title_en: "Electron fuses",
-        text_zh: "主程序内的 Electron fuse 设置：已开启 {enabled}；已关闭 {disabled}。RunAsNode、EnableNodeOptionsEnvironmentVariable、EnableNodeCliInspectArguments 开启时，可以让这个已签名的程序去执行任意脚本；EnableEmbeddedAsarIntegrityValidation 与 OnlyLoadAppFromAsar 关闭时，替换 app.asar 不会被发现。",
-        text_en: "Electron fuses in the main executable: enabled {enabled}; disabled {disabled}. With RunAsNode, EnableNodeOptionsEnvironmentVariable or EnableNodeCliInspectArguments enabled, this signed program can be made to run arbitrary scripts; with EnableEmbeddedAsarIntegrityValidation and OnlyLoadAppFromAsar disabled, a replaced app.asar goes unnoticed.",
+        text_zh: "主程序内的 Electron fuse 设置：已开启 {enabled}；已关闭 {disabled}。RunAsNode、EnableNodeOptionsEnvironmentVariable、EnableNodeCliInspectArguments 开启时，可以让这个程序去执行任意脚本；EnableEmbeddedAsarIntegrityValidation 与 OnlyLoadAppFromAsar 关闭时，替换 app.asar 不会被发现。",
+        text_en: "Electron fuses in the main executable: enabled {enabled}; disabled {disabled}. With RunAsNode, EnableNodeOptionsEnvironmentVariable or EnableNodeCliInspectArguments enabled, the program can be made to run arbitrary scripts (under its own name and, if it is signed, its signature); with EnableEmbeddedAsarIntegrityValidation and OnlyLoadAppFromAsar disabled, a replaced app.asar goes unnoticed.",
     },
     Rule {
         id: "windows.electron-setting",

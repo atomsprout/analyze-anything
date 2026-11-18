@@ -1,12 +1,12 @@
-v1.apk	yes	true	false	false	746e24f966aba61dda5a236bd6c6d745a1bb490be89d5ebce5115bf34f0f0ec4
-v1v2.apk	yes	true	true	false	746e24f966aba61dda5a236bd6c6d745a1bb490be89d5ebce5115bf34f0f0ec4
-v1v2v3.apk	yes	true	true	true	746e24f966aba61dda5a236bd6c6d745a1bb490be89d5ebce5115bf34f0f0ec4
-v2-ec.apk	yes	false	true	false	2485393e6580eac8860552af1129540f42906b5b89e2548a6729e354fef13ffd
-v3-ec.apk	yes	false	false	true	2485393e6580eac8860552af1129540f42906b5b89e2548a6729e354fef13ffd
-debug.apk	yes	true	true	false	e5226c2678ab6f1077d9d60e5a7f6c9c1b5c61013bf75d7047d2abd84543784b
-weak.apk	yes	true	false	false	c44a24772dd06f75cc3be0ded626e82995896ec39fce7de757fd4e266ef93df2
-rotated.apk	yes	true	true	true	2485393e6580eac8860552af1129540f42906b5b89e2548a6729e354fef13ffd
-full.apk	yes	true	true	true	746e24f966aba61dda5a236bd6c6d745a1bb490be89d5ebce5115bf34f0f0ec4
+v1.apk	yes	true	false	false	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
+v1v2.apk	yes	true	true	false	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
+v1v2v3.apk	yes	true	true	true	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
+v2-ec.apk	yes	false	true	false	3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
+v3-ec.apk	yes	false	false	true	3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
+debug.apk	yes	true	true	false	f331ae39646038e24212e82d13812ff578241d8732de5dc17cbd63efdad5eaf3
+weak.apk	yes	true	false	false	c38365737ddcf955c2232810f772e1faa77eac6212178eaad45cc20f66a3f160
+rotated.apk	yes	true	true	true	3483e2e98c1b9f20c491366f98b981e738b368259cc41b5b7cf2e2f9663b3abc
+full.apk	yes	true	true	true	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704
 v1-entry-modified.apk	no				
 v1v2-entry-modified.apk	no				
 v1v2v3-entry-modified.apk	no				
@@ -15,4 +15,4 @@ v1v2-appended.apk	no
 v1-appended.apk	no				
 v1v2-block-modified.apk	no				
 v1v2-stripped.apk	no				
-v1-janus.apk	yes	true	false	false	746e24f966aba61dda5a236bd6c6d745a1bb490be89d5ebce5115bf34f0f0ec4
+v1-janus.apk	yes	true	false	false	dc4d32775995a3798aa46a10b5731b3e498d9f64f656070e0b9353e088589704

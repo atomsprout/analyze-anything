@@ -30,8 +30,9 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
     }
     signers(tree, out);
     versions(tree, out);
+    assemblies(tree, out);
     capabilities(tree, out);
-    tls_callbacks(tree, out);
+    header_oddities(tree, out);
     electron(tree, &folders, out);
     runtimes(tree, &folders, out);
 }
@@ -119,12 +120,8 @@ fn signers(tree: &dyn Tree, out: &mut Output) {
         }),
     );
     for ((subject, issuer), group) in &groups {
-        let timestamp = if group.timestamped == 0 {
-            "none".to_string()
-        } else {
-            let by = group.authorities.iter().cloned().collect::<Vec<_>>().join(", ");
-            format!("{} of {} files, by {}", group.timestamped, group.files.len(), if by.is_empty() { "?" } else { &by })
-        };
+        let authorities =
+            if group.authorities.is_empty() { "—".to_string() } else { group.authorities.iter().cloned().collect::<Vec<_>>().join(", ") };
         let all_passed = group.verified == group.files.len();
         let mut f = finding(
             Section::Provenance,
@@ -137,7 +134,8 @@ fn signers(tree: &dyn Tree, out: &mut Output) {
         .param("signed", group.files.len())
         .param("verified", group.verified)
         .param("algorithms", group.algorithms.iter().cloned().collect::<Vec<_>>().join(" + "))
-        .param("timestamp", timestamp);
+        .param("timestamped", group.timestamped)
+        .param("authorities", authorities);
         for file in group.files.iter().take(MAX_EVIDENCE) {
             let fact = file.facts.get("windows.authenticode");
             let primary = fact.and_then(|f| f.get("signatures")).and_then(|s| s.get(0));
@@ -278,6 +276,60 @@ fn versions(tree: &dyn Tree, out: &mut Output) {
     }
 }
 
+/// .NET assemblies: one finding each while the input's own files are few, one summary otherwise.
+fn assemblies(tree: &dyn Tree, out: &mut Output) {
+    let all: Vec<(&Artifact, &Value)> = tree.artifacts().iter().filter_map(|a| Some((a, a.facts.get("windows.dotnet")?))).collect();
+    if all.is_empty() {
+        return;
+    }
+    let framework = |fact: &Value| text(fact, &["target_framework"]).or(text(fact, &["runtime_version"])).unwrap_or("?").to_string();
+    let location = |file: &Artifact, fact: &Value, value: Value| {
+        Evidence::bytes(file, fact.get("clr_header_offset").and_then(Value::as_u64).unwrap_or(0), 72, value)
+    };
+    let top_level: Vec<&(&Artifact, &Value)> = all.iter().filter(|(a, _)| a.parent.is_none()).collect();
+    if top_level.len() <= 3 {
+        for (file, fact) in top_level {
+            let name = text(fact, &["assembly", "name"]).or(text(fact, &["module"])).unwrap_or(file.name());
+            out.finding(
+                finding(Section::Composition, "windows.dotnet-assembly", Confidence::Verified, Severity::Info)
+                    .param("name", name)
+                    .param("version", text(fact, &["assembly", "version"]).unwrap_or("?"))
+                    .param("framework", framework(fact))
+                    .param("mode", text(fact, &["mode"]).unwrap_or("?"))
+                    .param("types", fact.get("types").cloned().unwrap_or(Value::Null))
+                    .param("methods", fact.get("methods").cloned().unwrap_or(Value::Null))
+                    .param("references", fact.get("references").and_then(Value::as_array).map_or(0, Vec::len))
+                    .evidence(location(file, fact, json!({ "assembly": fact.get("assembly") }))),
+            );
+        }
+    }
+    if all.len() > 1 {
+        let mut frameworks: BTreeMap<String, usize> = BTreeMap::new();
+        for (_, fact) in &all {
+            *frameworks.entry(framework(fact)).or_default() += 1;
+        }
+        let mixed = all.iter().filter(|(_, f)| f.get("flags").and_then(|f| f.get("il_only")) == Some(&Value::Bool(false))).count();
+        let mut ranked: Vec<(&String, &usize)> = frameworks.iter().collect();
+        ranked.sort_by(|a, b| b.1.cmp(a.1).then(a.0.cmp(b.0)));
+        out.summary(
+            "windows.dotnet-assemblies",
+            json!({ "assemblies": all.len(), "mixed_mode": mixed, "frameworks": ranked.iter().map(|(f, n)| json!({ "framework": f, "assemblies": n })).collect::<Vec<_>>() }),
+        );
+        let mut f = finding(Section::Composition, "windows.dotnet-assemblies", Confidence::Verified, Severity::Info)
+            .param("count", all.len())
+            .param("frameworks", ranked.iter().take(8).map(|(f, n)| format!("{f} ({n})")).collect::<Vec<_>>().join(", "))
+            .param("mixed", mixed);
+        for (file, fact) in all.iter().take(MAX_EVIDENCE) {
+            f = f.evidence(location(
+                file,
+                fact,
+                json!({ "assembly": text(fact, &["assembly", "name"]), "version": text(fact, &["assembly", "version"]) }),
+            ));
+        }
+        out.finding(f);
+    }
+}
+
 /// One finding per notable capability category, listing the files and the imports behind it.
 fn capabilities(tree: &dyn Tree, out: &mut Output) {
     let mut summary = serde_json::Map::new();
@@ -304,25 +356,46 @@ fn capabilities(tree: &dyn Tree, out: &mut Output) {
     }
 }
 
-/// Files that register TLS callbacks, in one finding.
-fn tls_callbacks(tree: &dyn Tree, out: &mut Output) {
-    let files: Vec<(&Artifact, u64, u64)> = tree
-        .artifacts()
-        .iter()
-        .filter_map(|a| {
-            let fact = a.facts.get("windows.pe")?;
-            let count = fact.get("tls_callbacks")?.as_u64().filter(|&n| n > 0)?;
-            Some((a, count, fact.get("tls_directory_offset").and_then(Value::as_u64).unwrap_or(0)))
-        })
-        .collect();
-    if files.is_empty() {
-        return;
+/// Header oddities that are common enough to be reported once for all files: TLS callbacks,
+/// blank link timestamps, and checksums that do not match the file.
+fn header_oddities(tree: &dyn Tree, out: &mut Output) {
+    let mut tls = Vec::new();
+    let mut blank = Vec::new();
+    let mut checksum = Vec::new();
+    for artifact in tree.artifacts() {
+        let Some(fact) = artifact.facts.get("windows.pe") else { continue };
+        let number = |path: &[&str]| path.iter().try_fold(fact, |v, key| v.get(key)).and_then(Value::as_u64);
+        let header = number(&["pe_header_offset"]).unwrap_or(0);
+        if let Some(count) = number(&["tls_callbacks"]).filter(|&n| n > 0) {
+            tls.push(Evidence::bytes(artifact, number(&["tls_directory_offset"]).unwrap_or(0), 24, json!({ "callbacks": count })));
+        }
+        // Only the two values no linker writes by accident; reproducible builds store a hash
+        // in this field, so "implausible dates" are normal.
+        if let Some(timestamp) = number(&["timestamp"]).filter(|&t| t == 0 || t == u64::from(u32::MAX)) {
+            blank.push(Evidence::bytes(artifact, header + 8, 4, format!("{timestamp:#010x}")));
+        }
+        if let (Some(stored), Some(computed)) = (number(&["checksum", "stored"]), number(&["checksum", "computed"]))
+            && stored != 0
+            && stored != computed
+        {
+            checksum.push(Evidence::bytes(
+                artifact,
+                header + 24 + 64,
+                4,
+                json!({ "stored": format!("{stored:#010x}"), "computed": format!("{computed:#010x}") }),
+            ));
+        }
     }
-    let mut f = finding(Section::Anomalies, "windows.tls-callbacks", Confidence::Verified, Severity::Info).param("files", files.len());
-    for (file, count, offset) in files.iter().take(MAX_EVIDENCE) {
-        f = f.evidence(Evidence::bytes(file, *offset, 24, json!({ "callbacks": count })));
+    for (rule, evidence) in [("windows.tls-callbacks", tls), ("windows.timestamp-blank", blank), ("windows.checksum-mismatch", checksum)] {
+        if evidence.is_empty() {
+            continue;
+        }
+        let mut f = finding(Section::Anomalies, rule, Confidence::Verified, Severity::Info).param("files", evidence.len());
+        for item in evidence.into_iter().take(MAX_EVIDENCE) {
+            f = f.evidence(item);
+        }
+        out.finding(f);
     }
-    out.finding(f);
 }
 
 fn read_json(tree: &dyn Tree, file: &Artifact) -> Option<Value> {

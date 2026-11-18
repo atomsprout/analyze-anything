@@ -1,4 +1,22 @@
 //! Windows: signatures, .NET, installers and Electron apps.
+//!
+//! **Unpackers**, tried in this order before the generic archive unpackers:
+//! NSIS installers (`nsis`), Inno Setup installers (`inno`), MSI packages (`msi`),
+//! cabinets (`cab`), Electron asar archives (`asar`) and self-extracting 7z / ZIP / RAR / CAB
+//! stubs (`sfx`, which hands the appended archive on as one child). A PE file whose overlay
+//! is none of these is left alone.
+//!
+//! **Analyzer `windows`.** The file pass reads each PE file on its own (`pefile`): the
+//! Authenticode signature with offline verification (`authenticode`), version resource and
+//! manifest (`resources`), .NET metadata (`dotnet`), structure checks and packer triage,
+//! imports grouped into capabilities (`behaviour`) and kernel-driver facts; it also reads
+//! what an installer does (`installer`) and `AppxManifest.xml` (`appx`). The tree pass
+//! (`tree`) reports what needs several files: who signed what, vendors, capabilities across
+//! files, Electron applications and other frameworks recognised from the folder layout.
+//!
+//! Findings about things that occur once per file in a large folder (version resources, .NET
+//! assemblies, TLS callbacks, blank timestamps) are made in the tree pass as one finding with
+//! the files as evidence; the per-file detail is in the facts.
 
 mod appx;
 mod asar;

@@ -188,6 +188,24 @@ apksigner sign --ks rsa.jks $KS --next-signer --ks ec.jks $KS --lineage lineage 
 apksigner sign --ks rsa.jks $KS --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true \
     --v3-signing-enabled true --out full.apk full-unsigned.apk
 
+# A split APK of the same app and signer, and an XAPK-style container holding base and split.
+mkdir split
+cat > split/AndroidManifest.xml <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.aafixture" android:versionCode="42" split="config.fixture">
+    <application android:hasCode="false" />
+</manifest>
+XML
+aapt package -f -M split/AndroidManifest.xml -I "$ANDROID_JAR" -F split/unsigned.apk
+apksigner sign --ks rsa.jks $KS --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true \
+    --v3-signing-enabled false --out split/config.fixture.apk split/unsigned.apk
+mkdir xapk
+cp v1v2.apk xapk/com.example.aafixture.apk
+cp split/config.fixture.apk xapk/config.fixture.apk
+printf '{"xapk_version":2,"package_name":"com.example.aafixture","version_code":"42","split_apks":[{"file":"com.example.aafixture.apk","id":"base"},{"file":"config.fixture.apk","id":"config.fixture"}]}\n' > xapk/manifest.json
+(cd xapk && zip -q -0 ../set.xapk manifest.json com.example.aafixture.apk config.fixture.apk)
+
 # ---- tampered copies -----------------------------------------------------------------------
 python3 - <<'PY'
 import struct, zipfile, warnings
@@ -288,6 +306,7 @@ aapt dump xmltree full.apk AndroidManifest.xml > xmltree.txt
 dexdump -f classes.dex | sed -n '/^DEX file header/,/^$/p' > dexdump-header.txt
 
 for f in $SIGNED unsigned zip-tricks; do cp "$f.apk" "$HERE/"; done
+cp set.xapk "$HERE/"
 for f in $SIGNED; do cp "$f.apksigner.txt" "$HERE/"; done
 cp expected.tsv badging.txt xmltree.txt dexdump-header.txt AndroidManifest.bin resources.arsc network_security_config.bin classes.dex "$HERE/"
 echo "fixtures written to $HERE; scratch files are in $WORK"

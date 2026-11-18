@@ -65,7 +65,8 @@ pub fn parse(doc: &Document) -> Option<NetworkSecurityConfig> {
     }
     // Domain configs nest; walk them with an explicit stack. A nested config inherits what it
     // does not set from its parent.
-    let mut stack: Vec<(&Element, Option<bool>)> = root.children_named("domain-config").map(|e| (e, config.base_cleartext_permitted)).collect();
+    let mut stack: Vec<(&Element, Option<bool>)> =
+        root.children_named("domain-config").map(|e| (e, config.base_cleartext_permitted)).collect();
     stack.reverse();
     while let Some((element, inherited)) = stack.pop() {
         if config.domain_configs.len() >= MAX_CONFIGS {
@@ -77,7 +78,9 @@ pub fn parse(doc: &Document) -> Option<NetworkSecurityConfig> {
         for domain in element.children_named("domain").take(1000) {
             let name = domain.text.trim();
             if !name.is_empty() {
-                entry.domains.push((name.to_string(), attr(domain, "includeSubdomains").and_then(crate::xml::Value::as_bool).unwrap_or(false)));
+                entry
+                    .domains
+                    .push((name.to_string(), attr(domain, "includeSubdomains").and_then(crate::xml::Value::as_bool).unwrap_or(false)));
             }
         }
         for pin_set in element.children_named("pin-set") {
@@ -94,7 +97,11 @@ pub fn parse(doc: &Document) -> Option<NetworkSecurityConfig> {
 
 impl NetworkSecurityConfig {
     pub fn cleartext_domains(&self) -> Vec<&str> {
-        self.domain_configs.iter().filter(|c| c.cleartext_permitted == Some(true)).flat_map(|c| c.domains.iter().map(|(d, _)| d.as_str())).collect()
+        self.domain_configs
+            .iter()
+            .filter(|c| c.cleartext_permitted == Some(true))
+            .flat_map(|c| c.domains.iter().map(|(d, _)| d.as_str()))
+            .collect()
     }
 
     pub fn pinned_domains(&self) -> Vec<&str> {
@@ -156,7 +163,12 @@ mod tests {
                     vec![],
                     vec![
                         el("domain", vec![], vec![], "pinned.example"),
-                        el("pin-set", vec![a("expiration", Value::Str("2030-01-01".into()))], vec![el("pin", vec![], vec![], "x"), el("pin", vec![], vec![], "y")], ""),
+                        el(
+                            "pin-set",
+                            vec![a("expiration", Value::Str("2030-01-01".into()))],
+                            vec![el("pin", vec![], vec![], "x"), el("pin", vec![], vec![], "y")],
+                            "",
+                        ),
                     ],
                     "",
                 ),

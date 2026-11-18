@@ -291,6 +291,8 @@ fn rsa_signature_with_rfc3161_timestamp_matches_osslsigncode() {
     assert_eq!(signers.len(), 1);
     assert_eq!(signers[0].params["signer"], "Fixture Code Signing");
     assert_eq!(signers[0].params["verified"], 1);
+    assert_eq!(signers[0].params["timestamped"], 1);
+    assert_eq!(signers[0].params["authorities"], "Fixture Timestamp Authority");
     assert_eq!(signers[0].confidence, aa_core::Confidence::Verified);
     for rule in run.rules() {
         assert!(!rule.starts_with("windows.signature-") && rule != "windows.data-after-signature", "unexpected {rule}");

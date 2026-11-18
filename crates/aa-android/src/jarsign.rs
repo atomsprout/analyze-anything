@@ -287,11 +287,12 @@ fn verify_pkcs7(block: &[u8], signature_file: &[u8], signer: &mut V1Signer) {
 
 fn check_manifest_link(sf: &[Section], manifest_bytes: &[u8], manifest: &[Section]) -> Check {
     let Some(main) = sf.first() else { return Check::Failed("the signature file is empty".into()) };
-    if let Some((hash, expected)) = best_digest(main, "-Manifest") {
-        if hash.digest(manifest_bytes) == expected {
-            return Check::Passed;
-        }
-        // Fall through: tools that rewrap the manifest leave a stale whole-file digest but valid sections.
+    // Tools that rewrap the manifest leave a stale whole-file digest but valid sections, so a
+    // mismatch here is not final.
+    if let Some((hash, expected)) = best_digest(main, "-Manifest")
+        && hash.digest(manifest_bytes) == expected
+    {
+        return Check::Passed;
     }
     let mut by_name: BTreeMap<&str, &Section> = BTreeMap::new();
     for section in manifest.iter().skip(1) {
@@ -330,7 +331,12 @@ fn is_signature_related(name: &str) -> bool {
         return false;
     }
     let upper = file.to_ascii_uppercase();
-    upper == "MANIFEST.MF" || upper.ends_with(".SF") || upper.ends_with(".RSA") || upper.ends_with(".DSA") || upper.ends_with(".EC") || upper.starts_with("SIG-")
+    upper == "MANIFEST.MF"
+        || upper.ends_with(".SF")
+        || upper.ends_with(".RSA")
+        || upper.ends_with(".DSA")
+        || upper.ends_with(".EC")
+        || upper.starts_with("SIG-")
 }
 
 enum AnyHasher {
@@ -367,7 +373,9 @@ pub fn verify(data: &[u8], archive: &Archive) -> Option<V1Result> {
     let mut signature_files: Vec<&zipraw::Entry> = archive
         .entries
         .iter()
-        .filter(|e| e.name.starts_with("META-INF/") && !e.name["META-INF/".len()..].contains('/') && e.name.to_ascii_uppercase().ends_with(".SF"))
+        .filter(|e| {
+            e.name.starts_with("META-INF/") && !e.name["META-INF/".len()..].contains('/') && e.name.to_ascii_uppercase().ends_with(".SF")
+        })
         .collect();
     signature_files.sort_by(|a, b| a.name.cmp(&b.name));
     signature_files.dedup_by(|a, b| a.name == b.name);
@@ -389,7 +397,9 @@ pub fn verify(data: &[u8], archive: &Archive) -> Option<V1Result> {
     for sf_entry in signature_files.into_iter().take(16) {
         let stem = &sf_entry.name[..sf_entry.name.len() - 2];
         let block_entry = ["RSA", "DSA", "EC"].iter().find_map(|ext| {
-            archive.entries.iter().rev().find(|e| e.name.len() == stem.len() + ext.len() && e.name[..stem.len()] == *stem && e.name[stem.len()..].eq_ignore_ascii_case(ext))
+            archive.entries.iter().rev().find(|e| {
+                e.name.len() == stem.len() + ext.len() && e.name[..stem.len()] == *stem && e.name[stem.len()..].eq_ignore_ascii_case(ext)
+            })
         });
         let mut signer = V1Signer {
             signature_file: sf_entry.name.clone(),
@@ -414,8 +424,10 @@ pub fn verify(data: &[u8], archive: &Archive) -> Option<V1Result> {
             let sf = parse_manifest(sf_bytes);
             if let Some(main) = sf.first() {
                 signer.created_by = main.get("Created-By").map(str::to_string);
-                signer.also_signed_with =
-                    main.get("X-Android-APK-Signed").map(|v| v.split(',').filter_map(|s| s.trim().parse().ok()).collect()).unwrap_or_default();
+                signer.also_signed_with = main
+                    .get("X-Android-APK-Signed")
+                    .map(|v| v.split(',').filter_map(|s| s.trim().parse().ok()).collect())
+                    .unwrap_or_default();
             }
             signer.manifest_link = check_manifest_link(&sf, manifest_bytes, &manifest);
         }
@@ -464,11 +476,23 @@ pub fn verify(data: &[u8], archive: &Archive) -> Option<V1Result> {
         result.manifest_digest_algorithms = algorithms;
         let listed = |names: &[String]| names.iter().take(3).cloned().collect::<Vec<_>>().join(", ");
         result.entries = if !result.digest_mismatches.is_empty() {
-            Check::Failed(format!("{} files do not match their digest in the manifest ({})", result.digest_mismatches.len(), listed(&result.digest_mismatches)))
+            Check::Failed(format!(
+                "{} files do not match their digest in the manifest ({})",
+                result.digest_mismatches.len(),
+                listed(&result.digest_mismatches)
+            ))
         } else if !result.unsigned_entries.is_empty() {
-            Check::Failed(format!("{} files are not listed in the manifest ({})", result.unsigned_entries.len(), listed(&result.unsigned_entries)))
+            Check::Failed(format!(
+                "{} files are not listed in the manifest ({})",
+                result.unsigned_entries.len(),
+                listed(&result.unsigned_entries)
+            ))
         } else if !result.missing_entries.is_empty() {
-            Check::Failed(format!("{} files listed in the manifest are not in the archive ({})", result.missing_entries.len(), listed(&result.missing_entries)))
+            Check::Failed(format!(
+                "{} files listed in the manifest are not in the archive ({})",
+                result.missing_entries.len(),
+                listed(&result.missing_entries)
+            ))
         } else if !unreadable.is_empty() {
             Check::NotChecked(format!("{} files could not be read ({})", unreadable.len(), listed(&unreadable)))
         } else {

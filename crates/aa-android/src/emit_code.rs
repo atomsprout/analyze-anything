@@ -27,31 +27,136 @@ struct ApiGroup {
 }
 
 const API_GROUPS: &[ApiGroup] = &[
-    ApiGroup { group: "dynamic-code", rule: "android.code-dynamic-loading", section: Section::Code, severity: Severity::Low, references: &["MASVS-CODE-4"] },
-    ApiGroup { group: "command-exec", rule: "android.code-command-exec", section: Section::Code, severity: Severity::Low, references: &["MASVS-CODE-4"] },
+    ApiGroup {
+        group: "dynamic-code",
+        rule: "android.code-dynamic-loading",
+        section: Section::Code,
+        severity: Severity::Low,
+        references: &["MASVS-CODE-4"],
+    },
+    ApiGroup {
+        group: "command-exec",
+        rule: "android.code-command-exec",
+        section: Section::Code,
+        severity: Severity::Low,
+        references: &["MASVS-CODE-4"],
+    },
     ApiGroup { group: "native-load", rule: "android.code-native-load", section: Section::Code, severity: Severity::Info, references: &[] },
     ApiGroup { group: "reflection", rule: "android.code-reflection", section: Section::Code, severity: Severity::Info, references: &[] },
-    ApiGroup { group: "webview-js-interface", rule: "android.code-webview-js-interface", section: Section::Code, severity: Severity::Low, references: &["CWE-749", "MASVS-PLATFORM-2"] },
-    ApiGroup { group: "webview-js-enabled", rule: "android.code-webview-js-enabled", section: Section::Code, severity: Severity::Info, references: &["MASVS-PLATFORM-2"] },
-    ApiGroup { group: "webview-file-access", rule: "android.code-webview-file-access", section: Section::Code, severity: Severity::Low, references: &["MASVS-PLATFORM-2"] },
-    ApiGroup { group: "webview-debugging", rule: "android.code-webview-debugging", section: Section::Code, severity: Severity::Info, references: &["MASVS-RESILIENCE-4"] },
-    ApiGroup { group: "hostname-verifier-set", rule: "android.code-hostname-verifier-set", section: Section::Code, severity: Severity::Info, references: &["MASVS-NETWORK-1"] },
-    ApiGroup { group: "device-identifiers", rule: "android.api-device-identifiers", section: Section::Privacy, severity: Severity::Low, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "location", rule: "android.api-location", section: Section::Privacy, severity: Severity::Info, references: &["MASVS-PRIVACY-1"] },
+    ApiGroup {
+        group: "webview-js-interface",
+        rule: "android.code-webview-js-interface",
+        section: Section::Code,
+        severity: Severity::Low,
+        references: &["CWE-749", "MASVS-PLATFORM-2"],
+    },
+    ApiGroup {
+        group: "webview-js-enabled",
+        rule: "android.code-webview-js-enabled",
+        section: Section::Code,
+        severity: Severity::Info,
+        references: &["MASVS-PLATFORM-2"],
+    },
+    ApiGroup {
+        group: "webview-file-access",
+        rule: "android.code-webview-file-access",
+        section: Section::Code,
+        severity: Severity::Low,
+        references: &["MASVS-PLATFORM-2"],
+    },
+    ApiGroup {
+        group: "webview-debugging",
+        rule: "android.code-webview-debugging",
+        section: Section::Code,
+        severity: Severity::Info,
+        references: &["MASVS-RESILIENCE-4"],
+    },
+    ApiGroup {
+        group: "hostname-verifier-set",
+        rule: "android.code-hostname-verifier-set",
+        section: Section::Code,
+        severity: Severity::Info,
+        references: &["MASVS-NETWORK-1"],
+    },
+    ApiGroup {
+        group: "device-identifiers",
+        rule: "android.api-device-identifiers",
+        section: Section::Privacy,
+        severity: Severity::Low,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "location",
+        rule: "android.api-location",
+        section: Section::Privacy,
+        severity: Severity::Info,
+        references: &["MASVS-PRIVACY-1"],
+    },
     ApiGroup { group: "sms-send", rule: "android.api-sms-send", section: Section::Privacy, severity: Severity::Low, references: &[] },
-    ApiGroup { group: "audio-record", rule: "android.api-audio-record", section: Section::Privacy, severity: Severity::Info, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "camera", rule: "android.api-camera", section: Section::Privacy, severity: Severity::Info, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "installed-apps", rule: "android.api-installed-apps", section: Section::Privacy, severity: Severity::Low, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "clipboard-read", rule: "android.api-clipboard-read", section: Section::Privacy, severity: Severity::Info, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "accounts", rule: "android.api-accounts", section: Section::Privacy, severity: Severity::Info, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "screen-capture", rule: "android.api-screen-capture", section: Section::Privacy, severity: Severity::Low, references: &["MASVS-PRIVACY-1"] },
-    ApiGroup { group: "accessibility-actions", rule: "android.api-accessibility-actions", section: Section::Code, severity: Severity::Low, references: &[] },
-    ApiGroup { group: "package-install", rule: "android.api-package-install", section: Section::Code, severity: Severity::Low, references: &[] },
+    ApiGroup {
+        group: "audio-record",
+        rule: "android.api-audio-record",
+        section: Section::Privacy,
+        severity: Severity::Info,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "camera",
+        rule: "android.api-camera",
+        section: Section::Privacy,
+        severity: Severity::Info,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "installed-apps",
+        rule: "android.api-installed-apps",
+        section: Section::Privacy,
+        severity: Severity::Low,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "clipboard-read",
+        rule: "android.api-clipboard-read",
+        section: Section::Privacy,
+        severity: Severity::Info,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "accounts",
+        rule: "android.api-accounts",
+        section: Section::Privacy,
+        severity: Severity::Info,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "screen-capture",
+        rule: "android.api-screen-capture",
+        section: Section::Privacy,
+        severity: Severity::Low,
+        references: &["MASVS-PRIVACY-1"],
+    },
+    ApiGroup {
+        group: "accessibility-actions",
+        rule: "android.api-accessibility-actions",
+        section: Section::Code,
+        severity: Severity::Low,
+        references: &[],
+    },
+    ApiGroup {
+        group: "package-install",
+        rule: "android.api-package-install",
+        section: Section::Code,
+        severity: Severity::Low,
+        references: &[],
+    },
 ];
 
 fn dex_order(name: &str) -> (u32, &str) {
     // classes.dex, classes2.dex, … in the order the runtime loads them.
-    let number = name.strip_prefix("classes").and_then(|r| r.strip_suffix(".dex")).map(|n| if n.is_empty() { 1 } else { n.parse().unwrap_or(u32::MAX) });
+    let number = name
+        .strip_prefix("classes")
+        .and_then(|r| r.strip_suffix(".dex"))
+        .map(|n| if n.is_empty() { 1 } else { n.parse().unwrap_or(u32::MAX) });
     (number.unwrap_or(u32::MAX), name)
 }
 
@@ -78,8 +183,7 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
     let anchor = package.anchor();
 
     // ---- DEX ----
-    let mut dex_names: Vec<&str> =
-        package.files.keys().map(String::as_str).filter(|n| !n.contains('/') && n.ends_with(".dex")).collect();
+    let mut dex_names: Vec<&str> = package.files.keys().map(String::as_str).filter(|n| !n.contains('/') && n.ends_with(".dex")).collect();
     dex_names.sort_by_key(|n| dex_order(n));
     let mut parsed: Vec<(&Artifact, Dex)> = Vec::new();
     for name in dex_names.iter().take(MAX_DEX_FILES) {
@@ -110,7 +214,11 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
         }
     }
     if dex_names.len() > MAX_DEX_FILES {
-        out.limitation("android.dex-unreadable", Some(anchor), Some(format!("only the first {MAX_DEX_FILES} of {} DEX files were read", dex_names.len())));
+        out.limitation(
+            "android.dex-unreadable",
+            Some(anchor),
+            Some(format!("only the first {MAX_DEX_FILES} of {} DEX files were read", dex_names.len())),
+        );
     }
 
     // Package index: package (slash form) -> (classes, index of the first DEX that defines it).
@@ -163,7 +271,10 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
             finding(Section::Code, "android.dex-packages", Confidence::Verified, Severity::Info)
                 .param("count", top.len())
                 .param("packages", shown.join(", "))
-                .evidence(Evidence::whole(parsed[0].0, json!(ranked.iter().take(12).map(|(n, c)| json!({ "package": n, "classes": c })).collect::<Vec<_>>()))),
+                .evidence(Evidence::whole(
+                    parsed[0].0,
+                    json!(ranked.iter().take(12).map(|(n, c)| json!({ "package": n, "classes": c })).collect::<Vec<_>>()),
+                )),
         );
         let share = if total_classes > 0 { short_names as f64 / total_classes as f64 } else { 0.0 };
         out.fact(
@@ -241,13 +352,19 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
     for sdk in sdks::SDKS {
         let hits = signals(sdk, true);
         let Some(first) = hits.first() else { continue };
-        sdk_rows.push(json!({ "name": sdk.name, "vendor": sdk.vendor, "category": sdk.category.as_str(), "tracker": sdk.category.is_tracker() }));
+        sdk_rows.push(
+            json!({ "name": sdk.name, "vendor": sdk.vendor, "category": sdk.category.as_str(), "tracker": sdk.category.is_tracker() }),
+        );
         if sdk.category == sdks::Category::Library {
             libraries.push((sdk.name, first.clone()));
             continue;
         }
-        let (section, rule) = if sdk.category.is_tracker() { (Section::Privacy, "android.tracker-sdk") } else { (Section::Composition, "android.sdk") };
-        let mut f = finding(section, rule, Confidence::Derived, Severity::Info).param("name", sdk.name).param("vendor", sdk.vendor).param("category", sdk.category.as_str());
+        let (section, rule) =
+            if sdk.category.is_tracker() { (Section::Privacy, "android.tracker-sdk") } else { (Section::Composition, "android.sdk") };
+        let mut f = finding(section, rule, Confidence::Derived, Severity::Info)
+            .param("name", sdk.name)
+            .param("vendor", sdk.vendor)
+            .param("category", sdk.category.as_str());
         if sdk.category.is_tracker() {
             f = f.reference("MASVS-PRIVACY-1");
         }
@@ -258,7 +375,9 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) {
     }
     if !libraries.is_empty() {
         let names: Vec<&str> = libraries.iter().map(|(n, _)| *n).collect();
-        let mut f = finding(Section::Composition, "android.libraries", Confidence::Derived, Severity::Info).param("count", names.len()).param("libraries", listed(&names, 40));
+        let mut f = finding(Section::Composition, "android.libraries", Confidence::Derived, Severity::Info)
+            .param("count", names.len())
+            .param("libraries", listed(&names, 40));
         for (_, evidence) in libraries.into_iter().take(40) {
             f = f.evidence(evidence);
         }
@@ -341,7 +460,11 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
     }
 
     for (rule, pick, references) in [
-        ("android.code-custom-trust-manager", (|d: &Dex| &d.trust_managers) as fn(&Dex) -> &Vec<String>, &["CWE-295", "MASVS-NETWORK-1"][..]),
+        (
+            "android.code-custom-trust-manager",
+            (|d: &Dex| &d.trust_managers) as fn(&Dex) -> &Vec<String>,
+            &["CWE-295", "MASVS-NETWORK-1"][..],
+        ),
         ("android.code-custom-hostname-verifier", |d: &Dex| &d.hostname_verifiers, &["CWE-295", "MASVS-NETWORK-1"][..]),
         ("android.code-ssl-error-handler", |d: &Dex| &d.ssl_error_handlers, &["CWE-295", "MASVS-NETWORK-1"][..]),
     ] {
@@ -358,7 +481,9 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
         if classes.is_empty() {
             continue;
         }
-        let mut f = finding(Section::Code, rule, Confidence::Heuristic, Severity::Low).param("count", classes.len()).param("classes", listed(&classes, 6));
+        let mut f = finding(Section::Code, rule, Confidence::Heuristic, Severity::Low)
+            .param("count", classes.len())
+            .param("classes", listed(&classes, 6));
         for reference in references {
             f = f.reference(reference);
         }
@@ -383,12 +508,19 @@ fn api_findings(parsed: &[(&Artifact, Dex)], out: &mut Output) {
             .iter()
             .filter(|(c, _)| {
                 let upper = c.to_ascii_uppercase();
-                upper.contains("/ECB") || upper.starts_with("DES") || upper.starts_with("RC4") || upper.starts_with("ARCFOUR") || upper == "AES" || upper.starts_with("BLOWFISH")
+                upper.contains("/ECB")
+                    || upper.starts_with("DES")
+                    || upper.starts_with("RC4")
+                    || upper.starts_with("ARCFOUR")
+                    || upper == "AES"
+                    || upper.starts_with("BLOWFISH")
             })
             .map(|(c, a)| (*c, *a))
             .collect();
         let names: Vec<&str> = ciphers.keys().copied().collect();
-        let mut f = finding(Section::Code, "android.code-cipher-strings", Confidence::Heuristic, Severity::Info).param("count", names.len()).param("ciphers", listed(&names, 12));
+        let mut f = finding(Section::Code, "android.code-cipher-strings", Confidence::Heuristic, Severity::Info)
+            .param("count", names.len())
+            .param("ciphers", listed(&names, 12));
         for (cipher, artifact) in ciphers.iter().take(12) {
             f = f.evidence(Evidence::field(artifact, "string_ids", *cipher));
         }
@@ -431,7 +563,10 @@ fn framework_detail(package: &Package, name: &str, lib_files: &[(&str, &str, &Ar
             {
                 for channel in [&b" (stable)"[..], b" (beta)", b" (dev)", b" (main)"] {
                     if let Some(at) = find(&bytes, channel) {
-                        let start = bytes[..at].iter().rposition(|b| !(b.is_ascii_digit() || *b == b'.' || *b == b'-' || b.is_ascii_alphabetic())).map_or(0, |p| p + 1);
+                        let start = bytes[..at]
+                            .iter()
+                            .rposition(|b| !(b.is_ascii_digit() || *b == b'.' || *b == b'-' || b.is_ascii_alphabetic()))
+                            .map_or(0, |p| p + 1);
                         let version = String::from_utf8_lossy(&bytes[start..at]);
                         if version.split('.').count() >= 3 && version.len() <= 32 && version.starts_with(|c: char| c.is_ascii_digit()) {
                             parts.push(format!("Dart {version}{}", String::from_utf8_lossy(channel)));
@@ -485,7 +620,8 @@ fn framework_detail(package: &Package, name: &str, lib_files: &[(&str, &str, &Ar
         "Xamarin / .NET for Android" => {
             let assemblies: Vec<&str> = package.files.keys().filter_map(|n| n.strip_prefix("assemblies/")).collect();
             let blob = assemblies.iter().any(|n| n.ends_with(".blob"));
-            let maui = assemblies.iter().any(|n| n.starts_with("Microsoft.Maui")) || lib_files.iter().any(|(_, f, _)| f.contains("Microsoft.Maui"));
+            let maui = assemblies.iter().any(|n| n.starts_with("Microsoft.Maui"))
+                || lib_files.iter().any(|(_, f, _)| f.contains("Microsoft.Maui"));
             let forms = assemblies.iter().any(|n| n.starts_with("Xamarin.Forms"));
             let mut parts = Vec::new();
             if maui {
@@ -517,8 +653,12 @@ fn unity_version(bytes: &[u8]) -> Option<String> {
         let (major, minor, patch) = (parts.next()?, parts.next()?, parts.next()?);
         let year: u32 = major.parse().ok()?;
         let plausible_major = (5..=6).contains(&year) || (2017..=2030).contains(&year) || year == 6000;
-        let patch_ok = patch.len() >= 3 && patch.chars().next()?.is_ascii_digit() && patch.contains(['f', 'p', 'b', 'a']) && patch.chars().last()?.is_ascii_digit();
-        (parts.next().is_none() && plausible_major && minor.parse::<u32>().is_ok() && patch_ok && word.len() <= 20).then(|| word.to_string())
+        let patch_ok = patch.len() >= 3
+            && patch.chars().next()?.is_ascii_digit()
+            && patch.contains(['f', 'p', 'b', 'a'])
+            && patch.chars().last()?.is_ascii_digit();
+        (parts.next().is_none() && plausible_major && minor.parse::<u32>().is_ok() && patch_ok && word.len() <= 20)
+            .then(|| word.to_string())
     })
 }
 
@@ -553,7 +693,10 @@ fn native_libs(package: &Package, lib_files: &[(&str, &str, &Artifact)], out: &m
         out.finding(
             finding(Section::Anomalies, "android.abi-mismatch", Confidence::Verified, Severity::Low)
                 .param("gaps", listed(&gaps, 4))
-                .evidence(Evidence::whole(anchor, json!(by_abi.iter().map(|(abi, libs)| json!({ "abi": abi, "libraries": libs.len() })).collect::<Vec<_>>()))),
+                .evidence(Evidence::whole(
+                    anchor,
+                    json!(by_abi.iter().map(|(abi, libs)| json!({ "abi": abi, "libraries": libs.len() })).collect::<Vec<_>>()),
+                )),
         );
     }
 
@@ -609,8 +752,14 @@ fn native_libs(package: &Package, lib_files: &[(&str, &str, &Artifact)], out: &m
         if list.is_empty() {
             continue;
         }
-        let names: Vec<String> = list.iter().map(|a| a.path.rsplitn(3, '/').take(2).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join("/")).collect();
-        let mut f = finding(Section::Hardening, rule, Confidence::Verified, severity).param("count", list.len()).param("libraries", listed(&names, 8)).reference("MASVS-CODE-4");
+        let names: Vec<String> = list
+            .iter()
+            .map(|a| a.path.rsplitn(3, '/').take(2).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join("/"))
+            .collect();
+        let mut f = finding(Section::Hardening, rule, Confidence::Verified, severity)
+            .param("count", list.len())
+            .param("libraries", listed(&names, 8))
+            .reference("MASVS-CODE-4");
         for artifact in list.iter().take(12) {
             f = f.evidence(Evidence::field(artifact, field, true));
         }
@@ -650,7 +799,9 @@ fn notable_files(package: &Package, out: &mut Output) {
     }
     if !embedded.is_empty() {
         let shown: Vec<String> = embedded.iter().map(|(name, _, what)| format!("{name} ({what})")).collect();
-        let mut f = finding(Section::Code, "android.embedded-code", Confidence::Verified, Severity::Low).param("count", embedded.len()).param("files", listed(&shown, 8));
+        let mut f = finding(Section::Code, "android.embedded-code", Confidence::Verified, Severity::Low)
+            .param("count", embedded.len())
+            .param("files", listed(&shown, 8));
         for (_, artifact, what) in embedded.iter().take(15) {
             f = f.evidence(Evidence::whole(artifact, *what));
         }
@@ -660,14 +811,18 @@ fn notable_files(package: &Package, out: &mut Output) {
     let bundles: Vec<(&str, &Artifact)> = package
         .files
         .iter()
-        .filter(|(name, _)| name.starts_with("assets/") && (name.ends_with(".bundle") || name.ends_with(".jsbundle") || name.ends_with(".js")))
+        .filter(|(name, _)| {
+            name.starts_with("assets/") && (name.ends_with(".bundle") || name.ends_with(".jsbundle") || name.ends_with(".js"))
+        })
         .map(|(n, a)| (n.as_str(), *a))
         .collect();
     if !bundles.is_empty() {
         let mut largest = bundles.clone();
         largest.sort_by(|a, b| b.1.size.cmp(&a.1.size).then(a.0.cmp(b.0)));
         let shown: Vec<String> = largest.iter().take(5).map(|(n, a)| format!("{n} ({} bytes)", a.size)).collect();
-        let mut f = finding(Section::Composition, "android.js-bundles", Confidence::Verified, Severity::Info).param("count", bundles.len()).param("largest", shown.join(", "));
+        let mut f = finding(Section::Composition, "android.js-bundles", Confidence::Verified, Severity::Info)
+            .param("count", bundles.len())
+            .param("largest", shown.join(", "));
         for (_, artifact) in largest.iter().take(5) {
             f = f.evidence(Evidence::whole(artifact, artifact.size));
         }
@@ -704,7 +859,9 @@ fn notable_files(package: &Package, out: &mut Output) {
     }
     let mut versions: Vec<(String, String)> = Vec::new();
     for (name, artifact) in package.files.range("META-INF/".to_string()..).take_while(|(n, _)| n.starts_with("META-INF/")) {
-        let Some(library) = name.strip_prefix("META-INF/").and_then(|n| n.strip_suffix(".version")).filter(|n| !n.contains('/')) else { continue };
+        let Some(library) = name.strip_prefix("META-INF/").and_then(|n| n.strip_suffix(".version")).filter(|n| !n.contains('/')) else {
+            continue;
+        };
         if versions.len() >= 600 || artifact.size > 200 {
             continue;
         }
@@ -716,7 +873,10 @@ fn notable_files(package: &Package, out: &mut Output) {
         }
     }
     if !versions.is_empty() {
-        build.insert("library_versions".into(), json!(versions.iter().map(|(n, v)| json!({ "library": n, "version": v })).collect::<Vec<_>>()));
+        build.insert(
+            "library_versions".into(),
+            json!(versions.iter().map(|(n, v)| json!({ "library": n, "version": v })).collect::<Vec<_>>()),
+        );
     }
     let baseline = package.file("assets/dexopt/baseline.prof");
     if let Some(profile) = baseline {
@@ -725,7 +885,9 @@ fn notable_files(package: &Package, out: &mut Output) {
     }
     if !build.is_empty() {
         let mut parts = Vec::new();
-        for (key, label) in [("android_gradle_plugin", "Android Gradle plugin"), ("kotlin_gradle_plugin", "Kotlin Gradle plugin"), ("gradle", "Gradle")] {
+        for (key, label) in
+            [("android_gradle_plugin", "Android Gradle plugin"), ("kotlin_gradle_plugin", "Kotlin Gradle plugin"), ("gradle", "Gradle")]
+        {
             if let Some(value) = build.get(key).and_then(|v| v.as_str()) {
                 parts.push(format!("{label} {value}"));
             }
@@ -740,7 +902,8 @@ fn notable_files(package: &Package, out: &mut Output) {
             parts.push("baseline profile".to_string());
         }
         out.fact(anchor, "android.build", serde_json::Value::Object(build));
-        let mut f = finding(Section::Composition, "android.build-info", Confidence::Verified, Severity::Info).param("details", parts.join("; "));
+        let mut f =
+            finding(Section::Composition, "android.build-info", Confidence::Verified, Severity::Info).param("details", parts.join("; "));
         for e in evidence.into_iter().take(8) {
             f = f.evidence(e);
         }

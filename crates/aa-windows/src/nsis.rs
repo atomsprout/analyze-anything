@@ -283,7 +283,12 @@ pub fn analyze(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output)
             break;
         }
         model.registry.push(RegistryWrite {
-            root: write.root_name().to_string(),
+            // Roots 0 to 2 are SHCTX: HKLM or HKCU, decided at install time by SetShellVarContext.
+            root: if (0..=2).contains(&write.root()) {
+                "HKCU or HKLM (by install scope)".to_string()
+            } else {
+                write.root_name().to_string()
+            },
             key: write.key().map(|k| k.to_string()).unwrap_or_default(),
             name: write.value_name().map(|n| n.to_string()).unwrap_or_default(),
             value: write.data().ok().map(|d| d.to_string()),

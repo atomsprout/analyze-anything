@@ -16,7 +16,10 @@ pub enum Value {
     Bool(bool),
     Float(f32),
     /// Any other typed value: the resource data type and its raw data.
-    Other { data_type: u8, data: u32 },
+    Other {
+        data_type: u8,
+        data: u32,
+    },
     Null,
 }
 
@@ -58,6 +61,7 @@ impl Value {
         }
     }
 
+    #[cfg(test)]
     pub fn as_ref_id(&self) -> Option<u32> {
         match self {
             Value::Ref(id) => Some(*id),

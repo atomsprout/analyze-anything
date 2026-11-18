@@ -389,14 +389,14 @@ pub fn report(file: &Artifact, installer: &Installer, out: &mut Output) {
     // Identity: only what the installer actually states.
     let mut identity = Vec::new();
     for (label, value) in [
-        ("product", &installer.product),
-        ("version", &installer.version),
-        ("publisher", &installer.publisher),
-        ("install folder", &installer.install_dir),
-        ("format", &installer.format),
+        ("Product", &installer.product),
+        ("Version", &installer.version),
+        ("Publisher", &installer.publisher),
+        ("InstallDir", &installer.install_dir),
+        ("Format", &installer.format),
     ] {
         if let Some(value) = value.as_deref().filter(|v| !v.is_empty()) {
-            identity.push(format!("{label}: {value}"));
+            identity.push(format!("{label}={value}"));
         }
     }
     let identity_rule = if installer.uninstaller { "windows.uninstaller" } else { "windows.installer" };

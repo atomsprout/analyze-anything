@@ -15,8 +15,10 @@ pub trait Resolver {
 }
 
 /// A resolver for a package without a readable resource table.
+#[cfg(test)]
 pub struct NoResources;
 
+#[cfg(test)]
 impl Resolver for NoResources {
     fn resolve(&self, _id: u32) -> Option<Resolved> {
         None
@@ -431,7 +433,8 @@ fn intent_filter(element: &Element, resolver: &dyn Resolver) -> IntentFilter {
 
 fn component(kind: ComponentKind, element: &Element, package: Option<&str>, target_sdk: i64, resolver: &dyn Resolver) -> Option<Component> {
     let name = qualify(package, &string(element.android("name"), resolver)?);
-    let intent_filters: Vec<IntentFilter> = element.children_named("intent-filter").take(MAX_LIST).map(|f| intent_filter(f, resolver)).collect();
+    let intent_filters: Vec<IntentFilter> =
+        element.children_named("intent-filter").take(MAX_LIST).map(|f| intent_filter(f, resolver)).collect();
     let exported_attr = boolean(element.android("exported"), resolver);
     let (exported, exported_by) = match exported_attr {
         Some(value) => (value, ExportedBy::Attribute),

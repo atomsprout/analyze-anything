@@ -10,8 +10,8 @@ use aa_core::plugin::{Rule, SinkError, Unpack, UnpackSink, Unpacker};
 
 use crate::pe::{u16_at, u32_at};
 
-/// Files larger than this are not extracted.
-const MAX_FILE: u64 = 4 * 1024 * 1024 * 1024;
+/// Files larger than this are not extracted: a file is held in memory while it is handed on.
+const MAX_FILE: u64 = 1024 * 1024 * 1024;
 const MAX_FILES: usize = 1_000_000;
 
 #[derive(Debug, Clone)]

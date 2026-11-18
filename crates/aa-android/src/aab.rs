@@ -26,17 +26,14 @@ fn item_value(item: &[u8]) -> Value {
             4 => return proto::first(body, 1).and_then(Field::string).map(Value::Str).unwrap_or(Value::Null),
             // Primitive
             7 => {
-                for (kind, value) in proto::fields(body) {
-                    return match (kind, value) {
-                        (6, Field::Varint(v)) => Value::Int(v as i32),
-                        (7, Field::Varint(v)) => Value::Hex(v as u32),
-                        (8, Field::Varint(v)) => Value::Bool(v != 0),
-                        (3, Field::Fixed32(v)) => Value::Float(f32::from_bits(v)),
-                        (9..=12, Field::Varint(v)) => Value::Other { data_type: 0x1c, data: v as u32 },
-                        _ => Value::Null,
-                    };
-                }
-                return Value::Null;
+                return match proto::fields(body).next() {
+                    Some((6, Field::Varint(v))) => Value::Int(v as i32),
+                    Some((7, Field::Varint(v))) => Value::Hex(v as u32),
+                    Some((8, Field::Varint(v))) => Value::Bool(v != 0),
+                    Some((3, Field::Fixed32(v))) => Value::Float(f32::from_bits(v)),
+                    Some((9..=12, Field::Varint(v))) => Value::Other { data_type: 0x1c, data: v as u32 },
+                    _ => Value::Null,
+                };
             }
             _ => {}
         }
@@ -151,7 +148,8 @@ fn entry_value(entry: &[u8]) -> (Option<Value>, usize) {
         configs += 1;
         let is_default = proto::first(config_value, 1).and_then(Field::bytes).is_none_or(<[u8]>::is_empty);
         // Value { item = 4; compound_value = 5 }
-        let value = proto::first(config_value, 2).and_then(Field::bytes).and_then(|v| proto::first(v, 4)).and_then(Field::bytes).map(item_value);
+        let value =
+            proto::first(config_value, 2).and_then(Field::bytes).and_then(|v| proto::first(v, 4)).and_then(Field::bytes).map(item_value);
         if is_default && default.is_none() {
             default = value.clone();
         }
@@ -170,11 +168,15 @@ impl<'a> ProtoTable<'a> {
         for (number, field) in proto::fields(data) {
             let (2, Some(package)) = (number, field.bytes()) else { continue };
             any = true;
-            let package_id = proto::first(package, 1).and_then(Field::bytes).and_then(|m| proto::first(m, 1)).and_then(Field::varint).unwrap_or(0x7f) as u32;
+            let package_id =
+                proto::first(package, 1).and_then(Field::bytes).and_then(|m| proto::first(m, 1)).and_then(Field::varint).unwrap_or(0x7f)
+                    as u32;
             // Package { type = 3 }
             for (number, field) in proto::fields(package) {
                 let (3, Some(kind)) = (number, field.bytes()) else { continue };
-                let type_id = proto::first(kind, 1).and_then(Field::bytes).and_then(|m| proto::first(m, 1)).and_then(Field::varint).unwrap_or(0) as u32;
+                let type_id =
+                    proto::first(kind, 1).and_then(Field::bytes).and_then(|m| proto::first(m, 1)).and_then(Field::varint).unwrap_or(0)
+                        as u32;
                 let type_name = proto::first(kind, 2).and_then(Field::string).unwrap_or_default();
                 // Type { entry = 3 }
                 for (number, field) in proto::fields(kind) {
@@ -183,7 +185,9 @@ impl<'a> ProtoTable<'a> {
                         table.truncated = true;
                         return Some(table);
                     }
-                    let entry_id = proto::first(entry, 1).and_then(Field::bytes).and_then(|m| proto::first(m, 1)).and_then(Field::varint).unwrap_or(0) as u32;
+                    let entry_id =
+                        proto::first(entry, 1).and_then(Field::bytes).and_then(|m| proto::first(m, 1)).and_then(Field::varint).unwrap_or(0)
+                            as u32;
                     let id = (package_id << 24) | ((type_id & 0xff) << 16) | (entry_id & 0xffff);
                     table.entries.insert(id, (type_name.clone(), entry));
                 }
@@ -192,12 +196,9 @@ impl<'a> ProtoTable<'a> {
         any.then_some(table)
     }
 
-    pub fn len(&self) -> usize {
+    /// Number of resource entries in the table.
+    pub fn entry_count(&self) -> usize {
         self.entries.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
     }
 
     pub fn resolve(&self, id: u32) -> Option<Resolved> {

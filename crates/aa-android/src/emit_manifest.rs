@@ -30,11 +30,14 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
             .param("package", name.clone())
             .param("version_name", m.version_name.clone().unwrap_or_else(|| "?".into()))
             .param("version_code", m.version_code.map(|c| c.to_string()).unwrap_or_else(|| "?".into()))
-            .param("format", match package.kind {
-                PackageKind::Apk => "APK",
-                PackageKind::Folder => "APK (extracted folder)",
-                PackageKind::Bundle => "Android App Bundle",
-            })
+            .param(
+                "format",
+                match package.kind {
+                    PackageKind::Apk => "APK",
+                    PackageKind::Folder => "APK (extracted folder)",
+                    PackageKind::Bundle => "Android App Bundle",
+                },
+            )
             .evidence(attr(file, "manifest@package", name.clone()));
         if let Some(code) = m.version_code {
             f = f.evidence(attr(file, "manifest@android:versionCode", code));
@@ -73,14 +76,21 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
                     .param("source", label.reference.clone().unwrap_or_else(|| "literal".into()))
                     .evidence(attr(file, "application@android:label", label.reference.clone().unwrap_or_else(|| value.clone()))),
             ),
-            None => out.limitation("android.reference-unresolved", Some(file), Some(format!("application label {}", label.reference.clone().unwrap_or_default()))),
+            None => out.limitation(
+                "android.reference-unresolved",
+                Some(file),
+                Some(format!("application label {}", label.reference.clone().unwrap_or_default())),
+            ),
         }
     }
     {
         let min = m.min_sdk.unwrap_or(1);
         let mut f = finding(Section::Identity, "android.sdk-levels", Confidence::Verified, Severity::Info)
             .param("min", sdk_label(min))
-            .param("target", m.target_sdk.map(sdk_label).unwrap_or_else(|| format!("{} (not declared; the minimum applies)", sdk_label(min))))
+            .param(
+                "target",
+                m.target_sdk.map(sdk_label).unwrap_or_else(|| format!("{} (not declared; the minimum applies)", sdk_label(min))),
+            )
             .param("compile", m.compile_sdk.map(sdk_label).unwrap_or_else(|| "?".into()));
         f = match m.min_sdk {
             Some(v) => f.evidence(attr(file, "uses-sdk@android:minSdkVersion", v)),
@@ -104,7 +114,8 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
     let launchers = m.launcher_activities();
     if !launchers.is_empty() {
         let names: Vec<&str> = launchers.iter().map(|c| c.name.as_str()).collect();
-        let mut f = finding(Section::Identity, "android.launcher-activity", Confidence::Verified, Severity::Info).param("activities", listed(&names, 5));
+        let mut f = finding(Section::Identity, "android.launcher-activity", Confidence::Verified, Severity::Info)
+            .param("activities", listed(&names, 5));
         for c in launchers.iter().take(5) {
             f = f.evidence(component_evidence(file, c));
         }
@@ -113,9 +124,14 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
     if let Some(shared) = &m.shared_user_id {
         let system = shared.starts_with("android.uid.");
         out.finding(
-            finding(Section::Capabilities, "android.shared-user-id", Confidence::Verified, if system { Severity::Medium } else { Severity::Low })
-                .param("uid", shared.clone())
-                .evidence(attr(file, "manifest@android:sharedUserId", shared.clone())),
+            finding(
+                Section::Capabilities,
+                "android.shared-user-id",
+                Confidence::Verified,
+                if system { Severity::Medium } else { Severity::Low },
+            )
+            .param("uid", shared.clone())
+            .evidence(attr(file, "manifest@android:sharedUserId", shared.clone())),
         );
     }
     if !m.tools_leftovers.is_empty() {
@@ -150,7 +166,14 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
         }
         out.finding(f);
         if modules.len() > 1 {
-            out.limitation("android.bundle-modules-not-analyzed", Some(container), Some(format!("only the base module is analyzed in depth; other modules: {}", listed(&modules.iter().filter(|m| **m != "base").collect::<Vec<_>>(), 10))));
+            out.limitation(
+                "android.bundle-modules-not-analyzed",
+                Some(container),
+                Some(format!(
+                    "only the base module is analyzed in depth; other modules: {}",
+                    listed(&modules.iter().filter(|m| **m != "base").collect::<Vec<_>>(), 10)
+                )),
+            );
         }
     }
 }
@@ -159,7 +182,11 @@ pub fn identity(package: &Package, m: &Manifest, document: &Document, out: &mut 
 fn network_security_config(package: &Package, m: &Manifest, out: &mut Output) -> Option<(netsec::NetworkSecurityConfig, &'static str)> {
     let reference = m.application.as_ref()?.network_security_config.as_ref()?;
     let Some(path) = reference.value.as_deref() else {
-        out.limitation("android.reference-unresolved", Some(package.manifest), Some(format!("networkSecurityConfig {}", reference.reference.clone().unwrap_or_default())));
+        out.limitation(
+            "android.reference-unresolved",
+            Some(package.manifest),
+            Some(format!("networkSecurityConfig {}", reference.reference.clone().unwrap_or_default())),
+        );
         return None;
     };
     let file = package.file(path)?;
@@ -193,22 +220,36 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
         );
     }
     if app.test_only == Some(true) {
-        out.finding(
-            finding(Section::Hardening, "android.test-only", Confidence::Verified, Severity::Medium).evidence(attr(file, "application@android:testOnly", true)),
-        );
+        out.finding(finding(Section::Hardening, "android.test-only", Confidence::Verified, Severity::Medium).evidence(attr(
+            file,
+            "application@android:testOnly",
+            true,
+        )));
     }
     // Backup. The attribute defaults to true when it is absent.
     if app.allow_backup != Some(false) {
         let explicit = app.allow_backup == Some(true);
-        let mut f = finding(Section::Hardening, "android.allow-backup", if explicit { Confidence::Verified } else { Confidence::Derived }, Severity::Low)
-            .param("how_en", if explicit { "is set to true" } else { "is not set, and its default is true" })
-            .param("how_zh", if explicit { "设为 true" } else { "未设置，默认值为 true" })
-            .param("rules", match (&app.full_backup_content, &app.data_extraction_rules) {
+        let mut f = finding(
+            Section::Hardening,
+            "android.allow-backup",
+            if explicit { Confidence::Verified } else { Confidence::Derived },
+            Severity::Low,
+        )
+        .param("how_en", if explicit { "is set to true" } else { "is not set, and its default is true" })
+        .param("how_zh", if explicit { "设为 true" } else { "未设置，默认值为 true" })
+        .param(
+            "rules",
+            match (&app.full_backup_content, &app.data_extraction_rules) {
                 (None, None) => "none".to_string(),
-                (a, b) => [a.as_ref().and_then(|t| t.shown()), b.as_ref().and_then(|t| t.shown())].into_iter().flatten().collect::<Vec<_>>().join(", "),
-            })
-            .reference("MASVS-STORAGE-2")
-            .evidence(attr(file, "application@android:allowBackup", json!(app.allow_backup)));
+                (a, b) => [a.as_ref().and_then(|t| t.shown()), b.as_ref().and_then(|t| t.shown())]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            },
+        )
+        .reference("MASVS-STORAGE-2")
+        .evidence(attr(file, "application@android:allowBackup", json!(app.allow_backup)));
         if let Some(rules) = app.full_backup_content.as_ref().and_then(|t| t.shown()) {
             f = f.evidence(attr(file, "application@android:fullBackupContent", rules));
         }
@@ -256,7 +297,8 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
         );
     }
     if let Some((config, _)) = &config {
-        let config_file = app.network_security_config.as_ref().and_then(|t| t.value.as_deref()).and_then(|p| package.file(p)).unwrap_or(file);
+        let config_file =
+            app.network_security_config.as_ref().and_then(|t| t.value.as_deref()).and_then(|p| package.file(p)).unwrap_or(file);
         let cleartext_domains = config.cleartext_domains();
         if !cleartext && !cleartext_domains.is_empty() {
             let mut f = finding(Section::Hardening, "android.cleartext-domains", Confidence::Verified, Severity::Low)
@@ -285,7 +327,11 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
             out.finding(
                 finding(Section::Hardening, "android.custom-trust-anchors", Confidence::Verified, Severity::Info)
                     .param("anchors", listed(&config.base_custom_anchors, 5))
-                    .evidence(Evidence::field(config_file, "base-config/trust-anchors/certificates@src", config.base_custom_anchors.join(", "))),
+                    .evidence(Evidence::field(
+                        config_file,
+                        "base-config/trust-anchors/certificates@src",
+                        config.base_custom_anchors.join(", "),
+                    )),
             );
         }
         let pinned = config.pinned_domains();
@@ -294,7 +340,10 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
             let mut f = finding(Section::Hardening, "android.certificate-pinning", Confidence::Verified, Severity::Info)
                 .param("count", pinned.len())
                 .param("domains", listed(&pinned, 10))
-                .param("expiration", if expirations.is_empty() { "none".to_string() } else { expirations.into_iter().collect::<Vec<_>>().join(", ") })
+                .param(
+                    "expiration",
+                    if expirations.is_empty() { "none".to_string() } else { expirations.into_iter().collect::<Vec<_>>().join(", ") },
+                )
                 .reference("MASVS-NETWORK-2");
             for domain in pinned.iter().take(10) {
                 f = f.evidence(Evidence::field(config_file, "domain-config/pin-set", *domain));
@@ -335,10 +384,15 @@ pub fn hardening(package: &Package, m: &Manifest, _resources: &Resources, out: &
     }
     if target < 31 {
         out.finding(
-            finding(Section::Hardening, "android.target-sdk-old", Confidence::Derived, if target < 23 { Severity::Medium } else { Severity::Low })
-                .param("target", sdk_label(target))
-                .reference("MASVS-CODE-1")
-                .evidence(attr(file, "uses-sdk@android:targetSdkVersion", json!(m.target_sdk))),
+            finding(
+                Section::Hardening,
+                "android.target-sdk-old",
+                Confidence::Derived,
+                if target < 23 { Severity::Medium } else { Severity::Low },
+            )
+            .param("target", sdk_label(target))
+            .reference("MASVS-CODE-1")
+            .evidence(attr(file, "uses-sdk@android:targetSdkVersion", json!(m.target_sdk))),
         );
     }
 }
@@ -410,7 +464,9 @@ pub fn permissions(package: &Package, m: &Manifest, out: &mut Output) {
             return;
         }
         let names: Vec<&str> = list.iter().map(|(n, _)| *n).collect();
-        let mut f = finding(Section::Capabilities, rule, Confidence::Derived, severity).param("count", names.len()).param("permissions", listed(&names, 40));
+        let mut f = finding(Section::Capabilities, rule, Confidence::Derived, severity)
+            .param("count", names.len())
+            .param("permissions", listed(&names, 40));
         for (_, evidence) in list.into_iter().take(40) {
             f = f.evidence(evidence);
         }
@@ -421,7 +477,12 @@ pub fn permissions(package: &Package, m: &Manifest, out: &mut Output) {
     summarise("android.permissions-other", Severity::Info, other);
 
     if !m.permissions.is_empty() {
-        let weak: Vec<&str> = m.permissions.iter().filter(|p| permissions::declared_level(p.protection_level.unwrap_or(0)) != Level::Signature).map(|p| p.name.as_str()).collect();
+        let weak: Vec<&str> = m
+            .permissions
+            .iter()
+            .filter(|p| permissions::declared_level(p.protection_level.unwrap_or(0)) != Level::Signature)
+            .map(|p| p.name.as_str())
+            .collect();
         let names: Vec<&str> = m.permissions.iter().map(|p| p.name.as_str()).collect();
         let mut f = finding(Section::Capabilities, "android.permissions-declared", Confidence::Verified, Severity::Info)
             .param("count", names.len())
@@ -481,16 +542,51 @@ pub fn permissions(package: &Package, m: &Manifest, out: &mut Output) {
 /// Services and receivers the system binds through a signature permission: declaring one asks
 /// for a capability that the user grants in system settings.
 const SPECIAL_COMPONENTS: &[(&str, &str, &str, Severity)] = &[
-    ("android.permission.BIND_ACCESSIBILITY_SERVICE", "an accessibility service, which once enabled can read the screen and act for the user", "无障碍服务：启用后可读取屏幕内容并代替用户操作", Severity::Medium),
-    ("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE", "a notification listener, which once enabled can read every notification", "通知监听服务：启用后可读取所有通知", Severity::Low),
-    ("android.permission.BIND_DEVICE_ADMIN", "a device administrator, which once activated can lock or wipe the device", "设备管理员：激活后可锁定或清除设备", Severity::Medium),
-    ("android.permission.BIND_VPN_SERVICE", "a VPN service, which once approved sees and routes the device's network traffic", "VPN 服务：获准后可查看并转发设备的网络流量", Severity::Low),
-    ("android.permission.BIND_INPUT_METHOD", "an input method (keyboard), which once selected sees what the user types", "输入法：被选用后可看到用户输入的内容", Severity::Low),
-    ("android.permission.BIND_AUTOFILL_SERVICE", "an autofill service, which once selected sees the fields of other apps", "自动填充服务：被选用后可看到其他应用的输入框内容", Severity::Low),
+    (
+        "android.permission.BIND_ACCESSIBILITY_SERVICE",
+        "an accessibility service, which once enabled can read the screen and act for the user",
+        "无障碍服务：启用后可读取屏幕内容并代替用户操作",
+        Severity::Medium,
+    ),
+    (
+        "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
+        "a notification listener, which once enabled can read every notification",
+        "通知监听服务：启用后可读取所有通知",
+        Severity::Low,
+    ),
+    (
+        "android.permission.BIND_DEVICE_ADMIN",
+        "a device administrator, which once activated can lock or wipe the device",
+        "设备管理员：激活后可锁定或清除设备",
+        Severity::Medium,
+    ),
+    (
+        "android.permission.BIND_VPN_SERVICE",
+        "a VPN service, which once approved sees and routes the device's network traffic",
+        "VPN 服务：获准后可查看并转发设备的网络流量",
+        Severity::Low,
+    ),
+    (
+        "android.permission.BIND_INPUT_METHOD",
+        "an input method (keyboard), which once selected sees what the user types",
+        "输入法：被选用后可看到用户输入的内容",
+        Severity::Low,
+    ),
+    (
+        "android.permission.BIND_AUTOFILL_SERVICE",
+        "an autofill service, which once selected sees the fields of other apps",
+        "自动填充服务：被选用后可看到其他应用的输入框内容",
+        Severity::Low,
+    ),
     ("android.permission.BIND_SCREENING_SERVICE", "a call screening service", "来电过滤服务", Severity::Info),
     ("android.permission.BIND_INCALL_SERVICE", "an in-call service (dialer)", "通话界面服务（拨号应用）", Severity::Info),
     ("android.permission.BIND_NFC_SERVICE", "an NFC card emulation service", "NFC 卡模拟服务", Severity::Info),
-    ("android.permission.BIND_TELECOM_CONNECTION_SERVICE", "a telecom connection service (places calls)", "电话连接服务（可拨打电话）", Severity::Info),
+    (
+        "android.permission.BIND_TELECOM_CONNECTION_SERVICE",
+        "a telecom connection service (places calls)",
+        "电话连接服务（可拨打电话）",
+        Severity::Info,
+    ),
 ];
 
 pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
@@ -536,7 +632,8 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
             .filter(|c| c.exported && c.enabled != Some(false) && !c.is_launcher())
             .filter(|c| {
                 if kind == ComponentKind::Provider {
-                    !strong_guard(c.guard(app_permission)) && !(strong_guard(c.read_permission.as_deref()) && strong_guard(c.write_permission.as_deref()))
+                    !strong_guard(c.guard(app_permission))
+                        && !(strong_guard(c.read_permission.as_deref()) && strong_guard(c.write_permission.as_deref()))
                 } else {
                     !strong_guard(c.guard(app_permission))
                 }
@@ -561,12 +658,17 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
     if !implicit.is_empty() {
         let target = m.effective_target_sdk();
         let names: Vec<&str> = implicit.iter().map(|c| c.name.as_str()).collect();
-        let mut f = finding(Section::Anomalies, "android.implicit-export", Confidence::Derived, if target >= 31 { Severity::Medium } else { Severity::Low })
-            .param("count", implicit.len())
-            .param("components", listed(&names, 10))
-            .param("target", sdk_label(target))
-            .reference("CWE-926")
-            .reference("MASVS-PLATFORM-1");
+        let mut f = finding(
+            Section::Anomalies,
+            "android.implicit-export",
+            Confidence::Derived,
+            if target >= 31 { Severity::Medium } else { Severity::Low },
+        )
+        .param("count", implicit.len())
+        .param("components", listed(&names, 10))
+        .param("target", sdk_label(target))
+        .reference("CWE-926")
+        .reference("MASVS-PLATFORM-1");
         for c in implicit.iter().take(15) {
             f = f.evidence(component_evidence(file, c));
         }
@@ -574,7 +676,9 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
     }
 
     for c in &m.components {
-        if let Some((_, en, zh, severity)) = SPECIAL_COMPONENTS.iter().find(|(permission, _, _, _)| c.permission.as_deref() == Some(*permission)) {
+        if let Some((_, en, zh, severity)) =
+            SPECIAL_COMPONENTS.iter().find(|(permission, _, _, _)| c.permission.as_deref() == Some(*permission))
+        {
             out.finding(
                 finding(Section::Capabilities, "android.special-component", Confidence::Verified, *severity)
                     .param("component", c.name.clone())
@@ -601,12 +705,15 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
     let mut custom_schemes: BTreeSet<String> = BTreeSet::new();
     let mut verified_hosts: BTreeSet<String> = BTreeSet::new();
     let mut link_evidence: Vec<Evidence> = Vec::new();
-    for c in m.components.iter().filter(|c| matches!(c.kind, ComponentKind::Activity | ComponentKind::ActivityAlias) && c.enabled != Some(false)) {
+    for c in
+        m.components.iter().filter(|c| matches!(c.kind, ComponentKind::Activity | ComponentKind::ActivityAlias) && c.enabled != Some(false))
+    {
         let mut any = false;
         for filter in c.intent_filters.iter().filter(|f| f.is_browsable() || f.actions.iter().any(|a| a == "android.intent.action.VIEW")) {
             let schemes: BTreeSet<&str> = filter.data.iter().filter_map(|d| d.scheme.as_deref()).collect();
             let hosts: Vec<&str> = filter.data.iter().filter_map(|d| d.host.as_deref()).collect();
-            let paths: Vec<&str> = filter.data.iter().filter_map(|d| d.path.as_deref().or(d.path_prefix.as_deref()).or(d.path_pattern.as_deref())).collect();
+            let paths: Vec<&str> =
+                filter.data.iter().filter_map(|d| d.path.as_deref().or(d.path_prefix.as_deref()).or(d.path_pattern.as_deref())).collect();
             for scheme in &schemes {
                 if matches!(*scheme, "content" | "file") {
                     continue;
@@ -638,8 +745,14 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
         let mut f = finding(Section::Capabilities, "android.deep-links", Confidence::Verified, Severity::Info)
             .param("count", links.len())
             .param("links", listed(&list, 15))
-            .param("custom_schemes", if custom_schemes.is_empty() { "-".to_string() } else { listed(&custom_schemes.iter().collect::<Vec<_>>(), 15) })
-            .param("verified_hosts", if verified_hosts.is_empty() { "-".to_string() } else { listed(&verified_hosts.iter().collect::<Vec<_>>(), 15) })
+            .param(
+                "custom_schemes",
+                if custom_schemes.is_empty() { "-".to_string() } else { listed(&custom_schemes.iter().collect::<Vec<_>>(), 15) },
+            )
+            .param(
+                "verified_hosts",
+                if verified_hosts.is_empty() { "-".to_string() } else { listed(&verified_hosts.iter().collect::<Vec<_>>(), 15) },
+            )
             .reference("MASVS-PLATFORM-1");
         for evidence in link_evidence {
             f = f.evidence(evidence);
@@ -663,7 +776,11 @@ pub fn components(package: &Package, m: &Manifest, out: &mut Output) {
         .components
         .iter()
         .filter(|c| matches!(c.kind, ComponentKind::Activity))
-        .filter(|c| c.task_affinity.as_deref().is_some_and(|a| !a.is_empty() && !own.is_empty() && !a.starts_with(own) && a.contains('.') && !a.starts_with(':')))
+        .filter(|c| {
+            c.task_affinity
+                .as_deref()
+                .is_some_and(|a| !a.is_empty() && !own.is_empty() && !a.starts_with(own) && a.contains('.') && !a.starts_with(':'))
+        })
         .filter(|c| matches!(c.launch_mode, Some(2..=4)))
         .collect();
     if !foreign.is_empty() {
@@ -731,7 +848,8 @@ pub fn keys(package: &Package, m: &Manifest, resources: &Resources, out: &mut Ou
         if !google.is_empty() {
             out.fact(resource_file, "android.google_services", serde_json::Value::Object(google.clone()));
             let shown: Vec<String> = google.iter().map(|(k, v)| format!("{k}={}", v.as_str().unwrap_or(""))).collect();
-            let mut f = finding(Section::Network, "android.firebase-config", Confidence::Verified, Severity::Info).param("values", listed(&shown, 8));
+            let mut f = finding(Section::Network, "android.firebase-config", Confidence::Verified, Severity::Info)
+                .param("values", listed(&shown, 8));
             for (name, value) in google.iter().take(8) {
                 f = f.evidence(Evidence::field(resource_file, format!("string/{name}"), value.clone()));
             }
@@ -740,7 +858,9 @@ pub fn keys(package: &Package, m: &Manifest, resources: &Resources, out: &mut Ou
     }
     if !identifiers.is_empty() {
         let shown: Vec<String> = identifiers.iter().map(|(n, what, v)| format!("{what}: {v} ({n})")).collect();
-        let mut f = finding(Section::Composition, "android.sdk-identifiers", Confidence::Verified, Severity::Info).param("count", identifiers.len()).param("values", listed(&shown, 8));
+        let mut f = finding(Section::Composition, "android.sdk-identifiers", Confidence::Verified, Severity::Info)
+            .param("count", identifiers.len())
+            .param("values", listed(&shown, 8));
         for (name, _, value) in identifiers.iter().take(8) {
             f = f.evidence(attr(file, format!("meta-data[{name}]@android:value").as_str(), value.clone()));
         }
@@ -780,7 +900,11 @@ pub fn resources_fact(package: &Package, resources: &Resources, out: &mut Output
         Resources::Proto(table) => {
             let Some(file) = package.file("resources.pb") else { return };
             out.kind(file, "android-resources");
-            out.fact(file, "android.resources", json!({ "format": "protobuf", "entries": table.len(), "truncated": table.truncated }));
+            out.fact(
+                file,
+                "android.resources",
+                json!({ "format": "protobuf", "entries": table.entry_count(), "truncated": table.truncated }),
+            );
         }
         Resources::None => {}
     }

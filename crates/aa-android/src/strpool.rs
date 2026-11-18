@@ -46,12 +46,9 @@ impl<'a> StringPool<'a> {
         Some(StringPool { chunk, utf8: flags & FLAG_UTF8 != 0, offsets_at: header_size, count, strings_start, anomalies })
     }
 
-    pub fn len(&self) -> usize {
+    /// Number of strings in the pool.
+    pub fn count(&self) -> usize {
         self.count
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.count == 0
     }
 
     /// The string at `index`, or `None` when the index or its data is out of range.
@@ -204,7 +201,7 @@ pub mod tests {
         for utf8 in [true, false] {
             let chunk = build_pool(&["manifest", "应用", ""], utf8);
             let pool = StringPool::parse(&chunk).expect("pool");
-            assert_eq!(pool.len(), 3);
+            assert_eq!(pool.count(), 3);
             assert_eq!(pool.get(0).as_deref(), Some("manifest"));
             assert_eq!(pool.get(1).as_deref(), Some("应用"));
             assert_eq!(pool.get(2).as_deref(), Some(""));
@@ -218,7 +215,7 @@ pub mod tests {
         let mut chunk = build_pool(&["a", "b"], true);
         chunk[8..12].copy_from_slice(&0xffff_ffffu32.to_le_bytes());
         let pool = StringPool::parse(&chunk).expect("pool");
-        assert_eq!(pool.len(), 2);
+        assert_eq!(pool.count(), 2);
         assert_eq!(pool.get(1).as_deref(), Some("b"));
         assert!(!pool.anomalies.is_empty());
     }

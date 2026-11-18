@@ -71,7 +71,14 @@ pub fn parse(data: &[u8]) -> Option<Elf> {
     } else {
         (u32_at(28)? as usize, usize::from(u16_at(42)?), usize::from(u16_at(44)?))
     };
-    let mut elf = Elf { bits: if is64 { 64 } else { 32 }, machine, min_load_align: None, rwx_segment: false, text_relocations: false, executable_stack: None };
+    let mut elf = Elf {
+        bits: if is64 { 64 } else { 32 },
+        machine,
+        min_load_align: None,
+        rwx_segment: false,
+        text_relocations: false,
+        executable_stack: None,
+    };
     if ph_entry_size < if is64 { 56 } else { 32 } {
         return Some(elf);
     }

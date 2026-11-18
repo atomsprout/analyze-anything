@@ -1,7 +1,13 @@
 //! Inno Setup installers: extraction of the packed files and the meaning of the setup header
 //! and its `[Files]`, `[Registry]`, `[Icons]` and `[Run]` records.
 //!
-//! The format is read by the `innospect` crate.
+//! The format is read by the `innospect` crate (0.2, Apache-2.0).
+//!
+//! Checked by hand against `innoextract` 1.9, comparing the SHA-256 of every extracted file:
+//! Inno Setup 6.2.2's own installer (92 files) and Git LFS 3.5.1 (Inno Setup 6.1, 3 files) are
+//! identical. Inno Setup 6.4.0's installer extracts (95 files) but could not be compared:
+//! innoextract 1.9 does not read 6.4. There is no committed fixture, because the Inno Setup
+//! compiler runs only on Windows and real installers exceed the fixture size limit.
 
 use std::collections::BTreeSet;
 

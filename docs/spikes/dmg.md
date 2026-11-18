@@ -5,9 +5,9 @@ Date: 2026-11-18. Code: `crates/aa-apple/src/disk/` (UDIF, HFS+, APFS, decmpfs) 
 files with permissively licensed, pure-Rust code, and how much of what exists in the wild
 does that cover?
 
-**Answer: yes for the images open-source projects publish.** Twelve real images, covering
+**Answer: yes for the images open-source projects publish.** Nine real images, covering
 every chunk compression but ADC and both file systems, extract byte-for-byte identically to
-7-Zip. Encrypted images and a few rarer structures are detected and reported, not opened.
+7-Zip (three more were only classified, not compared). Encrypted images and a few rarer structures are detected and reported, not opened.
 
 ## What was built
 

@@ -38,7 +38,7 @@ use aa_core::plugin::{Analyzer, Bytes, Output, Rule, Tree, Unpacker};
 use aa_core::{Artifact, Confidence, Finding, Section, Severity};
 use serde_json::{Value as Json, json};
 
-use crate::manifest::{Manifest, Resolver};
+use crate::manifest::Resolver;
 
 /// Largest manifest or resource table decoded.
 const MAX_STRUCTURED_FILE: u64 = 512 * 1024 * 1024;
@@ -215,7 +215,9 @@ fn find_packages(tree: &dyn Tree) -> Vec<Package<'_>> {
             // extracted APK only when the folder looks like one.
             let is_module_manifest = dir.ends_with("/manifest") || dir == "manifest";
             let files = files_below(tree, dir, parent, |name| Some(name.to_string()));
-            let looks_like_apk = files.contains_key("resources.arsc") || files.contains_key("classes.dex") || files.keys().any(|k| k.starts_with("META-INF/"));
+            let looks_like_apk = files.contains_key("resources.arsc")
+                || files.contains_key("classes.dex")
+                || files.keys().any(|k| k.starts_with("META-INF/"));
             if !is_module_manifest && looks_like_apk {
                 packages.push(Package { tree, kind: PackageKind::Folder, container: None, manifest, files });
             }
@@ -262,7 +264,11 @@ fn analyze_package(package: &Package, out: &mut Output) -> Option<Json> {
         // A manifest in text form (as decoding tools write it) or something else entirely.
         // Only report it where the surroundings say this is an Android package.
         if package.kind != PackageKind::Folder || manifest_bytes.iter().take(512).any(|b| *b == b'<') {
-            out.limitation("android.manifest-unreadable", Some(package.manifest), Some("not binary XML or protobuf XML; text manifests are not decoded".into()));
+            out.limitation(
+                "android.manifest-unreadable",
+                Some(package.manifest),
+                Some("not binary XML or protobuf XML; text manifests are not decoded".into()),
+            );
         }
         return None;
     };
@@ -283,7 +289,11 @@ fn analyze_package(package: &Package, out: &mut Output) -> Option<Json> {
     }
     let resources = resources.unwrap_or(Resources::None);
     let Some(manifest) = manifest::extract(&document, &resources) else {
-        out.limitation("android.manifest-unreadable", Some(package.manifest), Some(format!("no <manifest> root element; {}", listed(&document.anomalies, 3))));
+        out.limitation(
+            "android.manifest-unreadable",
+            Some(package.manifest),
+            Some(format!("no <manifest> root element; {}", listed(&document.anomalies, 3))),
+        );
         return None;
     };
     if let Some(container) = package.container {
@@ -327,7 +337,9 @@ fn find_apk_sets(tree: &dyn Tree, summaries: &[(String, Json)], out: &mut Output
         let prefix = format!("{}/", container.path);
         let inside: Vec<&(String, Json)> = summaries
             .iter()
-            .filter(|(path, _)| path.starts_with(&prefix) && tree.get(path).is_some_and(|a| a.parent.as_deref() == Some(container.path.as_str())))
+            .filter(|(path, _)| {
+                path.starts_with(&prefix) && tree.get(path).is_some_and(|a| a.parent.as_deref() == Some(container.path.as_str()))
+            })
             .collect();
         if inside.is_empty() {
             continue;
@@ -351,8 +363,11 @@ fn find_apk_sets(tree: &dyn Tree, summaries: &[(String, Json)], out: &mut Output
         out.kind(container, kind);
         let base: Vec<&Json> = inside.iter().map(|(_, s)| s).filter(|s| s["split"].is_null()).collect();
         let splits: Vec<String> = inside.iter().filter_map(|(_, s)| s["split"].as_str().map(str::to_string)).collect();
-        let signers: std::collections::BTreeSet<String> =
-            inside.iter().flat_map(|(_, s)| s["signer_sha256"].as_array().cloned().unwrap_or_default()).filter_map(|v| v.as_str().map(str::to_string)).collect();
+        let signers: std::collections::BTreeSet<String> = inside
+            .iter()
+            .flat_map(|(_, s)| s["signer_sha256"].as_array().cloned().unwrap_or_default())
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
         let packages: std::collections::BTreeSet<&str> = inside.iter().filter_map(|(_, s)| s["package"].as_str()).collect();
         out.fact(
             container,
@@ -379,12 +394,14 @@ fn find_apk_sets(tree: &dyn Tree, summaries: &[(String, Json)], out: &mut Output
         }
         out.finding(finding);
         if signers.len() > 1 || packages.len() > 1 {
-            let mut finding = aa_core::Finding::new(Section::Anomalies, "android", "android.apk-set-mismatch", Confidence::Verified, Severity::High)
-                .param("packages", packages.len())
-                .param("signers", signers.len());
+            let mut finding =
+                aa_core::Finding::new(Section::Anomalies, "android", "android.apk-set-mismatch", Confidence::Verified, Severity::High)
+                    .param("packages", packages.len())
+                    .param("signers", signers.len());
             for (path, summary) in inside.iter().take(20) {
                 if let Some(apk) = tree.get(path) {
-                    finding = finding.evidence(aa_core::Evidence::field(apk, "signer certificate SHA-256", summary["signer_sha256"].clone()));
+                    finding =
+                        finding.evidence(aa_core::Evidence::field(apk, "signer certificate SHA-256", summary["signer_sha256"].clone()));
                 }
             }
             out.finding(finding);

@@ -12,13 +12,23 @@ use crate::x509::{Certificate, KeyAlgorithm};
 use crate::{Package, PackageKind, finding, jarsign, known_certs, listed, zipraw};
 
 fn trailing_reason(archive: &zipraw::Archive) -> String {
-    format!("{} bytes follow the ZIP end record; apksigner rejects such a file as not being a ZIP archive, and so do Android's v2+ verifiers", archive.trailing_bytes)
+    format!(
+        "{} bytes follow the ZIP end record; apksigner rejects such a file as not being a ZIP archive, and so do Android's v2+ verifiers",
+        archive.trailing_bytes
+    )
 }
 
 /// Whether a device running `min_sdk` or later would accept the signatures, by the rules
 /// `apksigner verify` applies: every scheme present must verify, nothing may be stripped, and a
 /// v1 signature is required when Android versions before 7.0 (API 24) are supported.
-pub(crate) fn install_check(verified: &[&str], failed: &[String], has_v1: bool, has_v2_plus: bool, stripped: bool, min_sdk: i64) -> (bool, Vec<String>) {
+pub(crate) fn install_check(
+    verified: &[&str],
+    failed: &[String],
+    has_v1: bool,
+    has_v2_plus: bool,
+    stripped: bool,
+    min_sdk: i64,
+) -> (bool, Vec<String>) {
     let mut reasons: Vec<String> = failed.to_vec();
     if stripped {
         reasons.push("a newer signature scheme was removed".into());
@@ -43,7 +53,11 @@ fn check_json(check: &Check) -> Json {
 /// certificates of the strongest scheme that verified (empty when none did).
 pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<String> {
     let Some(container) = package.container else {
-        out.limitation("android.signature-not-checked", Some(package.manifest), Some("an extracted folder has no archive to verify; signatures cover the package file".into()));
+        out.limitation(
+            "android.signature-not-checked",
+            Some(package.manifest),
+            Some("an extracted folder has no archive to verify; signatures cover the package file".into()),
+        );
         return Vec::new();
     };
     let Ok(bytes) = package.tree.read(&container.path) else {
@@ -66,10 +80,13 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
         Ok(block) => {
             // apksigner and the platform refuse a v2+ signature on a file with data after the
             // end record or with ZIP64 structures; the digests are not recomputed for those.
-            let mut digests = if archive.trailing_bytes == 0 && !archive.zip64 { ContentDigests::new(&bytes, &archive, block.start) } else { None };
+            let mut digests =
+                if archive.trailing_bytes == 0 && !archive.zip64 { ContentDigests::new(&bytes, &archive, block.start) } else { None };
             for (id, value, offset) in &block.pairs {
                 match *id {
-                    sigblock::ID_V2 | sigblock::ID_V3 | sigblock::ID_V31 => schemes.push(sigblock::verify_scheme(*id, value, *offset, &mut digests)),
+                    sigblock::ID_V2 | sigblock::ID_V3 | sigblock::ID_V31 => {
+                        schemes.push(sigblock::verify_scheme(*id, value, *offset, &mut digests))
+                    }
                     other => other_blocks.push((other, value.len())),
                 }
             }
@@ -109,11 +126,16 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
                 note(certificate, name);
             }
         }
-        let checks: Vec<&Check> = std::iter::once(&v1.entries).chain(v1.signers.iter().flat_map(|s| [&s.signature, &s.manifest_link])).collect();
+        let checks: Vec<&Check> =
+            std::iter::once(&v1.entries).chain(v1.signers.iter().flat_map(|s| [&s.signature, &s.manifest_link])).collect();
         let first_file = v1.signers.first().map(|s| s.signature_file.clone()).unwrap_or_default();
-        let evidence = Evidence::field(container, first_file.as_str(), json!({
-            "files": v1.entries.as_str(), "manifest": v1.signers.first().map(|s| s.manifest_link.as_str()), "signature": v1.signers.first().map(|s| s.signature.as_str()),
-        }));
+        let evidence = Evidence::field(
+            container,
+            first_file.as_str(),
+            json!({
+                "files": v1.entries.as_str(), "manifest": v1.signers.first().map(|s| s.manifest_link.as_str()), "signature": v1.signers.first().map(|s| s.signature.as_str()),
+            }),
+        );
         let trailing = (archive.trailing_bytes > 0 && !is_bundle).then(|| trailing_reason(&archive));
         if let Some(reason) = checks.iter().find(|c| c.failed()).and_then(|c| c.detail().map(str::to_string)).or(trailing) {
             failed_schemes.push(format!("v1: {reason}"));
@@ -125,7 +147,11 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
                     .evidence(evidence),
             );
         } else if let Some(unchecked) = checks.iter().find(|c| !c.passed()) {
-            out.limitation("android.signature-not-checked", Some(container), Some(format!("v1: {}", unchecked.detail().unwrap_or_default())));
+            out.limitation(
+                "android.signature-not-checked",
+                Some(container),
+                Some(format!("v1: {}", unchecked.detail().unwrap_or_default())),
+            );
         } else {
             verified_schemes.push(name);
             best_signers = v1.signers.iter().filter_map(|s| s.signer_certificate.as_ref()).map(|c| c.sha256.clone()).collect();
@@ -133,12 +159,15 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
                 finding(Section::Provenance, "android.signature-verified", Confidence::Verified, Severity::Info)
                     .param("scheme", "v1 (JAR)")
                     .param("signers", v1.signers.len())
-                    .param("details", format!(
-                        "{} files match the manifest digests ({}); signature {}",
-                        v1.entries_checked,
-                        v1.manifest_digest_algorithms.join(", "),
-                        v1.signers.iter().filter_map(|s| s.signature_algorithm.clone()).collect::<Vec<_>>().join(", ")
-                    ))
+                    .param(
+                        "details",
+                        format!(
+                            "{} files match the manifest digests ({}); signature {}",
+                            v1.entries_checked,
+                            v1.manifest_digest_algorithms.join(", "),
+                            v1.signers.iter().filter_map(|s| s.signature_algorithm.clone()).collect::<Vec<_>>().join(", ")
+                        ),
+                    )
                     .evidence(evidence),
             );
         }
@@ -151,10 +180,15 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
             }
         }
         let label = format!("{name} (APK Signature Scheme)");
-        let evidence = Evidence::bytes(container, scheme.offset, 4, json!({
-            "digest": scheme.signers.first().map(|s| s.digest.as_str()),
-            "signature": scheme.signers.first().map(|s| s.signature.as_str()),
-        }));
+        let evidence = Evidence::bytes(
+            container,
+            scheme.offset,
+            4,
+            json!({
+                "digest": scheme.signers.first().map(|s| s.digest.as_str()),
+                "signature": scheme.signers.first().map(|s| s.signature.as_str()),
+            }),
+        );
         let mut failure: Option<String> = scheme.malformed.clone();
         let mut unchecked: Option<String> = None;
         if archive.trailing_bytes > 0 {
@@ -195,7 +229,11 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
             best_signers = scheme.signers.iter().filter_map(|s| s.certificates.first()).map(|c| c.sha256.clone()).collect();
             let algorithms: BTreeSet<&str> = scheme.signers.iter().flat_map(|s| s.algorithms.iter().map(String::as_str)).collect();
             let sdk = scheme.signers.first().and_then(|s| s.min_sdk.zip(s.max_sdk)).map(|(min, max)| {
-                if max == u32::MAX || max == i32::MAX as u32 { format!("; for API {min} and later") } else { format!("; for API {min} to {max}") }
+                if max == u32::MAX || max == i32::MAX as u32 {
+                    format!("; for API {min} and later")
+                } else {
+                    format!("; for API {min} to {max}")
+                }
             });
             out.finding(
                 finding(Section::Provenance, "android.signature-verified", Confidence::Verified, Severity::Info)
@@ -207,19 +245,27 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
         }
         for signer in &scheme.signers {
             if signer.lineage.len() > 1 {
-                let chain: Vec<String> =
-                    signer.lineage.iter().map(|n| n.certificate.as_ref().map(|c| format!("{} ({}…)", c.subject, &c.sha256[..16])).unwrap_or_else(|| "?".into())).collect();
+                let chain: Vec<String> = signer
+                    .lineage
+                    .iter()
+                    .map(|n| n.certificate.as_ref().map(|c| format!("{} ({}…)", c.subject, &c.sha256[..16])).unwrap_or_else(|| "?".into()))
+                    .collect();
                 let mut f = finding(Section::Provenance, "android.key-rotation", Confidence::Verified, Severity::Info)
                     .param("count", signer.lineage.len())
                     .param("chain", chain.join(" → "))
                     .param("scheme", name);
                 for node in &signer.lineage {
                     if let Some(certificate) = &node.certificate {
-                        f = f.evidence(Evidence::bytes(container, scheme.offset, 4, json!({
-                            "sha256": certificate.sha256,
-                            "flags": node.flags,
-                            "signed_by_previous": node.signed_by_previous.as_ref().map(Check::as_str),
-                        })));
+                        f = f.evidence(Evidence::bytes(
+                            container,
+                            scheme.offset,
+                            4,
+                            json!({
+                                "sha256": certificate.sha256,
+                                "flags": node.flags,
+                                "signed_by_previous": node.signed_by_previous.as_ref().map(Check::as_str),
+                            }),
+                        ));
                     }
                 }
                 out.finding(f);
@@ -230,10 +276,15 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
     let has_block_scheme = !schemes.is_empty();
     if v1.is_none() && !has_block_scheme {
         out.finding(
-            finding(Section::Provenance, "android.unsigned", Confidence::Verified, if is_bundle { Severity::Info } else { Severity::Medium })
-                .param("format", if is_bundle { "app bundle" } else { "APK" })
-                .reference("MASVS-RESILIENCE-2")
-                .evidence(Evidence::whole(container, "no META-INF/*.SF and no APK Signing Block")),
+            finding(
+                Section::Provenance,
+                "android.unsigned",
+                Confidence::Verified,
+                if is_bundle { Severity::Info } else { Severity::Medium },
+            )
+            .param("format", if is_bundle { "app bundle" } else { "APK" })
+            .reference("MASVS-RESILIENCE-2")
+            .evidence(Evidence::whole(container, "no META-INF/*.SF and no APK Signing Block")),
         );
     }
     if !is_bundle && v1.is_some() && !has_block_scheme {
@@ -266,7 +317,10 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
             stripped.push("v3");
         }
     }
-    if schemes.iter().filter(|s| s.id == sigblock::ID_V2).flat_map(|s| s.signers.iter()).any(|s| s.stripping_protection == Some(3)) && !scheme_present(sigblock::ID_V3) && !stripped.contains(&"v3") {
+    if schemes.iter().filter(|s| s.id == sigblock::ID_V2).flat_map(|s| s.signers.iter()).any(|s| s.stripping_protection == Some(3))
+        && !scheme_present(sigblock::ID_V3)
+        && !stripped.contains(&"v3")
+    {
         stripped.push("v3");
     }
     if !stripped.is_empty() {
@@ -279,9 +333,16 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
     }
     // The same signer must stand behind every scheme. With key rotation, v3 may use a newer
     // certificate as long as its history contains the older one.
-    let v1_set: BTreeSet<&str> = v1.iter().flat_map(|v| v.signers.iter()).filter_map(|s| s.signer_certificate.as_ref()).map(|c| c.sha256.as_str()).collect();
+    let v1_set: BTreeSet<&str> =
+        v1.iter().flat_map(|v| v.signers.iter()).filter_map(|s| s.signer_certificate.as_ref()).map(|c| c.sha256.as_str()).collect();
     let set_of = |id: u32| -> BTreeSet<&str> {
-        schemes.iter().filter(|s| s.id == id).flat_map(|s| s.signers.iter()).filter_map(|s| s.certificates.first()).map(|c| c.sha256.as_str()).collect()
+        schemes
+            .iter()
+            .filter(|s| s.id == id)
+            .flat_map(|s| s.signers.iter())
+            .filter_map(|s| s.certificates.first())
+            .map(|c| c.sha256.as_str())
+            .collect()
     };
     let v2_set = set_of(sigblock::ID_V2);
     let lineage: BTreeSet<&str> = schemes
@@ -323,7 +384,9 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
                 name => format!("{name} (0x{id:08x})"),
             })
             .collect();
-        let mut f = finding(Section::Provenance, "android.signing-block-extras", Confidence::Verified, Severity::Info).param("count", names.len()).param("blocks", listed(&names, 8));
+        let mut f = finding(Section::Provenance, "android.signing-block-extras", Confidence::Verified, Severity::Info)
+            .param("count", names.len())
+            .param("blocks", listed(&names, 8));
         for (id, size) in other_blocks.iter().take(8) {
             f = f.evidence(Evidence::field(container, format!("APK Signing Block id 0x{id:08x}"), json!({ "size": size })));
         }
@@ -376,7 +439,8 @@ pub fn run(package: &Package, manifest: &Manifest, out: &mut Output) -> Vec<Stri
         })
     };
     let min_sdk = manifest.min_sdk.unwrap_or(1);
-    let (accepted, reasons) = install_check(&verified_schemes, &failed_schemes, v1.is_some(), has_block_scheme, !stripped.is_empty(), min_sdk);
+    let (accepted, reasons) =
+        install_check(&verified_schemes, &failed_schemes, v1.is_some(), has_block_scheme, !stripped.is_empty(), min_sdk);
     out.fact(
         container,
         "android.signing",
@@ -462,7 +526,10 @@ fn certificate_findings(container: &Artifact, certificate: &Certificate, used_by
                 .evidence(evidence()),
         );
     }
-    if certificate.signature_algorithm.starts_with("MD5") || certificate.signature_algorithm.starts_with("MD2") || certificate.signature_algorithm.starts_with("SHA1") {
+    if certificate.signature_algorithm.starts_with("MD5")
+        || certificate.signature_algorithm.starts_with("MD2")
+        || certificate.signature_algorithm.starts_with("SHA1")
+    {
         out.finding(
             finding(Section::Provenance, "android.weak-certificate-digest", Confidence::Verified, Severity::Low)
                 .param("algorithm", certificate.signature_algorithm.clone())
@@ -521,7 +588,12 @@ fn archive_checks(container: &Artifact, bytes: &[u8], archive: &zipraw::Archive,
         out.finding(
             finding(Section::Anomalies, "android.zip-trailing-data", Confidence::Verified, Severity::Medium)
                 .param("bytes", archive.trailing_bytes)
-                .evidence(Evidence::bytes(container, archive.eocd_offset + 22 + u64::from(archive.comment_len), archive.trailing_bytes, json!(null))),
+                .evidence(Evidence::bytes(
+                    container,
+                    archive.eocd_offset + 22 + u64::from(archive.comment_len),
+                    archive.trailing_bytes,
+                    json!(null),
+                )),
         );
     }
     let flagged: Vec<&zipraw::Entry> = archive.entries.iter().filter(|e| e.flags & 1 != 0 || !matches!(e.method, 0 | 8)).collect();

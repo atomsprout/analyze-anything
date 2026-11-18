@@ -9,7 +9,6 @@ use crate::strpool::decode_mutf8;
 const MAX_STRING: usize = 64 * 1024;
 const MAX_LISTED: usize = 50;
 const ACC_NATIVE: u32 = 0x100;
-const NO_INDEX: u32 = 0xffff_ffff;
 
 /// A platform API whose mere presence in the method table is worth reporting.
 pub struct Api {
@@ -126,10 +125,6 @@ impl<'a> Tables<'a> {
         let limit = rest.len().min(MAX_STRING);
         let end = rest[..limit].iter().position(|b| *b == 0).unwrap_or(limit);
         Some(&rest[..end])
-    }
-
-    fn string(&self, index: u32) -> Option<String> {
-        self.string_bytes(index).map(decode_mutf8)
     }
 
     fn type_bytes(&self, index: u32) -> Option<&'a [u8]> {
@@ -267,7 +262,9 @@ pub fn parse(data: &[u8]) -> Option<Dex> {
             let Some(name) = tables.string_bytes(name_idx) else { continue };
             for api_index in candidates {
                 let api = &APIS[*api_index];
-                if (api.method == "*" || api.method.as_bytes() == name) && hits.insert((*api_index, String::from_utf8_lossy(name).into_owned())) {
+                if (api.method == "*" || api.method.as_bytes() == name)
+                    && hits.insert((*api_index, String::from_utf8_lossy(name).into_owned()))
+                {
                     dex.api_hits.push((*api_index, i as u32, format!("{}->{}", api.class, String::from_utf8_lossy(name))));
                 }
             }
@@ -296,7 +293,6 @@ pub fn parse(data: &[u8]) -> Option<Dex> {
             }
         }
     }
-    let _ = NO_INDEX;
     Some(dex)
 }
 
@@ -435,7 +431,7 @@ pub mod tests {
             out.extend_from_slice(&name.to_le_bytes());
         }
         let mut class_def = Vec::new();
-        for v in [0u32, 1, 5, interfaces_off as u32, NO_INDEX, 0, class_data_off as u32, 0] {
+        for v in [0u32, 1, 5, interfaces_off as u32, 0xffff_ffff, 0, class_data_off as u32, 0] {
             class_def.extend_from_slice(&v.to_le_bytes());
         }
         out.extend_from_slice(&class_def);

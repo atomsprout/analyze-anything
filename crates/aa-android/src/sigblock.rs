@@ -223,7 +223,14 @@ impl<'a> ContentDigests<'a> {
     pub fn new(data: &'a [u8], archive: &Archive, block_start: u64) -> Option<Self> {
         let (block_start, cd, eocd) =
             (usize::try_from(block_start).ok()?, usize::try_from(archive.cd_offset).ok()?, usize::try_from(archive.eocd_offset).ok()?);
-        (block_start <= cd && cd <= eocd && eocd + 22 <= data.len()).then_some(ContentDigests { data, block_start, cd, eocd, sha256: None, sha512: None })
+        (block_start <= cd && cd <= eocd && eocd + 22 <= data.len()).then_some(ContentDigests {
+            data,
+            block_start,
+            cd,
+            eocd,
+            sha256: None,
+            sha512: None,
+        })
     }
 
     fn compute<D: Digest>(&self) -> Vec<u8> {

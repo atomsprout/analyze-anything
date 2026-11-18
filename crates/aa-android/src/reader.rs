@@ -27,16 +27,8 @@ impl<'a> Reader<'a> {
         Some(slice)
     }
 
-    pub fn skip(&mut self, len: usize) -> Option<()> {
-        self.bytes(len).map(|_| ())
-    }
-
     pub fn u8(&mut self) -> Option<u8> {
         self.bytes(1).map(|b| b[0])
-    }
-
-    pub fn u16(&mut self) -> Option<u16> {
-        self.bytes(2).map(|b| u16::from_le_bytes([b[0], b[1]]))
     }
 
     pub fn u32(&mut self) -> Option<u32> {
@@ -95,7 +87,7 @@ mod tests {
     fn reads_stop_at_the_end() {
         let mut r = Reader::new(&[1, 0, 0, 0, 5]);
         assert_eq!(r.u32(), Some(1));
-        assert_eq!(r.u16(), None);
+        assert_eq!(r.u64(), None);
         assert_eq!(r.u8(), Some(5));
         assert_eq!(r.u8(), None);
         assert_eq!(u32_at(&[1, 2, 3], usize::MAX), None);
