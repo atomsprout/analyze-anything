@@ -1,6 +1,6 @@
 # Analyze Anything — 调研与规划
 
-> 状态：规划稿 v0.2（2026-11-18）
+> 状态：规划稿 v0.3（2026-11-18）
 > 一句话定位：**输入电脑上的任意产物（文件 / 文件夹 / 压缩包 / 安装包 / 应用包），输出一份可靠、可溯源、多维度的分析报告（PDF / HTML / Markdown / TXT）。** 使用 Rust 开发，单一静态二进制，离线可用。
 
 ---
@@ -27,7 +27,6 @@
 | 能力 | 首选 crate | 许可证 | 备注 |
 |---|---|---|---|
 | ELF / PE / Mach-O 解析 | `goblin` 0.10.7（辅以 `object` 0.41） | MIT | 成熟，fat binary 支持 |
-| 备选：Craft Anything 的底层库 | `storytold/craft-libs`（craft-pe / craft-macho / craft-elf / craft-dex / craft-zip / craft-plist / craft-sniff） | 待核实（主仓库为 MIT OR Apache-2.0） | 仅 git 依赖、未发布到 crates.io、更新极快；优点是带宽容模式（lenient）和 serde 输出，且 DEX 比 crates.io 上的更新。M0 评估后决定是否按 rev 锁定引用 |
 | Apple 代码签名 / entitlements | `apple-codesign` 0.29 | MPL-2.0 | 依赖较重，放在 feature 后面；或自行解析 SuperBlob |
 | plist / provisioning profile | `plist` 1.10 + `cms` + `x509-parser` 0.18 | MIT / Apache | mobileprovision 是 CMS 包裹的 plist |
 | DMG | `apple-dmg` 0.5 / `dmgwiz` 1.1 + `hfsplus` 0.4 + `apfs` 0.4 | MIT | **风险点**：APFS、加密 DMG 覆盖度需 spike 验证 |
@@ -243,7 +242,7 @@ IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取�
 
 | 里程碑 | 内容 | 验收 |
 |---|---|---|
-| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、CI（fmt/clippy/test/deny）；**5 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 ⑤ `craft-libs` 与 goblin / apk-info 的对比选型 | `aa analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 |
+| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、CI（fmt/clippy/test/deny）；**4 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 | `aa analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 |
 | **M1 通用层 + 四种渲染**（约 2 周） | 产物树、zip/tar/7z 递归解包与限额、通用内容分析（字符串、URL、密钥、熵）、规则引擎、md/txt/html/pdf 渲染器 | 对任意文件夹/压缩包产出完整四格式报告 |
 | **M2 原生二进制**（约 2 周） | PE / Mach-O / ELF：头、节、导入导出、加固、符号、语言/编译器/框架识别、依赖库 | 与 `otool`/`readelf`/`dumpbin` 差分一致 |
 | **M3 Apple 全家桶**（约 2–3 周） | `.app` / `.ipa` / `.dmg` / `.pkg`：Info.plist、代码签名校验、entitlements、provisioning profile、PrivacyInfo、frameworks、FairPlay 加密检测 | 与 `codesign -dvvv --entitlements` 差分一致 |
@@ -290,13 +289,16 @@ IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取�
 
 ---
 
-## 11. 待你确认的事项（均已给出默认选择，不阻塞开工）
+## 11. 已确定的决策
+
+- **Craft Anything 只作为代码参考**（2026-11-18 确认）：不 fork、不依赖其主仓库或 `craft-libs`。可以阅读其实现来理解格式细节和设计思路（证据模型、宽容解析、畸形输入处理），我们的代码自行编写，依赖只取 crates.io 上的库。若确实改编了其中的具体代码片段，按 MIT / Apache-2.0 要求在 NOTICE 中署名。
+
+## 12. 待你确认的事项（均已给出默认选择，不阻塞开工）
 
 1. **命令名**：默认 `aa`（包名 `analyze-anything`）。
 2. **格式优先级**：默认 M3(Apple) → M4(Android) → M5(Windows)；可按你的实际工作频率调整。
 3. **报告语言**：默认中英双语可切换，中文为默认。
 4. **AI 解读层**：默认 v1.0 不含，v1.x 作为可选项加入。
-5. **是否复用 Craft Anything 的代码**：默认"借鉴设计、不直接依赖主仓库"（它是 early alpha，接口变动快，且整体面向重建而非报告）；底层的 `craft-libs` 在 M0 评估，合适则按 commit 锁定引用并在 NOTICE 中署名。
 
 ---
 
