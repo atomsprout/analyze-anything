@@ -109,6 +109,7 @@ pub fn answer(provider: Provider, status: u16, body: &str) -> Result<Answer, Str
     if !(200..300).contains(&status) {
         let hint = match status {
             401 | 403 => " (is the API key right?)",
+            402 => " (the account has no balance or credit)",
             404 => " (are the address and the model name right?)",
             429 => " (rate limit or quota; try again later)",
             _ => "",

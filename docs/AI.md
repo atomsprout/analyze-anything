@@ -40,6 +40,15 @@ api_key_env = "EXAMPLE_API_KEY"
 ```
 
 ```toml
+# DeepSeek
+[ai]
+provider = "openai-compatible"
+base_url = "https://api.deepseek.com/v1"
+model = "deepseek-chat"
+api_key_env = "DEEPSEEK_API_KEY"
+```
+
+```toml
 # 本机的模型服务，不需要密钥
 [ai]
 provider = "openai-compatible"
