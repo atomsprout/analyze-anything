@@ -13,7 +13,7 @@ workspace = true
 default = ["pdf", "ai"]
 # PDF output. Leave it out (`--no-default-features`) for a much smaller binary.
 pdf = ["aa-app/pdf"]
-# `aa interpret`: asks a language model to explain a report. The only part that uses the network;
+# `analyze-anything interpret`: asks a language model to explain a report. The only part that uses the network;
 # leave it out and the program cannot connect to anything.
 ai = ["dep:aa-interpret"]
 
@@ -29,5 +29,5 @@ serde_json.workspace = true
 clap.workspace = true
 
 [[bin]]
-name = "aa"
+name = "analyze-anything"
 path = "src/main.rs"

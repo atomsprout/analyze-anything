@@ -127,7 +127,7 @@ capped (16 signers, 64 items per list, 400 000 ZIP entries).
 
 ## Cost
 
-Release build, 4 loaded cores, whole `aa analyze` run including all other analyzers: Signal
+Release build, 4 loaded cores, whole `analyze-anything analyze` run including all other analyzers: Signal
 (104 MB, 5 020 entries, four signatures) 3.1 s; Immich (187 MB) 2.3 s; Droid-ify 0.2 s. The
 signature work is two passes over the file (v1 entry digests, v2+ chunk digests), single-threaded.
 

@@ -1,4 +1,4 @@
-//! `aa selftest`: analyzes samples built into the program and compares the results with values
+//! `analyze-anything selftest`: analyzes samples built into the program and compares the results with values
 //! recorded when the samples were made. It shows that this build, on this machine, unpacks,
 //! hashes, analyzes and renders as intended, without needing any file from the user.
 

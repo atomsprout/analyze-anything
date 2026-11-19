@@ -1,6 +1,6 @@
 """Compares Mach-O imports and exports with dyld_info and nm on binaries already on this Mac.
 
-    python3 tools/native-compare/macos_symbols.py path/to/aa /bin/ls /Applications/Some.app/Contents/MacOS/Some [...]
+    python3 tools/native-compare/macos_symbols.py path/to/analyze-anything /bin/ls /Applications/Some.app/Contents/MacOS/Some [...]
 
 For every architecture slice of every file, what this program reports in `binary.imports` and
 `binary.exports` must agree with the system tools:

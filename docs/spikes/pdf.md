@@ -59,7 +59,7 @@ PDF 是给人读和存档的文件，**完整数据在 report.html 和 report.js
 
 机器：4 核 x86-64 Linux，release 构建。
 
-| 报告 | 页数 | PDF 大小 | `aa render --format pdf` 总耗时（含读 JSON） | 内存峰值 |
+| 报告 | 页数 | PDF 大小 | `analyze-anything render --format pdf` 总耗时（含读 JSON） | 内存峰值 |
 |---|---|---|---|---|
 | 22 个文件、43 条结论（各章都有，含恶意字符串） | 8 | 0.26 MB | 0.15 s | 约 50 MB |
 | 3,000 个文件、400 条结论 | 55 | 1.6 MB | 0.84 s | — |
@@ -71,7 +71,7 @@ debug 构建慢得多（55 页约 23 秒），所以测试里的大报告只排 
 
 二进制体积（`strip` 之后）：
 
-| 构建（工作区 release 配置：thin LTO、`codegen-units = 1`、strip） | `aa` 大小 |
+| 构建（工作区 release 配置：thin LTO、`codegen-units = 1`、strip） | `analyze-anything` 大小 |
 |---|---|
 | `cargo build --release -p aa-cli`（含 PDF） | 49.3 MB |
 | `cargo build --release -p aa-cli --no-default-features`（不含 PDF） | 10.0 MB |

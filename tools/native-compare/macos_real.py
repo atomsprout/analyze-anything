@@ -1,6 +1,6 @@
 """Compares the analyzer with codesign on real applications already on this Mac.
 
-    python3 tools/native-compare/macos_real.py path/to/aa /Applications/Some.app [more.app ...]
+    python3 tools/native-compare/macos_real.py path/to/analyze-anything /Applications/Some.app [more.app ...]
 
 For each application, and each application, extension or XPC service nested inside it, the main
 executable's signature as this program reads it must match what `codesign` reports: code

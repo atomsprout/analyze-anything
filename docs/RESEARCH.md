@@ -34,7 +34,7 @@
 | APKHunt / APKDeepLens / apkAnalyzer | Python | 各类 APK 静态扫描器，输出 HTML / PDF / SARIF | M5 的检查项清单对照 |
 | ida-pro-mcp / GhidraMCP / Open ReverseLab / Eleven | — | 把 IDA / Ghidra / x64dbg / Frida 接给 Agent 的 MCP 桥 | 与 REA 同类，交互式逆向，不出报告；与我们互补 |
 
-**这一轮的结论**：仍然没有发现"任意桌面/移动产物 → 一份带证据的完整报告"的同类；最接近的 MobSF（仅移动端、Python）和 APEX（仅移动端、IPA 只跑 3 个分析器）都不覆盖 Windows 安装包、macOS 应用和 DMG。由此新增三项计划内容：结论映射到 **OWASP MASVS / CWE** 编号（M3–M5）、**SARIF** 输出（M6）、报告清单哈希与 `aa verify`（M6）；鸿蒙 HAP 与 PyInstaller 列入 v1.x。
+**这一轮的结论**：仍然没有发现"任意桌面/移动产物 → 一份带证据的完整报告"的同类；最接近的 MobSF（仅移动端、Python）和 APEX（仅移动端、IPA 只跑 3 个分析器）都不覆盖 Windows 安装包、macOS 应用和 DMG。由此新增三项计划内容：结论映射到 **OWASP MASVS / CWE** 编号（M3–M5）、**SARIF** 输出（M6）、报告清单哈希与 `analyze-anything verify`（M6）；鸿蒙 HAP 与 PyInstaller 列入 v1.x。
 
 **空白点（我们的机会）**：目前没有一个工具同时满足 ——
 ① 以**报告**（而非 Agent 交互或软件重建）为交付物的固定流水线；② 同时覆盖 IPA / APK / Windows 安装包 / 已安装程序目录 / .app / DMG；③ 递归拆包后做**跨文件关联**；④ 纯 Rust 单文件、离线、PDF/HTML/MD/TXT 四种输出。

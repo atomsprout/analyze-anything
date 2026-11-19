@@ -1,6 +1,6 @@
 # 使用说明
 
-`aa` 对文件或文件夹做纯静态分析，输出一份带证据的报告。被分析的输入只会被读取，不会被执行、安装或加载。
+`analyze-anything` 对文件或文件夹做纯静态分析，输出一份带证据的报告。被分析的输入只会被读取，不会被执行、安装或加载。
 
 ## 构建
 
@@ -9,12 +9,12 @@ cargo build --release            # 带 PDF，约 49 MB
 cargo build --release --no-default-features   # 不带 PDF，约 10 MB
 ```
 
-需要 Rust 1.90 或更新版本。产物是 `target/release/aa`。
+需要 Rust 1.90 或更新版本。产物是 `target/release/analyze-anything`。
 
 ## 分析
 
 ```
-aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang en|zh]
+analyze-anything analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang en|zh]
 ```
 
 默认写出 `report.json`、`report.html`、`report.pdf`、`report.md`、`report.txt` 和 `manifest.json`。
@@ -50,25 +50,25 @@ aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang
 ## 其他命令
 
 ```
-aa render out/report.json -o out2 --format pdf --lang en   # 由已有报告重新渲染，不重新分析
-aa explain out/report.json <结论 ID 的前几位>               # 查看一条结论的全部证据
-aa verify out/                                             # 检查输出文件是否与 manifest.json 一致
-aa inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出），不做分析
-aa selftest                                                # 用内置样本自检：解包、哈希、分析、各格式渲染
-aa diff 旧/report.json 新/report.json                       # 对比两份报告：新增、消失、变化的结论和文件
-aa interpret out/report.json                               # 可选：让配置好的语言模型解读报告，见 AI.md
+analyze-anything render out/report.json -o out2 --format pdf --lang en   # 由已有报告重新渲染，不重新分析
+analyze-anything explain out/report.json <结论 ID 的前几位>               # 查看一条结论的全部证据
+analyze-anything verify out/                                             # 检查输出文件是否与 manifest.json 一致
+analyze-anything inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出），不做分析
+analyze-anything selftest                                                # 用内置样本自检：解包、哈希、分析、各格式渲染
+analyze-anything diff 旧/report.json 新/report.json                       # 对比两份报告：新增、消失、变化的结论和文件
+analyze-anything interpret out/report.json                               # 可选：让配置好的语言模型解读报告，见 AI.md
 ```
 
-`aa diff` 的典型用途是同一个应用的两个版本。结论按“同一条规则、输入内同一位置的文件”配对：说法相同算相同，说法不同算变化，只在一边出现算新增或消失；文件按输入内的路径和 SHA-256 比较。`--json` 输出完整结果，`--lang en` 输出英文，`--fail-on-difference` 在有差别时以退出码 3 结束。
+`analyze-anything diff` 的典型用途是同一个应用的两个版本。结论按“同一条规则、输入内同一位置的文件”配对：说法相同算相同，说法不同算变化，只在一边出现算新增或消失；文件按输入内的路径和 SHA-256 比较。`--json` 输出完整结果，`--lang en` 输出英文，`--fail-on-difference` 在有差别时以退出码 3 结束。
 
-`manifest.json` 记录每个输出文件的大小和 SHA-256。`aa verify` 会指出被改动、丢失或多出来的文件。清单本身没有签名：它能发现无意的改动；如果另外保存了清单自己的 SHA-256，也能发现有意的改动。
+`manifest.json` 记录每个输出文件的大小和 SHA-256。`analyze-anything verify` 会指出被改动、丢失或多出来的文件。清单本身没有签名：它能发现无意的改动；如果另外保存了清单自己的 SHA-256，也能发现有意的改动。
 
 ## 退出码
 
 | 码 | 含义 |
 |---|---|
 | 0 | 完成 |
-| 1 | 无法运行（输入读不了等），或 `aa verify` 发现不一致 |
+| 1 | 无法运行（输入读不了等），或 `analyze-anything verify` 发现不一致 |
 | 2 | 已运行，但分析不完整（原因在报告的“覆盖度与局限”里） |
 | 3 | 有结论达到了 `--fail-on` 指定的严重度 |
 

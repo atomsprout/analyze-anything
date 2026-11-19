@@ -1,4 +1,4 @@
-//! `aa`: the command line for Analyze Anything. A thin shell over `aa-engine` and `aa-report`:
+//! `analyze-anything`: the command line for Analyze Anything. A thin shell over `aa-engine` and `aa-report`:
 //! it reads arguments, shows progress on stderr and writes files. It holds no analysis of its own.
 
 use std::io::{IsTerminal, Write};
@@ -14,7 +14,13 @@ use clap::{Parser, Subcommand, ValueEnum};
 mod selftest;
 
 #[derive(Parser)]
-#[command(name = "aa", version, about = "Analyze any file or folder and write a report")]
+#[command(
+    name = "analyze-anything",
+    version,
+    about = "Analyze any file or folder and write a report",
+    override_usage = "analyze-anything <PATH> [OPTIONS]\n       analyze-anything <COMMAND>",
+    after_help = "Give a file or folder and it is analyzed: `analyze-anything App.ipa` writes the report into App.ipa.report.\nTo analyze something named like a command, write its path: `analyze-anything ./diff`."
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -45,14 +51,14 @@ enum Command {
     Selftest,
     /// Write other formats from an existing report.json, without analyzing again
     Render {
-        /// A report.json written by `aa analyze`
+        /// A report.json written by `analyze-anything analyze`
         report: PathBuf,
         #[command(flatten)]
         output: Output,
     },
     /// Show one finding of a report in full: its text and every piece of evidence
     Explain {
-        /// A report.json written by `aa analyze`
+        /// A report.json written by `analyze-anything analyze`
         report: PathBuf,
         /// The finding's id, or its first characters as the readable reports print them
         id: String,
@@ -62,7 +68,7 @@ enum Command {
     },
     /// Check that the files in an output folder are the ones the run wrote, unchanged
     Verify {
-        /// A folder written by `aa analyze` or `aa render`
+        /// A folder written by `analyze-anything analyze` or `analyze-anything render`
         dir: PathBuf,
     },
     /// Compare two reports: findings and files added, removed and changed from the first to the second
@@ -92,7 +98,7 @@ enum Command {
 #[cfg(feature = "ai")]
 #[derive(clap::Args)]
 struct InterpretArgs {
-    /// A report.json written by `aa analyze`
+    /// A report.json written by `analyze-anything analyze`
     report: PathBuf,
     /// Folder to write ai.json and ai.md into [default: the report's folder]
     #[arg(short, long)]
@@ -153,9 +159,9 @@ struct LimitArgs {
 
 #[derive(clap::Args)]
 struct Output {
-    /// Folder to write the report files into
-    #[arg(short, long, default_value = "out")]
-    out: PathBuf,
+    /// Folder to write the report files into [default: <name of the input>.report]
+    #[arg(short, long)]
+    out: Option<PathBuf>,
     /// Formats to write, comma separated
     #[arg(short, long, value_delimiter = ',', default_value = DEFAULT_FORMATS)]
     format: Vec<FormatArg>,
@@ -253,11 +259,39 @@ fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
     for path in &output.font {
         fonts.push(std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?);
     }
-    // The files and the manifest that lets `aa verify` tell later whether they changed.
-    for path in aa_app::export::write_folder(report, &output.out, &kinds, lang, &fonts)? {
+    // The files and the manifest that lets `analyze-anything verify` tell later whether they changed.
+    let out = out_dir(report, output);
+    for path in aa_app::export::write_folder(report, &out, &kinds, lang, &fonts)? {
         println!("{}", path.display());
     }
     Ok(())
+}
+
+/// Where the report files go: the folder that was asked for, else one named after the input.
+fn out_dir(report: &Report, output: &Output) -> PathBuf {
+    match &output.out {
+        Some(out) => out.clone(),
+        None => {
+            // Only the last part of the name: an input name never chooses a folder elsewhere.
+            let name = Path::new(&report.input.name).file_name().map(|name| name.to_string_lossy().into_owned());
+            let name = name.filter(|name| !name.is_empty() && name != "." && name != "..").unwrap_or_else(|| "input".to_string());
+            PathBuf::from(format!("{name}.report"))
+        }
+    }
+}
+
+/// The arguments as given, with `analyze` put in when the first one is not a command: a bare
+/// path means "analyze this".
+fn arguments() -> Vec<std::ffi::OsString> {
+    use clap::CommandFactory;
+    let mut arguments: Vec<std::ffi::OsString> = std::env::args_os().collect();
+    let Some(first) = arguments.get(1).map(|first| first.to_string_lossy().into_owned()) else { return arguments };
+    let command = Cli::command();
+    let known = command.get_subcommands().any(|sub| sub.get_name() == first) || first == "help";
+    if !known && !first.starts_with('-') {
+        arguments.insert(1, "analyze".into());
+    }
+    arguments
 }
 
 fn limits(args: &LimitArgs) -> Limits {
@@ -405,7 +439,7 @@ fn interpret(args: InterpretArgs) -> Result<u8, String> {
         std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
         eprintln!("{}", path.display());
     }
-    // In a folder `aa analyze` wrote, list the new files so that `aa verify` still accepts it.
+    // In a folder `analyze-anything analyze` wrote, list the new files so that `analyze-anything verify` still accepts it.
     if let Ok(mut listed) = manifest::Manifest::load(&dir) {
         for (name, _) in &files {
             listed.add(&dir, name).map_err(|e| e.to_string())?;
@@ -470,7 +504,7 @@ fn run(cli: Cli) -> Result<u8, String> {
 }
 
 fn main() -> ExitCode {
-    match run(Cli::parse()) {
+    match run(Cli::parse_from(arguments())) {
         Ok(code) => ExitCode::from(code),
         Err(message) => {
             eprintln!("error: {message}");

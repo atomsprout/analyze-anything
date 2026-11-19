@@ -27,7 +27,7 @@
 
 | 项目 | 大小 |
 |---|---|
-| 命令行 `aa`（含 PDF） | 45 MB |
+| 命令行 `analyze-anything`（含 PDF） | 45 MB |
 | 桌面版可执行文件（含 PDF、WebView 外壳） | 50 MB |
 | `Analyze Anything.app` | 48 MB（磁盘占用） |
 | DMG | 26 MB |

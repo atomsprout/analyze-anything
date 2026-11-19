@@ -5,4 +5,4 @@ They run in the "Native comparison" GitHub Actions workflow (started by hand), o
 have those tools. Each script prints one line per check and exits non-zero if any check failed.
 
     python3 tools/native-compare/macos.py   path/to/aa
-    python   tools/native-compare/windows.py path\to\aa.exe
+    python   tools/native-compare/windows.py path\to\analyze-anything.exe

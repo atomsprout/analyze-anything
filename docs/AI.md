@@ -1,12 +1,12 @@
 # AI 解读（可选）
 
-`aa interpret` 把一份已经写好的报告交给语言模型，换回一段通俗的说明：这是什么、值得注意什么、接下来可以做什么。它不参与分析，报告本身不会被改动。
+`analyze-anything interpret` 把一份已经写好的报告交给语言模型，换回一段通俗的说明：这是什么、值得注意什么、接下来可以做什么。它不参与分析，报告本身不会被改动。
 
 默认关闭：没有配置服务之前，程序不会连接任何地方。这也是整个程序里唯一会联网的部分。
 
 ```
-aa analyze 某应用.ipa -o out
-aa interpret out/report.json            # 写出 out/ai.json 和 out/ai.md，并把说明打印出来
+analyze-anything analyze 某应用.ipa -o out
+analyze-anything interpret out/report.json            # 写出 out/ai.json 和 out/ai.md，并把说明打印出来
 ```
 
 Homebrew 安装后命令写作 `analyze-anything interpret …`。
@@ -63,10 +63,10 @@ model = "qwen3"
 每一项都可以在命令行上临时指定，优先于配置文件：
 
 ```
-aa interpret out/report.json --provider anthropic --model claude-sonnet-5-5
-aa interpret out/report.json --provider openai-compatible --base-url http://localhost:11434/v1 --model qwen3
-aa interpret out/report.json --lang zh        # 用中文写；默认英文
-aa interpret out/report.json --dry-run        # 只打印将要发送的内容，什么都不发
+analyze-anything interpret out/report.json --provider anthropic --model claude-sonnet-5-5
+analyze-anything interpret out/report.json --provider openai-compatible --base-url http://localhost:11434/v1 --model qwen3
+analyze-anything interpret out/report.json --lang zh        # 用中文写；默认英文
+analyze-anything interpret out/report.json --dry-run        # 只打印将要发送的内容，什么都不发
 ```
 
 ## 发送什么
@@ -82,9 +82,9 @@ aa interpret out/report.json --dry-run        # 只打印将要发送的内容�
 ## 可靠性是怎么保住的
 
 - 模型被要求每句话都列出它依据的结论。程序逐句核对：没有引用结论的、引用了不存在或没发送过的结论的，整句丢掉，并在结果里记下丢了几句。
-- 留下来的每句话后面都带结论 ID，用 `aa explain out/report.json <ID>` 可以看到那条结论和它的全部证据。
+- 留下来的每句话后面都带结论 ID，用 `analyze-anything explain out/report.json <ID>` 可以看到那条结论和它的全部证据。
 - 输出是单独的 `ai.json` 和 `ai.md`，开头写明“AI 生成”，不混进报告正文。报告是依据，两者不一致时以报告为准。
-- 输出文件夹里有 `manifest.json` 时，新写的两个文件会登记进去，`aa verify` 照常通过。
+- 输出文件夹里有 `manifest.json` 时，新写的两个文件会登记进去，`analyze-anything verify` 照常通过。
 
 核对只能保证每句话**指向了**真实存在的结论，不能保证模型对这条结论的**理解**是对的。请把它当作读报告的向导，而不是结论本身。同一份报告两次解读的措辞一般不同。
 

@@ -17,7 +17,7 @@
 | M3 Apple | 完成 | 9 个真实 DMG 与 7-Zip 逐文件一致；587 个已签名二进制与 `rcodesign` 一致 |
 | M4 Windows | 完成 | NSIS / Inno / MSI / CAB 与 7-Zip、`innoextract`、`msiextract`、`cabextract` 逐文件一致；签名与 `osslsigncode` 一致 |
 | M5 Android | 完成 | 13 个真实 APK 与 `aapt`、`apksigner`、`dexdump` 一致；21 个签名样本的接受 / 拒绝结果与 `apksigner` 一致 |
-| M6 关联与打磨 | 完成，未打版本标签 | 概览、结构统计、组件清单、SARIF、CycloneDX、`aa verify`、模糊测试；发布流程已在 5 个目标平台上试跑成功（构建、发布模式测试、产物自检、打包），但没有打版本标签，也没有创建正式发布 |
+| M6 关联与打磨 | 完成，未打版本标签 | 概览、结构统计、组件清单、SARIF、CycloneDX、`analyze-anything verify`、模糊测试；发布流程已在 5 个目标平台上试跑成功（构建、发布模式测试、产物自检、打包），但没有打版本标签，也没有创建正式发布 |
 
 **与原规划的偏差**
 
@@ -25,7 +25,7 @@
 - **解析器多为自研**：二进制、DEX、AXML、Authenticode、Apple 签名块都没有用 §3 / RESEARCH 里列的现成库，原因是需要字节偏移作证据，且现成库在畸形输入上会崩溃或给错结果。现成库只在测试里当对照。
 - **风险分级而非单一分数**：给出关注度等级（高 / 中 / 低 / 无，取结论中的最高严重度）和各级数量，并说明这不是安全性判定。没有做加权的单一分数，因为权重没有可靠依据。
 - **crate 划分**：实际是 12 个（`aa-core`、`aa-engine`、`aa-unpack`、`aa-content`、`aa-binary`、`aa-apple`、`aa-windows`、`aa-android`、`aa-correlate`、`aa-export`、`aa-report`、`aa-cli`），没有单独的 `aa-vfs`、`aa-detect`、`aa-rules`。
-- **规划内的功能都已实现**：包括 `aa inspect`、`aa selftest`、`--rules`（YARA）、`--font`、TLSH 相似度哈希、分析器与解包的超时。超时的实现方式是放弃等待而不是终止线程，细节见 LIMITATIONS。
+- **规划内的功能都已实现**：包括 `analyze-anything inspect`、`analyze-anything selftest`、`--rules`（YARA）、`--font`、TLSH 相似度哈希、分析器与解包的超时。超时的实现方式是放弃等待而不是终止线程，细节见 LIMITATIONS。
 - **可执行文件体积**：带 PDF 约 49 MB，比 §5.3 估计的大（Typst 加字体约 39 MB）；不带 PDF 约 10 MB。
 - **差分测试的形式**：对照是在开发时用脚本对真实样本跑的，只有小样本的对照结果写成了自动测试；CI 里不调用外部工具。
 - **CI 在 Linux、macOS、Windows 上通过**（格式、lint、全部测试、许可证与安全公告检查）。另有一个手动触发的对照流程，在 macOS 和 Windows 上用 `codesign`、`hdiutil`、`pkgbuild`、`Get-AuthenticodeSignature`、`makecab` 核对结果，共 230 项全部一致，细节见 LIMITATIONS。
@@ -46,7 +46,7 @@
 | 输出 | `report.json` 为唯一事实来源，渲染为 PDF / HTML / Markdown / TXT |
 | 可靠性 | 每条结论带证据与置信度；事实抽取不使用 LLM；固定的"覆盖度与局限"章节 |
 
-**按默认值定下、可随时改的事项**：命令名 `aa`；报告中英可切换、默认中文；AI 解读层不进 v1.0。
+**按默认值定下、可随时改的事项**：命令名 `analyze-anything`；报告中英可切换、默认中文；AI 解读层不进 v1.0。
 
 **三个阶段**
 
@@ -84,13 +84,13 @@
 ### 1.3 CLI 形态
 
 ```
-aa analyze <PATH> [-o out/] [--format pdf,html,md,txt,json] [--lang zh|en]
+analyze-anything analyze <PATH> [-o out/] [--format pdf,html,md,txt,json] [--lang zh|en]
                   [--profile quick|standard|deep] [--rules extra.yar] [--offline]
-aa inspect <PATH> --json          # 只做识别 + 结构树，给 Agent/脚本用
-aa render report.json --format pdf # 由已有 IR 重新渲染，不重新分析
-aa explain <FINDING_ID>           # 打印某条结论的完整证据
-aa verify out/                    # 校验输出目录的清单哈希，确认报告未被改动
-aa selftest                       # 用内置样本自检
+analyze-anything inspect <PATH> --json          # 只做识别 + 结构树，给 Agent/脚本用
+analyze-anything render report.json --format pdf # 由已有 IR 重新渲染，不重新分析
+analyze-anything explain <FINDING_ID>           # 打印某条结论的完整证据
+analyze-anything verify out/                    # 校验输出目录的清单哈希，确认报告未被改动
+analyze-anything selftest                       # 用内置样本自检
 ```
 
 CLI 约定：结果写文件，进度与诊断写 stderr；所有子命令支持 `--json`；退出码区分"成功 / 部分分析器失败 / 输入不可读"；`--fail-on <severity>` 供 CI 使用。
@@ -111,7 +111,7 @@ CLI 约定：结果写文件，进度与诊断写 stderr；所有子命令支持
 1. **证据优先的数据模型**。报告中每一条结论（Finding）都必须携带：
    - `evidence[]`：来源文件（在解包树中的完整路径）、字节偏移 / 结构字段名、原始值、该文件的 SHA-256
    - `method`：由哪个分析器、哪条规则（含规则版本）得出
-   - `id`：结论规范化 JSON 的 SHA-256（借鉴 Craft Anything）—— 同一观察永远得到同一 ID，任何篡改可检测，也让 `aa explain <ID>` 和两份报告的 diff 变得简单
+   - `id`：结论规范化 JSON 的 SHA-256（借鉴 Craft Anything）—— 同一观察永远得到同一 ID，任何篡改可检测，也让 `analyze-anything explain <ID>` 和两份报告的 diff 变得简单
    - `confidence`：三级（与 Craft Anything 的 Observed / Derived / Inferred 对应，便于将来互通）——
      - **Verified 已验证**：直接从规范定义的结构读出或经密码学校验（如"签名校验通过""Info.plist 中 CFBundleIdentifier = …"）
      - **Derived 推导**：由已验证事实确定性推出（如"链接了 libswiftCore → 含 Swift 代码"）
@@ -170,7 +170,7 @@ analyze-anything/
 │   ├── aa-correlate   # 跨产物关联与评估
 │   ├── aa-report      # 渲染器：json / md / txt / html / pdf（typst），i18n
 │   ├── aa-engine      # 门面：把上面各层串成一个调用入口，CLI 与桌面版都只依赖它
-│   └── aa-cli         # 二进制 `aa`（薄壳：解析参数、显示进度、写文件）
+│   └── aa-cli         # 二进制 `analyze-anything`（薄壳：解析参数、显示进度、写文件）
 ├── apps/              # 第二阶段：桌面版放这里，复用 aa-engine
 ├── rules/             # 版本化的规则数据（YAML/YAR），编译期内嵌，也可运行时覆盖
 ├── testdata/          # 自建的最小样本 + 期望输出（golden）
@@ -196,7 +196,7 @@ trait Renderer { fn render(&self, report: &Report, opts: &RenderOpts) -> Result<
 2. **统一入口** `aa_engine::analyze(input, options, &mut dyn ProgressSink) -> Result<Report>`。
 3. **进度是结构化事件**（阶段开始/结束、当前文件、已完成/总量、警告），CLI 渲染成进度条，桌面版渲染成界面。
 4. **可取消**：长任务定期检查取消标记，取消后返回已完成部分并记为"局限"。
-5. **`report.json` 自包含**：桌面版和 `aa render` 一样，只凭它就能展示和重新导出，不需要原始文件。
+5. **`report.json` 自包含**：桌面版和 `analyze-anything render` 一样，只凭它就能展示和重新导出，不需要原始文件。
 6. **产物树可按需读取**：提供"按节点 ID 取字节 / 取十六进制片段"的接口，供桌面版点开证据时使用。
 7. **配置是数据**：限额、档位、规则路径都在 `Options` 结构里，不依赖环境变量或全局状态。
 
@@ -264,13 +264,13 @@ IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取�
 
 | 里程碑 | 内容 | 验收 | 版本 |
 |---|---|---|---|
-| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、`aa-engine` 入口与进度事件、CI（fmt/clippy/test/deny）；**4 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 | `aa analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 | — |
+| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、`aa-engine` 入口与进度事件、CI（fmt/clippy/test/deny）；**4 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 | `analyze-anything analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 | — |
 | **M1 通用层 + 四种渲染**（约 2 周） | 产物树、zip/tar/7z 递归解包与限额、通用内容分析（字符串、URL、密钥、熵）、规则引擎、md/txt/html/pdf 渲染器 | 对任意文件夹/压缩包产出完整四格式报告 | v0.1 |
 | **M2 原生二进制**（约 2 周） | PE / Mach-O / ELF：头、节、导入导出、加固、符号、语言/编译器/框架识别、依赖库 | 与 `otool`/`readelf`/`dumpbin` 差分一致 | v0.2 |
 | **M3 Apple 全家桶**（约 2–3 周） | `.app` / `.ipa` / `.dmg` / `.pkg`：Info.plist、代码签名校验、entitlements、provisioning profile、PrivacyInfo、frameworks、FairPlay 加密检测；结论映射 OWASP MASVS / CWE 编号 | 与 `codesign -dvvv --entitlements` 差分一致 | v0.3 |
 | **M4 Windows**（约 3–4 周） | Authenticode、版本资源、manifest、.NET、NSIS / Inno / MSI 安装包语义（安装了什么、写了哪些注册表、是否自启动）、已安装目录、Electron(asar)；PE 结构合法性校验与加壳初筛、按类别归纳导入 API 的行为画像（网络 / 加密 / 进程间通信 / 持久化）；内核驱动（.sys）识别与基础信息 | 与 `sigcheck` / 7-Zip 清单差分一致 | v0.4 |
 | **M5 Android**（约 2–3 周） | APK / AAB / XAPK：Manifest、resources、签名 v1–v4 校验、DEX 结构、native libs、SDK/Tracker 指纹、加壳识别；结论映射 OWASP MASVS / CWE 编号 | 与 `apksigner` / `aapt2` 差分一致；与 MobSF 报告项对照 | v0.5 |
-| **M6 关联、评估与打磨**（约 2–3 周） | 跨产物关联、风险评分、SBOM 导出、SARIF 输出、输出清单哈希与 `aa verify`、报告视觉打磨、fuzz、性能、发布（各平台预编译二进制） | 全部 golden / 差分 / fuzz 通过；三平台预编译包 | **v1.0** |
+| **M6 关联、评估与打磨**（约 2–3 周） | 跨产物关联、风险评分、SBOM 导出、SARIF 输出、输出清单哈希与 `analyze-anything verify`、报告视觉打磨、fuzz、性能、发布（各平台预编译二进制） | 全部 golden / 差分 / fuzz 通过；三平台预编译包 | **v1.0** |
 
 合计 14–18 周。M3 / M4 / M5 相互独立，顺序为 Apple → Windows → Android。
 

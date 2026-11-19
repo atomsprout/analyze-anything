@@ -28,7 +28,7 @@ no supported file system `dmg.no-filesystem`.
 
 ## Verification on real images
 
-Method: analyze the image with `aa`, extract it with 7-Zip 23.01, and compare the SHA-256 of
+Method: analyze the image with `analyze-anything`, extract it with 7-Zip 23.01, and compare the SHA-256 of
 every file (symbolic links and extended-attribute pseudo-files left out on the 7-Zip side).
 For kitty, 7-Zip cannot decode LZMA chunks, so the partition was first expanded with an
 independent Python script (stdlib `lzma`) and 7-Zip was run on the raw APFS container.
@@ -92,7 +92,7 @@ becomes a burden.
 
 ## Cost
 
-Debug build, 4 cores, whole `aa analyze` run including every other analyzer:
+Debug build, 4 cores, whole `analyze-anything analyze` run including every other analyzer:
 Rectangle (3.9 MB image, 12 MB expanded) 1 s; Keka (32 MB / 85 MB) 7 s; IINA (85 MB / 253 MB,
 bzip2) 44 s; OBS (169 MB / 584 MB, LZFSE) 58 s; Zed (79 MB / 273 MB, APFS) 42 s. Memory is
 bounded by the chunk cache (24 chunks) plus the catalog; file data is streamed to the engine's

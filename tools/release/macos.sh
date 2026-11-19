@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds what is released for Apple silicon Macs: the `aa` command as a tar.gz and the desktop
+# Builds what is released for Apple silicon Macs: the `analyze-anything` command as a tar.gz and the desktop
 # app as a DMG, both signed with a Developer ID certificate and notarized by Apple.
 #
 #   tools/release/macos.sh
@@ -19,14 +19,14 @@ OUT=dist/release
 rm -rf "$OUT"; mkdir -p "$OUT"
 notarize() { xcrun notarytool submit "$1" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_SPECIFIC_PASSWORD" --wait; }
 
-echo "== aa $VERSION, the command"
+echo "== analyze-anything $VERSION, the command"
 rustup target add "$TARGET" >/dev/null
 cargo build --release --locked --target "$TARGET" -p aa-cli
-AA="target/$TARGET/release/aa"
+AA="target/$TARGET/release/analyze-anything"
 "$AA" selftest >/dev/null
 codesign --force --options runtime --timestamp --sign "$IDENTITY" "$AA"
 codesign --verify --strict --verbose=2 "$AA"
-NAME="aa-$VERSION-$TARGET"
+NAME="analyze-anything-$VERSION-$TARGET"
 rm -rf "$OUT/$NAME"; mkdir "$OUT/$NAME"
 cp "$AA" README.md LICENSE "$OUT/$NAME/"
 # A program on its own cannot carry a notarization ticket; Apple records it and macOS asks.

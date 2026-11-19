@@ -156,7 +156,7 @@ pub fn json(interpretation: &Interpretation) -> Vec<u8> {
     bytes
 }
 
-/// How many characters of a finding id the readable reports print; `aa explain` takes them.
+/// How many characters of a finding id the readable reports print; `analyze-anything explain` takes them.
 const SHORT_ID: usize = 16;
 
 /// The interpretation as Markdown, to read next to the report.
@@ -168,13 +168,13 @@ pub fn markdown(interpretation: &Interpretation) -> String {
     out.push_str(&match zh {
         false => format!(
             "> **AI-generated.** Written by the language model `{}` from the findings of the report, not by the analyzer. \
-Every statement names the findings it rests on; `aa explain report.json <id>` shows a finding and its evidence. \
+Every statement names the findings it rests on; `analyze-anything explain report.json <id>` shows a finding and its evidence. \
 The report is the authority; where this text and the report differ, the report is right.\n\n",
             interpretation.model
         ),
         true => format!(
             "> **AI 生成。** 以下内容由语言模型 `{}` 根据报告中的结论写成，不是分析器的输出。\
-每句话后面列出它所依据的结论；用 `aa explain report.json <id>` 可以查看该结论及其证据。\
+每句话后面列出它所依据的结论；用 `analyze-anything explain report.json <id>` 可以查看该结论及其证据。\
 以报告为准：这段文字与报告不一致时，报告是对的。\n\n",
             interpretation.model
         ),

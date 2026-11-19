@@ -1,6 +1,6 @@
 # 桌面版
 
-同一套分析引擎的图形界面：拖入文件 → 看进度 → 读报告 → 看证据字节 → 导出 → 历史与对比。不新增分析能力，同一个输入在桌面版和 `aa` 里得到字节相同的报告。规划见 [PLAN-DESKTOP.md](PLAN-DESKTOP.md)。
+同一套分析引擎的图形界面：拖入文件 → 看进度 → 读报告 → 看证据字节 → 导出 → 历史与对比。不新增分析能力，同一个输入在桌面版和 `analyze-anything` 里得到字节相同的报告。规划见 [PLAN-DESKTOP.md](PLAN-DESKTOP.md)。
 
 目前只有 macOS（Apple 芯片）版本。
 
@@ -20,7 +20,7 @@ brew install atomsprout/tap/analyze-anything                  # 命令行，装�
 | `crates/aa-engine` | 分析会话（分析结束后仍能按范围读任意文件的字节）、逐文件进度、可序列化的事件 |
 | `crates/aa-worker` | 工作子进程：消息协议（每行一个 JSON）、服务端循环、客户端（能确定地结束子进程并清理它的临时目录） |
 | `crates/aa-app` | 不依赖界面的应用层：各格式导出（命令行也用它）、历史记录、通过工作进程运行一次分析 |
-| `crates/aa-export` 的 `diff` | 两份报告的对比，`aa diff` 和桌面版共用 |
+| `crates/aa-export` 的 `diff` | 两份报告的对比，`analyze-anything diff` 和桌面版共用 |
 | `apps/desktop/src-tauri` | Tauri 外壳：窗口、菜单、命令、`report://` 协议、自检模式 |
 | `apps/desktop/src` | 页面：TypeScript，不用界面框架 |
 
@@ -62,12 +62,12 @@ macOS 的系统 WebView 没有可用的自动化驱动，所以应用可以自�
 ```
 python3 tools/desktop-check/check.py \
     "target/aarch64-apple-darwin/release/bundle/macos/Analyze Anything.app/Contents/MacOS/analyze-anything" \
-    target/release/aa  旧版本.ipa 新版本.ipa --slow 一个很大的.dmg
+    target/release/analyze-anything  旧版本.ipa 新版本.ipa --slow 一个很大的.dmg
 ```
 
 自检用单独的数据文件夹，不碰真实的历史；界面语言记在 WebView 的存储里，与正式安装的应用共用，自检结束时会改回原来的语言（0.1.0 的发行包还没有这一步，对它跑过自检后界面会停在英文，在“显示”菜单里改回即可）。
 
-它检查：页面的内容安全策略生效（注入的脚本不运行、不能把文本当代码执行、连不上网络）、分析与进度、报告在框架里加载、十六进制视图显示的字节与文件一致并标出证据范围、跳转偏移、拒绝报告里没有的路径、7 种格式和“全部格式到文件夹”的导出、语言和外观切换、历史的打开与删除、历史报告说明为什么看不了字节、对比的数字、取消后回到主页且不留记录；退出后没有遗留的工作进程和临时文件；每个导出文件与 `aa` 对同一输入写出的文件逐字节相同，`aa verify` 接受导出的文件夹。
+它检查：页面的内容安全策略生效（注入的脚本不运行、不能把文本当代码执行、连不上网络）、分析与进度、报告在框架里加载、十六进制视图显示的字节与文件一致并标出证据范围、跳转偏移、拒绝报告里没有的路径、7 种格式和“全部格式到文件夹”的导出、语言和外观切换、历史的打开与删除、历史报告说明为什么看不了字节、对比的数字、取消后回到主页且不留记录；退出后没有遗留的工作进程和临时文件；每个导出文件与 `analyze-anything` 对同一输入写出的文件逐字节相同，`analyze-anything verify` 接受导出的文件夹。
 
 ### 仍需人工检查的三处
 
@@ -83,7 +83,7 @@ python3 tools/desktop-check/check.py \
 tools/release/macos.sh
 ```
 
-构建 Apple 芯片的 `aa`（tar.gz）和桌面版（DMG），用 Developer ID 证书签名、启用 hardened runtime，并提交 Apple 公证。需要环境变量 `APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_SPECIFIC_PASSWORD`，以及钥匙串里该团队的 “Developer ID Application” 证书。产物写到 `dist/release`，脚本本身不上传任何东西。
+构建 Apple 芯片的 `analyze-anything`（tar.gz）和桌面版（DMG），用 Developer ID 证书签名、启用 hardened runtime，并提交 Apple 公证。需要环境变量 `APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_SPECIFIC_PASSWORD`，以及钥匙串里该团队的 “Developer ID Application” 证书。产物写到 `dist/release`，脚本本身不上传任何东西。
 
 发布包放在公开仓库 [atomsprout/analyze-anything-release](https://github.com/atomsprout/analyze-anything-release) 的 Releases 里，Homebrew 的定义在 [atomsprout/homebrew-tap](https://github.com/atomsprout/homebrew-tap)。
 

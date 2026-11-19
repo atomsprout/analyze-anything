@@ -12,14 +12,14 @@
 - [x] 进程被强行终止后遗留的临时目录：下一次运行开始时清理。
 - [x] 对真实样本的对照脚本进仓库：`tools/native-compare/macos_real.py`（签名）、`macos_symbols.py`（导入导出）。
 - [x] 分析器卡死时真正终止：桌面版把分析放进子进程，取消后强制结束。命令行仍是“放弃等待”。
-- [x] 桌面版 D0–D5：技术验证、引擎补齐、主流程、证据与十六进制视图、历史与对比（含 `aa diff`）、打包签名公证。
+- [x] 桌面版 D0–D5：技术验证、引擎补齐、主流程、证据与十六进制视图、历史与对比（含 `analyze-anything diff`）、打包签名公证。
 - [x] 通过 Homebrew 发布：命令行和桌面版分开安装，仅 Apple 芯片。
 
 ## 等待人工操作
 
 - [ ] **恢复 GitHub Actions 并重跑 CI**（已决定推迟：2026-11-19 定下目前只管 macOS Apple 芯片，其他平台的验证和发布不挡当前工作）：2026-11-19 起组织的 Actions 任务不再启动（“recent account payments have failed or your spending limit needs to be increased”）。在此之前，`v0.1.0` 标签的五平台构建里 Windows x64、macOS x64 / arm64、Linux arm64 的测试全部通过，Linux x64 有一项测试失败（工作进程崩溃时退出码的竞态，已修复）。修复之后的提交没有在 Linux 和 Windows 上跑过测试，只在 macOS 上跑过，并从 macOS 对 Linux x64 和 Windows x64 做过编译检查。账单恢复后重跑 CI，再重新触发标签构建以生成其他平台的草稿发布。
 
-- [ ] **决定命令行的名字**：`aa` 与 macOS 自带的 `/usr/bin/aa`（Apple Archive）重名，Homebrew 安装时改成了 `analyze-anything`。是否在所有平台统一改名（包括 `--version` 的输出、CI 的打包名、文档），需要定一下。
+- [ ] **决定命令行的名字**：`analyze-anything` 与 macOS 自带的 `/usr/bin/aa`（Apple Archive）重名，Homebrew 安装时改成了 `analyze-anything`。是否在所有平台统一改名（包括 `--version` 的输出、CI 的打包名、文档），需要定一下。
 
 - [ ] **桌面版的三处人工检查**：原生菜单和快捷键、拖放、系统的打开 / 保存对话框（见 [DESKTOP.md](DESKTOP.md)）。其余流程由应用的自检模式在真实窗口里跑过。
 - [ ] **读一遍真实报告**：`report.html` 和 `report.pdf` 哪里啰嗦、哪里缺内容，需要人来判断；章节详略和同类结论的合并上限（目前每组列 10 条）等这轮反馈再调。
@@ -52,7 +52,7 @@
 ## 第三阶段：生态（未开始）
 
 - [ ] 给 AI Agent 调用的接口：MCP server 与 SKILL.md。
-- [x] 可选的 AI 解读层：`aa interpret`，只读 `report.json`，每句话必须引用结论 ID，支持 Claude 和 OpenAI 兼容的服务（见 [AI.md](AI.md)）。
+- [x] 可选的 AI 解读层：`analyze-anything interpret`，只读 `report.json`，每句话必须引用结论 ID，支持 Claude 和 OpenAI 兼容的服务（见 [AI.md](AI.md)）。
 - [ ] AI 解读的后续：用真实的 Claude 密钥跑一遍 Anthropic 协议（OpenAI 兼容协议已用 DeepSeek 跑通，2026-11-19）；接入桌面版；把解读作为一章放进 HTML / PDF 报告。
 - [ ] 更多输入：Linux 包（deb / rpm / AppImage）、鸿蒙 HAP、PyInstaller 等打包程序。
 - [ ] `deep` 档：函数级分析，可选对接 Ghidra 或 Kuna。

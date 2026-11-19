@@ -1,4 +1,4 @@
-//! Analyze Anything, the desktop app: a window around the same engine as the `aa` command.
+//! Analyze Anything, the desktop app: a window around the same engine as the `analyze-anything` command.
 //!
 //! The program has two roles. Started normally it shows the window. Started with `--worker` it
 //! is a worker process (see `aa-worker`): it analyzes one input for the window that started it

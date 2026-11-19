@@ -1,6 +1,6 @@
 name: Release
 
-# Builds the `aa` binary for each platform when a version tag is pushed, and attaches the
+# Builds the `analyze-anything` binary for each platform when a version tag is pushed, and attaches the
 # archives and their SHA-256 sums to a draft release for a person to review and publish.
 on:
   push:
@@ -41,27 +41,27 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }} -p aa-cli
       - name: Self-test the built program
-        run: target/${{ matrix.target }}/release/aa selftest
+        run: target/${{ matrix.target }}/release/analyze-anything selftest
       - name: Package (Unix)
         if: matrix.archive == 'tar.gz'
         run: |
-          name="aa-${RELEASE_NAME//\//-}-${{ matrix.target }}"
+          name="analyze-anything-${RELEASE_NAME//\//-}-${{ matrix.target }}"
           mkdir "$name"
-          cp "target/${{ matrix.target }}/release/aa" README.md "$name/"
+          cp "target/${{ matrix.target }}/release/analyze-anything" README.md "$name/"
           tar czf "$name.tar.gz" "$name"
           shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256"
       - name: Package (Windows)
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          $name = "aa-$($env:RELEASE_NAME -replace '/', '-')-${{ matrix.target }}"
+          $name = "analyze-anything-$($env:RELEASE_NAME -replace '/', '-')-${{ matrix.target }}"
           New-Item -ItemType Directory $name | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/aa.exe", "README.md" $name
+          Copy-Item "target/${{ matrix.target }}/release/analyze-anything.exe", "README.md" $name
           Compress-Archive $name "$name.zip"
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File "$name.zip.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
-          name: aa-${{ matrix.target }}
+          name: analyze-anything-${{ matrix.target }}
           path: |
             aa-*.tar.gz
             aa-*.zip

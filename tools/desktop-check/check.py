@@ -22,7 +22,7 @@ def check(name, held, detail=""):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("app", help="the app's executable")
-    parser.add_argument("aa", help="the aa command")
+    parser.add_argument("aa", help="the analyze-anything command")
     parser.add_argument("inputs", nargs=2, help="two files to analyze, the earlier version first")
     parser.add_argument("--slow", help="a large file, for checking that an analysis can be cancelled")
     parser.add_argument("--timeout", type=int, default=900)
@@ -69,17 +69,17 @@ def main():
     for kind, name in singles.items():
         exported = os.path.join(exports, f"{stem}.report.{kind}")
         same = os.path.exists(exported) and filecmp.cmp(exported, os.path.join(reference, name), shallow=False)
-        check(f"exported {kind} is byte for byte what `aa` writes", same, exported)
+        check(f"exported {kind} is byte for byte what `analyze-anything` writes", same, exported)
     sbom = os.path.join(exports, f"{stem}.sbom.cdx.json")
-    check("exported sbom is byte for byte what `aa` writes", os.path.exists(sbom) and filecmp.cmp(sbom, os.path.join(reference, "sbom.cdx.json"), shallow=False), sbom)
+    check("exported sbom is byte for byte what `analyze-anything` writes", os.path.exists(sbom) and filecmp.cmp(sbom, os.path.join(reference, "sbom.cdx.json"), shallow=False), sbom)
     folder = os.path.join(exports, f"{stem} report")
     names = sorted(os.listdir(reference))
-    check("the exported folder holds the same files as `aa` writes", os.path.isdir(folder) and sorted(os.listdir(folder)) == names, folder)
+    check("the exported folder holds the same files as `analyze-anything` writes", os.path.isdir(folder) and sorted(os.listdir(folder)) == names, folder)
     if os.path.isdir(folder):
         _, different, errors = filecmp.cmpfiles(folder, reference, names, shallow=False)
-        check("every file in the exported folder is byte for byte what `aa` writes", not different and not errors, different + errors)
+        check("every file in the exported folder is byte for byte what `analyze-anything` writes", not different and not errors, different + errors)
         verified = subprocess.run([os.path.abspath(args.aa), "verify", folder], capture_output=True, text=True)
-        check("`aa verify` accepts the exported folder", verified.returncode == 0, verified.stdout[-500:])
+        check("`analyze-anything verify` accepts the exported folder", verified.returncode == 0, verified.stdout[-500:])
     finish()
 
 

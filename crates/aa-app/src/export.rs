@@ -106,7 +106,7 @@ fn pdf_with_fonts(report: &Report, lang: Lang, _fonts: &[Vec<u8>]) -> Result<Vec
 }
 
 /// Writes `report` into the folder `dir` as each of `kinds` (a kind named twice is written once),
-/// with the manifest that lets `aa verify` check the folder later. Returns the files written, in
+/// with the manifest that lets `analyze-anything verify` check the folder later. Returns the files written, in
 /// order, the manifest last.
 pub fn write_folder(report: &Report, dir: &Path, kinds: &[Kind], lang: Lang, fonts: &[Vec<u8>]) -> Result<Vec<PathBuf>, String> {
     std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
