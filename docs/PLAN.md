@@ -17,7 +17,7 @@
 | M3 Apple | 完成 | 9 个真实 DMG 与 7-Zip 逐文件一致；587 个已签名二进制与 `rcodesign` 一致 |
 | M4 Windows | 完成 | NSIS / Inno / MSI / CAB 与 7-Zip、`innoextract`、`msiextract`、`cabextract` 逐文件一致；签名与 `osslsigncode` 一致 |
 | M5 Android | 完成 | 13 个真实 APK 与 `aapt`、`apksigner`、`dexdump` 一致；21 个签名样本的接受 / 拒绝结果与 `apksigner` 一致 |
-| M6 关联与打磨 | 完成，发布未做 | 概览、结构统计、组件清单、SARIF、CycloneDX、`aa verify`、模糊测试；发布流程已写好但没有运行过，也没有打版本标签 |
+| M6 关联与打磨 | 完成，未打版本标签 | 概览、结构统计、组件清单、SARIF、CycloneDX、`aa verify`、模糊测试；发布流程已在 5 个目标平台上试跑成功（构建、发布模式测试、产物自检、打包），但没有打版本标签，也没有创建正式发布 |
 
 **与原规划的偏差**
 

@@ -21,7 +21,7 @@
 
 ## 真实样本只在 Linux 上分析过
 
-自动测试在 Linux、macOS、Windows 上都通过了（GitHub Actions）。但用真实样本做的分析和与参考工具的对照，都是在 Linux 上进行的。
+自动测试在 Linux、macOS、Windows 上都通过了（GitHub Actions），发布构建在 Linux x64 / arm64、macOS arm64 / x64、Windows x64 上试跑成功并通过自检。但用真实样本做的分析和与参考工具的对照，都是在 Linux 上进行的。
 
 ## 没有与平台自带工具对照过
 
