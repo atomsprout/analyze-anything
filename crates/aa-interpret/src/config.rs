@@ -229,6 +229,23 @@ pub fn write_file(path: &Path, settings: &Overrides) -> Result<(), String> {
 /// Puts flags over the file and fills in what the engine implies. `env` looks up an environment
 /// variable.
 pub fn resolve(file: Overrides, flags: Overrides, env: &dyn Fn(&str) -> Option<String>) -> Result<Settings, String> {
+    // The file's model, address and key belong to the service the file names. Asked for another
+    // service, they are left out: a key must never be sent to a service it was not given for.
+    let another_engine = flags.engine.is_some_and(|engine| file.engine.is_some_and(|theirs| theirs != engine));
+    let another_provider = flags.provider.is_some_and(|provider| file.provider != Some(provider));
+    let file = if another_engine || another_provider {
+        Overrides {
+            engine: if another_engine { None } else { file.engine },
+            provider: None,
+            model: None,
+            base_url: None,
+            api_key: None,
+            api_key_env: None,
+            ..file
+        }
+    } else {
+        file
+    };
     let provider = flags.provider.or(file.provider);
     // Naming a model service is enough to mean the `api` engine.
     let engine = flags.engine.or(file.engine).or(provider.map(|_| Engine::Api)).ok_or_else(|| {
@@ -309,6 +326,27 @@ mod tests {
     fn nothing_set_means_off() {
         let error = resolve(Overrides::default(), Overrides::default(), &no_env).expect_err("off");
         assert!(error.contains("not set up"));
+    }
+
+    #[test]
+    fn another_service_than_the_files_gets_none_of_the_files_address_model_or_key() {
+        let file = parse(
+            "[ai]\nengine = \"api\"\nprovider = \"openai-compatible\"\nmodel = \"theirs\"\nbase_url = \"https://example.com/v1\"\napi_key = \"from-file\"\n",
+        )
+        .expect("parses");
+        let flags = Overrides { provider: Some(Provider::Anthropic), ..Overrides::default() };
+        let error = resolve(file.clone(), flags.clone(), &no_env).expect_err("the file's key is for another service");
+        assert!(error.contains("ANTHROPIC_API_KEY"), "{error}");
+        let env = |name: &str| (name == "ANTHROPIC_API_KEY").then(|| "from-env".to_string());
+        let settings = resolve(file.clone(), flags, &env).expect("resolves");
+        assert_eq!(api(&settings).base_url, "https://api.anthropic.com");
+        assert_eq!(api(&settings).model, DEFAULT_ANTHROPIC_MODEL);
+        assert_eq!(api(&settings).key.as_deref(), Some("from-env"));
+
+        let flags = Overrides { engine: Some(Engine::Ollama), model: Some("qwen3".into()), ..Overrides::default() };
+        let settings = resolve(file, flags, &no_env).expect("resolves");
+        assert_eq!(api(&settings).base_url, DEFAULT_OLLAMA_URL);
+        assert_eq!(api(&settings).key, None);
     }
 
     #[test]

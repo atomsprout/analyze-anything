@@ -25,7 +25,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 - [ ] Run the `claude` engine for real: it needs a signed-in `claude` on the machine. So far its arguments and the tool server are tested apart.
 - [ ] Run the `codex` engine for real: it was written from the documentation and never met a real `codex`.
 - [ ] Run the `ollama` engine against a real Ollama: it shares its protocol with the OpenAI-compatible `api` engine, which was run for real, but no Ollama was at hand.
-- [ ] Run the Anthropic protocol of the `api` engine with a real key. The OpenAI-compatible protocol was run against DeepSeek.
+- [x] Run the Anthropic protocol of the `api` engine with a real key: done with `claude-opus-5-5` on a 456-finding IPA report (9 lookups, no statement dropped).
 - [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
 - [ ] Offer it in the desktop app.
 - [ ] Follow-up questions about a report: `analyze-anything ask out/ "which hosts does it mention?"`.

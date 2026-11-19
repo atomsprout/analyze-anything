@@ -82,7 +82,7 @@ command = ["my-agent", "--prompt", "{prompt_file}", "--mcp", "{mcp_config}"]
 
 Other settings: `max_turns` (how many rounds of questions the model may ask before it must answer; default 12), `timeout_seconds` (default 600), and `model` for the `claude` and `codex` engines when you want them to use a particular one.
 
-**The API key.** Write it in the file as `api_key`, or keep it in an environment variable: `ANTHROPIC_API_KEY` for Anthropic, `OPENAI_API_KEY` for an OpenAI-compatible service, or the one you name with `api_key_env`. The variable wins over the file. The file is created readable by you alone, and the program warns when a file that holds a key can be read by others. The `ollama` engine never sends a key. With the `api` engine, a service at a `base_url` you gave, with no key anywhere, is asked without one; that suits other model servers of your own (LM Studio, vLLM and the like).
+**The API key.** Write it in the file as `api_key`, or keep it in an environment variable: `ANTHROPIC_API_KEY` for Anthropic, `OPENAI_API_KEY` for an OpenAI-compatible service, or the one you name with `api_key_env`. The variable wins over the file. The file is created readable by you alone, and the program warns when a file that holds a key can be read by others. The `ollama` engine never sends a key. With the `api` engine, a service at a `base_url` you gave, with no key anywhere, is asked without one; that suits other model servers of your own (LM Studio, vLLM and the like). A model, address and key written in the file belong to the service the file names: when `--engine` or `--provider` asks for another one, they are left out, so a key is never sent to a service it was not given for.
 
 Flags on `interpret` override the file for one run: `--engine`, `--provider`, `--model`, `--base-url`, `--api-key-env`, and `--lang zh` to have it written in Chinese.
 
@@ -115,7 +115,7 @@ The check makes sure every statement **points at** a real finding. It cannot mak
 | | |
 |---|---|
 | `api`, OpenAI-compatible | Run against a real service (DeepSeek), on a real 456-finding IPA report among others: the model made 17 lookups and every statement it returned cited existing findings |
-| `api`, Anthropic | Tested against a stand-in service only. Against the real service it was confirmed to connect and to report a wrong key properly; no full answer has been produced yet |
+| `api`, Anthropic | Run against the real service with `claude-opus-5-5`, on the same 456-finding IPA report: the model made 9 lookups and every statement it returned cited existing findings |
 | `claude` | The command line is started with the right arguments (tested), and the tool server works (tested with a stand-in agent). A full run has not been made: the `claude` on the development machine was not signed in |
 | `codex` | Written from Codex's documentation and tested against a stand-in. Never run with a real `codex` |
 | `ollama` | The same protocol as the OpenAI-compatible `api` engine, which ran against a real service; the engine's own settings are tested against a stand-in. Never run with a real Ollama. Whether a model can use the tools depends on the model; one that cannot is asked with the brief alone |
