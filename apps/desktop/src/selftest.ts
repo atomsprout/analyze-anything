@@ -50,6 +50,8 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
     }
   };
 
+  // The language is remembered by the web view, which the real app shares; put it back at the end.
+  const languageBefore = app.lang;
   let framesReady = 0;
   window.addEventListener("message", (event) => {
     const data = event.data as { source?: string; kind?: string } | null;
@@ -290,5 +292,7 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
     notes.cancel_ms = took;
   });
 
+  await selftest.menu(`lang:${languageBefore}`).catch(() => undefined);
+  await sleep(300);
   await selftest.finish({ passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok).length, checks, notes });
 }
