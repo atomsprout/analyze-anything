@@ -14,18 +14,32 @@
 
 以下功能只用自己构造的数据测试过，没有在真实样本上对照过参考工具：
 
-- **Apple**：ADC 压缩的 DMG 块、以压缩方式存储的文件、APFS 快照和多卷、pbzx 格式的 pkg（找到的 7 个真实 pkg 全是 gzip 压缩，pbzx 基本只见于 Apple 自家的安装包）、ECDSA 签名。加密的 DMG 只能识别，不能读取。
+- **Apple**：App Store 下载的 FairPlay 加密 IPA（只能识别加密，读不了代码）、APFS 快照和多卷、ECDSA 签名。加密的 DMG 能识别，不能读取。
 - **Windows**：Inno Setup 6.4 能解出文件，但参考工具读不了这个版本，结果无法核对；NSIS 1.x / 2.x 和分支版本未测试；MSI 自身的数字签名只记录有没有，不校验；RAR 自解压只导出附加数据，不解包（许可证原因）；Quantum 压缩的 CAB、多卷和外部 CAB 不解包。
 - **Android**：XAPK / APKS 只用手工构造的样本测试过；加固壳、Janus、非常规压缩方式只在构造的样本上测试过；AAB 只深入分析 base 模块；文本格式的清单（apktool 的输出）不解码。
 - **二进制**：Mach-O 的导入导出只读符号表，不解析导出字典树和链式修正；PE 的延迟导入只在自己构造的样本上验证过。
 
-## 真实样本只在 Linux 上分析过
+## 在哪些系统上验证过
 
-自动测试在 Linux、macOS、Windows 上都通过了（GitHub Actions），发布构建在 Linux x64 / arm64、macOS arm64 / x64、Windows x64 上试跑成功并通过自检。但用真实样本做的分析和与参考工具的对照，都是在 Linux 上进行的。
+自动测试在 Linux、macOS、Windows 上都通过了（GitHub Actions），发布构建在 Linux x64 / arm64、macOS arm64 / x64、Windows x64 上试跑成功并通过自检。用开源项目的发布包做的大规模对照是在 Linux 上进行的。
 
-## 没有与平台自带工具对照过
+## 与系统自带工具的对照
 
-Apple 签名的对照用的是 `rcodesign`，Windows 签名用的是 `osslsigncode`。没有在真实的 macOS 上用 `codesign`、在真实的 Windows 上用 `signtool` / `sigcheck` 对照过。
+“Native comparison” 工作流在 GitHub 的 macOS 和 Windows 机器上运行，用系统自带工具核对结果（脚本在 `tools/native-compare/`）。最近一次运行全部通过：
+
+- **macOS（98 项）**：
+  - 与 `codesign` 逐项比较系统应用（Calculator、TextEdit、Terminal、Safari）和 Rectangle 的每个架构切片：cdhash、标识符、团队、标志位、证书链、entitlements 的键。
+  - 改动资源文件或代码后，`codesign --verify` 和本工具都报告不通过。
+  - Rectangle 的 DMG 与挂载后的卷逐文件一致。
+  - `hdiutil` 现场生成的 HFS+ / APFS 镜像，覆盖 zlib、bzip2、LZFSE、LZMA、ADC、不压缩六种方式，以及文件系统内压缩的文件，全部逐文件一致。
+  - 加密镜像被识别为加密，且没有声称读出任何文件。
+  - `pkgbuild` 生成的 gzip 和 pbzx 两种格式的 pkg 逐文件一致。
+- **Windows（132 项）**：
+  - 与 `Get-AuthenticodeSignature` 比较 40 多个系统和常用程序：有无内嵌签名、签名证书指纹、“Valid” 时本工具的各项校验是否都通过。
+  - 改动一个字节后，Windows 报 HashMismatch，本工具的文件摘要校验也不通过。
+  - `makecab` 生成的 MSZIP 和 LZX 压缩包解出的文件逐字节一致。
+
+这些对照没有覆盖：证书吊销、根证书信任、公证状态（本工具不检查这些）；也没有覆盖 iOS 应用和 App Store 签名。
 
 ## 其他
 
