@@ -53,6 +53,6 @@
 
 - [ ] 给 AI Agent 调用的接口：MCP server 与 SKILL.md。
 - [x] 可选的 AI 解读层：`aa interpret`，只读 `report.json`，每句话必须引用结论 ID，支持 Claude 和 OpenAI 兼容的服务（见 [AI.md](AI.md)）。
-- [ ] AI 解读的后续：用真实的模型服务各跑一遍（目前只对着本机的模拟服务测过）；接入桌面版；把解读作为一章放进 HTML / PDF 报告。
+- [ ] AI 解读的后续：用真实的 Claude 密钥跑一遍 Anthropic 协议（OpenAI 兼容协议已用 DeepSeek 跑通，2026-11-19）；接入桌面版；把解读作为一章放进 HTML / PDF 报告。
 - [ ] 更多输入：Linux 包（deb / rpm / AppImage）、鸿蒙 HAP、PyInstaller 等打包程序。
 - [ ] `deep` 档：函数级分析，可选对接 Ghidra 或 Kuna。
