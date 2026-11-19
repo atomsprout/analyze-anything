@@ -315,6 +315,8 @@ pub const UI: &[(&str, &str, &str)] = &[
     ("bytes", "字节", "bytes"),
     ("show_full_value", "显示完整内容（{n} 个字符）", "Show the full value ({n} characters)"),
     ("open_in_files", "在文件树中查看", "Show in the file tree"),
+    ("view_bytes", "查看字节", "View bytes"),
+    ("view_file_bytes", "查看文件内容（十六进制）", "View the file's bytes"),
     ("expand_all", "全部展开", "Expand all"),
     ("collapse_all", "全部收起", "Collapse all"),
     // Files

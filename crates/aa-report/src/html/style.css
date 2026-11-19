@@ -414,3 +414,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: now
   .badge { border-color: currentColor !important; }
   thead { display: table-header-group; }
 }
+
+/* Host mode: the buttons that ask the desktop app to show bytes. */
+.hostlink { margin-left: .75rem; white-space: nowrap; }
+.hostrow { margin: .5rem 0 0; }

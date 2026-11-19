@@ -199,3 +199,23 @@ fn decode_hex(text: &str) -> Option<Vec<u8>> {
     }
     text.as_bytes().chunks(2).map(|pair| u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok()).collect()
 }
+
+/// Removes what earlier workers left in `scratch_root` because the app was killed with them:
+/// unpacked files whose worker is gone, and the workers' folders once they are empty and old
+/// enough that no worker is about to use them. Folders of workers that are still running, of
+/// another copy of the app for instance, are left alone.
+pub fn clean_scratch(scratch_root: &Path) {
+    let Ok(folders) = std::fs::read_dir(scratch_root) else { return };
+    for folder in folders.flatten() {
+        let path = folder.path();
+        if !path.is_dir() {
+            continue;
+        }
+        aa_engine::sweep_stale(Some(&path));
+        let old = folder.metadata().and_then(|m| m.modified()).ok().and_then(|at| at.elapsed().ok()).is_some_and(|age| age > Duration::from_secs(600));
+        if old {
+            // Only an empty folder goes; one that still holds a live worker's files stays.
+            let _ = std::fs::remove_dir(&path);
+        }
+    }
+}

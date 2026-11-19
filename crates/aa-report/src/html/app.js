@@ -6,12 +6,32 @@
  * attribute values set through the DOM API — never through innerHTML, document.write, eval or
  * a URL built from report text. The few links are built from a fixed prefix and digits or a
  * strictly matched identifier.
+ *
+ * Host mode. When the page is shown inside the desktop app (it is in a frame and its address
+ * carries `host=1`), it offers to show the bytes behind a piece of evidence or of a file. The
+ * page cannot read them itself; it sends its host one message naming the file and the range, and
+ * the host decides what to do. The host also sets the language and the colours, so the page's
+ * own buttons for those are left out. Opened on its own, the page behaves exactly as before.
  */
 (function () {
   'use strict';
 
   var doc = document;
   var R, V, lang;
+  var hosted = false;
+  try {
+    hosted = window.parent !== window && /(^|&)host=1(&|$)/.test(String(window.location.search || '').slice(1));
+  } catch (error) { hosted = false; }
+
+  // The only thing the page ever sends: a fixed kind, an artifact path that the report holds,
+  // and whole numbers. The host checks all of it again.
+  function tellHost(kind, path, offset, length) {
+    if (!hosted) return;
+    var message = { source: 'analyze-anything-report', kind: kind };
+    if (path != null) message.path = String(path);
+    if (offset != null) { message.offset = Number(offset); message.length = Number(length); }
+    window.parent.postMessage(message, '*');
+  }
   var SEVERITIES = ['high', 'medium', 'low', 'info'];
   var CONFIDENCES = ['verified', 'derived', 'heuristic'];
   var SECTIONS = ['overview', 'identity', 'provenance', 'structure', 'composition', 'capabilities',
@@ -303,6 +323,20 @@
     return [pre, more];
   }
 
+  // In host mode: a button that asks the host to show the bytes a piece of evidence was read
+  // from, or the whole file when the evidence is not a byte range.
+  function bytesButton(evidence) {
+    if (!hosted || !artifactIndex.has(evidence.artifact)) return null;
+    var range = evidence.location && typeof evidence.location === 'object' ? evidence.location.bytes : null;
+    return el('button', {
+      type: 'button', class: 'link hostlink',
+      onclick: function () {
+        if (range) tellHost('evidence', evidence.artifact, range.offset, range.length);
+        else tellHost('file', evidence.artifact);
+      }
+    }, t(range ? 'view_bytes' : 'view_file_bytes'));
+  }
+
   function fillEvidence(list, index, all) {
     var evidence = R.findings[index].evidence;
     var from = list.children.length ? list.querySelectorAll(':scope > li.ev').length : 0;
@@ -312,7 +346,8 @@
     for (var j = from; j < to; j++) {
       list.appendChild(el('li', { class: 'ev' },
         el('div', { class: 'evhead' }, pathNode(evidence[j].artifact),
-          el('span', { class: 'loc' }, locationText(evidence[j].location))),
+          el('span', { class: 'loc' }, locationText(evidence[j].location)),
+          bytesButton(evidence[j])),
         valueNode(evidenceValue(index, j))));
     }
     if (to < evidence.length) {
@@ -878,6 +913,11 @@
       artifact.digests ? [field('SHA-256', artifact.digests.sha256, true, artifact.digests.sha256),
         field('SHA-1', artifact.digests.sha1, true, artifact.digests.sha1),
         field('MD5', artifact.digests.md5, true, artifact.digests.md5)] : field(t('digests'), t('unknown'))));
+    if (hosted && artifact.digests) {
+      add(detailBox, el('p', { class: 'hostrow' }, el('button', {
+        type: 'button', class: 'btn', onclick: function () { tellHost('file', artifact.path); }
+      }, t('view_file_bytes'))));
+    }
     var cited = byArtifact.get(artifact.path) || [];
     add(detailBox, el('h5', null, t('findings_citing') + ' (' + group(cited.length) + ')'));
     if (!cited.length) add(detailBox, el('p', { class: 'none' }, t('no_findings_citing')));
@@ -1096,7 +1136,8 @@
     return el('header', { class: 'top noprint' },
       el('a', { class: 'skip', href: '#main' }, t('skip')),
       el('div', { class: 'brand' }, el('span', { class: 'eyebrow' }, V.words[lang].title), el('span', { class: 'name' }, R.input.name)),
-      el('div', { class: 'tools' },
+      // The host has its own controls for language, colours and export.
+      hosted ? null : el('div', { class: 'tools' },
         el('div', { class: 'segs', role: 'group', 'aria-label': t('language') }, langButton('zh', '中文'), langButton('en', 'English')),
         el('button', { type: 'button', class: 'btn', id: 'theme', 'aria-label': t('theme'), onclick: function () { setTheme(); } },
           dark ? '☀ ' + t('theme_light') : '☾ ' + t('theme_dark')),
@@ -1220,6 +1261,17 @@
       requestAnimationFrame(function () { ticking = false; markCurrent(); });
     }, { passive: true });
     window.addEventListener('resize', function () { drawRows(true); measure(); });
+    if (hosted) {
+      // The host may set the language and the colours. Nothing else is listened to, and only
+      // the two known values of each are acted on.
+      window.addEventListener('message', function (event) {
+        var data = event.data;
+        if (event.source !== window.parent || !data || data.source !== 'analyze-anything-host') return;
+        if (data.theme === 'dark' || data.theme === 'light') setTheme(data.theme);
+        if ((data.lang === 'zh' || data.lang === 'en') && data.lang !== lang) { lang = data.lang; render(); }
+      });
+      tellHost('ready');
+    }
     window.addEventListener('beforeprint', preparePrint);
     if (window.matchMedia) {
       var media = window.matchMedia('print');
