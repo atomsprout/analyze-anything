@@ -15,6 +15,7 @@ target/release/aa analyze <文件或文件夹> -o out
 
 - [docs/USAGE.md](docs/USAGE.md) — 使用说明
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限
+- [docs/TODO.md](docs/TODO.md) — 剩余待办
 - [docs/PLAN.md](docs/PLAN.md) — 规划
 - [docs/RESEARCH.md](docs/RESEARCH.md) — 调研记录
 - [docs/ANALYZERS.md](docs/ANALYZERS.md) — 如何添加一种格式（英文）
