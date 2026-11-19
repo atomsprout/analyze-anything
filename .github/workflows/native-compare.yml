@@ -1,0 +1,28 @@
+name: Native comparison
+
+# Checks results against the tools that ship with macOS and Windows. Started by hand: it
+# downloads a sample and takes a while, so it is not part of every push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release -p aa-cli --no-default-features
+      - run: python3 tools/native-compare/macos.py target/release/aa
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release -p aa-cli --no-default-features
+      - run: python tools/native-compare/windows.py target\release\aa.exe
