@@ -360,7 +360,7 @@ pub fn disk_image(file: &Artifact, out: &mut Output) {
             .param("version", fact["udif_version"].clone())
             .param("partitions", partitions)
             .param("compression", if compression.is_empty() { "none".to_string() } else { compression.join(", ") })
-            .param("megabytes", fact["sectors"].as_u64().unwrap_or(0) * 512 / (1024 * 1024))
+            .param("megabytes", fact["sectors"].as_u64().unwrap_or(0) / 2048)
             .evidence(Evidence::bytes(file, fact["trailer_offset"].as_u64().unwrap_or(0), 512, "koly")),
     );
 }

@@ -79,6 +79,8 @@ struct Pool {
     cancel: Option<Arc<AtomicBool>>,
     /// One entry per worker ever started; `None` once it was left behind.
     current: Vec<Option<Current>>,
+    /// The threads, in the same order. A worker left behind is detached by dropping its handle.
+    handles: Vec<Option<std::thread::JoinHandle<()>>>,
 }
 
 impl Pool {
@@ -88,7 +90,7 @@ impl Pool {
         self.current.push(Some(current.clone()));
         let (tree, analyzers, queue, results, cancel) =
             (self.tree.clone(), self.analyzers.clone(), self.queue.clone(), self.results.clone(), self.cancel.clone());
-        std::thread::spawn(move || {
+        let handle = std::thread::spawn(move || {
             while let Some((artifact, first)) = queue.pop() {
                 let file = &tree.artifacts[artifact];
                 let skip = file.digests.is_none() || cancel.as_ref().is_some_and(|flag| flag.load(Ordering::Relaxed));
@@ -109,6 +111,7 @@ impl Pool {
                 }
             }
         });
+        self.handles.push(Some(handle));
     }
 }
 
@@ -128,7 +131,15 @@ pub fn file_pass(
     }
     let queue = Arc::new(Queue { items: Mutex::new(((0..count).map(|artifact| (artifact, 0)).collect(), false)), ready: Condvar::new() });
     let (results, incoming) = mpsc::channel();
-    let mut pool = Pool { tree: tree.clone(), analyzers: analyzers.to_vec(), queue: queue.clone(), results, cancel, current: Vec::new() };
+    let mut pool = Pool {
+        tree: tree.clone(),
+        analyzers: analyzers.to_vec(),
+        queue: queue.clone(),
+        results,
+        cancel,
+        current: Vec::new(),
+        handles: Vec::new(),
+    };
     let threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2).min(count);
     for _ in 0..threads {
         pool.spawn();
@@ -150,6 +161,7 @@ pub fn file_pass(
                 pool.current[worker].as_ref().and_then(|current| *lock(current)).filter(|(_, _, since)| since.elapsed() > timeout);
             let Some((artifact, analyzer, _)) = overrun else { continue };
             pool.current[worker] = None;
+            pool.handles[worker] = None;
             let path = tree.artifacts[artifact].path.as_str();
             limitations.push(Limitation::new("analyzer_timeout", Some(path), Some(timeout_detail(analyzers[analyzer].id(), timeout))));
             // The other analyzers still get their turn on this artifact, on a fresh thread.
@@ -158,6 +170,11 @@ pub fn file_pass(
         }
     }
     queue.close();
+    // Workers that are not stuck finish at once now that the queue is closed; wait for them, so
+    // nothing of this pass is still running when it returns.
+    for handle in pool.handles.drain(..).flatten() {
+        let _ = handle.join();
+    }
 
     let outputs = slots
         .into_iter()
@@ -181,10 +198,15 @@ pub fn tree_pass(tree: &BuiltTree, analyzer: &Arc<dyn Analyzer>, timeout: Durati
     let snapshot = Arc::new(tree.clone());
     let analyzer = analyzer.clone();
     let (done, finished) = mpsc::channel();
-    std::thread::spawn(move || {
+    let handle = std::thread::spawn(move || {
         let mut output = Output::default();
         guarded(analyzer.as_ref(), None, &mut output, |out| analyzer.analyze_tree(&*snapshot, out));
         let _ = done.send(output);
     });
-    finished.recv_timeout(timeout).ok()
+    let output = finished.recv_timeout(timeout).ok();
+    // A call that answered is about to end; wait for it. One that did not is left behind.
+    if output.is_some() {
+        let _ = handle.join();
+    }
+    output
 }

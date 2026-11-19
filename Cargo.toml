@@ -51,6 +51,9 @@ unwrap_used = "warn"
 chunks_exact_to_as_chunks = "allow"
 
 [profile.release]
+# Arithmetic on values read from hostile files must not wrap silently into a wrong number: an
+# overflow panics, the engine catches it, and the report records a limitation.
+overflow-checks = true
 lto = "thin"
 codegen-units = 1
 strip = true
