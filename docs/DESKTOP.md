@@ -69,13 +69,13 @@ The self-check uses a separate data folder and does not touch the real history; 
 
 It checks: the page's content security policy is in effect (an injected script does not run, text cannot be executed as code, the network cannot be reached), analysis and progress, the report loads in the frame, the bytes shown in the hex view match the file and the evidence range is marked, jumping to an offset, refusing paths that are not in the report, export in 7 formats and "all formats to a folder", switching language and appearance, opening and deleting history, a history report explaining why the bytes cannot be viewed, the diff numbers, returning to the home page after cancellation without leaving a record; after exit no worker process or temporary file is left behind; every exported file is byte-for-byte identical to the file `analyze-anything` writes for the same input, and `analyze-anything verify` accepts the exported folder.
 
-### Three places that still need manual checking
+### Three places checked by hand
 
-The self-check goes through the page. The three places below go through system UI and have no automated coverage:
+The self-check goes through the page. The three places below go through system UI and have no automated coverage. They were checked by hand on 2026-11-19 with the released 0.1.0 on macOS (Apple silicon), and should be checked again when the shell changes:
 
-- The native menu bar: each item can be clicked, and the shortcuts work (⌘O, ⇧⌘O, ⌘E, ⇧⌘E, ⇧⌘H).
-- Drag and drop: drag a file onto the window, the drop zone highlights, and analysis starts on release.
-- The system open / save dialogs, and opening a file with "Open With" in Finder.
+- The native menu bar: the items work (language and appearance in "View" were switched, and the menu bar itself changes language), and so do the shortcuts ⌘O, ⇧⌘O, ⌘E, ⇧⌘E and ⇧⌘H.
+- Drag and drop: a file dragged from Finder highlights the drop zone, and analysis starts on release.
+- The system open and save dialogs (a file was chosen and analyzed; a PDF was exported through the save dialog), and opening a file with the app from Finder ("Open With").
 
 ## Release
 
@@ -85,7 +85,7 @@ tools/release/macos.sh
 
 Builds `analyze-anything` (tar.gz) and the desktop app (DMG) for Apple silicon, signs them with a Developer ID certificate, enables the hardened runtime, and submits them for Apple notarization. It needs the environment variables `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_SPECIFIC_PASSWORD`, and that team's "Developer ID Application" certificate in the keychain. The artifacts are written to `dist/release`; the script itself uploads nothing.
 
-Release packages are placed in the Releases of the public repository [atomsprout/analyze-anything-release](https://github.com/atomsprout/analyze-anything-release), and the Homebrew definitions are in [atomsprout/homebrew-tap](https://github.com/atomsprout/homebrew-tap).
+Release packages are placed in the Releases of this repository, and the Homebrew definitions are in [atomsprout/homebrew-tap](https://github.com/atomsprout/homebrew-tap).
 
 ## Where data is stored
 

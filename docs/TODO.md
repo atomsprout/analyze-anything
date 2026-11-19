@@ -35,7 +35,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 - [ ] GitHub Actions refused to start jobs for this organization while the repository was private ("recent account payments have failed or your spending limit needs to be increased"). Public repositories are not affected, so CI runs now; the billing notice still stands for anything private.
 - [ ] The website is published by hand with `tools/site/publish.sh`; a workflow could take that over.
-- [ ] **Three manual checks of the desktop app**: native menus and shortcuts, drag and drop, the system's open and save dialogs (see [DESKTOP.md](DESKTOP.md)). Everything else is exercised by the app's self-check in its real window.
+- [x] **Three manual checks of the desktop app**: native menus and shortcuts, drag and drop, the system's open and save dialogs. Done on 2026-11-19 with the released 0.1.0 (see [DESKTOP.md](DESKTOP.md)); to be repeated when the shell changes.
 - [ ] **Read a real report through**: where `report.html` and `report.pdf` are wordy or lack something takes a person to judge. How much each chapter says, and how many findings of a kind are listed before they are merged (10 now), wait for that.
 - [ ] **Try it on a Windows machine** (postponed): run a real installer and an installed program folder; compare the signature findings, the MSI ones included, with `sigcheck` or `signtool verify /pa /v`.
 - [ ] Wire the two new scripts of [tools/native-compare/](../tools/native-compare/) into the "Native comparison" workflow. They need real apps on the machine; samples must be chosen for GitHub's runners first.
