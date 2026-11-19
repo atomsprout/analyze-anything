@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the app's own page may do: listen for events and call the app's commands. No file system, shell or network access is granted to the page.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-app-info",
+    "allow-initial-input",
+    "allow-pick-input",
+    "allow-start-analysis",
+    "allow-cancel-analysis",
+    "allow-history-list",
+    "allow-history-remove",
+    "allow-history-clear",
+    "allow-open-report",
+    "allow-read-bytes",
+    "allow-export-report",
+    "allow-export-folder",
+    "allow-compare-reports",
+    "allow-set-menu-language",
+    "allow-selftest-plan",
+    "allow-selftest-menu",
+    "allow-selftest-finish"
+  ]
+}

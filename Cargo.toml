@@ -1,6 +1,9 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "apps/desktop/src-tauri"]
+# The desktop app is built on request (`-p aa-desktop`): it needs a web view and, on Linux,
+# system packages that the command line does not.
+default-members = ["crates/*"]
 
 [workspace.package]
 version = "0.1.0"

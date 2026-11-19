@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-initial-input"
+description = "Enables the initial_input command without any pre-configured scope."
+commands.allow = ["initial_input"]
+
+[[permission]]
+identifier = "deny-initial-input"
+description = "Denies the initial_input command without any pre-configured scope."
+commands.deny = ["initial_input"]

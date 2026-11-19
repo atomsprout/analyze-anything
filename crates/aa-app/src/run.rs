@@ -212,7 +212,12 @@ pub fn clean_scratch(scratch_root: &Path) {
             continue;
         }
         aa_engine::sweep_stale(Some(&path));
-        let old = folder.metadata().and_then(|m| m.modified()).ok().and_then(|at| at.elapsed().ok()).is_some_and(|age| age > Duration::from_secs(600));
+        let old = folder
+            .metadata()
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|at| at.elapsed().ok())
+            .is_some_and(|age| age > Duration::from_secs(600));
         if old {
             // Only an empty folder goes; one that still holds a live worker's files stays.
             let _ = std::fs::remove_dir(&path);

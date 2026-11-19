@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.10"/>
+    </linearGradient>
+  </defs>
+  <!-- The rounded square of a macOS icon, with the margin the system expects around it. -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <!-- A package seen from the front: three layers of what is inside. -->
+  <g fill="#ffffff">
+    <rect x="262" y="300" width="330" height="62" rx="20" opacity="0.95"/>
+    <rect x="262" y="400" width="250" height="62" rx="20" opacity="0.72"/>
+    <rect x="262" y="500" width="290" height="62" rx="20" opacity="0.52"/>
+    <rect x="262" y="600" width="200" height="62" rx="20" opacity="0.36"/>
+  </g>
+  <!-- The lens that reads it. -->
+  <circle cx="590" cy="560" r="150" fill="url(#glass)" stroke="#ffffff" stroke-width="44"/>
+  <line x1="700" y1="672" x2="790" y2="764" stroke="#ffffff" stroke-width="60" stroke-linecap="round"/>
+</svg>

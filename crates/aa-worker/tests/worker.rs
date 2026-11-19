@@ -135,6 +135,8 @@ fn requests_a_worker_cannot_serve_are_answered_not_fatal() {
     assert!(worker.is_running());
 }
 
+// The stand-in for a misbehaving worker is a shell command.
+#[cfg(unix)]
 #[test]
 fn a_worker_that_does_not_answer_is_killed_and_its_scratch_removed() {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -152,6 +154,8 @@ fn a_worker_that_does_not_answer_is_killed_and_its_scratch_removed() {
     assert_eq!(files_in(&scratch_root), 0, "what it had unpacked is gone");
 }
 
+// The stand-in for a misbehaving worker is a shell command.
+#[cfg(unix)]
 #[test]
 fn a_worker_that_crashes_is_noticed_and_cleaned_up_after() {
     let dir = tempfile::tempdir().expect("temp dir");

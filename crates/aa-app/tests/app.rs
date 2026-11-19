@@ -111,6 +111,8 @@ fn a_cancelled_run_says_so_once_and_leaves_nothing() {
     assert_eq!(entries(&program.scratch_root), 0);
 }
 
+// The stand-in for a stuck worker is a shell command.
+#[cfg(unix)]
 #[test]
 fn a_stuck_worker_is_killed_when_the_run_is_cancelled() {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -136,7 +138,10 @@ fn a_run_that_cannot_be_done_fails_with_the_reason() {
     assert!(matches!(&last, Update::Failed(message) if message.contains("missing.bin")), "{last:?}");
     drop(run);
 
-    // A worker that dies without a word.
+    // A worker that dies without a word; the stand-in is a shell command.
+    if !cfg!(unix) {
+        return;
+    }
     let dying = Program { path: "/bin/sh".into(), arguments: vec!["-c".into(), "exit 7".into()], scratch_root: dir.path().join("scratch") };
     let (run, updates) = start(&dying, &dir.path().join("missing.bin"));
     let (last, _) = outcome(&updates);

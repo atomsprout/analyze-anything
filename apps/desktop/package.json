@@ -1,0 +1,23 @@
+{
+  "name": "analyze-anything-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && vite build",
+    "test": "vitest run",
+    "tauri": "tauri",
+    "fixture": "cargo run -q --release -p aa-cli -- analyze ../../crates/aa-apple/tests/data/tiny.dmg -o tests/fixtures/out -f html && cp tests/fixtures/out/report.html tests/fixtures/sample-report.html"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.5"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}
