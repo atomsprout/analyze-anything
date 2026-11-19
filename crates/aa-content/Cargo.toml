@@ -14,3 +14,5 @@ aa-core.workspace = true
 serde_json.workspace = true
 regex.workspace = true
 hex.workspace = true
+tlsh2 = "1.1"
+boreal = { version = "1.4", default-features = false }

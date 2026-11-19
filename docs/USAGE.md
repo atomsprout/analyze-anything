@@ -39,12 +39,18 @@ aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang
 
 `--fail-on low|medium|high`：存在达到该严重度的结论时以退出码 3 结束，供 CI 使用。
 
+`--rules <文件>`：追加你自己的 YARA 规则（可重复）。规则里的 `meta: severity = "high"`（或 `medium`、`low`、`info`）决定结论的严重度，不写则为低。
+
+`--font <字体文件>`：给 PDF 追加后备字体（可重复），用于内置字体显示不了的文字，例如韩文、阿拉伯文、表情符号。使用后 PDF 的内容也取决于这些字体文件。
+
 ## 其他命令
 
 ```
 aa render out/report.json -o out2 --format pdf --lang en   # 由已有报告重新渲染，不重新分析
 aa explain out/report.json <结论 ID 的前几位>               # 查看一条结论的全部证据
 aa verify out/                                             # 检查输出文件是否与 manifest.json 一致
+aa inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出），不做分析
+aa selftest                                                # 用内置样本自检：解包、哈希、分析、各格式渲染
 ```
 
 `manifest.json` 记录每个输出文件的大小和 SHA-256。`aa verify` 会指出被改动、丢失或多出来的文件。清单本身没有签名：它能发现无意的改动；如果另外保存了清单自己的 SHA-256，也能发现有意的改动。

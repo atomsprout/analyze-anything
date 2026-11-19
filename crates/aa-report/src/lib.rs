@@ -60,6 +60,13 @@ pub enum RenderError {
     PdfNotBuilt,
 }
 
+/// Renders `report` as a PDF, using `extra_fonts` (font file contents) for characters the embedded
+/// fonts do not cover.
+#[cfg(feature = "pdf")]
+pub fn render_pdf_with_fonts(report: &Report, lang: Lang, extra_fonts: &[Vec<u8>]) -> Result<Vec<u8>, RenderError> {
+    pdf::render_with_fonts(report, lang, extra_fonts)
+}
+
 /// Renders `report` in `format`. JSON ignores `lang`: it is data, not prose.
 pub fn render(report: &Report, format: Format, lang: Lang) -> Result<Vec<u8>, RenderError> {
     match format {

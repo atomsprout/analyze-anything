@@ -58,23 +58,34 @@ fn fonts() -> &'static Fonts {
     })
 }
 
-/// Everything the template can see: itself and the report data.
+/// Everything the template can see: itself, the report data, and fonts.
 struct ReportWorld {
     library: LazyHash<Library>,
     main: Source,
     data_id: FileId,
     data: Bytes,
+    /// The embedded fonts followed by any the caller added; `None` when only the embedded ones are used.
+    extended: Option<Fonts>,
 }
 
 impl ReportWorld {
-    fn new(data: Vec<u8>) -> Self {
+    fn new(data: Vec<u8>, extra: &[Font]) -> Self {
         let main_id = FileId::new(None, VirtualPath::new("/report.typ"));
+        let extended = (!extra.is_empty()).then(|| {
+            let all: Vec<Font> = fonts().fonts.iter().cloned().chain(extra.iter().cloned()).collect();
+            Fonts { book: LazyHash::new(FontBook::from_fonts(&all)), fonts: all }
+        });
         ReportWorld {
             library: LazyHash::new(Library::default()),
             main: Source::new(main_id, TEMPLATE.to_string()),
             data_id: FileId::new(None, VirtualPath::new("/report.json")),
             data: Bytes::new(data),
+            extended,
         }
+    }
+
+    fn fonts(&self) -> &Fonts {
+        self.extended.as_ref().unwrap_or_else(|| fonts())
     }
 }
 
@@ -84,7 +95,7 @@ impl World for ReportWorld {
     }
 
     fn book(&self) -> &LazyHash<FontBook> {
-        &fonts().book
+        &self.fonts().book
     }
 
     fn main(&self) -> FileId {
@@ -100,7 +111,7 @@ impl World for ReportWorld {
     }
 
     fn font(&self, index: usize) -> Option<Font> {
-        fonts().fonts.get(index).cloned()
+        self.fonts().fonts.get(index).cloned()
     }
 
     /// No clock: a report must not depend on when it was rendered.
@@ -113,15 +124,39 @@ fn message(diagnostics: &[SourceDiagnostic]) -> String {
     diagnostics.iter().map(|d| d.message.as_str()).collect::<Vec<_>>().join("; ")
 }
 
-/// Typesets `report` into pages.
-fn compile(report: &Report, lang: Lang) -> Result<PagedDocument, RenderError> {
-    let world = ReportWorld::new(serde_json::to_vec(&view(report, lang))?);
+/// Typesets `report` into pages. `extra_fonts` are font files tried after the embedded ones, for
+/// characters those do not cover.
+fn compile(report: &Report, lang: Lang, extra_fonts: &[Vec<u8>]) -> Result<PagedDocument, RenderError> {
+    let mut extra: Vec<Font> = Vec::new();
+    for (index, data) in extra_fonts.iter().enumerate() {
+        let parsed: Vec<Font> = Font::iter(Bytes::new(data.clone())).collect();
+        if parsed.is_empty() {
+            return Err(RenderError::Pdf(format!("extra font {} is not a font file this program can read", index + 1)));
+        }
+        extra.extend(parsed);
+    }
+    // Family names in the order given, each once; the template appends them to its font lists.
+    let mut families: Vec<String> = Vec::new();
+    for font in &extra {
+        if !families.contains(&font.info().family) {
+            families.push(font.info().family.clone());
+        }
+    }
+    let mut data = view(report, lang);
+    data["extra_fonts"] = json!(families);
+    let world = ReportWorld::new(serde_json::to_vec(&data)?, &extra);
     typst::compile::<PagedDocument>(&world).output.map_err(|errors| RenderError::Pdf(message(&errors)))
 }
 
 /// Renders `report` as a PDF in `lang`.
 pub fn render(report: &Report, lang: Lang) -> Result<Vec<u8>, RenderError> {
-    let result = compile(report, lang).and_then(|document| {
+    render_with_fonts(report, lang, &[])
+}
+
+/// Renders `report` as a PDF in `lang`, falling back to `extra_fonts` for characters the embedded
+/// fonts lack. The output then depends on those font files as well as on the report.
+pub fn render_with_fonts(report: &Report, lang: Lang, extra_fonts: &[Vec<u8>]) -> Result<Vec<u8>, RenderError> {
+    let result = compile(report, lang, extra_fonts).and_then(|document| {
         let options = typst_pdf::PdfOptions {
             // A fixed identifier and no timestamp: the bytes depend on the report alone.
             ident: Smart::Custom("analyze-anything-report"),
@@ -420,7 +455,7 @@ mod tests {
 
     /// Everything the pages show, in drawing order, with nothing between the pieces.
     fn typeset(report: &Report, lang: Lang) -> (usize, String) {
-        let document = compile(report, lang).expect("the report typesets");
+        let document = compile(report, lang, &[]).expect("the report typesets");
         let mut text = String::new();
         document.pages.iter().for_each(|page| frame_text(&page.frame, &mut text));
         (document.pages.len(), text.split_whitespace().collect())
@@ -541,7 +576,7 @@ mod tests {
 
     #[test]
     fn the_world_serves_nothing_but_the_template_and_the_report() {
-        let world = ReportWorld::new(b"{}".to_vec());
+        let world = ReportWorld::new(b"{}".to_vec(), &[]);
         let other = FileId::new(None, VirtualPath::new("/etc/passwd"));
         assert!(world.source(other).is_err() && world.file(other).is_err());
         assert!(world.file(world.main()).is_err(), "the template is source, not data");

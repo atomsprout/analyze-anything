@@ -3,6 +3,7 @@
 
 mod secrets;
 mod urls;
+pub mod yara;
 
 use std::collections::BTreeMap;
 
@@ -30,6 +31,9 @@ const HARMLESS_EXTENSIONS: &[&str] = &[
     "txt", "md", "csv", "json", "xml", "log", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "rtf", "jpg", "jpeg", "png", "gif",
     "bmp", "webp", "svg", "mp3", "wav", "mp4", "mov", "avi", "mkv",
 ];
+
+/// Largest file a similarity digest is computed for.
+const TLSH_MAX: u64 = 256 * 1024 * 1024;
 
 /// Hosts listed in the report's summary. The per-file facts always hold every URL kept.
 const SUMMARY_HOSTS: usize = 2000;
@@ -112,6 +116,12 @@ impl Analyzer for Content {
             return;
         }
         let Ok(bytes) = tree.read(&file.path) else { return };
+        // A similarity digest: files that differ a little get digests that differ a little.
+        if file.size <= TLSH_MAX
+            && let Some(tlsh) = tlsh2::TlshDefaultBuilder::build_from(&bytes)
+        {
+            out.fact(file, "content.tlsh", String::from_utf8_lossy(&tlsh.hash()).into_owned());
+        }
         let found = urls::find(&bytes);
         if !found.urls.is_empty() {
             out.fact(file, "content.urls", json!({ "urls": found.urls, "truncated": found.truncated }));

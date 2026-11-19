@@ -16,8 +16,9 @@
 #let severity-mark = (high: "▲", medium: "◆", low: "●", info: "○")
 #let confidence-mark = (verified: "✓", derived: "→", heuristic: "≈")
 
-#let sans = ("Noto Sans SC",)
-#let mono = ("JetBrains Mono", "Noto Sans SC")
+#let extra = d.at("extra_fonts", default: ())
+#let sans = ("Noto Sans SC", ..extra)
+#let mono = ("JetBrains Mono", "Noto Sans SC", ..extra)
 
 // Text from the report arrives as a list of pieces; a line may break between two of them. The
 // gap adds a break point without adding a character (a zero-width space would end up in the

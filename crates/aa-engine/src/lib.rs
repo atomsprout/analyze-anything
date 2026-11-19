@@ -129,6 +129,11 @@ impl Registry {
         registry
     }
 
+    /// Only the unpackers: builds the tree and names containers, without analyzing anything.
+    pub fn unpack_only() -> Self {
+        Registry { unpackers: Self::standard().unpackers, analyzers: Vec::new() }
+    }
+
     /// Text of every rule and limitation code, the engine's own included.
     pub fn rules(&self) -> BTreeMap<&'static str, Rule> {
         let unpackers = self.unpackers.iter().flat_map(|u| u.rules().iter());
@@ -226,6 +231,18 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         let count = |severity| findings.iter().filter(|f: &&aa_core::Finding| f.severity == severity).count();
         let (high, medium, low, info) = (count(Severity::High), count(Severity::Medium), count(Severity::Low), count(Severity::Info));
         let rule = if high + medium + low > 0 { "overview.attention" } else { "overview.attention-none" };
+        // The level is the highest severity present: a grading of the findings, not of the input.
+        let level = if high > 0 {
+            "high"
+        } else if medium > 0 {
+            "medium"
+        } else if low > 0 {
+            "low"
+        } else {
+            "none"
+        };
+        let counts = serde_json::json!({ "level": level, "high": high, "medium": medium, "low": low, "info": info });
+        tree.summary.insert("overview.attention".to_string(), counts);
         findings.push(
             aa_core::Finding::new(Section::Overview, "engine", rule, Confidence::Derived, Severity::Info)
                 .param("high", high)

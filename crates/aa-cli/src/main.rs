@@ -6,11 +6,13 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use aa_core::{Location, Report, Severity};
-use aa_engine::{Event, Limits, Options, ProgressSink};
+use aa_engine::{Event, Limits, Options, ProgressSink, Registry};
 use aa_export::manifest::{self, Manifest, Status};
 use aa_export::sarif;
 use aa_report::{Format, Lang};
 use clap::{Parser, Subcommand, ValueEnum};
+
+mod selftest;
 
 #[derive(Parser)]
 #[command(name = "aa", version, about = "Analyze any file or folder and write a report")]
@@ -29,7 +31,19 @@ enum Command {
         output: Output,
         #[command(flatten)]
         limits: LimitArgs,
+        /// A file of YARA rules to match against every file, in addition to the built-in checks
+        #[arg(long)]
+        rules: Vec<PathBuf>,
     },
+    /// Print the tree of files as JSON: what the input is and what is inside it, without analysis
+    Inspect {
+        /// File or folder to look into. It is only read, never run.
+        path: PathBuf,
+        #[command(flatten)]
+        limits: LimitArgs,
+    },
+    /// Check that this build works: analyze built-in samples and compare with known results
+    Selftest,
     /// Write other formats from an existing report.json, without analyzing again
     Render {
         /// A report.json written by `aa analyze`
@@ -81,6 +95,9 @@ struct Output {
     /// Language of the readable formats
     #[arg(long, default_value = "zh")]
     lang: LangArg,
+    /// A font file for PDF text the built-in fonts cannot show (other scripts, emoji); repeatable
+    #[arg(long)]
+    font: Vec<PathBuf>,
     /// Exit with code 3 when a finding of this severity or higher exists
     #[arg(long)]
     fail_on: Option<SeverityArg>,
@@ -164,7 +181,8 @@ fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
             FormatArg::Md => ("report.md", render(Format::Markdown)?),
             FormatArg::Txt => ("report.txt", render(Format::Text)?),
             FormatArg::Html => ("report.html", render(Format::Html)?),
-            FormatArg::Pdf => ("report.pdf", render(Format::Pdf)?),
+            FormatArg::Pdf if output.font.is_empty() => ("report.pdf", render(Format::Pdf)?),
+            FormatArg::Pdf => ("report.pdf", pdf_with_fonts(report, lang, &output.font)?),
             FormatArg::Sarif => {
                 let language = match output.lang {
                     LangArg::Zh => sarif::Language::Zh,
@@ -190,6 +208,61 @@ fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
     std::fs::write(&path, written.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
     println!("{}", path.display());
     Ok(())
+}
+
+#[cfg(feature = "pdf")]
+fn pdf_with_fonts(report: &Report, lang: Lang, fonts: &[PathBuf]) -> Result<Vec<u8>, String> {
+    let mut data = Vec::new();
+    for path in fonts {
+        data.push(std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?);
+    }
+    aa_report::render_pdf_with_fonts(report, lang, &data).map_err(|e| e.to_string())
+}
+
+#[cfg(not(feature = "pdf"))]
+fn pdf_with_fonts(report: &Report, lang: Lang, _fonts: &[PathBuf]) -> Result<Vec<u8>, String> {
+    aa_report::render(report, Format::Pdf, lang).map_err(|e| e.to_string())
+}
+
+fn limits(args: &LimitArgs) -> Limits {
+    let defaults = Limits::default();
+    Limits {
+        max_files: args.max_files.unwrap_or(defaults.max_files),
+        max_depth: args.max_depth.unwrap_or(defaults.max_depth),
+        max_unpacked_bytes: args.max_unpacked_bytes.unwrap_or(defaults.max_unpacked_bytes),
+        max_entry_bytes: args.max_entry_bytes.unwrap_or(defaults.max_entry_bytes),
+        ..defaults
+    }
+}
+
+/// The tree as plain JSON on standard output, for scripts and agents.
+fn inspect(path: &Path, args: &LimitArgs) -> Result<u8, String> {
+    let options = Options { limits: limits(args), cancel: None };
+    let report =
+        aa_engine::analyze_with(&Registry::unpack_only(), path, &options, &mut aa_engine::NoProgress).map_err(|e| e.to_string())?;
+    let artifacts: Vec<serde_json::Value> = report
+        .artifacts
+        .iter()
+        .map(|a| {
+            serde_json::json!({
+                "path": a.path,
+                "parent": a.parent,
+                "size": a.size,
+                "mime": a.detected.as_ref().map(|d| d.mime.as_str()),
+                "kind": a.kind,
+                "unpacked_by": a.unpacked_by,
+                "sha256": a.digests.as_ref().map(|d| d.sha256.as_str()),
+            })
+        })
+        .collect();
+    let tree = serde_json::json!({ "input": report.input, "coverage": report.coverage, "artifacts": artifacts, "limitations": report.limitations });
+    println!("{}", serde_json::to_string_pretty(&tree).map_err(|e| e.to_string())?);
+    Ok(if partial(&report) { EXIT_PARTIAL } else { 0 })
+}
+
+fn partial(report: &Report) -> bool {
+    let coverage = &report.coverage;
+    coverage.truncated || coverage.content_lost > 0 || coverage.artifacts_analyzed < coverage.artifacts_total
 }
 
 fn load(path: &Path) -> Result<Report, String> {
@@ -261,20 +334,21 @@ fn verify(dir: &Path) -> Result<u8, String> {
 
 fn run(cli: Cli) -> Result<u8, String> {
     let (report, output) = match cli.command {
-        Command::Analyze { path, output, limits } => {
+        Command::Analyze { path, output, limits: limit_args, rules } => {
             let mut progress = StderrProgress { live: std::io::stderr().is_terminal() };
-            let defaults = Limits::default();
-            let limits = Limits {
-                max_files: limits.max_files.unwrap_or(defaults.max_files),
-                max_depth: limits.max_depth.unwrap_or(defaults.max_depth),
-                max_unpacked_bytes: limits.max_unpacked_bytes.unwrap_or(defaults.max_unpacked_bytes),
-                max_entry_bytes: limits.max_entry_bytes.unwrap_or(defaults.max_entry_bytes),
-                ..defaults
-            };
-            let options = Options { limits, cancel: None };
-            let report = aa_engine::analyze(&path, &options, &mut progress).map_err(|e| e.to_string())?;
+            let options = Options { limits: limits(&limit_args), cancel: None };
+            let mut registry = Registry::standard();
+            for file in &rules {
+                let source = std::fs::read_to_string(file).map_err(|e| format!("cannot read {}: {e}", file.display()))?;
+                let analyzer = aa_content::yara::analyzer(&source).map_err(|e| format!("{}: {e}", file.display()))?;
+                // After the built-in content checks, before the analyzers that summarise.
+                registry.analyzers.insert(1, analyzer);
+            }
+            let report = aa_engine::analyze_with(&registry, &path, &options, &mut progress).map_err(|e| e.to_string())?;
             (report, output)
         }
+        Command::Inspect { path, limits } => return inspect(&path, &limits),
+        Command::Selftest => return selftest::run(),
         Command::Render { report, output } => (load(&report)?, output),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
         Command::Verify { dir } => return verify(&dir),
@@ -290,9 +364,7 @@ fn run(cli: Cli) -> Result<u8, String> {
     {
         return Ok(EXIT_FINDINGS);
     }
-    let coverage = &report.coverage;
-    let partial = coverage.truncated || coverage.content_lost > 0 || coverage.artifacts_analyzed < coverage.artifacts_total;
-    Ok(if partial { EXIT_PARTIAL } else { 0 })
+    Ok(if partial(&report) { EXIT_PARTIAL } else { 0 })
 }
 
 fn main() -> ExitCode {
