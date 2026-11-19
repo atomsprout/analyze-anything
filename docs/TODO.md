@@ -17,6 +17,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 - [x] Reports and the app are in English unless another language is asked for.
 - [x] The command is `analyze-anything` everywhere (it was `aa`, which macOS already has as Apple Archive), with the short name `aaaa`; a bare path is analyzed; the report goes to `<input>.report`.
 - [x] The optional AI interpretation: the model looks things up in the report through read-only tools; run by Claude Code, Codex, a model service with an API key, or a command; settings in `~/.analyze-anything/config.toml`. See [AI.md](AI.md).
+- [x] CI passes on Linux, macOS and Windows for the current code (run of 2026-11-19). It found two things macOS had hidden: a worker that ended before it was asked was reported as a broken pipe, and two imports unused outside Unix.
 - [x] An interface for AI agents: `analyze-anything mcp` serves a report's read-only tools over MCP.
 
 ## The AI interpretation
@@ -31,9 +32,8 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Waiting for a person
 
-- [ ] **Get CI running again.** GitHub Actions does not start jobs for this organization ("recent account payments have failed or your spending limit needs to be increased"), for the public repository too. The last full run on Linux, macOS and Windows was at the first `v0.1.0` tag; one Linux test failed there and was fixed since. Everything after that, the renamed command and the AI interpretation included, was tested on macOS only, plus a compile check for Linux x64 and Windows x64 from the Mac at an earlier commit. Once billing is settled: run the CI workflow on `main`, then the Release workflow for the other platforms.
-- [ ] The website is published by hand with `tools/site/publish.sh` for the same reason; a workflow can take that over.
-
+- [ ] GitHub Actions refused to start jobs for this organization while the repository was private ("recent account payments have failed or your spending limit needs to be increased"). Public repositories are not affected, so CI runs now; the billing notice still stands for anything private.
+- [ ] The website is published by hand with `tools/site/publish.sh`; a workflow could take that over.
 - [ ] **Three manual checks of the desktop app**: native menus and shortcuts, drag and drop, the system's open and save dialogs (see [DESKTOP.md](DESKTOP.md)). Everything else is exercised by the app's self-check in its real window.
 - [ ] **Read a real report through**: where `report.html` and `report.pdf` are wordy or lack something takes a person to judge. How much each chapter says, and how many findings of a kind are listed before they are merged (10 now), wait for that.
 - [ ] **Try it on a Windows machine** (postponed): run a real installer and an installed program folder; compare the signature findings, the MSI ones included, with `sigcheck` or `signtool verify /pa /v`.

@@ -40,7 +40,7 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-目前只发布 Apple 芯片 Mac 的版本，当前的代码也只在这上面测试过。Linux 和 Windows 按设计应当可用，在较早的一个提交上测试通过，但当前的代码没有在这两个平台上运行过，见 [docs/TODO.md](docs/TODO.md)。
+目前只发布 Apple 芯片 Mac 的版本。在 Linux 和 Windows 上，代码能构建、测试在 CI 里通过，但还没有人在这两个平台上实际用过。
 
 ## 使用
 
