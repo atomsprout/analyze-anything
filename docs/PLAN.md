@@ -28,7 +28,7 @@
 - **没有做的**：每分析器超时（线程无法被安全地强行终止，只做了崩溃隔离）。`aa inspect`、`aa selftest`、`--rules`（YARA）、`--font`、TLSH 相似度哈希均已实现。
 - **可执行文件体积**：带 PDF 约 49 MB，比 §5.3 估计的大（Typst 加字体约 39 MB）；不带 PDF 约 10 MB。
 - **差分测试的形式**：对照是在开发时用脚本对真实样本跑的，只有小样本的对照结果写成了自动测试；CI 里不调用外部工具。
-- **只在 Linux 上验证过**，没有用 macOS 的 `codesign` 和 Windows 的 `sigcheck` 对照。
+- **CI 在 Linux、macOS、Windows 上通过**（格式、lint、全部测试、许可证与安全公告检查）。真实样本的分析和对照只在 Linux 上做过，没有用 macOS 的 `codesign` 和 Windows 的 `sigcheck` 对照。
 
 ---
 
