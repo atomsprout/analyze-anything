@@ -251,6 +251,22 @@ fn an_openai_compatible_service_is_asked_its_way() {
 }
 
 #[test]
+fn ollama_is_asked_on_this_machine_without_a_key() {
+    let report = report();
+    let transport = Canned::new(vec![(
+        200,
+        json!({ "model": "qwen3:latest", "choices": [{ "finish_reason": "stop", "message": { "role": "assistant", "content": said(&report) } }] }),
+    )]);
+    let result = ask(&report, &settings("[ai]\nengine = \"ollama\"\nmodel = \"qwen3\"\n"), Language::En, &transport, &NoPrograms)
+        .expect("interprets");
+    let asked = transport.asked.borrow();
+    assert_eq!(asked[0].url, "http://localhost:11434/v1/chat/completions");
+    assert!(!asked[0].headers.iter().any(|(name, _)| name == "authorization"));
+    assert_eq!(transport.body(0)["model"], "qwen3");
+    assert_eq!((result.engine, result.model.as_str()), (Engine::Ollama, "qwen3:latest"));
+}
+
+#[test]
 fn a_model_that_keeps_asking_is_told_to_answer_and_then_given_up_on() {
     let report = report();
     let more = || {

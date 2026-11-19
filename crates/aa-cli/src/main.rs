@@ -169,6 +169,8 @@ enum EngineArg {
     Claude,
     /// The Codex command line, with the account it is signed in to
     Codex,
+    /// This program, with a model that Ollama runs on this machine
+    Ollama,
     /// A command of your own, set in the configuration file
     Command,
 }
@@ -185,22 +187,6 @@ enum ProviderArg {
 #[cfg(feature = "ai")]
 #[derive(Subcommand)]
 enum AiChoice {
-    /// Hand it to Claude Code (the `claude` command); no API key needed
-    Claude {
-        /// A model for Claude Code to use instead of its own choice
-        #[arg(long)]
-        model: Option<String>,
-        #[command(flatten)]
-        common: AiCommon,
-    },
-    /// Hand it to Codex (the `codex` command); no API key needed
-    Codex {
-        /// A model for Codex to use instead of its own choice
-        #[arg(long)]
-        model: Option<String>,
-        #[command(flatten)]
-        common: AiCommon,
-    },
     /// Talk to a model service directly, with an API key
     Api {
         /// The kind of service
@@ -218,6 +204,33 @@ enum AiChoice {
         /// Read the API key from standard input and keep it in the configuration file
         #[arg(long)]
         api_key_stdin: bool,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Hand it to Claude Code (the `claude` command); no API key needed
+    Claude {
+        /// A model for Claude Code to use instead of its own choice
+        #[arg(long)]
+        model: Option<String>,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Hand it to Codex (the `codex` command); no API key needed
+    Codex {
+        /// A model for Codex to use instead of its own choice
+        #[arg(long)]
+        model: Option<String>,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Use a model that Ollama runs on this machine; no API key, and nothing leaves the machine
+    Ollama {
+        /// The model, as `ollama list` shows it
+        #[arg(long)]
+        model: String,
+        /// Where Ollama listens [default: http://localhost:11434/v1]
+        #[arg(long)]
+        base_url: Option<String>,
         #[command(flatten)]
         common: AiCommon,
     },
@@ -546,6 +559,7 @@ mod ai {
                 EngineArg::Api => Engine::Api,
                 EngineArg::Claude => Engine::Claude,
                 EngineArg::Codex => Engine::Codex,
+                EngineArg::Ollama => Engine::Ollama,
                 EngineArg::Command => Engine::Command,
             }),
             provider: flags.provider.map(provider),
@@ -657,6 +671,9 @@ mod ai {
             }
             AiChoice::Codex { model, common } => {
                 Overrides { engine: Some(Engine::Codex), model, auto: auto(&common), ..Overrides::default() }
+            }
+            AiChoice::Ollama { model, base_url, common } => {
+                Overrides { engine: Some(Engine::Ollama), model: Some(model), base_url, auto: auto(&common), ..Overrides::default() }
             }
             AiChoice::Command { command, common } => {
                 Overrides { engine: Some(Engine::Command), command: Some(command), auto: auto(&common), ..Overrides::default() }
@@ -794,7 +811,23 @@ fn run(cli: Cli) -> Result<u8, String> {
     Ok(if partial(&report) { EXIT_PARTIAL } else { 0 })
 }
 
+/// Ends quietly when whoever reads the output has stopped reading (`analyze-anything … | head`):
+/// printing to a closed pipe is the end of the job, not a crash to report.
+fn end_quietly_on_a_closed_pipe() {
+    let report = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic| {
+        let payload = panic.payload();
+        let text = payload.downcast_ref::<String>().map(String::as_str).or_else(|| payload.downcast_ref::<&str>().copied());
+        let closed = text.is_some_and(|text| text.starts_with("failed printing to std") && text.contains("Broken pipe"));
+        if closed {
+            std::process::exit(0);
+        }
+        report(panic);
+    }));
+}
+
 fn main() -> ExitCode {
+    end_quietly_on_a_closed_pipe();
     match run(Cli::parse_from(arguments())) {
         Ok(code) => ExitCode::from(code),
         Err(message) => {

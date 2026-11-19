@@ -66,11 +66,11 @@ The full guide is [docs/USAGE.md](docs/USAGE.md).
 Off unless you turn it on. Once a report is written, a language model can explain it in plain words:
 
 ```
-analyze-anything ai claude          # once: let Claude Code do it, no API key needed
+analyze-anything ai claude          # once: choose who does it (here Claude Code, no API key needed)
 analyze-anything App.ipa --ai       # analyze, then write ai.md next to the report
 ```
 
-You choose who does it: Claude Code, Codex, a model service you have an API key for (Claude, or anything that speaks OpenAI's protocol, a model on your own machine included), or a program of your own. The model sees the report, never the analyzed files, and looks things up in it through read-only tools. Every statement it makes must cite findings of the report; those that do not are dropped. See [docs/AI.md](docs/AI.md).
+You choose who does it: a model service you have an API key for (Claude, or anything that speaks OpenAI's protocol), Claude Code, Codex, or a model that Ollama runs on your own machine. A program of your own works too. The model sees the report, never the analyzed files, and looks things up in it through read-only tools. Every statement it makes must cite findings of the report; those that do not are dropped. See [docs/AI.md](docs/AI.md).
 
 ## Good to know
 

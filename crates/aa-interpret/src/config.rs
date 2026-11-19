@@ -19,6 +19,9 @@ pub enum Engine {
     Claude,
     /// The Codex command line (`codex`), with whatever account it is signed in to.
     Codex,
+    /// This program, talking to a model that Ollama runs on this machine. No key, and nothing
+    /// leaves the machine.
+    Ollama,
     /// Any other program, started by a command the user wrote.
     Command,
 }
@@ -29,6 +32,7 @@ impl Engine {
             Engine::Api => "api",
             Engine::Claude => "claude",
             Engine::Codex => "codex",
+            Engine::Ollama => "ollama",
             Engine::Command => "command",
         }
     }
@@ -105,6 +109,7 @@ pub struct Api {
 /// What does the work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Backend {
+    /// The `api` and `ollama` engines: this program talks to the service itself.
     Api(Api),
     /// `model` is passed on to the program when set.
     Claude {
@@ -121,6 +126,7 @@ pub enum Backend {
 /// Settings with nothing left open.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Settings {
+    engine: Engine,
     pub backend: Backend,
     pub max_turns: u32,
     pub timeout: Duration,
@@ -128,17 +134,13 @@ pub struct Settings {
 
 impl Settings {
     pub fn engine(&self) -> Engine {
-        match self.backend {
-            Backend::Api(_) => Engine::Api,
-            Backend::Claude { .. } => Engine::Claude,
-            Backend::Codex { .. } => Engine::Codex,
-            Backend::Command { .. } => Engine::Command,
-        }
+        self.engine
     }
 
     /// One line on who will be asked, for the user to read before anything is sent.
     pub fn describe(&self) -> String {
         match &self.backend {
+            Backend::Api(api) if self.engine == Engine::Ollama => format!("{} in Ollama at {}", api.model, api.base_url),
             Backend::Api(api) => format!("{} at {}", api.model, api.base_url),
             Backend::Claude { .. } => "Claude Code (the `claude` command)".into(),
             Backend::Codex { .. } => "Codex (the `codex` command)".into(),
@@ -148,6 +150,8 @@ impl Settings {
 }
 
 pub const DEFAULT_ANTHROPIC_MODEL: &str = "claude-opus-5-5";
+/// Where Ollama listens unless it was told otherwise.
+pub const DEFAULT_OLLAMA_URL: &str = "http://localhost:11434/v1";
 pub const DEFAULT_MAX_TURNS: u32 = 12;
 const DEFAULT_TIMEOUT_SECONDS: u64 = 600;
 
@@ -228,14 +232,23 @@ pub fn resolve(file: Overrides, flags: Overrides, env: &dyn Fn(&str) -> Option<S
     let provider = flags.provider.or(file.provider);
     // Naming a model service is enough to mean the `api` engine.
     let engine = flags.engine.or(file.engine).or(provider.map(|_| Engine::Api)).ok_or_else(|| {
-        "AI interpretation is not set up. Choose who does it, once: `analyze-anything ai claude`, `analyze-anything ai codex`, \
-         or `analyze-anything ai api --provider … --model …` (see docs/AI.md)"
+        "AI interpretation is not set up. Choose who does it, once: `analyze-anything ai api --provider … --api-key-stdin`, \
+         `analyze-anything ai claude`, `analyze-anything ai codex` or `analyze-anything ai ollama --model …` (see docs/AI.md)"
             .to_string()
     })?;
     let model = flags.model.or(file.model);
     let backend = match engine {
         Engine::Claude => Backend::Claude { model },
         Engine::Codex => Backend::Codex { model },
+        Engine::Ollama => {
+            let model = model.ok_or("the `ollama` engine needs `model`: one that `ollama list` shows, such as \"qwen3\"")?;
+            let base_url =
+                flags.base_url.or(file.base_url).unwrap_or_else(|| DEFAULT_OLLAMA_URL.to_string()).trim_end_matches('/').to_string();
+            if !(base_url.starts_with("https://") || base_url.starts_with("http://")) {
+                return Err(format!("base_url must start with https:// or http://, not {base_url:?}"));
+            }
+            Backend::Api(Api { provider: Provider::OpenaiCompatible, model, base_url, key: None })
+        }
         Engine::Command => {
             let command = flags.command.or(file.command).filter(|command| !command.is_empty());
             Backend::Command { command: command.ok_or("the `command` engine needs `command = [\"program\", \"argument\", …]`")? }
@@ -270,6 +283,7 @@ pub fn resolve(file: Overrides, flags: Overrides, env: &dyn Fn(&str) -> Option<S
         }
     };
     Ok(Settings {
+        engine,
         backend,
         max_turns: flags.max_turns.or(file.max_turns).unwrap_or(DEFAULT_MAX_TURNS).clamp(1, 50),
         timeout: Duration::from_secs(flags.timeout_seconds.or(file.timeout_seconds).unwrap_or(DEFAULT_TIMEOUT_SECONDS).max(1)),
@@ -347,6 +361,23 @@ mod tests {
             &no_env,
         );
         assert_eq!(own.expect("resolves").backend, Backend::Command { command: vec!["my-agent".into(), "{prompt_file}".into()] });
+    }
+
+    #[test]
+    fn ollama_is_a_local_service_with_no_key() {
+        let file = parse("[ai]\nengine = \"ollama\"\n").expect("parses");
+        assert!(resolve(file, Overrides::default(), &no_env).expect_err("no model").contains("ollama list"));
+        let settings = resolve(parse("[ai]\nengine = \"ollama\"\nmodel = \"qwen3\"\n").expect("parses"), Overrides::default(), &no_env)
+            .expect("resolves");
+        assert_eq!(settings.engine(), Engine::Ollama);
+        assert_eq!(
+            api(&settings),
+            &Api { provider: Provider::OpenaiCompatible, model: "qwen3".into(), base_url: DEFAULT_OLLAMA_URL.into(), key: None }
+        );
+        assert!(settings.describe().contains("Ollama"));
+        // Ollama on another machine or port.
+        let elsewhere = parse("[ai]\nengine = \"ollama\"\nmodel = \"qwen3\"\nbase_url = \"http://box:11434/v1/\"\n").expect("parses");
+        assert_eq!(api(&resolve(elsewhere, Overrides::default(), &no_env).expect("resolves")).base_url, "http://box:11434/v1");
     }
 
     #[test]

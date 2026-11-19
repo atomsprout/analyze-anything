@@ -16,7 +16,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 - [x] Released through Homebrew: the command line and the desktop app install separately; Apple silicon only.
 - [x] Reports and the app are in English unless another language is asked for.
 - [x] The command is `analyze-anything` everywhere (it was `aa`, which macOS already has as Apple Archive), with the short name `aaaa`; a bare path is analyzed; the report goes to `<input>.report`.
-- [x] The optional AI interpretation: the model looks things up in the report through read-only tools; run by Claude Code, Codex, a model service with an API key, or a command; settings in `~/.analyze-anything/config.toml`. See [AI.md](AI.md).
+- [x] The optional AI interpretation: the model looks things up in the report through read-only tools; run by a model service with an API key, Claude Code, Codex, Ollama, or a command; settings in `~/.analyze-anything/config.toml`. See [AI.md](AI.md).
 - [x] CI passes on Linux, macOS and Windows for the current code (run of 2026-11-19). It found two things macOS had hidden: a worker that ended before it was asked was reported as a broken pipe, and two imports unused outside Unix.
 - [x] An interface for AI agents: `analyze-anything mcp` serves a report's read-only tools over MCP.
 
@@ -24,6 +24,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 - [ ] Run the `claude` engine for real: it needs a signed-in `claude` on the machine. So far its arguments and the tool server are tested apart.
 - [ ] Run the `codex` engine for real: it was written from the documentation and never met a real `codex`.
+- [ ] Run the `ollama` engine against a real Ollama: it shares its protocol with the OpenAI-compatible `api` engine, which was run for real, but no Ollama was at hand.
 - [ ] Run the Anthropic protocol of the `api` engine with a real key. The OpenAI-compatible protocol was run against DeepSeek.
 - [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
 - [ ] Offer it in the desktop app.

@@ -68,11 +68,11 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 默认关闭，开启才有。报告写好之后，可以让语言模型用通俗的话解释它：
 
 ```
-analyze-anything ai claude          # 设置一次：交给 Claude Code，不需要 API key
+analyze-anything ai claude          # 设置一次：选择由谁来做（这里是 Claude Code，不需要 API key）
 analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 ```
 
-由谁来做由你选：Claude Code、Codex、你有 API key 的模型服务（Claude，或任何使用 OpenAI 协议的服务，包括本机的模型），或者你自己的程序。模型看到的是报告，不是被分析的文件；它通过只读工具在报告里查东西。它说的每句话都必须引用报告里的结论，引用不成立的整句丢掉。见 [docs/AI.md](docs/AI.md)（英文）。
+由谁来做由你选：你有 API key 的模型服务（Claude，或任何使用 OpenAI 协议的服务）、Claude Code、Codex，或者 Ollama 在你本机运行的模型。也可以是你自己的程序。模型看到的是报告，不是被分析的文件；它通过只读工具在报告里查东西。它说的每句话都必须引用报告里的结论，引用不成立的整句丢掉。见 [docs/AI.md](docs/AI.md)（英文）。
 
 ## 请知悉
 
