@@ -17,6 +17,7 @@ target/release/aa analyze <文件或文件夹> -o out
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限
 - [docs/TODO.md](docs/TODO.md) — 剩余待办
 - [docs/PLAN.md](docs/PLAN.md) — 规划
+- [docs/PLAN-DESKTOP.md](docs/PLAN-DESKTOP.md) — 第二阶段规划：桌面版
 - [docs/RESEARCH.md](docs/RESEARCH.md) — 调研记录
 - [docs/ANALYZERS.md](docs/ANALYZERS.md) — 如何添加一种格式（英文）
 - [docs/spikes/](docs/spikes/) — 技术验证记录：PDF、DMG、NSIS、APK 签名
