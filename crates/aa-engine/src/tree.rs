@@ -199,7 +199,16 @@ impl Builder<'_> {
             for unpacker in unpackers {
                 let mut sink =
                     Sink { builder: self, container: &child.path, children: Vec::new(), refuse: at_depth_limit, refused: false, added: 0 };
-                let outcome = unpacker.unpack(&artifact, &bytes, &mut sink);
+                // Unpackers lean on third-party decoders; a panic in one must not end the run.
+                // Children added before the panic are kept, like after any other failure.
+                let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| unpacker.unpack(&artifact, &bytes, &mut sink)));
+                let outcome = attempt.unwrap_or_else(|panic| {
+                    let message = panic.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| panic.downcast_ref::<String>().cloned());
+                    Unpack::Failed {
+                        kind: unpacker.id(),
+                        detail: format!("the unpacker failed: {}", message.unwrap_or_else(|| "panic".into())),
+                    }
+                });
                 let (found, added) = (std::mem::take(&mut sink.children), sink.added);
                 let (kind, failure) = match outcome {
                     Unpack::NotMine => continue,

@@ -402,3 +402,35 @@ fn bytes_in_memory_give_the_same_report_as_the_file_on_disk() {
     let from_memory = aa_engine::analyze_bytes(&Registry::standard(), "some/dir/pack.zip", bytes, &Options::default(), &mut NoProgress);
     assert_eq!(serde_json::to_string(&from_disk).expect("json"), serde_json::to_string(&from_memory).expect("json"));
 }
+
+struct PanickingUnpacker;
+
+impl aa_core::plugin::Unpacker for PanickingUnpacker {
+    fn id(&self) -> &'static str {
+        "panicking"
+    }
+
+    fn unpack(&self, file: &Artifact, _bytes: &[u8], sink: &mut dyn aa_core::plugin::UnpackSink) -> aa_core::plugin::Unpack {
+        if file.path != "b.txt" {
+            return aa_core::plugin::Unpack::NotMine;
+        }
+        sink.add("kept.txt", &mut &b"kept"[..]).expect("add");
+        panic!("decoder boom");
+    }
+}
+
+#[test]
+fn a_failing_unpacker_does_not_stop_the_run() {
+    let dir = folder();
+    let mut registry = Registry::standard();
+    registry.unpackers.insert(0, Box::new(PanickingUnpacker));
+    let hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let report = analyze_with(&registry, dir.path(), &Options::default(), &mut NoProgress).expect("readable");
+    std::panic::set_hook(hook);
+
+    assert_eq!(codes(&report), ["unpack_failed"]);
+    assert_eq!(report.limitations[0].detail.as_deref(), Some("the unpacker failed: decoder boom"));
+    assert!(paths(&report).contains(&"b.txt/kept.txt"), "what was extracted before the failure is kept");
+    assert_eq!(report.coverage.artifacts_total, 5);
+}
