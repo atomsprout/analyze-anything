@@ -53,7 +53,10 @@ aa explain out/report.json <结论 ID 的前几位>               # 查看一条
 aa verify out/                                             # 检查输出文件是否与 manifest.json 一致
 aa inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出），不做分析
 aa selftest                                                # 用内置样本自检：解包、哈希、分析、各格式渲染
+aa diff 旧/report.json 新/report.json                       # 对比两份报告：新增、消失、变化的结论和文件
 ```
+
+`aa diff` 的典型用途是同一个应用的两个版本。结论按“同一条规则、输入内同一位置的文件”配对：说法相同算相同，说法不同算变化，只在一边出现算新增或消失；文件按输入内的路径和 SHA-256 比较。`--json` 输出完整结果，`--lang en` 输出英文，`--fail-on-difference` 在有差别时以退出码 3 结束。
 
 `manifest.json` 记录每个输出文件的大小和 SHA-256。`aa verify` 会指出被改动、丢失或多出来的文件。清单本身没有签名：它能发现无意的改动；如果另外保存了清单自己的 SHA-256，也能发现有意的改动。
 

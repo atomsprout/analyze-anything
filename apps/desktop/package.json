@@ -8,12 +8,14 @@
     "build": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && vite build",
     "test": "vitest run",
     "tauri": "tauri",
-    "fixture": "cargo run -q --release -p aa-cli -- analyze ../../crates/aa-apple/tests/data/tiny.dmg -o tests/fixtures/out -f html && cp tests/fixtures/out/report.html tests/fixtures/sample-report.html"
+    "fixture": "cargo run -q --release -p aa-cli -- analyze ../../crates/aa-apple/tests/data/tiny.dmg -o tests/fixtures/out -f html && cp tests/fixtures/out/report.html tests/fixtures/sample-report.html",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@tauri-apps/cli": "^2.12.6",
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2",

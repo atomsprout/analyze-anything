@@ -3,3 +3,4 @@ dist
 src-tauri/gen
 tests/fixtures/sample-report.html
 tests/fixtures/out
+test-results

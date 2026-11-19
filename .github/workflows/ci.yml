@@ -26,6 +26,30 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
+  # The desktop app: its page in real browser engines, and its Rust side on the one system it
+  # is released for. `cargo test` above does not build it (see default-members in Cargo.toml).
+  desktop:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install webkit chromium
+      - run: npm run fixture
+      - run: npm run test:browser
+      - run: cargo clippy -p aa-desktop --all-targets -- -D warnings
+
   licenses:
     runs-on: ubuntu-latest
     steps:

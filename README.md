@@ -4,6 +4,20 @@
 
 使用 Rust 开发，纯静态分析，离线可用。被分析的输入只会被读取，不会被执行。
 
+有两种用法，共用同一套分析引擎，同一个输入得到字节相同的报告：
+
+- **命令行 `aa`**：`aa analyze <文件或文件夹> -o out`
+- **桌面版**（macOS）：拖入文件，看进度，读报告，点开证据看字节，导出，查看历史并对比两个版本。
+
+## 安装（macOS，Apple 芯片）
+
+```
+brew install atomsprout/tap/analyze-anything                  # 命令行 aa
+brew install --cask atomsprout/tap/analyze-anything-desktop   # 桌面版
+```
+
+两者互不依赖。其他平台的命令行从源码构建：
+
 ```
 cargo build --release
 target/release/aa analyze <文件或文件夹> -o out
@@ -14,13 +28,14 @@ target/release/aa analyze <文件或文件夹> -o out
 ## 文档
 
 - [docs/USAGE.md](docs/USAGE.md) — 使用说明
+- [docs/DESKTOP.md](docs/DESKTOP.md) — 桌面版：结构、开发、测试、发布
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限
 - [docs/TODO.md](docs/TODO.md) — 剩余待办
 - [docs/PLAN.md](docs/PLAN.md) — 规划
 - [docs/PLAN-DESKTOP.md](docs/PLAN-DESKTOP.md) — 第二阶段规划：桌面版
 - [docs/RESEARCH.md](docs/RESEARCH.md) — 调研记录
 - [docs/ANALYZERS.md](docs/ANALYZERS.md) — 如何添加一种格式（英文）
-- [docs/spikes/](docs/spikes/) — 技术验证记录：PDF、DMG、NSIS、APK 签名
+- [docs/spikes/](docs/spikes/) — 技术验证记录：PDF、DMG、NSIS、APK 签名、桌面版
 
 ## 开发
 
