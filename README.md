@@ -1,25 +1,24 @@
 # Analyze Anything
 
-输入电脑上的任意产物（IPA / APK / Windows 安装包与程序目录 / macOS .app / DMG / 压缩包 / 文件夹 / 任意文件），输出一份可靠、可溯源、多维度的分析报告（PDF / HTML / Markdown / TXT）。
+输入电脑上的任意产物（IPA / APK / Windows 安装包与程序目录 / macOS .app / DMG / pkg / 压缩包 / 文件夹 / 任意文件），输出一份可靠、可溯源、多维度的分析报告：PDF、HTML、Markdown、TXT，以及 JSON、SARIF、CycloneDX。
 
-使用 Rust 开发，纯静态分析，离线可用。先做命令行版本，之后做桌面版（Tauri）。
-
-- [docs/PLAN.md](docs/PLAN.md) — 最终规划
-- [docs/RESEARCH.md](docs/RESEARCH.md) — 调研记录
-
-## 当前进度
-
-M0 进行中。已经能用的部分：对任意文件或文件夹输出 JSON 和 Markdown 报告，内容包括每个文件的大小、MD5 / SHA-1 / SHA-256、识别类型和熵，以及两条通用规则的结论。还不会解包，也不解析任何具体格式；TXT、HTML、PDF 输出在 M1。
-
-## 使用
+使用 Rust 开发，纯静态分析，离线可用。被分析的输入只会被读取，不会被执行。
 
 ```
 cargo build --release
-target/release/aa analyze <文件或文件夹> -o out --format json,md --lang zh
-target/release/aa render out/report.json -o out2 --format md --lang en
+target/release/aa analyze <文件或文件夹> -o out
 ```
 
-被分析的输入只会被读取，不会被执行。退出码：0 完成，1 无法运行，2 已运行但分析不完整（原因写在报告的"局限"里）。
+每条结论都带证据（来自哪个文件、哪个位置、读到了什么）和置信度，没能分析的部分会如实列在报告的“覆盖度与局限”里。
+
+## 文档
+
+- [docs/USAGE.md](docs/USAGE.md) — 使用说明
+- [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限
+- [docs/PLAN.md](docs/PLAN.md) — 规划
+- [docs/RESEARCH.md](docs/RESEARCH.md) — 调研记录
+- [docs/ANALYZERS.md](docs/ANALYZERS.md) — 如何添加一种格式（英文）
+- [docs/spikes/](docs/spikes/) — 技术验证记录：PDF、DMG、NSIS、APK 签名
 
 ## 开发
 
@@ -28,3 +27,9 @@ cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 ```
+
+## 许可证
+
+MIT 或 Apache-2.0，任选其一。内嵌字体（Noto Sans SC、JetBrains Mono）使用 SIL Open Font License，许可证文件在 `crates/aa-report/fonts/`。
+
+仅用于分析你有权分析的对象。
