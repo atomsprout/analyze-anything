@@ -25,6 +25,8 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+      # The command line without its optional parts must still build.
+      - run: cargo build -p aa-cli --no-default-features
 
   # The desktop app: its page in real browser engines, and its Rust side on the one system it
   # is released for. `cargo test` above does not build it (see default-members in Cargo.toml).

@@ -1,11 +1,11 @@
 name: Release
 
-# Builds the `analyze-anything` binary for each platform when a version tag is pushed, and attaches the
-# archives and their SHA-256 sums to a draft release for a person to review and publish.
+# Builds the `analyze-anything` binary for each platform, on request, and attaches the archives
+# and their SHA-256 sums to a draft release for a person to review and publish. These builds are
+# not signed. The signed and notarized builds for Apple silicon Macs, which are what is released
+# today, are made with tools/release/macos.sh.
 on:
-  push:
-    tags: ["v*"]
-  # A manual run without a version builds and packages every target and stops: a rehearsal.
+  # A run without a version builds and packages every target and stops: a rehearsal.
   # With a version it also creates the draft release, tagging the commit it ran on.
   workflow_dispatch:
     inputs:
@@ -47,7 +47,7 @@ jobs:
         run: |
           name="analyze-anything-${RELEASE_NAME//\//-}-${{ matrix.target }}"
           mkdir "$name"
-          cp "target/${{ matrix.target }}/release/analyze-anything" README.md "$name/"
+          cp "target/${{ matrix.target }}/release/analyze-anything" README.md LICENSE NOTICE "$name/"
           tar czf "$name.tar.gz" "$name"
           shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256"
       - name: Package (Windows)
@@ -56,20 +56,20 @@ jobs:
         run: |
           $name = "analyze-anything-$($env:RELEASE_NAME -replace '/', '-')-${{ matrix.target }}"
           New-Item -ItemType Directory $name | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/analyze-anything.exe", "README.md" $name
+          Copy-Item "target/${{ matrix.target }}/release/analyze-anything.exe", "README.md", "LICENSE", "NOTICE" $name
           Compress-Archive $name "$name.zip"
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File "$name.zip.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
           name: analyze-anything-${{ matrix.target }}
           path: |
-            aa-*.tar.gz
-            aa-*.zip
-            aa-*.sha256
+            analyze-anything-*.tar.gz
+            analyze-anything-*.zip
+            analyze-anything-*.sha256
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/') || inputs.version != ''
+    if: inputs.version != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -80,4 +80,4 @@ jobs:
           draft: true
           tag_name: ${{ inputs.version || github.ref_name }}
           target_commitish: ${{ github.sha }}
-          files: aa-*
+          files: analyze-anything-*

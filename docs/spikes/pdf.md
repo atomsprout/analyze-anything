@@ -1,113 +1,113 @@
-# 技术验证 #1：内嵌 Typst 输出中文 PDF
+# Technical validation #1: Chinese PDF output with embedded Typst
 
-> 状态：**通过**，已作为 `Format::Pdf` 落地（2026-11-18）。退路 `fulgur` 没有启用。
-> 对应 [PLAN.md](../PLAN.md) §5.3 与 §6.1 的验证项“Typst 内嵌出中文 PDF：含目录、跨页长表格、中文不缺字”。
+> Status: **passed**, landed as `Format::Pdf` (2026-11-18). The fallback `fulgur` was not enabled.
+> Corresponds to the validation item in [PLAN.md](../PLAN.md) §5.3 and §6.1: "Chinese PDF from embedded Typst: with a table of contents, long tables spanning pages, no missing Chinese glyphs".
 
-## 结论
+## Findings
 
-| 通过标准 | 结果 |
+| Pass criterion | Result |
 |---|---|
-| 含目录 | 通过。Typst `outline` 自动生成，页码正确（8 页、55 页、158 页的样本都核对过） |
-| 跨页长表格 | 通过。文件清单 300 行跨 7–8 页，每页重复表头 |
-| 中文不缺字 | 通过。内嵌 Noto Sans SC；`pdffonts` 显示两种字体均为内嵌子集，`pdftotext` 能取出中文与完整哈希 |
-| 同一报告 ⇒ 字节相同 | 通过。无创建时间、固定文档标识；同进程两次渲染、不同进程两次渲染都逐字节相同 |
-| 不可信文本不被当作标记 | 通过。报告文本不进入 Typst 源码（见下） |
+| Has a table of contents | Passed. Generated automatically by Typst `outline`, with correct page numbers (checked on the 8-page, 55-page and 158-page samples) |
+| Long tables spanning pages | Passed. The 300-row file inventory spans 7–8 pages, with the header repeated on each page |
+| No missing Chinese glyphs | Passed. Noto Sans SC is embedded; `pdffonts` shows both fonts as embedded subsets, and `pdftotext` extracts the Chinese text and complete hashes |
+| Same report ⇒ identical bytes | Passed. No creation time, a fixed document identifier; two renders in the same process and two renders in different processes are all byte-for-byte identical |
+| Untrusted text is not treated as markup | Passed. Report text does not enter the Typst source (see below) |
 
-## 做法
+## Approach
 
-- 依赖：`typst = "0.14.2"`、`typst-pdf = "0.14.2"`（Apache-2.0）。0.14.2 是与工作区 `rust-version = 1.90`
-  兼容的最新版本；0.15 需要更高的 Rust 版本，升级时 `World` 与 `PdfOptions` 的接口要重新核对。
-- 代码在 `crates/aa-report/src/pdf/`：`mod.rs` 实现 `World`，`report.typ` 是固定的版式模板。
-- **`World` 只提供两个文件和两种字体**：模板本身（源码）和 `report.json`（数据，由渲染器在内存中生成）。
-  其他任何路径、任何包（`@preview/...`）一律返回 `AccessDenied`；没有磁盘、没有网络、没有系统字体、没有时钟
-  （`today()` 返回 `None`）。
-- **报告文本从不拼进 Typst 源码**。模板用 `json("report.json")` 读数据，所有值只作为字符串使用，不经过 `eval`，
-  也不当作标记解析。因此文件名里的 `#eval(...)`、`*bold*`、`$x$`、`#import "@preview/..."` 都按原样排出来——
-  单元测试从排版结果里取回文字逐条核对。
-- 隐藏或改变文字方向的字符（如 U+202E、零宽字符）在送进模板前换成 `[U+202E]` 这样的可见写法，
-  HTML 与 PDF 用同一个函数（`sanitize.rs`）。
-- 字体放在 `crates/aa-report/fonts/`，随二进制内嵌，许可证文件同目录：
-  - `NotoSansSC-Regular.otf`（8.3 MB，OFL 1.1，取自 notofonts/noto-cjk 的 `Sans/SubsetOTF/SC`）——正文、中文、拉丁文；
-  - `JetBrainsMono-Regular.ttf`（0.27 MB，OFL 1.1）——路径、哈希、证据。
+- Dependencies: `typst = "0.14.2"`, `typst-pdf = "0.14.2"` (Apache-2.0). 0.14.2 is the latest version compatible with the
+  workspace's `rust-version = 1.90`; 0.15 needs a higher Rust version, and the `World` and `PdfOptions` interfaces must be re-checked when upgrading.
+- The code is in `crates/aa-report/src/pdf/`: `mod.rs` implements `World`, and `report.typ` is the fixed layout template.
+- **`World` provides only two files and two fonts**: the template itself (source) and `report.json` (data, generated in memory by the renderer).
+  Every other path and every package (`@preview/...`) returns `AccessDenied`; there is no disk, no network, no system fonts and no clock
+  (`today()` returns `None`).
+- **Report text is never spliced into the Typst source**. The template reads the data with `json("report.json")`; all values are used only as strings, do not go through `eval`,
+  and are not parsed as markup. So `#eval(...)`, `*bold*`, `$x$` and `#import "@preview/..."` in a file name are all typeset as they are —
+  the unit tests take the text back out of the typeset result and check it item by item.
+- Characters that hide text or change its direction (such as U+202E and zero-width characters) are replaced with a visible form like `[U+202E]` before being passed to the template;
+  HTML and PDF use the same function (`sanitize.rs`).
+- The fonts are in `crates/aa-report/fonts/`, embedded in the binary, with the license files in the same directory:
+  - `NotoSansSC-Regular.otf` (8.3 MB, OFL 1.1, taken from `Sans/SubsetOTF/SC` in notofonts/noto-cjk) — body text, Chinese, Latin;
+  - `JetBrainsMono-Regular.ttf` (0.27 MB, OFL 1.1) — paths, hashes, evidence.
 
-  只带 Regular 一个字重：标题的“粗体”用同色细描边代替，省下一份 8 MB 的 Bold。仓库因字体增加 8.6 MB。
-- 确定性：`PdfOptions { ident: Smart::Custom(固定字符串), timestamp: None }`，模板里 `set document(date: none)`；
-  PDF 中没有 `/CreationDate`、`/ModDate`。
-- `pdf` 是 `aa-report` 的 cargo feature，默认开启，`aa-cli` 透传；`cargo build -p aa-cli --no-default-features`
-  得到不含 PDF 的精简版，此时 `--format pdf` 返回明确的错误。
+  Only the single Regular weight is included: the "bold" of headings is replaced by a thin stroke in the same color, saving an 8 MB Bold. The fonts add 8.6 MB to the repository.
+- Determinism: `PdfOptions { ident: Smart::Custom(<fixed string>), timestamp: None }`, and `set document(date: none)` in the template;
+  the PDF has no `/CreationDate` or `/ModDate`.
+- `pdf` is a cargo feature of `aa-report`, on by default, and `aa-cli` passes it through; `cargo build -p aa-cli --no-default-features`
+  produces a slim build without PDF, in which `--format pdf` returns a clear error.
 
-## PDF 里有什么
+## What is in the PDF
 
-标题块（输入名、工具版本、输入 SHA-256）→ 摘要（按严重度计数、覆盖度数字）→ 如何阅读 → 目录（带页码）→
-12 个章节的全部结论（严重度与置信度标签各带一个形状记号，黑白打印也能分辨；正文、证据行、对应标准、结论 ID 前 16 位）→
-文件清单表 → 覆盖度与局限。页眉是输入名，页脚是工具版本与“第 X / 共 Y 页”。中英文各一套。
+Title block (input name, tool version, input SHA-256) → summary (counts by severity, coverage numbers) → how to read → table of contents (with page numbers) →
+all findings of the 12 chapters (the severity and confidence labels each carry a shape mark, so they can be told apart in black-and-white print; body, evidence lines, corresponding standards, the first 16 characters of the finding ID) →
+file inventory table → coverage and limitations. The page header is the input name, and the page footer is the tool version and "page X of Y". There is one set each for Chinese and English.
 
-PDF 是给人读和存档的文件，**完整数据在 report.html 和 report.json**。超长的部分会截断，并在原处写明：
+The PDF is a file for people to read and archive; **the complete data is in report.html and report.json**. Overlong parts are truncated, and this is stated in place:
 
-| 内容 | 上限 | 截断时的说明 |
+| Content | Limit | Note shown when truncated |
 |---|---|---|
-| 同一条规则的结论 | 归并为一条；中性事实列 10 条、其余列 30 条 | “本类另有 N 条未在此列出；report.html 和 report.json 有全部” |
-| 每章条目（归并后） | 200 个 | “本章共 N 条结论，这里…列出前 200 条；全部结论见 report.html 或 report.json” |
-| 每条结论的证据 | 5 行，每行的值 160 个字符 | “另有 N 条证据未在此列出” |
-| 文件清单 | 300 行（与 Markdown 相同） | “上表只列出前 300 个文件，共 N 个；完整清单见 report.json” |
-| 每类局限涉及的文件 | 30 条（与 Markdown 相同） | “… +N” |
-| 单条结论的标题 / 正文 | 200 / 1500 个字符 | 以“…”结尾 |
+| Findings of the same rule | Merged into one; neutral facts list 10, the rest list 30 | "N more of this kind are not listed here; report.html and report.json hold them all" |
+| Entries per chapter (after merging) | 200 | "This chapter has N findings; the first 200 … are shown here. report.html and report.json hold them all" |
+| Evidence per finding | 5 lines, 160 characters for the value on each line | "N more pieces of evidence not shown here" |
+| File inventory | 300 rows (same as Markdown) | "The table shows the first 300 of N files; report.json lists them all" |
+| Files involved in each kind of limitation | 30 (same as Markdown) | "… +N" |
+| Title / body of a single finding | 200 / 1500 characters | Ends with "…" |
 
-摘要里还有一句固定说明：“本 PDF 供阅读与存档：过长的列表会截断并注明，完整数据见 report.html 与 report.json。”
+The summary also has one fixed sentence: "This PDF is for reading and filing: long lists are cut and say so; report.html and report.json hold the complete data."
 
-## 实测
+## Measurements
 
-机器：4 核 x86-64 Linux，release 构建。
+Machine: 4-core x86-64 Linux, release build.
 
-| 报告 | 页数 | PDF 大小 | `analyze-anything render --format pdf` 总耗时（含读 JSON） | 内存峰值 |
+| Report | Pages | PDF size | Total time of `analyze-anything render --format pdf` (including reading the JSON) | Peak memory |
 |---|---|---|---|---|
-| 22 个文件、43 条结论（各章都有，含恶意字符串） | 8 | 0.26 MB | 0.15 s | 约 50 MB |
-| 3,000 个文件、400 条结论 | 55 | 1.6 MB | 0.84 s | — |
-| 50,000 个文件、5,000 条结论（按上表截断后排 1,100 多条） | 158 | 4.1 MB | 2.0 s | 约 500 MB（含 26 MB 的 report.json 本身） |
+| 22 files, 43 findings (every chapter present, including malicious strings) | 8 | 0.26 MB | 0.15 s | about 50 MB |
+| 3,000 files, 400 findings | 55 | 1.6 MB | 0.84 s | — |
+| 50,000 files, 5,000 findings (more than 1,100 typeset after truncation per the table above) | 158 | 4.1 MB | 2.0 s | about 500 MB (including the 26 MB report.json itself) |
 
-对照：同样三份报告的 HTML 分别用 0.01 s、0.04 s、0.48 s。内存峰值是在未开 LTO 的构建上量的。
+For comparison: the HTML for the same three reports takes 0.01 s, 0.04 s and 0.48 s respectively. Peak memory was measured on a build without LTO.
 
-debug 构建慢得多（55 页约 23 秒），所以测试里的大报告只排 96 条结论。
+The debug build is much slower (about 23 seconds for 55 pages), so the large report in the tests typesets only 96 findings.
 
-二进制体积（`strip` 之后）：
+Binary size (after `strip`):
 
-| 构建（工作区 release 配置：thin LTO、`codegen-units = 1`、strip） | `analyze-anything` 大小 |
+| Build (workspace release profile: thin LTO, `codegen-units = 1`, strip) | Size of `analyze-anything` |
 |---|---|
-| `cargo build --release -p aa-cli`（含 PDF） | 49.3 MB |
-| `cargo build --release -p aa-cli --no-default-features`（不含 PDF） | 10.0 MB |
-| 差值 | **+39.3 MB**，其中字体 8.6 MB |
+| `cargo build --release -p aa-cli` (with PDF) | 49.3 MB |
+| `cargo build --release -p aa-cli --no-default-features` (without PDF) | 10.0 MB |
+| Difference | **+39.3 MB**, of which fonts are 8.6 MB |
 
-完整依赖树约 400 个 crate，许可证都在允许范围内（MIT / Apache-2.0 / BSD / Zlib / Unicode-3.0 等，无 GPL/LGPL）。
-首次完整编译 release 多出约 6 分钟。
+The complete dependency tree is about 400 crates, all with licenses in the allowed range (MIT / Apache-2.0 / BSD / Zlib / Unicode-3.0 and so on, no GPL/LGPL).
+The first full release compile takes about 6 minutes longer.
 
-规划里估的是 15–25 MB，实际更大：除字体 8.6 MB 外，Typst 还带着公式字体之外的全部标准库——语法高亮定义、
-文献样式、ICU 分词数据、图片解码、WASM 插件运行时——这些在 0.14 里没有开关可以去掉。在意体积的发行版用
-`--no-default-features`。
+The plan estimated 15–25 MB; the actual size is larger: besides the 8.6 MB of fonts, Typst also carries the whole standard library other than the math fonts — syntax highlighting definitions,
+bibliography styles, ICU segmentation data, image decoding, the WASM plugin runtime — and 0.14 has no switch to remove these. Distributions that care about size use
+`--no-default-features`.
 
-## 踩过的坑
+## Pitfalls encountered
 
-1. **长字符串不换行。** 哈希、路径没有空格，Typst 会让它们冲出页面。在字符间插零宽空格可以换行，但零宽空格会进入
-   PDF 的文字层，`pdftotext` 取出的哈希里夹着 U+200B，在阅读器里搜索整段哈希搜不到。现在的做法：渲染器把长串切成
-   小段（优先在 `/ . - _` 等分隔符后切，没有分隔符的每 8 个字符切一次），模板用 `h(0.001pt)` 连接。行内间距在
-   Typst 的断行算法里等同于空格，可以断行，又不产生任何字符。间距必须非零——恰好为 0 的间距会被 Typst 丢掉。
-   不换行时哈希是连续的，可搜索、可复制；恰好在换行处被分成两行的那一条，和所有 PDF 一样搜不到整串。
-2. **提示字符缺字。** 一开始用 `⟦U+202E⟧` 和 Unicode 控制符图形（U+2400 段）显示隐藏字符，Noto Sans SC 里没有这些字形，
-   排出来是方块。改成纯 ASCII 的 `[U+202E]`。
-3. **结论跨页。** 允许结论块跨页时，会出现“结论 ID”一行单独掉到下一页。现在每条结论不跨页，并靠上表的字数上限保证
-   一条结论不会比一页还长。
-4. **poppler 的警告。** `pdfinfo` 对 Typst 生成的带标签 PDF 报 `Suspects object is wrong type (boolean)`，
-   是 poppler 对 `/MarkInfo` 的解析问题，不影响显示、取字和字体内嵌。
+1. **Long strings do not wrap.** Hashes and paths have no spaces, and Typst lets them run off the page. Inserting zero-width spaces between characters makes them wrap, but the zero-width spaces enter
+   the PDF's text layer: the hash extracted by `pdftotext` has U+200B mixed in, and searching for the whole hash in a reader finds nothing. The current approach: the renderer cuts a long string into
+   small segments (preferably after separators such as `/ . - _`, and every 8 characters where there is no separator), and the template joins them with `h(0.001pt)`. In Typst's line-breaking
+   algorithm, inline spacing is equivalent to a space: a line can break there, yet no character is produced. The spacing must be non-zero — a spacing of exactly 0 is dropped by Typst.
+   When it does not wrap, the hash is continuous, searchable and copyable; the one that happens to be split across two lines at a line break cannot be found as a whole string, as in every PDF.
+2. **Missing glyphs for the hint characters.** At first `⟦U+202E⟧` and the Unicode control pictures (the U+2400 block) were used to show hidden characters; Noto Sans SC does not have these glyphs,
+   and they were typeset as boxes. Changed to pure ASCII `[U+202E]`.
+3. **Findings spanning pages.** When a finding block was allowed to span pages, the "finding ID" line could fall alone onto the next page. Now no finding spans pages, and the character limits in the table above ensure
+   that a finding is never longer than one page.
+4. **A poppler warning.** For the tagged PDF generated by Typst, `pdfinfo` reports `Suspects object is wrong type (boolean)`.
+   This is a problem in poppler's parsing of `/MarkInfo`, and it does not affect display, text extraction or font embedding.
 
-## 已知不足
+## Known shortcomings
 
-- **两种字体之外的字符缺字。** 文件名里的 emoji、阿拉伯文、韩文等不在内嵌字体里，会排成方块。HTML 用系统字体，
-  不受影响。规划里的 `--font` 覆盖选项还没有做。
-- **粗体是描边模拟的**，小字号下不如真正的 Bold 清晰；要换成真字重，再加一份约 8 MB 的字体即可，模板改两行。
-- **没有书签以外的交互。** 目录条目与章节标题在 PDF 大纲里可跳转；证据不能像 HTML 那样展开。
-- PDF 是带标签的（Tagged PDF，Typst 默认），但没有按 PDF/A 或 PDF/UA 校验过。
-- 进程内第一次渲染要额外解析 8 MB 的字体，之后的渲染复用（未开 LTO 的构建上，8 页样本首次 0.38 秒，之后每次 0.19 秒）。
+- **Missing glyphs for characters outside the two fonts.** Emoji, Arabic, Korean and so on in file names are not in the embedded fonts and are typeset as boxes. HTML uses system fonts and
+  is not affected. The `--font` override option in the plan has not been built yet.
+- **Bold is simulated with a stroke**, and at small sizes it is not as clear as a real Bold; switching to a real weight only takes adding another font of about 8 MB and changing two lines of the template.
+- **No interaction other than bookmarks.** Table of contents entries and chapter headings can be jumped to in the PDF outline; evidence cannot be expanded as in HTML.
+- The PDF is tagged (Tagged PDF, the Typst default), but has not been validated against PDF/A or PDF/UA.
+- The first render in a process has to parse the 8 MB font in addition; later renders reuse it (on a build without LTO, the 8-page sample takes 0.38 seconds the first time and 0.19 seconds each time after).
 
-## 为什么没有换 fulgur
+## Why we did not switch to fulgur
 
-Typst 一次就满足了全部通过标准，渲染时间在秒级，输出可复现，报告文本与版式代码完全隔离。HTML → PDF 的路线还要另外
-解决分页、页眉页脚和目录页码，而这些正是 Typst 现成的能力。
+Typst met all the pass criteria on the first try, render time is on the order of seconds, the output is reproducible, and report text is completely isolated from the layout code. The HTML → PDF route would additionally have to
+solve pagination, headers and footers, and table of contents page numbers, which are exactly what Typst already provides.

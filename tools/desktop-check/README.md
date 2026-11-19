@@ -7,7 +7,7 @@ script starts the app that way, reads the result, and then compares every file t
 with what the `analyze-anything` command writes for the same input: they must be the same bytes.
 
     python3 tools/desktop-check/check.py \
-        "target/release/bundle/macos/Analyze Anything.app/Contents/MacOS/analyze-anything" \
+        "target/release/bundle/macos/Analyze Anything.app/Contents/MacOS/analyze-anything-desktop" \
         target/release/analyze-anything  first-input second-input [--slow large-input]
 
 The inputs must be single files (an archive, a disk image, an IPA); two versions of one app make

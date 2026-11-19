@@ -25,5 +25,5 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 
 [[bin]]
-name = "analyze-anything"
+name = "analyze-anything-desktop"
 path = "src/main.rs"

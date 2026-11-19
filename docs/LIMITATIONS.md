@@ -1,56 +1,56 @@
-# 已知局限
+# Known limitations
 
-这里列的是工具本身做不到或没有验证过的事。单次分析中遇到的具体问题会写在那份报告的“覆盖度与局限”一章。
+This lists what the tool itself cannot do or has not been verified to do. Specific problems met during a single analysis are written in the "Coverage and limitations" chapter of that report.
 
-## 设计上不做
+## Not done by design
 
-- 不执行、不安装、不动态调试被分析的对象。
-- 不反编译成伪代码。
-- 不解密、不脱壳、不绕过任何保护。App Store 下载的 IPA 主程序被 FairPlay 加密，代码段读不了；加固过的 APK 真实代码不可见。这些情况会被识别并写进报告。
-- 分析不联网。因此不检查证书吊销、根证书是否受信任、Apple 公证状态。唯一会联网的是可选的 `analyze-anything interpret`，在配置模型服务之前它什么都不做（见 [AI.md](AI.md)）。
-- AI 解读只核对每句话引用的结论确实存在，不核对模型对结论的理解；OpenAI 兼容的协议用真实服务（DeepSeek）跑通过，包括一份 456 条结论的真实 IPA 报告；Anthropic 的协议只对着本机的模拟服务测过，对真实服务只确认了能连接并正确报告密钥错误。
-- 不给出“安全 / 不安全”的结论或单一评分，只列出结论和它们的严重度。
+- It does not execute, install or dynamically debug the object being analyzed.
+- It does not decompile to pseudocode.
+- It does not decrypt, unpack protected code, or bypass any protection. The main executable of an IPA downloaded from the App Store is encrypted with FairPlay, and its code segment cannot be read; the real code of a packed APK is not visible. These cases are identified and written into the report.
+- Analysis does not use the network. It therefore does not check certificate revocation, whether a root certificate is trusted, or Apple notarization status. The only thing that uses the network is the optional AI interpretation, which does nothing until you set it up (see [AI.md](AI.md)).
+- The AI interpretation checks only that the findings each statement cites exist in the report. It does not check that the model understood them, or that it drew no conclusion of its own from several of them. Of its four engines, one has produced full answers against a real service (the `api` engine with an OpenAI-compatible service, DeepSeek); the others are tested against stand-ins. [AI.md](AI.md) says exactly what was tried.
+- It gives no "safe / unsafe" verdict and no single score; it only lists findings and their severity.
 
-## 没有真实样本验证过的部分
+## Parts not verified on real samples
 
-以下功能只用自己构造的数据测试过，没有在真实样本上对照过参考工具：
+The following features have only been tested with data we constructed ourselves, and have not been compared against reference tools on real samples:
 
-- **Apple**：APFS 快照和多卷、ECDSA 签名。加密的 DMG 能识别，不能读取。App Store 下载的 FairPlay 加密 IPA 已在真实样本上验证：能识别加密，元数据、签名、资源照常分析，加密的代码读不了。
-- **Windows**：Inno Setup 6.4 能解出文件，但参考工具读不了这个版本，结果无法核对；NSIS 1.x / 2.x 和分支版本未测试；MSI 自身的数字签名会校验（内容摘要、元数据摘要、签名值、证书链），参考工具是 osslsigncode，没有与 Windows 自己的 signtool 对照过；`MsiDigitalSignatureEx` 流在摘要里的位置有两种读法，只有另一种读法吻合时报告为“未能校验”而不下结论；RAR 自解压只导出附加数据，不解包（许可证原因）；Quantum 压缩的 CAB、多卷和外部 CAB 不解包。
-- **Android**：XAPK / APKS 只用手工构造的样本测试过；加固壳、Janus、非常规压缩方式只在构造的样本上测试过；AAB 只深入分析 base 模块；文本格式的清单（apktool 的输出）不解码。
-- **二进制**：Mach-O 的导入导出读符号表、导出字典树、链式修正和绑定操作码，已与 `dyld_info`、`nm`、`objdump` 对照；链式修正里压缩的符号名和大端格式不读（会记为局限）。PE 的延迟导入只在自己构造的样本上验证过。
+- **Apple**: APFS snapshots and multiple volumes, ECDSA signatures. An encrypted DMG is identified but cannot be read. FairPlay-encrypted IPAs downloaded from the App Store have been verified on real samples: the encryption is identified, metadata, signatures and resources are analyzed as usual, and the encrypted code cannot be read.
+- **Windows**: Inno Setup 6.4 files can be extracted, but the reference tool cannot read this version, so the result cannot be checked; NSIS 1.x / 2.x and forked versions are untested; an MSI's own digital signature is verified (content digest, metadata digest, signature value, certificate chain), with osslsigncode as the reference tool and no comparison against Windows' own signtool; the position of the `MsiDigitalSignatureEx` stream in the digest has two readings, and when only the other reading matches, it is reported as "could not verify" without drawing a conclusion; a RAR self-extractor only has its appended data exported and is not unpacked (for license reasons); Quantum-compressed CABs, multi-volume CABs and external CABs are not unpacked.
+- **Android**: XAPK / APKS have only been tested with hand-built samples; packers, Janus and unusual compression methods have only been tested on constructed samples; for AAB only the base module is analyzed in depth; a manifest in text format (apktool output) is not decoded.
+- **Binaries**: Mach-O imports and exports are read from the symbol table, the export trie, chained fixups and bind opcodes, and have been compared against `dyld_info`, `nm` and `objdump`; compressed symbol names in chained fixups and the big-endian format are not read (recorded as a limitation). PE delay imports have only been verified on samples we constructed ourselves.
 
-## 在哪些系统上验证过
+## Systems it has been verified on
 
-自动测试在 Linux、macOS、Windows 上都通过了（GitHub Actions），发布构建在 Linux x64 / arm64、macOS arm64 / x64、Windows x64 上试跑成功并通过自检。用开源项目的发布包做的大规模对照是在 Linux 上进行的。
+The automated tests pass on Linux, macOS and Windows (GitHub Actions). Release builds were run successfully on Linux x64 / arm64, macOS arm64 / x64 and Windows x64 and passed the self-check. The large-scale comparison using release packages of open source projects was done on Linux.
 
-在一台 Apple 芯片的 Mac（macOS 27）上用真实样本实测过：8 个已安装的应用（与 `codesign` 对照 332 项全部一致）、App Store 下载的加密 IPA 和脱壳后的 IPA、两个 DMG（其中一个解出 7461 个文件）。桌面版只在这台 Mac 上验证过。Windows 机器上的实测尚未进行。
+It has been tested with real samples on one Apple silicon Mac (macOS 27): 8 installed applications (all 332 items match `codesign`), an encrypted IPA downloaded from the App Store and a decrypted IPA, and two DMGs (one of which unpacked to 7461 files). The desktop app has only been verified on this Mac. Testing on a real Windows machine has not been done yet.
 
-## 与系统自带工具的对照
+## Comparison with the system's own tools
 
-“Native comparison” 工作流在 GitHub 的 macOS 和 Windows 机器上运行，用系统自带工具核对结果（脚本在 `tools/native-compare/`）。最近一次运行全部通过：
+The "Native comparison" workflow runs on GitHub's macOS and Windows machines and checks results against the system's own tools (the scripts are in `tools/native-compare/`). The most recent run passed completely:
 
-- **macOS（98 项）**：
-  - 与 `codesign` 逐项比较系统应用（Calculator、TextEdit、Terminal、Safari）和 Rectangle 的每个架构切片：cdhash、标识符、团队、标志位、证书链、entitlements 的键。
-  - 改动资源文件或代码后，`codesign --verify` 和本工具都报告不通过。
-  - Rectangle 的 DMG 与挂载后的卷逐文件一致。
-  - `hdiutil` 现场生成的 HFS+ / APFS 镜像，覆盖 zlib、bzip2、LZFSE、LZMA、ADC、不压缩六种方式，以及文件系统内压缩的文件，全部逐文件一致。
-  - 加密镜像被识别为加密，且没有声称读出任何文件。
-  - `pkgbuild` 生成的 gzip 和 pbzx 两种格式的 pkg 逐文件一致。
-- **Windows（132 项）**：
-  - 与 `Get-AuthenticodeSignature` 比较 40 多个系统和常用程序：有无内嵌签名、签名证书指纹、“Valid” 时本工具的各项校验是否都通过。
-  - 改动一个字节后，Windows 报 HashMismatch，本工具的文件摘要校验也不通过。
-  - `makecab` 生成的 MSZIP 和 LZX 压缩包解出的文件逐字节一致。
+- **macOS (98 items)**:
+  - An item-by-item comparison with `codesign` of every architecture slice of system applications (Calculator, TextEdit, Terminal, Safari) and Rectangle: cdhash, identifier, team, flags, certificate chain, entitlement keys.
+  - After a resource file or the code is modified, both `codesign --verify` and this tool report a failure.
+  - Rectangle's DMG matches the mounted volume file by file.
+  - HFS+ / APFS images generated on the spot with `hdiutil`, covering six methods (zlib, bzip2, LZFSE, LZMA, ADC, uncompressed) as well as files compressed inside the file system, all match file by file.
+  - An encrypted image is identified as encrypted, and no file is claimed to have been read.
+  - pkgs generated by `pkgbuild` in both the gzip and pbzx formats match file by file.
+- **Windows (132 items)**:
+  - A comparison with `Get-AuthenticodeSignature` on more than 40 system and common programs: whether an embedded signature is present, the signing certificate thumbprint, and whether all of this tool's checks pass when the status is "Valid".
+  - After one byte is changed, Windows reports HashMismatch, and this tool's file digest check also fails.
+  - Files extracted from MSZIP and LZX archives generated by `makecab` are byte-for-byte identical.
 
-这些对照没有覆盖：证书吊销、根证书信任、公证状态（本工具不检查这些）；也没有覆盖 iOS 应用和 App Store 签名。
+These comparisons do not cover: certificate revocation, root certificate trust, notarization status (this tool does not check these); they also do not cover iOS applications or App Store signatures.
 
-## 其他
+## Other
 
-- PDF 内嵌的字体只覆盖中文和拉丁字符，其他文字（韩文、阿拉伯文、表情符号等）在 PDF 里显示为方块，除非用 `--font` 追加字体；HTML 和 JSON 不受影响。
-- 分析器超时（默认每个文件 300 秒）后会被放弃并记为局限，运行照常结束；但在命令行里它所在的线程无法被强行终止，会一直占用到进程退出。桌面版把分析放在子进程里，取消后 5 秒内不退出就强制结束。解包超时（默认每个容器 900 秒）只在解包器交出下一个文件时检查，一个始终不交出文件的解包器不会被打断。
-- 带 PDF 的可执行文件约 49 MB，其中中文字体 8.6 MB。
-- 命令 `analyze-anything` 与 macOS 自带的 `/usr/bin/aa`（Apple Archive）重名。Homebrew 把它装成 `analyze-anything`；`--version` 仍输出 `analyze-anything 0.1.0`。
-- 启发式结论（疑似凭据、加壳、SDK 识别）可能误报，报告里都标为“启发式”。
-- 进程被强行终止时，临时目录里解包出的文件当时不会被清理（正常结束和出错都会清理）；下一次运行开始时会清掉这些遗留目录。
-- 对比两份报告时，结论按“规则 + 输入内的文件位置”配对。一条结论的文字里如果带有输入的名字（例如“最大的文件是 App-1.0.ipa/…”），两个版本之间会被算作“变化”。
-- 桌面版：历史记录只保存报告，重新打开的历史报告看不了十六进制证据，需要重新分析；没有自动更新；macOS 上没有外部工具能驱动系统 WebView，整机流程由应用的自检模式覆盖（见 [DESKTOP.md](DESKTOP.md)），原生菜单、拖放和系统对话框这三处只能人工检查。
+- The fonts embedded for PDF only cover Chinese and Latin characters. Other scripts (Korean, Arabic, emoji and so on) appear as boxes in the PDF unless a font is added with `--font`; HTML and JSON are not affected.
+- When an analyzer times out (300 seconds per file by default), it is abandoned and recorded as a limitation, and the run ends as usual; but on the command line the thread it runs on cannot be forcibly terminated and stays occupied until the process exits. The desktop app runs analysis in a child process and force-ends it if it has not exited within 5 seconds of cancellation. The unpack timeout (900 seconds per container by default) is only checked when the unpacker hands over the next file; an unpacker that never hands over a file is not interrupted.
+- The executable with PDF is about 49 MB, of which the Chinese font is 8.6 MB.
+- macOS has a command of its own called `aa` (Apple Archive). This program was called `aa` in its first releases (0.1.0 to 0.2.0 on Homebrew installed it as `analyze-anything`); it is `analyze-anything` everywhere now, with the short name `aaaa`.
+- Heuristic findings (suspected credentials, packing, SDK identification) can be false positives; they are all marked "Heuristic" in the report.
+- When the process is forcibly terminated, the files unpacked into the temporary directory are not cleaned up at that time (they are cleaned up on both normal exit and error); the next run clears these leftover directories when it starts.
+- When two reports are diffed, findings are paired by "rule + file location within the input". If the text of a finding contains the name of the input (for example "the largest file is App-1.0.ipa/…"), it is counted as "changed" between the two versions.
+- Desktop app: history records only save the report, so a history report that is reopened cannot show hex evidence and the input must be analyzed again; there is no automatic update; on macOS no external tool can drive the system WebView, so the whole flow is covered by the application's self-check mode (see [DESKTOP.md](DESKTOP.md)), and the native menus, drag and drop, and system dialogs can only be checked manually.

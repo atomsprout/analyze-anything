@@ -1,0 +1,36 @@
+Analyze Anything
+Copyright 2026 The Analyze Anything authors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product bundles the following, each under its own licence.
+
+Fonts, embedded in the program and used in the PDF and HTML reports
+(crates/aa-report/fonts):
+
+  - Noto Sans SC, Copyright 2014-2021 Adobe (http://www.adobe.com/).
+    SIL Open Font License 1.1; see crates/aa-report/fonts/OFL-NotoSansSC.txt.
+  - JetBrains Mono, Copyright 2020 The JetBrains Mono Project Authors
+    (https://github.com/JetBrains/JetBrainsMono). SIL Open Font License 1.1;
+    see crates/aa-report/fonts/OFL-JetBrainsMono.txt.
+
+Rust crates, compiled into the program. Their names, versions and licences are
+recorded in Cargo.lock and can be listed with `cargo deny list` or
+`cargo tree --format "{p} {l}"`. The licences accepted are those in deny.toml:
+MIT, Apache-2.0, BSD, ISC, MPL-2.0, Zlib, Unicode and a few other permissive
+ones; none is a copyleft licence of the GPL family. The list of root
+certificates used by the optional AI command is Mozilla's, as packaged by the
+webpki-roots crate under CDLA-Permissive-2.0.
+
+Test samples that come from other software (crates/aa-apple/tests/data; used
+by the tests only, not part of the program):
+
+  - rectangle-arm64.codesig: the code-signature data of Rectangle 0.93
+    (https://github.com/rxhanson/Rectangle), MIT licence.
+  - LaunchAtLogin.macho: a helper program from Stats
+    (https://github.com/exelban/stats), MIT licence.
+  - macfuse-pkg-head.xar: the first 15,103 bytes of the macFUSE 4.4.3
+    installer package (https://macfuse.github.io): its table of contents and
+    signatures, with no program code or file data.
+
+Every other test sample is built by scripts in this repository.

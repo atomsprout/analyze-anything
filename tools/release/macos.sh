@@ -28,7 +28,9 @@ codesign --force --options runtime --timestamp --sign "$IDENTITY" "$AA"
 codesign --verify --strict --verbose=2 "$AA"
 NAME="analyze-anything-$VERSION-$TARGET"
 rm -rf "$OUT/$NAME"; mkdir "$OUT/$NAME"
-cp "$AA" README.md LICENSE "$OUT/$NAME/"
+cp "$AA" README.md LICENSE NOTICE "$OUT/$NAME/"
+# The short name, for those who unpack the archive by hand; Homebrew makes its own.
+ln -s analyze-anything "$OUT/$NAME/aaaa"
 # A program on its own cannot carry a notarization ticket; Apple records it and macOS asks.
 (cd "$OUT" && ditto -c -k --keepParent "$NAME" "$NAME.zip")
 notarize "$OUT/$NAME.zip"

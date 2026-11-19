@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyze Anything</title>
+<meta name="description" content="Give it any app package, installer or file and get a report where every finding shows its evidence. Static, offline, open source.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root {
+  --paper: #fff8ea; --card: #ffffff; --ink: #2b2118; --soft: #6b5a4c; --line: #f0e2c8;
+  --sun: #ffc93c; --orange: #ff9f1c; --coral: #ff6b5e; --pink: #ff8fb1; --sky: #5ccbf2; --lime: #a6e05a;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+code, pre, .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+
+header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; position: relative; z-index: 2; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; text-decoration: none; }
+.brand img { width: 34px; height: 34px; }
+nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+nav a, .lang { text-decoration: none; padding: 7px 13px; border-radius: 999px; font-weight: 700; font-size: 15px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-family: inherit; }
+nav a:hover, .lang:hover { background: #ffe9b0; }
+.lang { border: 2px solid var(--ink); }
+
+.hero { position: relative; padding: 46px 0 110px; }
+.sun { position: absolute; right: -90px; top: 10px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #ffe27a, var(--sun) 60%, var(--orange)); z-index: 0; }
+.blob { position: absolute; border-radius: 50%; z-index: 0; }
+.b1 { width: 120px; height: 120px; background: var(--pink); right: 250px; top: 310px; }
+.b2 { width: 70px; height: 70px; background: var(--sky); right: 80px; top: 410px; }
+.b3 { width: 44px; height: 44px; background: var(--lime); right: 180px; top: 440px; }
+.hero > :not(.sun):not(.blob) { position: relative; z-index: 1; }
+h1 { font-size: clamp(38px, 6.4vw, 68px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em; max-width: 720px; font-weight: 900; }
+h1 .hl { background: linear-gradient(transparent 62%, var(--sun) 62%); }
+.lead { font-size: clamp(18px, 2.2vw, 22px); max-width: 640px; color: var(--soft); margin: 0 0 28px; }
+.cmd { display: inline-flex; align-items: center; gap: 14px; background: var(--ink); color: #fff8ea; padding: 15px 16px 15px 22px; border-radius: 18px; font-size: clamp(14px, 2vw, 18px); box-shadow: 6px 6px 0 var(--coral); max-width: 100%; }
+.cmd code { white-space: nowrap; overflow-x: auto; }
+.cmd .p { color: var(--sun); }
+.copy { border: 0; border-radius: 11px; background: var(--sun); color: var(--ink); font: inherit; font-weight: 800; font-size: 14px; padding: 7px 12px; cursor: pointer; flex: none; }
+.copy:hover { background: #ffd966; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.chip { padding: 7px 15px; border-radius: 999px; font-weight: 800; font-size: 15px; border: 2px solid var(--ink); background: var(--card); }
+.chip:nth-child(1) { background: #ffe9a8; } .chip:nth-child(2) { background: #ffd0c9; } .chip:nth-child(3) { background: #c9eefc; } .chip:nth-child(4) { background: #dcf5b8; } .chip:nth-child(5) { background: #ffd6e3; }
+
+section { padding: 44px 0; }
+h2 { font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 8px; letter-spacing: -0.01em; font-weight: 900; }
+.sub { color: var(--soft); margin: 0 0 26px; max-width: 680px; }
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.card { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; padding: 22px; box-shadow: 5px 5px 0 var(--shadow, var(--sun)); }
+.card h3 { margin: 0 0 6px; font-size: 20px; font-weight: 900; }
+.card p { margin: 0; color: var(--soft); font-size: 16px; }
+.dot { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; font-weight: 900; margin-bottom: 14px; border: 2px solid var(--ink); background: var(--shadow, var(--sun)); }
+.c-sun { --shadow: var(--sun); } .c-coral { --shadow: var(--coral); } .c-sky { --shadow: var(--sky); } .c-lime { --shadow: var(--lime); } .c-pink { --shadow: var(--pink); } .c-orange { --shadow: var(--orange); }
+
+.two { display: grid; gap: 26px; grid-template-columns: 1fr 1fr; align-items: start; }
+@media (max-width: 800px) { .two { grid-template-columns: 1fr; } .sun { width: 250px; height: 250px; right: -110px; opacity: .85; } .b1, .b2, .b3 { display: none; } }
+.finding { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; overflow: hidden; box-shadow: 6px 6px 0 var(--sky); }
+.finding .top { padding: 18px 20px 14px; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tag { font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; border: 2px solid var(--ink); }
+.tag.high { background: var(--coral); color: #fff; } .tag.ver { background: #dcf5b8; } .tag.sec { background: #ffe9a8; }
+.finding h3 { margin: 0 0 6px; font-size: 19px; font-weight: 900; }
+.finding p { margin: 0; color: var(--soft); font-size: 15.5px; }
+.ev { background: #fff3d6; border-top: 2px solid var(--ink); padding: 14px 20px; font-size: 13.5px; }
+.ev b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+.ev .mono { display: block; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+.note { font-size: 13.5px; color: var(--soft); margin-top: 12px; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+ul.plain li { display: flex; gap: 12px; align-items: flex-start; }
+ul.plain li::before { content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%; margin-top: 7px; border: 2px solid var(--ink); background: var(--sun); }
+ul.plain li:nth-child(2)::before { background: var(--coral); } ul.plain li:nth-child(3)::before { background: var(--sky); } ul.plain li:nth-child(4)::before { background: var(--lime); } ul.plain li:nth-child(5)::before { background: var(--pink); }
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border: 2px solid var(--ink); border-radius: 22px; overflow: hidden; }
+th, td { text-align: left; padding: 14px 18px; vertical-align: top; border-bottom: 2px solid var(--line); font-size: 16px; }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+th { width: 130px; font-weight: 900; white-space: nowrap; }
+tr:nth-child(1) th { background: #ffe9a8; } tr:nth-child(2) th { background: #dcf5b8; } tr:nth-child(3) th { background: #c9eefc; } tr:nth-child(4) th { background: #ffd6e3; }
+td { color: var(--soft); }
+
+pre { margin: 0; background: var(--ink); color: #fff8ea; padding: 18px 20px; border-radius: 18px; overflow-x: auto; font-size: 14.5px; line-height: 1.7; }
+pre .c { color: #c9b8a4; } pre .p { color: var(--sun); }
+.install { display: grid; gap: 18px; }
+.ai { background: #ffe9f0; border: 2px solid var(--ink); border-radius: 26px; padding: 30px; box-shadow: 6px 6px 0 var(--pink); }
+.ai .badge { display: inline-block; background: var(--card); border: 2px solid var(--ink); border-radius: 999px; font-weight: 800; font-size: 13px; padding: 3px 12px; margin-bottom: 12px; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.btn { display: inline-block; text-decoration: none; font-weight: 900; padding: 13px 22px; border-radius: 16px; border: 2px solid var(--ink); background: var(--sun); box-shadow: 4px 4px 0 var(--ink); }
+.btn.alt { background: var(--card); }
+.btn:hover { transform: translate(1px, 1px); box-shadow: 3px 3px 0 var(--ink); }
+footer { padding: 34px 0 50px; color: var(--soft); font-size: 15px; border-top: 2px dashed #e6d3ad; margin-top: 30px; }
+[data-zh] { display: none; }
+html[lang="zh"] [data-en] { display: none; }
+html[lang="zh"] [data-zh] { display: revert; }
+:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="#"><img src="icon.svg" alt=""><span>Analyze Anything</span></a>
+    <nav>
+      <a href="#install"><span data-en>Install</span><span data-zh>安装</span></a>
+      <a href="https://github.com/atomsprout/analyze-anything">GitHub</a>
+      <button class="lang" id="lang" type="button" aria-label="Switch language">中文</button>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div class="sun" aria-hidden="true"></div><div class="blob b1" aria-hidden="true"></div><div class="blob b2" aria-hidden="true"></div><div class="blob b3" aria-hidden="true"></div>
+    <h1><span data-en>Know what is <span class="hl">inside</span> any app, installer or file.</span><span data-zh>看清任何应用、安装包和文件<span class="hl">里面</span>有什么。</span></h1>
+    <p class="lead"><span data-en>One command gives you a report where every finding shows its evidence: which file, where in it, and what was read there.</span><span data-zh>一条命令，得到一份报告。每条结论都带证据：来自哪个文件、哪个位置、读到了什么。</span></p>
+    <div class="cmd"><code><span class="p">$</span> analyze-anything App.ipa</code><button class="copy" type="button" data-copy="analyze-anything App.ipa"><span data-en>Copy</span><span data-zh>复制</span></button></div>
+    <div class="chips">
+      <span class="chip"><span data-en>Static only</span><span data-zh>纯静态</span></span>
+      <span class="chip"><span data-en>Works offline</span><span data-zh>离线可用</span></span>
+      <span class="chip"><span data-en>Same input, same report</span><span data-zh>同样的输入，同样的报告</span></span>
+      <span class="chip"><span data-en>Written in Rust</span><span data-zh>Rust 编写</span></span>
+      <span class="chip"><span data-en>Open source</span><span data-zh>开源</span></span>
+    </div>
+  </div>
+
+  <section>
+    <h2><span data-en>A report you can check</span><span data-zh>一份可以核对的报告</span></h2>
+    <p class="sub"><span data-en>It does not ask you to trust it. Each finding says how sure it is and points at the bytes it came from.</span><span data-zh>它不要求你相信它。每条结论都写明有多确定，并指向它所依据的字节。</span></p>
+    <div class="two">
+      <div>
+        <div class="finding">
+          <div class="top">
+            <div class="tags"><span class="tag high"><span data-en>High</span><span data-zh>高</span></span><span class="tag ver"><span data-en>Verified</span><span data-zh>已验证</span></span><span class="tag sec"><span data-en>Provenance</span><span data-zh>来源</span></span></div>
+            <h3><span data-en>Code was changed after signing</span><span data-zh>代码在签名后被改动</span></h3>
+            <p><span data-en>Example has 4 code pages whose hash does not match the signature: the file was changed after it was signed.</span><span data-zh>Example 有 4 个代码页的哈希与签名记录不符：文件在签署之后被改动过。</span></p>
+          </div>
+          <div class="ev"><b><span data-en>Evidence</span><span data-zh>证据</span></b><span class="mono">Example.ipa/Payload/Example.app/Example</span><span class="mono">bytes 16384..32768 · sha256 9f2c…e41a</span></div>
+        </div>
+        <p class="note"><span data-en>An illustration of how a finding reads. The names and numbers are made up.</span><span data-zh>这是一条结论的样子，仅作示意，名字和数字是编的。</span></p>
+      </div>
+      <ul class="plain">
+        <li><span><span data-en><b>Evidence for everything.</b> File, position and the value that was read. In the desktop app, one click shows the bytes.</span><span data-zh><b>处处有证据。</b>文件、位置、读到的值。在桌面版里点一下就能看到那些字节。</span></span></li>
+        <li><span><span data-en><b>Honest about confidence.</b> Verified, derived or heuristic. A heuristic says it may be wrong.</span><span data-zh><b>如实标注置信度。</b>已验证、推导或启发式。启发式的结论会说明自己可能有误。</span></span></li>
+        <li><span><span data-en><b>Says what it could not do.</b> Encrypted, unreadable or over a limit: it is listed, never passed over in silence.</span><span data-zh><b>做不到的会说出来。</b>被加密、读不了、超出限额：都会列出，不会悄悄略过。</span></span></li>
+        <li><span><span data-en><b>No verdict.</b> It does not call anything safe or unsafe. It shows you what is there.</span><span data-zh><b>不下判决。</b>它不说“安全”或“不安全”，只告诉你里面有什么。</span></span></li>
+        <li><span><span data-en><b>Seven formats.</b> HTML, PDF, Markdown, plain text, JSON, SARIF and CycloneDX.</span><span data-zh><b>七种格式。</b>HTML、PDF、Markdown、纯文本、JSON、SARIF、CycloneDX。</span></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2><span data-en>What it reads</span><span data-zh>能读什么</span></h2>
+    <p class="sub"><span data-en>Containers are opened layer by layer, so an app inside a disk image inside a zip is still found.</span><span data-zh>容器会一层层打开，所以压缩包里的磁盘映像里的应用也找得到。</span></p>
+    <table>
+      <tr><th>Apple</th><td><span data-en>.app, IPA, DMG, pkg · code signatures and certificate chains, entitlements, provisioning profiles, privacy manifests, FairPlay encryption</span><span data-zh>.app、IPA、DMG、pkg · 代码签名与证书链、权利、描述文件、隐私清单、FairPlay 加密</span></td></tr>
+      <tr><th>Android</th><td><span data-en>APK, AAB, XAPK / APKS · manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers</span><span data-zh>APK、AAB、XAPK / APKS · 清单、资源、签名方案 v1–v3.1、DEX、SDK 与加固壳</span></td></tr>
+      <tr><th>Windows</th><td><span data-en>PE, MSI, NSIS, Inno Setup, CAB, MSIX, Electron, .NET · Authenticode, installed program folders</span><span data-zh>PE、MSI、NSIS、Inno Setup、CAB、MSIX、Electron、.NET · Authenticode、已安装程序目录</span></td></tr>
+      <tr><th><span data-en>Anything</span><span data-zh>任意文件</span></th><td><span data-en>Mach-O, ELF and PE hardening · zip, tar, 7z and more, nested · URLs, likely credentials, entropy, duplicate files</span><span data-zh>Mach-O、ELF、PE 的加固选项 · zip、tar、7z 等，可嵌套 · URL、疑似凭据、熵、相同文件</span></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span data-en>Two ways to use it</span><span data-zh>两种用法</span></h2>
+    <p class="sub"><span data-en>The same engine underneath: one input gives the same report in both.</span><span data-zh>底下是同一套引擎：同一个输入，两边得到相同的报告。</span></p>
+    <div class="grid">
+      <div class="card c-sun"><div class="dot">&gt;_</div><h3><span data-en>Command line</span><span data-zh>命令行</span></h3><p><span data-en>For scripts and CI. Compare two versions with <code>diff</code>, fail a build with <code>--fail-on high</code>.</span><span data-zh>适合脚本和 CI。用 <code>diff</code> 对比两个版本，用 <code>--fail-on high</code> 让构建失败。</span></p></div>
+      <div class="card c-coral"><div class="dot">▣</div><h3><span data-en>Desktop app</span><span data-zh>桌面版</span></h3><p><span data-en>For macOS. Drop a file, read the report, click evidence to see its bytes, keep a history.</span><span data-zh>用于 macOS。拖入文件，读报告，点证据看字节，保留历史。</span></p></div>
+      <div class="card c-sky"><div class="dot">◎</div><h3><span data-en>For AI agents</span><span data-zh>给 AI agent</span></h3><p><span data-en>A read-only MCP server lets an agent look things up in a report.</span><span data-zh>一个只读的 MCP 服务，让 agent 在报告里查东西。</span></p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="ai">
+      <span class="badge"><span data-en>Optional · off by default</span><span data-zh>可选 · 默认关闭</span></span>
+      <h2><span data-en>Let an AI walk you through the report</span><span data-zh>让 AI 带你读报告</span></h2>
+      <p class="sub"><span data-en>Add <code>--ai</code> and a model explains the report in plain words. It sees the report, never your files. Every statement must cite findings of the report; those that do not are dropped.</span><span data-zh>加上 <code>--ai</code>，模型会用通俗的话解释报告。它看到的是报告，不是你的文件。它的每句话都必须引用报告里的结论，引用不成立的整句丢掉。</span></p>
+      <div class="grid">
+        <div class="card c-pink"><h3>Claude Code</h3><p><span data-en>Uses the <code>claude</code> you are signed in to. No API key.</span><span data-zh>使用你已登录的 <code>claude</code>，不需要 API key。</span></p></div>
+        <div class="card c-orange"><h3>Codex</h3><p><span data-en>Uses the <code>codex</code> you are signed in to. No API key.</span><span data-zh>使用你已登录的 <code>codex</code>，不需要 API key。</span></p></div>
+        <div class="card c-sky"><h3><span data-en>An API key</span><span data-zh>API key</span></h3><p><span data-en>Claude, or anything that speaks OpenAI's protocol, a model on your own machine included.</span><span data-zh>Claude，或任何使用 OpenAI 协议的服务，包括本机的模型。</span></p></div>
+        <div class="card c-lime"><h3><span data-en>Your own program</span><span data-zh>你自己的程序</span></h3><p><span data-en>Any command you configure.</span><span data-zh>你配置的任意命令。</span></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2><span data-en>Install</span><span data-zh>安装</span></h2>
+    <p class="sub"><span data-en>Released for Macs with Apple silicon. On other systems, build the command line from source.</span><span data-zh>目前发布 Apple 芯片 Mac 的版本。其他系统请从源码构建命令行。</span></p>
+    <div class="install">
+<pre><span class="c"># <span data-en>the command line</span><span data-zh>命令行</span></span>
+<span class="p">$</span> brew install atomsprout/tap/analyze-anything
+
+<span class="c"># <span data-en>the desktop app</span><span data-zh>桌面版</span></span>
+<span class="p">$</span> brew install --cask atomsprout/tap/analyze-anything-desktop
+
+<span class="c"># <span data-en>then</span><span data-zh>然后</span></span>
+<span class="p">$</span> analyze-anything &lt;<span data-en>file or folder</span><span data-zh>文件或文件夹</span>&gt;</pre>
+<pre><span class="c"># <span data-en>from source, with Rust 1.90 or newer</span><span data-zh>从源码构建，需要 Rust 1.90 或更新版本</span></span>
+<span class="p">$</span> git clone https://github.com/atomsprout/analyze-anything
+<span class="p">$</span> cd analyze-anything &amp;&amp; cargo build --release</pre>
+    </div>
+    <div class="cta">
+      <a class="btn" href="https://github.com/atomsprout/analyze-anything"><span data-en>View on GitHub</span><span data-zh>在 GitHub 上查看</span></a>
+      <a class="btn alt" href="https://github.com/atomsprout/analyze-anything/blob/main/docs/USAGE.md" data-href-zh="https://github.com/atomsprout/analyze-anything/blob/main/docs/USAGE.zh-CN.md"><span data-en>Read the guide</span><span data-zh>阅读使用说明</span></a>
+    </div>
+  </section>
+
+  <footer>
+    <span data-en>Apache-2.0. The input is only read, never run. Use it on things you have the right to analyze.</span><span data-zh>Apache-2.0 许可。输入只会被读取，不会被执行。仅用于分析你有权分析的对象。</span>
+  </footer>
+</div>
+<script>
+(function () {
+  var root = document.documentElement, button = document.getElementById('lang');
+  function set(lang) {
+    root.lang = lang;
+    button.textContent = lang === 'zh' ? 'English' : '中文';
+    document.title = lang === 'zh' ? 'Analyze Anything：看清任何应用和文件' : 'Analyze Anything';
+    document.querySelectorAll('[data-href-zh]').forEach(function (a) {
+      if (!a.dataset.hrefEn) a.dataset.hrefEn = a.getAttribute('href');
+      a.setAttribute('href', lang === 'zh' ? a.dataset.hrefZh : a.dataset.hrefEn);
+    });
+    try { localStorage.setItem('lang', lang); } catch (e) {}
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('lang'); } catch (e) {}
+  if (saved === 'zh' || saved === 'en') set(saved);
+  button.addEventListener('click', function () { set(root.lang === 'zh' ? 'en' : 'zh'); });
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var done = function () { var old = b.innerHTML; b.textContent = '✓'; setTimeout(function () { b.innerHTML = old; }, 1200); };
+      if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done, function () {});
+    });
+  });
+})();
+</script>
+</body>
+</html>

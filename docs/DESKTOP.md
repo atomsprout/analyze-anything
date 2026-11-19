@@ -1,94 +1,94 @@
-# 桌面版
+# Desktop app
 
-同一套分析引擎的图形界面：拖入文件 → 看进度 → 读报告 → 看证据字节 → 导出 → 历史与对比。不新增分析能力，同一个输入在桌面版和 `analyze-anything` 里得到字节相同的报告。规划见 [PLAN-DESKTOP.md](PLAN-DESKTOP.md)。
+A graphical interface for the same analysis engine: drop a file in → watch progress → read the report → look at the evidence bytes → export → history and diff. It adds no analysis capability; the same input produces byte-identical reports in the desktop app and in `analyze-anything`. The plan is in [PLAN-DESKTOP.md](PLAN-DESKTOP.md).
 
-目前只有 macOS（Apple 芯片）版本。
+Only a macOS (Apple silicon) build exists for now.
 
-## 安装
+## Install
 
 ```
-brew install --cask atomsprout/tap/analyze-anything-desktop   # 桌面版
-brew install atomsprout/tap/analyze-anything                  # 命令行，装成 analyze-anything
+brew install --cask atomsprout/tap/analyze-anything-desktop   # desktop app
+brew install atomsprout/tap/analyze-anything                  # command line, installed as analyze-anything
 ```
 
-两者互不依赖，可以只装一个。
+Neither depends on the other; you can install just one.
 
-## 结构
+## Structure
 
-| 位置 | 内容 |
+| Location | Contents |
 |---|---|
-| `crates/aa-engine` | 分析会话（分析结束后仍能按范围读任意文件的字节）、逐文件进度、可序列化的事件 |
-| `crates/aa-worker` | 工作子进程：消息协议（每行一个 JSON）、服务端循环、客户端（能确定地结束子进程并清理它的临时目录） |
-| `crates/aa-app` | 不依赖界面的应用层：各格式导出（命令行也用它）、历史记录、通过工作进程运行一次分析 |
-| `crates/aa-export` 的 `diff` | 两份报告的对比，`analyze-anything diff` 和桌面版共用 |
-| `apps/desktop/src-tauri` | Tauri 外壳：窗口、菜单、命令、`report://` 协议、自检模式 |
-| `apps/desktop/src` | 页面：TypeScript，不用界面框架 |
+| `crates/aa-engine` | The analysis session (after analysis ends it can still read the bytes of any file by range), per-file progress, serializable events |
+| `crates/aa-worker` | The worker child process: the message protocol (one JSON per line), the server loop, the client (can end the child process deterministically and clean up its temporary directory) |
+| `crates/aa-app` | The UI-independent application layer: export to each format (the command line uses it too), history records, running one analysis through the worker process |
+| `diff` in `crates/aa-export` | The diff of two reports, shared by `analyze-anything diff` and the desktop app |
+| `apps/desktop/src-tauri` | The Tauri shell: window, menus, commands, the `report://` protocol, self-check mode |
+| `apps/desktop/src` | The page: TypeScript, no UI framework |
 
-桌面程序带 `--worker` 参数启动自己就是工作进程，不另外分发可执行文件。界面进程从不在自己的进程里分析任何东西。
+The desktop program started with the `--worker` argument is itself the worker process; no separate executable is distributed. The UI process never analyzes anything in its own process.
 
-报告视图就是命令行写出的 `report.html`，放在只允许运行脚本的沙箱框架里，通过 `report://localhost/<id>` 加载。它带着自己的严格内容安全策略，访问不到外壳的任何命令；它只会向外壳发一种消息（“显示这个文件的这段字节”），外壳收到后再校验一遍。
+The report view is the `report.html` that the command line writes, placed in a sandboxed frame that only allows scripts to run, and loaded through `report://localhost/<id>`. It carries its own strict content security policy and cannot reach any command of the shell; it sends the shell only one kind of message ("show this range of bytes of this file"), and the shell validates it again on receipt.
 
-页面能调用的命令全部列在 `src-tauri/build.rs`，并在 `capabilities/default.json` 里逐条放行；没有开放文件系统、执行程序或联网的能力。页面只能请求分析用户通过对话框、拖放或“打开方式”选中的路径。
+Every command the page can call is listed in `src-tauri/build.rs` and allowed one by one in `capabilities/default.json`; no file system, program execution or network capability is opened. The page can only request analysis of paths the user selected through a dialog, drag and drop, or "Open With".
 
-## 开发
+## Development
 
 ```
 cd apps/desktop
 npm ci
-npm run tauri dev          # 开发模式运行
-npm test                   # 页面逻辑的单元测试（Vitest）
-npm run fixture            # 生成浏览器测试用的样例报告
-npm run test:browser       # 在 WebKit 和 Chromium 里测页面（Playwright，后端用模拟数据）
+npm run tauri dev          # run in development mode
+npm test                   # unit tests for the page logic (Vitest)
+npm run fixture            # generate the sample report used by the browser tests
+npm run test:browser       # test the page in WebKit and Chromium (Playwright, backend uses mock data)
 ```
 
-工作区的默认成员不含桌面版，`cargo build` / `cargo test` 不会编译它；需要时用 `-p aa-desktop`。
+The workspace's default members do not include the desktop app, so `cargo build` / `cargo test` do not compile it; use `-p aa-desktop` when needed.
 
-## 测试分层
+## Test layers
 
-| 层 | 在哪里 |
+| Layer | Where |
 |---|---|
-| 分析会话、读字节、进度事件、遗留临时目录清理 | `crates/aa-engine/tests/analyze.rs` |
-| 消息协议往返、畸形消息、真实子进程的完成 / 取消 / 卡死强杀 / 崩溃清理 | `crates/aa-worker/tests/worker.rs` |
-| 运行控制、各格式导出、历史记录 | `crates/aa-app/tests/app.rs` |
-| 对比 | `crates/aa-export/src/diff.rs` |
-| 页面逻辑（文字、十六进制视图的换算、进度） | `apps/desktop/tests/format.test.ts` |
-| 页面与真实报告页的配合（沙箱框架、点击证据发消息、语言同步、导出、历史、对比） | `apps/desktop/tests/browser/app.spec.ts` |
-| 真实窗口里的整机流程，以及导出与命令行逐字节一致 | `tools/desktop-check/check.py` |
+| Analysis session, reading bytes, progress events, cleanup of leftover temporary directories | `crates/aa-engine/tests/analyze.rs` |
+| Message protocol round trips, malformed messages, and completion / cancellation / force-killing a hung process / crash cleanup with a real child process | `crates/aa-worker/tests/worker.rs` |
+| Run control, export to each format, history records | `crates/aa-app/tests/app.rs` |
+| Diff | `crates/aa-export/src/diff.rs` |
+| Page logic (text, hex view conversions, progress) | `apps/desktop/tests/format.test.ts` |
+| The page working with a real report page (sandboxed frame, clicking evidence sends a message, language sync, export, history, diff) | `apps/desktop/tests/browser/app.spec.ts` |
+| The whole flow in a real window, and exports being byte-for-byte identical to the command line | `tools/desktop-check/check.py` |
 
-### 自检模式
+### Self-check mode
 
-macOS 的系统 WebView 没有可用的自动化驱动，所以应用可以自己检查自己：带环境变量 `AA_DESKTOP_SELFTEST=<计划文件>` 启动时，页面像用户一样点击自己的界面走完全流程，记下看到的结果，应用把结果写到文件后退出。这个模式下不弹对话框：“打开”依次返回计划里的输入，“保存”写进计划指定的文件夹。不带这个变量时，相关的三个命令一律拒绝。
+The macOS system WebView has no usable automation driver, so the application can check itself: when started with the environment variable `AA_DESKTOP_SELFTEST=<plan file>`, the page clicks through its own interface like a user and runs the whole flow, records what it sees, and the application writes the results to a file and exits. No dialogs appear in this mode: "Open" returns the inputs in the plan in turn, and "Save" writes into the folder the plan specifies. Without this variable, the three related commands always refuse.
 
 ```
 python3 tools/desktop-check/check.py \
-    "target/aarch64-apple-darwin/release/bundle/macos/Analyze Anything.app/Contents/MacOS/analyze-anything" \
-    target/release/analyze-anything  旧版本.ipa 新版本.ipa --slow 一个很大的.dmg
+    "target/aarch64-apple-darwin/release/bundle/macos/Analyze Anything.app/Contents/MacOS/analyze-anything-desktop" \
+    target/release/analyze-anything  old-version.ipa new-version.ipa --slow a-very-large.dmg
 ```
 
-自检用单独的数据文件夹，不碰真实的历史；界面语言记在 WebView 的存储里，与正式安装的应用共用，自检结束时会改回原来的语言（0.1.0 的发行包还没有这一步，对它跑过自检后界面会停在英文，在“显示”菜单里改回即可）。
+The self-check uses a separate data folder and does not touch the real history; the interface language is recorded in the WebView's storage, which is shared with the normally installed application, and the self-check changes it back to the original language when it ends (the 0.1.0 release package does not have this step yet; after running the self-check against it the interface stays in English, and you can change it back in the "View" menu).
 
-它检查：页面的内容安全策略生效（注入的脚本不运行、不能把文本当代码执行、连不上网络）、分析与进度、报告在框架里加载、十六进制视图显示的字节与文件一致并标出证据范围、跳转偏移、拒绝报告里没有的路径、7 种格式和“全部格式到文件夹”的导出、语言和外观切换、历史的打开与删除、历史报告说明为什么看不了字节、对比的数字、取消后回到主页且不留记录；退出后没有遗留的工作进程和临时文件；每个导出文件与 `analyze-anything` 对同一输入写出的文件逐字节相同，`analyze-anything verify` 接受导出的文件夹。
+It checks: the page's content security policy is in effect (an injected script does not run, text cannot be executed as code, the network cannot be reached), analysis and progress, the report loads in the frame, the bytes shown in the hex view match the file and the evidence range is marked, jumping to an offset, refusing paths that are not in the report, export in 7 formats and "all formats to a folder", switching language and appearance, opening and deleting history, a history report explaining why the bytes cannot be viewed, the diff numbers, returning to the home page after cancellation without leaving a record; after exit no worker process or temporary file is left behind; every exported file is byte-for-byte identical to the file `analyze-anything` writes for the same input, and `analyze-anything verify` accepts the exported folder.
 
-### 仍需人工检查的三处
+### Three places that still need manual checking
 
-自检走的是页面，下面三处经过系统界面，没有自动化覆盖：
+The self-check goes through the page. The three places below go through system UI and have no automated coverage:
 
-- 原生菜单栏：各项能点、快捷键生效（⌘O、⇧⌘O、⌘E、⇧⌘E、⇧⌘H）。
-- 拖放：把文件拖到窗口上，放置区高亮，松开后开始分析。
-- 系统的打开 / 保存对话框，以及在 Finder 里用“打开方式”打开文件。
+- The native menu bar: each item can be clicked, and the shortcuts work (⌘O, ⇧⌘O, ⌘E, ⇧⌘E, ⇧⌘H).
+- Drag and drop: drag a file onto the window, the drop zone highlights, and analysis starts on release.
+- The system open / save dialogs, and opening a file with "Open With" in Finder.
 
-## 发布
+## Release
 
 ```
 tools/release/macos.sh
 ```
 
-构建 Apple 芯片的 `analyze-anything`（tar.gz）和桌面版（DMG），用 Developer ID 证书签名、启用 hardened runtime，并提交 Apple 公证。需要环境变量 `APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_SPECIFIC_PASSWORD`，以及钥匙串里该团队的 “Developer ID Application” 证书。产物写到 `dist/release`，脚本本身不上传任何东西。
+Builds `analyze-anything` (tar.gz) and the desktop app (DMG) for Apple silicon, signs them with a Developer ID certificate, enables the hardened runtime, and submits them for Apple notarization. It needs the environment variables `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_SPECIFIC_PASSWORD`, and that team's "Developer ID Application" certificate in the keychain. The artifacts are written to `dist/release`; the script itself uploads nothing.
 
-发布包放在公开仓库 [atomsprout/analyze-anything-release](https://github.com/atomsprout/analyze-anything-release) 的 Releases 里，Homebrew 的定义在 [atomsprout/homebrew-tap](https://github.com/atomsprout/homebrew-tap)。
+Release packages are placed in the Releases of the public repository [atomsprout/analyze-anything-release](https://github.com/atomsprout/analyze-anything-release), and the Homebrew definitions are in [atomsprout/homebrew-tap](https://github.com/atomsprout/homebrew-tap).
 
-## 数据放在哪里
+## Where data is stored
 
-- 历史记录：`~/Library/Application Support/com.atomsprout.analyze-anything/history/`，每次分析一个文件夹，里面是 `report.json`、`manifest.json` 和 `entry.json`（名称、时间、输入的 SHA-256、原文件路径）。不保存被分析的文件，也不保存解包出的内容。
-- 临时文件：`~/Library/Caches/com.atomsprout.analyze-anything/scratch/`，分析期间解包出的大文件。关闭报告、开始下一次分析或退出时删除；应用被强行结束后，下次启动时清理。
-- 环境变量 `AA_DESKTOP_DATA_DIR` 可以把这两处改到别的文件夹，用于试用而不影响真实的历史。
+- History records: `~/Library/Application Support/com.atomsprout.analyze-anything/history/`, one folder per analysis, containing `report.json`, `manifest.json` and `entry.json` (name, time, SHA-256 of the input, path of the original file). The analyzed file is not saved, and neither is the unpacked content.
+- Temporary files: `~/Library/Caches/com.atomsprout.analyze-anything/scratch/`, large files unpacked during analysis. Deleted when the report is closed, when the next analysis starts, or on exit; if the application was forcibly ended, they are cleaned up at the next launch.
+- The environment variable `AA_DESKTOP_DATA_DIR` moves both locations to another folder, for trying things out without affecting the real history.
