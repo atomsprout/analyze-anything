@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 use aa_core::Limitation;
 use aa_core::plugin::{Analyzer, Output};
 
-use crate::guarded;
 use crate::tree::BuiltTree;
+use crate::{Event, ProgressSink, guarded};
 
 /// How often the coordinator looks for calls that have overrun.
 const WATCH_INTERVAL: Duration = Duration::from_millis(50);
@@ -65,7 +65,7 @@ enum Message {
     /// One analyzer finished one artifact.
     Output { worker: usize, artifact: usize, analyzer: usize, output: Output },
     /// A worker finished every analyzer for an artifact.
-    Done { worker: usize },
+    Done { worker: usize, artifact: usize },
 }
 
 /// What a worker is running now and since when.
@@ -106,7 +106,7 @@ impl Pool {
                         return;
                     }
                 }
-                if results.send(Message::Done { worker }).is_err() {
+                if results.send(Message::Done { worker, artifact }).is_err() {
                     return;
                 }
             }
@@ -122,6 +122,7 @@ pub fn file_pass(
     analyzers: &[Arc<dyn Analyzer>],
     timeout: Duration,
     cancel: Option<Arc<AtomicBool>>,
+    sink: &mut dyn ProgressSink,
 ) -> (Vec<Output>, Vec<Limitation>) {
     let count = tree.artifacts.len();
     let mut slots: Vec<Vec<Option<Output>>> = (0..count).map(|_| (0..analyzers.len()).map(|_| None).collect()).collect();
@@ -152,7 +153,11 @@ pub fn file_pass(
             Ok(Message::Output { worker, artifact, analyzer, output }) if pool.current[worker].is_some() => {
                 slots[artifact][analyzer] = Some(output);
             }
-            Ok(Message::Done { worker }) if pool.current[worker].is_some() => remaining -= 1,
+            Ok(Message::Done { worker, artifact }) if pool.current[worker].is_some() => {
+                remaining -= 1;
+                let done = (count - remaining) as u64;
+                sink.event(Event::Analyzed { index: done, total: count as u64, path: tree.artifacts[artifact].path.clone() });
+            }
             Ok(_) | Err(mpsc::RecvTimeoutError::Timeout) => {}
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         }

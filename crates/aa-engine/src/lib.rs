@@ -11,6 +11,8 @@ mod store;
 mod tree;
 mod walk;
 
+pub use tree::Reader;
+
 use std::collections::BTreeMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
@@ -61,10 +63,14 @@ pub struct Options {
     pub limits: Limits,
     /// Set to `true` from another thread to stop the run. What was finished is still returned.
     pub cancel: Option<Arc<AtomicBool>>,
+    /// Folder in which the run keeps large unpacked files while it works; the system's temporary
+    /// folder when `None`. It does not change the report.
+    pub temp_root: Option<PathBuf>,
 }
 
-/// A step of the run, for display.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A step of the run, for display. As JSON an event is an object whose `event` names the step.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "event", rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum Event {
     /// The files of the input have been listed.
@@ -85,6 +91,20 @@ pub enum Event {
     /// The tree is complete and analysis of its `artifacts` begins.
     Analyzing {
         artifacts: u64,
+    },
+    /// Every analyzer has looked at one more artifact. `index` counts finished artifacts from 1;
+    /// artifacts finish in no particular order, so `path` is only the latest one.
+    Analyzed {
+        index: u64,
+        total: u64,
+        path: String,
+    },
+    /// The artifacts are done one by one; the analyzers now look at the tree as a whole.
+    /// `index` starts at 1.
+    Relating {
+        index: u64,
+        total: u64,
+        analyzer: String,
     },
     /// Something was skipped or failed; the report records it as a limitation.
     Warning {
@@ -165,6 +185,17 @@ pub fn analyze(input: &Path, options: &Options, sink: &mut dyn ProgressSink) -> 
 
 /// Like [`analyze`], with a chosen set of formats.
 pub fn analyze_with(registry: &Registry, input: &Path, options: &Options, sink: &mut dyn ProgressSink) -> Result<Report, EngineError> {
+    let (built, name, kind) = build(registry, input, options, sink)?;
+    Ok(run(registry, built, name, kind, options, sink))
+}
+
+/// Checks the input and builds its artifact tree.
+fn build(
+    registry: &Registry,
+    input: &Path,
+    options: &Options,
+    sink: &mut dyn ProgressSink,
+) -> Result<(tree::Built, String, InputKind), EngineError> {
     let unreadable = |source| EngineError::InputUnreadable { path: input.to_path_buf(), source };
     let metadata = std::fs::metadata(input).map_err(unreadable)?;
     let kind = if metadata.is_dir() {
@@ -183,7 +214,75 @@ pub fn analyze_with(registry: &Registry, input: &Path, options: &Options, sink: 
         }
     };
     let built = tree::build(tree::Roots::Disk { input, kind, name: &name }, options, &registry.unpackers, sink);
-    Ok(run(registry, built, name, kind, options, sink))
+    Ok((built, name, kind))
+}
+
+/// A finished analysis whose artifacts can still be read: the report, and the bytes of every
+/// file in its tree, unpacked ones included. Dropping the session removes what was unpacked.
+pub struct Session {
+    report: Report,
+    reader: Reader,
+}
+
+/// Most bytes one [`Session::read`] returns.
+pub const MAX_READ: u64 = 4 * 1024 * 1024;
+
+impl Session {
+    pub fn report(&self) -> &Report {
+        &self.report
+    }
+
+    /// Ends the session, keeping only the report.
+    pub fn into_report(self) -> Report {
+        self.report
+    }
+
+    /// Up to `length` bytes of the artifact at `path`, starting at `offset`. Fewer are returned
+    /// at the end of the artifact, none past it, and never more than [`MAX_READ`].
+    pub fn read(&self, path: &str, offset: u64, length: u64) -> std::io::Result<Vec<u8>> {
+        let bytes = self.reader.read(path)?;
+        let start = usize::try_from(offset).unwrap_or(usize::MAX).min(bytes.len());
+        let wanted = usize::try_from(length.min(MAX_READ)).unwrap_or(usize::MAX);
+        let end = start.saturating_add(wanted).min(bytes.len());
+        Ok(bytes[start..end].to_vec())
+    }
+}
+
+/// Like [`analyze_with`], keeping the artifact tree readable afterwards.
+pub fn analyze_session(registry: &Registry, input: &Path, options: &Options, sink: &mut dyn ProgressSink) -> Result<Session, EngineError> {
+    let (built, name, kind) = build(registry, input, options, sink)?;
+    let (report, reader) = run_keeping(registry, built, name, kind, options, sink);
+    Ok(Session { report, reader })
+}
+
+/// Removes the folders that earlier runs left in `root` (the system's temporary folder when
+/// `None`) because their process was killed before it could clean up. A folder is left alone
+/// while the process that made it is alive. Returns how many were removed.
+pub fn sweep_stale(root: Option<&Path>) -> usize {
+    let root = root.map(Path::to_path_buf).unwrap_or_else(std::env::temp_dir);
+    let Ok(entries) = std::fs::read_dir(&root) else { return 0 };
+    let mut removed = 0;
+    for entry in entries.flatten() {
+        let is_ours = entry.file_name().to_string_lossy().starts_with(tree::SPILL_PREFIX);
+        if !is_ours || !entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+            continue;
+        }
+        let dir = entry.path();
+        // The owner holds the lock file locked for as long as it lives, so a lock that can be
+        // taken means the owner is gone. A folder without a lock file is one being created right
+        // now, unless it is old.
+        let abandoned = match std::fs::File::open(dir.join(tree::LOCK_NAME)) {
+            Ok(lock) => lock.try_lock().is_ok(),
+            Err(_) => {
+                let age = entry.metadata().and_then(|m| m.modified()).ok().and_then(|at| at.elapsed().ok());
+                age.is_some_and(|age| age > Duration::from_secs(600))
+            }
+        };
+        if abandoned && std::fs::remove_dir_all(&dir).is_ok() {
+            removed += 1;
+        }
+    }
+    removed
 }
 
 /// Analyzes a single file held in memory, named `name`. Nothing is read from disk.
@@ -196,6 +295,18 @@ pub fn analyze_bytes(registry: &Registry, name: &str, bytes: Vec<u8>, options: &
 
 /// Runs the analyzers over a built tree and assembles the report.
 fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, options: &Options, sink: &mut dyn ProgressSink) -> Report {
+    run_keeping(registry, built, name, kind, options, sink).0
+}
+
+/// Like [`run`], also returning what keeps the artifacts' bytes readable.
+fn run_keeping(
+    registry: &Registry,
+    built: tree::Built,
+    name: String,
+    kind: InputKind,
+    options: &Options,
+    sink: &mut dyn ProgressSink,
+) -> (Report, Reader) {
     let (tree, mut limitations, mut coverage) = (built.tree, built.limitations, built.coverage);
     sink.event(Event::Analyzing { artifacts: tree.artifacts.len() as u64 });
 
@@ -206,7 +317,7 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
     // put back in artifact and analyzer order, so the report does not depend on the scheduling.
     let timeout = Duration::from_secs(options.limits.analyzer_seconds);
     let shared = Arc::new(tree);
-    let (outputs, timed_out) = passes::file_pass(&shared, &registry.analyzers, timeout, options.cancel.clone());
+    let (outputs, timed_out) = passes::file_pass(&shared, &registry.analyzers, timeout, options.cancel.clone(), sink);
     // A call that overran is still running and holds the tree; work on a copy in that case.
     let mut tree = Arc::try_unwrap(shared).unwrap_or_else(|still_shared| (*still_shared).clone());
     limitations.extend(timed_out);
@@ -219,10 +330,15 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
     }
 
     // Tree pass: one analyzer at a time, each seeing what the ones before it attached.
-    for analyzer in &registry.analyzers {
+    for (position, analyzer) in registry.analyzers.iter().enumerate() {
         if cancelled() {
             break;
         }
+        sink.event(Event::Relating {
+            index: position as u64 + 1,
+            total: registry.analyzers.len() as u64,
+            analyzer: analyzer.id().to_string(),
+        });
         match passes::tree_pass(&tree, analyzer, timeout) {
             Some(out) => merge(&mut tree, out, &mut findings, &mut limitations),
             None => limitations.push(Limitation::new("analyzer_timeout", None, Some(passes::timeout_detail(analyzer.id(), timeout)))),
@@ -298,17 +414,19 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         InputKind::Directory => None,
     };
     sink.event(Event::Finished);
-    Report {
+    let (artifacts, summary, reader) = tree.into_parts();
+    let report = Report {
         schema_version: SCHEMA_VERSION,
         tool: Tool { name: "analyze-anything".into(), version: env!("CARGO_PKG_VERSION").into() },
         input: Input { name, kind, sha256 },
-        summary: std::mem::take(&mut tree.summary),
-        artifacts: tree.artifacts,
+        summary,
+        artifacts,
         findings,
         limitations,
         coverage,
         rules,
-    }
+    };
+    (report, reader)
 }
 
 /// Runs one analyzer call, turning a panic into a limitation instead of a crash.

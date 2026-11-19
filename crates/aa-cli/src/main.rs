@@ -158,6 +158,7 @@ impl ProgressSink for StderrProgress {
             Event::Reading { index, total, path } if self.live => write!(err, "\r\x1b[K[{index}/{total}] {path}"),
             Event::Unpacked { path, children } if self.live => write!(err, "\r\x1b[K{path}: {children}"),
             Event::Analyzing { artifacts } if self.live => write!(err, "\r\x1b[K… {artifacts}"),
+            Event::Analyzed { index, total, path } if self.live => write!(err, "\r\x1b[K… [{index}/{total}] {path}"),
             Event::Warning { code, path } => {
                 let clear = if self.live { "\r\x1b[K" } else { "" };
                 writeln!(err, "{clear}warning: {code}{}", path.map(|p| format!(": {p}")).unwrap_or_default())
@@ -245,7 +246,7 @@ fn limits(args: &LimitArgs) -> Limits {
 
 /// The tree as plain JSON on standard output, for scripts and agents.
 fn inspect(path: &Path, args: &LimitArgs) -> Result<u8, String> {
-    let options = Options { limits: limits(args), cancel: None };
+    let options = Options { limits: limits(args), ..Options::default() };
     let report =
         aa_engine::analyze_with(&Registry::unpack_only(), path, &options, &mut aa_engine::NoProgress).map_err(|e| e.to_string())?;
     let artifacts: Vec<serde_json::Value> = report
@@ -344,7 +345,9 @@ fn run(cli: Cli) -> Result<u8, String> {
     let (report, output) = match cli.command {
         Command::Analyze { path, output, limits: limit_args, rules } => {
             let mut progress = StderrProgress { live: std::io::stderr().is_terminal() };
-            let options = Options { limits: limits(&limit_args), cancel: None };
+            let options = Options { limits: limits(&limit_args), ..Options::default() };
+            // A run that was killed could not remove what it had unpacked; do it now.
+            aa_engine::sweep_stale(None);
             let mut registry = Registry::standard();
             for file in &rules {
                 let source = std::fs::read_to_string(file).map_err(|e| format!("cannot read {}: {e}", file.display()))?;

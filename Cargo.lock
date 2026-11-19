@@ -114,6 +114,7 @@ dependencies = [
  "infer 0.22.0",
  "md-5 0.10.6",
  "memmap2",
+ "serde",
  "serde_json",
  "sha1 0.10.7",
  "sha2 0.10.9",
@@ -186,6 +187,20 @@ dependencies = [
  "serde_json",
  "sha1 0.10.7",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "aa-worker"
+version = "0.1.0"
+dependencies = [
+ "aa-core",
+ "aa-engine",
+ "hex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "zip",
 ]
 
 [[package]]

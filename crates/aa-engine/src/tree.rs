@@ -26,7 +26,58 @@ pub struct BuiltTree {
     input: String,
     stores: BTreeMap<String, Store>,
     /// Holds spilled children; removed from disk when the last copy of the tree is dropped.
-    _temp: Option<Arc<tempfile::TempDir>>,
+    _temp: Option<Arc<Spill>>,
+}
+
+/// The run's folder of spilled children, and the lock that says its owner is alive.
+pub struct Spill {
+    /// Held locked for as long as the folder is in use; see [`crate::sweep_stale`]. Declared
+    /// first so that it is closed before the folder is removed.
+    _lock: std::fs::File,
+    dir: tempfile::TempDir,
+}
+
+/// Name of the lock file inside a spill folder.
+pub const LOCK_NAME: &str = ".lock";
+/// Start of every spill folder's name.
+pub const SPILL_PREFIX: &str = "analyze-anything-";
+
+impl Spill {
+    fn create(root: Option<&Path>) -> std::io::Result<Spill> {
+        let mut builder = tempfile::Builder::new();
+        builder.prefix(SPILL_PREFIX);
+        let dir = match root {
+            Some(root) => builder.tempdir_in(root)?,
+            None => builder.tempdir()?,
+        };
+        let lock = std::fs::File::create(dir.path().join(LOCK_NAME))?;
+        // Without the lock the folder still works; it is then only cleaned up by age.
+        let _ = lock.try_lock();
+        Ok(Spill { _lock: lock, dir })
+    }
+}
+
+/// The bytes of a finished run's artifacts, kept readable after the report was assembled.
+pub struct Reader {
+    stores: BTreeMap<String, Store>,
+    _temp: Option<Arc<Spill>>,
+}
+
+impl Reader {
+    /// The bytes of the artifact at `path`.
+    pub fn read(&self, path: &str) -> std::io::Result<Bytes> {
+        match self.stores.get(path) {
+            Some(store) => store.read(),
+            None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("no artifact at {path}"))),
+        }
+    }
+}
+
+impl BuiltTree {
+    /// Splits the finished tree into what the report takes and what keeps the bytes readable.
+    pub fn into_parts(self) -> (Vec<Artifact>, BTreeMap<String, serde_json::Value>, Reader) {
+        (self.artifacts, self.summary, Reader { stores: self.stores, _temp: self._temp })
+    }
 }
 
 impl Tree for BuiltTree {
@@ -65,7 +116,7 @@ struct Builder<'a> {
     taken: BTreeSet<String>,
     limitations: Vec<Limitation>,
     coverage: Coverage,
-    temp: Option<tempfile::TempDir>,
+    temp: Option<Spill>,
     spilled: u64,
     in_memory: u64,
     unpacked_bytes: u64,
@@ -276,11 +327,11 @@ impl Builder<'_> {
             return Ok(Store::Memory(Arc::new(bytes)));
         }
         if self.temp.is_none() {
-            self.temp = Some(tempfile::Builder::new().prefix("analyze-anything-").tempdir()?);
+            self.temp = Some(Spill::create(self.options.temp_root.as_deref())?);
         }
         let Some(temp) = &self.temp else { unreachable!("the temporary folder was created above") };
         self.spilled += 1;
-        let path = temp.path().join(format!("{:08}", self.spilled));
+        let path = temp.dir.path().join(format!("{:08}", self.spilled));
         std::fs::File::create(&path)?.write_all(&bytes)?;
         Ok(Store::Disk(path))
     }

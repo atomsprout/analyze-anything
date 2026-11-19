@@ -1,0 +1,28 @@
+[package]
+name = "aa-worker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aa-core.workspace = true
+aa-engine.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+hex.workspace = true
+thiserror.workspace = true
+
+# The worker as a program of its own: what the tests start, and a way to try the protocol by hand.
+[[bin]]
+name = "aa-worker"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile.workspace = true
+zip.workspace = true
+hex.workspace = true

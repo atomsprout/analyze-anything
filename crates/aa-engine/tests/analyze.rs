@@ -5,7 +5,7 @@ use std::sync::atomic::AtomicBool;
 
 use aa_core::plugin::{Analyzer, Output, Rule, Tree};
 use aa_core::{Artifact, InputKind, Report};
-use aa_engine::{Limits, NoProgress, Options, Registry, analyze, analyze_with};
+use aa_engine::{Event, Limits, NoProgress, Options, ProgressSink, Registry, analyze, analyze_session, analyze_with, sweep_stale};
 
 fn run(path: &Path, options: &Options) -> Report {
     analyze(path, options, &mut NoProgress).expect("the input is readable")
@@ -502,4 +502,96 @@ fn unpacking_that_takes_too_long_is_cut_off() {
     assert_eq!(codes(&report), ["unpack_timeout"]);
     assert!(paths(&report).contains(&"b.txt/first.txt") && !paths(&report).contains(&"b.txt/second.txt"));
     assert!(report.coverage.truncated);
+}
+
+struct Recorder(Vec<Event>);
+
+impl ProgressSink for Recorder {
+    fn event(&mut self, event: Event) {
+        self.0.push(event);
+    }
+}
+
+#[test]
+fn a_session_gives_the_same_report_and_reads_any_range_of_any_file() {
+    let big = noise(700 * 1024);
+    let archive = zip_of(&[("small.txt", b"hello from inside"), ("big.bin", &big)]);
+    let (_dir, path) = write_input("a.zip", &archive);
+    let session = analyze_session(&Registry::standard(), &path, &Options::default(), &mut NoProgress).expect("readable");
+    assert_eq!(session.report(), &run(&path, &Options::default()), "a session must not change the report");
+
+    // The input itself, a child kept in memory, and a child spilled to disk.
+    assert_eq!(session.read("a.zip", 0, 4).expect("read"), b"PK\x03\x04");
+    assert_eq!(session.read("a.zip/small.txt", 6, 4).expect("read"), b"from");
+    assert_eq!(session.read("a.zip/big.bin", 1000, 5000).expect("read"), big[1000..6000]);
+    // The end of a file cuts a read short; past the end there is nothing; no file is an error.
+    assert_eq!(session.read("a.zip/small.txt", 11, 100).expect("read"), b"inside");
+    assert!(session.read("a.zip/small.txt", 17, 10).expect("read").is_empty());
+    assert!(session.read("a.zip/small.txt", u64::MAX, u64::MAX).expect("read").is_empty());
+    assert_eq!(session.read("a.zip/missing", 0, 1).expect_err("no such file").kind(), std::io::ErrorKind::NotFound);
+    assert_eq!(session.read("a.zip/big.bin", 0, u64::MAX).expect("read").len(), big.len(), "smaller than the cap");
+}
+
+#[test]
+fn what_a_session_unpacked_is_removed_when_it_ends() {
+    let archive = zip_of(&[("big.bin", &noise(700 * 1024))]);
+    let (_dir, path) = write_input("a.zip", &archive);
+    let root = tempfile::tempdir().expect("temp dir");
+    let options = Options { temp_root: Some(root.path().to_path_buf()), ..Options::default() };
+    let count = || std::fs::read_dir(root.path()).expect("list").count();
+
+    let session = analyze_session(&Registry::standard(), &path, &options, &mut NoProgress).expect("readable");
+    assert_eq!(count(), 1, "the large child is kept in the chosen folder");
+    assert_eq!(sweep_stale(Some(root.path())), 0, "a folder in use is left alone");
+    assert_eq!(session.read("a.zip/big.bin", 0, 8).expect("still readable").len(), 8);
+    drop(session);
+    assert_eq!(count(), 0);
+}
+
+#[test]
+fn folders_left_by_a_killed_run_are_swept() {
+    let root = tempfile::tempdir().expect("temp dir");
+    // What a killed run leaves: its folder, a lock file nobody holds, and unpacked files.
+    let left = root.path().join("analyze-anything-killed");
+    std::fs::create_dir(&left).expect("mkdir");
+    std::fs::write(left.join(".lock"), b"").expect("write");
+    std::fs::write(left.join("00000001"), b"unpacked").expect("write");
+    // Things that are not ours, or not yet abandoned.
+    std::fs::create_dir(root.path().join("someone-elses-folder")).expect("mkdir");
+    std::fs::write(root.path().join("analyze-anything-a-file"), b"").expect("write");
+    std::fs::create_dir(root.path().join("analyze-anything-starting")).expect("mkdir");
+
+    assert_eq!(sweep_stale(Some(root.path())), 1);
+    let mut names: Vec<String> =
+        std::fs::read_dir(root.path()).expect("list").flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+    names.sort();
+    assert_eq!(names, ["analyze-anything-a-file", "analyze-anything-starting", "someone-elses-folder"]);
+}
+
+#[test]
+fn progress_names_every_file_in_both_passes_and_survives_json() {
+    let dir = folder();
+    let mut recorder = Recorder(Vec::new());
+    let report = analyze(dir.path(), &Options::default(), &mut recorder).expect("readable");
+    let total = report.artifacts.len() as u64;
+
+    let mut analyzed: Vec<&str> = Vec::new();
+    for event in &recorder.0 {
+        if let Event::Analyzed { index, total: of, path } = event {
+            analyzed.push(path);
+            assert_eq!((*index, *of), (analyzed.len() as u64, total));
+        }
+    }
+    analyzed.sort_unstable();
+    assert_eq!(analyzed, paths(&report), "each artifact is reported once");
+    let relating = recorder.0.iter().filter(|e| matches!(e, Event::Relating { .. })).count();
+    assert_eq!(relating, Registry::standard().analyzers.len());
+    assert_eq!(recorder.0.last(), Some(&Event::Finished));
+
+    // Every event can cross a process boundary and come back unchanged.
+    for event in &recorder.0 {
+        let json = serde_json::to_string(event).expect("to json");
+        assert_eq!(&serde_json::from_str::<Event>(&json).expect("from json"), event, "{json}");
+    }
+    assert_eq!(serde_json::to_string(&Event::Listed { files: 3 }).expect("json"), r#"{"event":"listed","files":3}"#);
 }
