@@ -2,7 +2,7 @@
 
 输入电脑上的任意产物（IPA / APK / Windows 安装包与程序目录 / macOS .app / DMG / pkg / 压缩包 / 文件夹 / 任意文件），输出一份可靠、可溯源、多维度的分析报告：PDF、HTML、Markdown、TXT，以及 JSON、SARIF、CycloneDX。
 
-使用 Rust 开发，纯静态分析，离线可用。被分析的输入只会被读取，不会被执行。
+使用 Rust 开发，纯静态分析，离线可用。被分析的输入只会被读取，不会被执行。分析过程不使用语言模型；另有一个默认关闭的可选命令 `aa interpret`，把写好的报告交给你配置的模型（Claude 或 OpenAI 兼容的服务）做通俗解读，见 [docs/AI.md](docs/AI.md)。
 
 有两种用法，共用同一套分析引擎，同一个输入得到字节相同的报告：
 
@@ -28,6 +28,7 @@ target/release/aa analyze <文件或文件夹> -o out
 ## 文档
 
 - [docs/USAGE.md](docs/USAGE.md) — 使用说明
+- [docs/AI.md](docs/AI.md) — 可选的 AI 解读：配置模型、发送什么、如何核对
 - [docs/DESKTOP.md](docs/DESKTOP.md) — 桌面版：结构、开发、测试、发布
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限
 - [docs/TODO.md](docs/TODO.md) — 剩余待办

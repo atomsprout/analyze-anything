@@ -81,6 +81,52 @@ enum Command {
         #[arg(long)]
         fail_on_difference: bool,
     },
+    /// Ask a language model to explain a report in plain words (optional; off until configured)
+    ///
+    /// Sends a digest of the report's findings, never the analyzed files, to the model set in the
+    /// configuration file or by the flags, and keeps only statements that cite findings.
+    #[cfg(feature = "ai")]
+    Interpret(InterpretArgs),
+}
+
+#[cfg(feature = "ai")]
+#[derive(clap::Args)]
+struct InterpretArgs {
+    /// A report.json written by `aa analyze`
+    report: PathBuf,
+    /// Folder to write ai.json and ai.md into [default: the report's folder]
+    #[arg(short, long)]
+    out: Option<PathBuf>,
+    /// Language of the interpretation
+    #[arg(long, default_value = "en")]
+    lang: LangArg,
+    /// The kind of service to ask
+    #[arg(long)]
+    provider: Option<ProviderArg>,
+    /// The model to ask [default for anthropic: claude-opus-5-5]
+    #[arg(long)]
+    model: Option<String>,
+    /// Address of the service, for a gateway or a model server of your own
+    #[arg(long)]
+    base_url: Option<String>,
+    /// Name of the environment variable that holds the API key
+    #[arg(long)]
+    api_key_env: Option<String>,
+    /// Configuration file to read instead of the usual one
+    #[arg(long)]
+    config: Option<PathBuf>,
+    /// Print what would be sent, and send nothing
+    #[arg(long)]
+    dry_run: bool,
+}
+
+#[cfg(feature = "ai")]
+#[derive(Clone, Copy, ValueEnum)]
+enum ProviderArg {
+    /// Claude through Anthropic's API
+    Anthropic,
+    /// Any service that speaks OpenAI's chat-completions protocol
+    OpenaiCompatible,
 }
 
 #[derive(clap::Args)]
@@ -314,6 +360,63 @@ fn verify(dir: &Path) -> Result<u8, String> {
     Ok(if check.intact() { 0 } else { EXIT_FAILED })
 }
 
+#[cfg(feature = "ai")]
+fn interpret(args: InterpretArgs) -> Result<u8, String> {
+    use aa_interpret::config::{self, Overrides};
+    let report = load(&args.report)?;
+    let file = match &args.config {
+        // A file that was named must be there; the usual one may be absent.
+        Some(path) if !path.is_file() => return Err(format!("cannot read {}: no such file", path.display())),
+        Some(path) => config::read_file(path)?,
+        None => config::default_path().map(|path| config::read_file(&path)).transpose()?.unwrap_or_default(),
+    };
+    let flags = Overrides {
+        provider: args.provider.map(|provider| match provider {
+            ProviderArg::Anthropic => aa_interpret::Provider::Anthropic,
+            ProviderArg::OpenaiCompatible => aa_interpret::Provider::OpenaiCompatible,
+        }),
+        model: args.model,
+        base_url: args.base_url,
+        api_key_env: args.api_key_env,
+        ..Overrides::default()
+    };
+    let settings = config::resolve(file, flags)?;
+    let language = match args.lang {
+        LangArg::Zh => aa_interpret::Language::Zh,
+        LangArg::En => aa_interpret::Language::En,
+    };
+    if args.dry_run {
+        let (instructions, data) = aa_interpret::preview(&report, &settings, language);
+        println!("To: {} ({}, model {})\n\n{instructions}\n\n{data}", settings.base_url, settings.provider.id(), settings.model);
+        return Ok(0);
+    }
+    let key = std::env::var(&settings.api_key_env).ok().filter(|key| !key.trim().is_empty());
+    eprintln!("asking {} at {} …", settings.model, settings.base_url);
+    let result = aa_interpret::interpret(&report, &settings, language, key.as_deref(), &aa_interpret::Net)?;
+    let text = aa_interpret::markdown(&result);
+    let dir = match args.out {
+        Some(dir) => dir,
+        None => args.report.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new(".")).to_path_buf(),
+    };
+    std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    let files = [(aa_interpret::JSON_NAME, aa_interpret::json(&result)), (aa_interpret::MARKDOWN_NAME, text.clone().into_bytes())];
+    for (name, bytes) in &files {
+        let path = dir.join(name);
+        std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+        eprintln!("{}", path.display());
+    }
+    // In a folder `aa analyze` wrote, list the new files so that `aa verify` still accepts it.
+    if let Ok(mut listed) = manifest::Manifest::load(&dir) {
+        for (name, _) in &files {
+            listed.add(&dir, name).map_err(|e| e.to_string())?;
+        }
+        let path = dir.join(manifest::MANIFEST_NAME);
+        std::fs::write(&path, listed.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+    }
+    print!("{text}");
+    Ok(0)
+}
+
 fn run(cli: Cli) -> Result<u8, String> {
     let (report, output) = match cli.command {
         Command::Analyze { path, output, limits: limit_args, rules } => {
@@ -336,6 +439,8 @@ fn run(cli: Cli) -> Result<u8, String> {
         Command::Render { report, output } => (load(&report)?, output),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
         Command::Verify { dir } => return verify(&dir),
+        #[cfg(feature = "ai")]
+        Command::Interpret(args) => return interpret(args),
         Command::Diff { before, after, json, lang, fail_on_difference } => {
             let difference = aa_export::diff::diff(&load(&before)?, &load(&after)?);
             if json {

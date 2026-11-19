@@ -10,9 +10,12 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["pdf"]
+default = ["pdf", "ai"]
 # PDF output. Leave it out (`--no-default-features`) for a much smaller binary.
 pdf = ["aa-app/pdf"]
+# `aa interpret`: asks a language model to explain a report. The only part that uses the network;
+# leave it out and the program cannot connect to anything.
+ai = ["dep:aa-interpret"]
 
 [dependencies]
 aa-core.workspace = true
@@ -20,6 +23,7 @@ aa-engine.workspace = true
 aa-app.workspace = true
 aa-report = { path = "../aa-report", default-features = false }
 aa-export.workspace = true
+aa-interpret = { workspace = true, optional = true }
 aa-content.workspace = true
 serde_json.workspace = true
 clap.workspace = true

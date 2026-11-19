@@ -56,6 +56,7 @@ aa verify out/                                             # 检查输出文件�
 aa inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出），不做分析
 aa selftest                                                # 用内置样本自检：解包、哈希、分析、各格式渲染
 aa diff 旧/report.json 新/report.json                       # 对比两份报告：新增、消失、变化的结论和文件
+aa interpret out/report.json                               # 可选：让配置好的语言模型解读报告，见 AI.md
 ```
 
 `aa diff` 的典型用途是同一个应用的两个版本。结论按“同一条规则、输入内同一位置的文件”配对：说法相同算相同，说法不同算变化，只在一边出现算新增或消失；文件按输入内的路径和 SHA-256 比较。`--json` 输出完整结果，`--lang en` 输出英文，`--fail-on-difference` 在有差别时以退出码 3 结束。

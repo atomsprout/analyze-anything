@@ -1,0 +1,21 @@
+[package]
+name = "aa-interpret"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Optional: asks a language model to explain a finished report, and keeps only what cites its findings"
+
+[lints]
+workspace = true
+
+[dependencies]
+aa-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+
+[dev-dependencies]
+tempfile.workspace = true

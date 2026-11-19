@@ -3,6 +3,8 @@
 allow = ["MPL-2.0", "MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "0BSD", "Unlicense",
     # Permissive licences of the bzip2 and PPMd decoders.
     "bzip2-1.0.6", "MIT-0",
+    # The list of root certificates (data, not code) that `aa interpret` trusts when it connects.
+    "CDLA-Permissive-2.0",
 ]
 
 [bans]
@@ -29,5 +31,6 @@ ignore = [
     { id = "RUSTSEC-2024-0436", reason = "paste: unmaintained proc-macro, build time only" },
     { id = "RUSTSEC-2025-0141", reason = "bincode: unmaintained, transitive through typst's syntax-highlighting data" },
     { id = "RUSTSEC-2026-0192", reason = "ttf-parser: unmaintained, parses the embedded fonts and fonts the user passes" },
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error: unmaintained proc-macro, build time only, through the desktop app's GTK bindings on Linux" },
     { id = "RUSTSEC-2026-0206", reason = "rustybuzz: unmaintained, shapes text with the embedded fonts" },
 ]
