@@ -120,10 +120,16 @@ impl Worker {
     }
 
     fn exit_text(&mut self) -> String {
-        match self.child.try_wait() {
-            Ok(Some(status)) => format!("it ended with {status}"),
-            Ok(None) => "it closed its output".into(),
-            Err(error) => error.to_string(),
+        // A process closes its output a moment before its exit status can be read; give it
+        // that moment, so that a crash is reported with its status.
+        let deadline = Instant::now() + Duration::from_secs(2);
+        loop {
+            match self.child.try_wait() {
+                Ok(Some(status)) => return format!("it ended with {status}"),
+                Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(10)),
+                Ok(None) => return "it closed its output".into(),
+                Err(error) => return error.to_string(),
+            }
         }
     }
 }
