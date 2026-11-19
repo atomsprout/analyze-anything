@@ -369,6 +369,9 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 ///
 /// Strings are inserted as they are, other values as JSON. A placeholder without a param is left
 /// in place, so a mistake in a rule shows up in the report instead of vanishing.
+///
+/// A count of exactly one takes the singular of the English noun right after it, so a text reads
+/// "holds 1 file", not "holds 1 files".
 pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
     let mut out = String::with_capacity(template.len());
     let mut rest = template;
@@ -381,7 +384,18 @@ pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
                     Value::String(text) => out.push_str(text),
                     other => out.push_str(&other.to_string()),
                 }
-                rest = tail;
+                let one = match &params[name] {
+                    Value::Number(number) => number.as_u64() == Some(1),
+                    Value::String(text) => text == "1",
+                    _ => false,
+                };
+                rest = match one.then(|| singular(tail)).flatten() {
+                    Some((word, after_word)) => {
+                        out.push_str(word);
+                        after_word
+                    }
+                    None => tail,
+                };
             }
             _ => {
                 out.push('{');
@@ -391,6 +405,33 @@ pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
     }
     out.push_str(rest);
     out
+}
+
+/// If `tail` starts with a plural noun that rule texts use after a count, the singular wording to
+/// write instead and what follows it.
+fn singular(tail: &str) -> Option<(&'static str, &str)> {
+    const WORDS: &[(&str, &str)] = &[
+        (" files are ", " file is "),
+        (" files", " file"),
+        (" entries", " entry"),
+        (" binaries", " binary"),
+        (" certificates", " certificate"),
+        (" components", " component"),
+        (" languages", " language"),
+        (" bundles", " bundle"),
+        (" hosts", " host"),
+        (" bytes", " byte"),
+        (" shortcuts", " shortcut"),
+        (" findings", " finding"),
+        (" items", " item"),
+        (" pages", " page"),
+    ];
+    WORDS.iter().find_map(|(plural, single)| {
+        let after = tail.strip_prefix(plural)?;
+        // A whole word only: "files" in "filesystem" is left alone.
+        let ends = plural.ends_with(' ') || !after.starts_with(|c: char| c.is_alphanumeric());
+        ends.then_some((*single, after))
+    })
 }
 
 #[cfg(test)]
@@ -441,6 +482,17 @@ mod tests {
         let params = BTreeMap::from([("name".to_string(), Value::from("x")), ("n".to_string(), Value::from(3))]);
         assert_eq!(fill("{name} has {n} of {missing} {", &params), "x has 3 of {missing} {");
         assert_eq!(fill("no placeholders", &params), "no placeholders");
+    }
+
+    #[test]
+    fn a_count_of_one_takes_the_singular() {
+        let params = |n: u64| BTreeMap::from([("files".to_string(), Value::from(n))]);
+        assert_eq!(fill("it holds {files} files.", &params(1)), "it holds 1 file.");
+        assert_eq!(fill("it holds {files} files.", &params(2)), "it holds 2 files.");
+        assert_eq!(fill("it holds {files} files.", &params(11)), "it holds 11 files.");
+        assert_eq!(fill("{files} files are stored outside", &params(1)), "1 file is stored outside");
+        assert_eq!(fill("{files} filesystems", &params(1)), "1 filesystems");
+        assert_eq!(fill("里面有 {files} 个文件。", &params(1)), "里面有 1 个文件。");
     }
 
     #[test]
