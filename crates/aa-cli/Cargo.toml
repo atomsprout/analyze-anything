@@ -12,11 +12,12 @@ workspace = true
 [features]
 default = ["pdf"]
 # PDF output. Leave it out (`--no-default-features`) for a much smaller binary.
-pdf = ["aa-report/pdf"]
+pdf = ["aa-app/pdf"]
 
 [dependencies]
 aa-core.workspace = true
 aa-engine.workspace = true
+aa-app.workspace = true
 aa-report = { path = "../aa-report", default-features = false }
 aa-export.workspace = true
 aa-content.workspace = true

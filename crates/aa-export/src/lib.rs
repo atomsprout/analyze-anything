@@ -2,5 +2,6 @@
 //! output files be checked later.
 
 pub mod cyclonedx;
+pub mod diff;
 pub mod manifest;
 pub mod sarif;

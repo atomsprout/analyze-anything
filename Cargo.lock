@@ -22,6 +22,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "aa-app"
+version = "0.1.0"
+dependencies = [
+ "aa-core",
+ "aa-engine",
+ "aa-export",
+ "aa-report",
+ "aa-worker",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "zip",
+]
+
+[[package]]
 name = "aa-apple"
 version = "0.1.0"
 dependencies = [
@@ -58,6 +74,7 @@ dependencies = [
 name = "aa-cli"
 version = "0.1.0"
 dependencies = [
+ "aa-app",
  "aa-content",
  "aa-core",
  "aa-engine",

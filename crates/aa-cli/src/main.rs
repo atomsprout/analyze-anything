@@ -5,11 +5,10 @@ use std::io::{IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use aa_app::export::{Kind, Lang};
 use aa_core::{Location, Report, Severity};
 use aa_engine::{Event, Limits, Options, ProgressSink, Registry};
-use aa_export::manifest::{self, Manifest, Status};
-use aa_export::sarif;
-use aa_report::{Format, Lang};
+use aa_export::manifest::{self, Status};
 use clap::{Parser, Subcommand, ValueEnum};
 
 mod selftest;
@@ -65,6 +64,22 @@ enum Command {
     Verify {
         /// A folder written by `aa analyze` or `aa render`
         dir: PathBuf,
+    },
+    /// Compare two reports: findings and files added, removed and changed from the first to the second
+    Diff {
+        /// The earlier report.json
+        before: PathBuf,
+        /// The later report.json
+        after: PathBuf,
+        /// Print the comparison as JSON instead of text
+        #[arg(long)]
+        json: bool,
+        /// Language of the text
+        #[arg(long, default_value = "zh")]
+        lang: LangArg,
+        /// Exit with code 3 when the reports differ
+        #[arg(long)]
+        fail_on_difference: bool,
     },
 }
 
@@ -140,7 +155,8 @@ enum LangArg {
 }
 
 /// Exit codes: 0 complete, 1 could not run (or `verify` found a difference), 2 ran but the
-/// analysis is partial, 3 a finding reached the `--fail-on` severity.
+/// analysis is partial, 3 a finding reached the `--fail-on` severity (or `diff` found a
+/// difference and was asked to say so).
 const EXIT_FAILED: u8 = 1;
 const EXIT_PARTIAL: u8 = 2;
 const EXIT_FINDINGS: u8 = 3;
@@ -170,65 +186,32 @@ impl ProgressSink for StderrProgress {
 }
 
 fn write_outputs(report: &Report, output: &Output) -> Result<(), String> {
-    std::fs::create_dir_all(&output.out).map_err(|e| format!("cannot create {}: {e}", output.out.display()))?;
     let lang = match output.lang {
         LangArg::Zh => Lang::Zh,
         LangArg::En => Lang::En,
     };
-    let mut written = Manifest::new(report);
-    let mut done: Vec<FormatArg> = Vec::new();
-    for format in &output.format {
-        if done.contains(format) {
-            continue;
-        }
-        done.push(*format);
-        let render = |format| aa_report::render(report, format, lang).map_err(|e| e.to_string());
-        let (name, bytes) = match format {
-            FormatArg::Json => ("report.json", render(Format::Json)?),
-            FormatArg::Md => ("report.md", render(Format::Markdown)?),
-            FormatArg::Txt => ("report.txt", render(Format::Text)?),
-            FormatArg::Html => ("report.html", render(Format::Html)?),
-            FormatArg::Pdf if output.font.is_empty() => ("report.pdf", render(Format::Pdf)?),
-            FormatArg::Pdf => ("report.pdf", pdf_with_fonts(report, lang, &output.font)?),
-            FormatArg::Sarif => {
-                let language = match output.lang {
-                    LangArg::Zh => sarif::Language::Zh,
-                    LangArg::En => sarif::Language::En,
-                };
-                let mut bytes = serde_json::to_vec_pretty(&sarif::sarif(report, language)).map_err(|e| e.to_string())?;
-                bytes.push(b'\n');
-                ("report.sarif", bytes)
-            }
-            FormatArg::Sbom => {
-                let mut bytes = serde_json::to_vec_pretty(&aa_export::cyclonedx::cyclonedx(report)).map_err(|e| e.to_string())?;
-                bytes.push(b'\n');
-                ("sbom.cdx.json", bytes)
-            }
-        };
-        let path = output.out.join(name);
-        std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-        written.add(&output.out, name).map_err(|e| e.to_string())?;
+    let kinds: Vec<Kind> = output
+        .format
+        .iter()
+        .map(|format| match format {
+            FormatArg::Json => Kind::Json,
+            FormatArg::Md => Kind::Markdown,
+            FormatArg::Txt => Kind::Text,
+            FormatArg::Html => Kind::Html,
+            FormatArg::Pdf => Kind::Pdf,
+            FormatArg::Sarif => Kind::Sarif,
+            FormatArg::Sbom => Kind::Sbom,
+        })
+        .collect();
+    let mut fonts = Vec::new();
+    for path in &output.font {
+        fonts.push(std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?);
+    }
+    // The files and the manifest that lets `aa verify` tell later whether they changed.
+    for path in aa_app::export::write_folder(report, &output.out, &kinds, lang, &fonts)? {
         println!("{}", path.display());
     }
-    // The manifest lists what this run wrote, so `aa verify` can tell later whether it changed.
-    let path = output.out.join(manifest::MANIFEST_NAME);
-    std::fs::write(&path, written.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-    println!("{}", path.display());
     Ok(())
-}
-
-#[cfg(feature = "pdf")]
-fn pdf_with_fonts(report: &Report, lang: Lang, fonts: &[PathBuf]) -> Result<Vec<u8>, String> {
-    let mut data = Vec::new();
-    for path in fonts {
-        data.push(std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?);
-    }
-    aa_report::render_pdf_with_fonts(report, lang, &data).map_err(|e| e.to_string())
-}
-
-#[cfg(not(feature = "pdf"))]
-fn pdf_with_fonts(report: &Report, lang: Lang, _fonts: &[PathBuf]) -> Result<Vec<u8>, String> {
-    aa_report::render(report, Format::Pdf, lang).map_err(|e| e.to_string())
 }
 
 fn limits(args: &LimitArgs) -> Limits {
@@ -275,17 +258,7 @@ fn partial(report: &Report) -> bool {
 }
 
 fn load(path: &Path) -> Result<Report, String> {
-    let bytes = std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
-    let report: Report = serde_json::from_slice(&bytes).map_err(|e| format!("{} is not a report: {e}", path.display()))?;
-    if report.schema_version != aa_core::SCHEMA_VERSION {
-        return Err(format!(
-            "{} uses report layout {}, this aa reads layout {}",
-            path.display(),
-            report.schema_version,
-            aa_core::SCHEMA_VERSION
-        ));
-    }
-    Ok(report)
+    aa_app::export::load(path)
 }
 
 fn explain(report: &Report, id: &str, lang: LangArg) -> Result<(), String> {
@@ -363,6 +336,19 @@ fn run(cli: Cli) -> Result<u8, String> {
         Command::Render { report, output } => (load(&report)?, output),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
         Command::Verify { dir } => return verify(&dir),
+        Command::Diff { before, after, json, lang, fail_on_difference } => {
+            let difference = aa_export::diff::diff(&load(&before)?, &load(&after)?);
+            if json {
+                println!("{}", serde_json::to_string_pretty(&difference).map_err(|e| e.to_string())?);
+            } else {
+                let language = match lang {
+                    LangArg::Zh => aa_export::diff::Language::Zh,
+                    LangArg::En => aa_export::diff::Language::En,
+                };
+                print!("{}", aa_export::diff::text(&difference, language));
+            }
+            return Ok(if fail_on_difference && !difference.is_empty() { EXIT_FINDINGS } else { 0 });
+        }
     };
     write_outputs(&report, &output)?;
     let threshold = output.fail_on.map(|severity| match severity {
