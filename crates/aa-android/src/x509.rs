@@ -106,13 +106,17 @@ fn string_value(tlv: &Tlv) -> String {
     match tlv.tag {
         // BMPString: UTF-16 big endian.
         0x1e => {
-            let units: Vec<u16> = tlv.value.chunks_exact(2).map(|c| u16::from_be_bytes([c[0], c[1]])).collect();
+            let units: Vec<u16> = tlv.value.as_chunks::<2>().0.iter().map(|c| u16::from_be_bytes([c[0], c[1]])).collect();
             String::from_utf16_lossy(&units)
         }
         // UniversalString: UTF-32 big endian.
-        0x1c => {
-            tlv.value.chunks_exact(4).map(|c| char::from_u32(u32::from_be_bytes([c[0], c[1], c[2], c[3]])).unwrap_or('\u{fffd}')).collect()
-        }
+        0x1c => tlv
+            .value
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|c| char::from_u32(u32::from_be_bytes([c[0], c[1], c[2], c[3]])).unwrap_or('\u{fffd}'))
+            .collect(),
         // T61String is treated as Latin-1, as most tools do.
         0x14 => tlv.value.iter().map(|b| *b as char).collect(),
         _ => String::from_utf8_lossy(tlv.value).into_owned(),

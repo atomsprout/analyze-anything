@@ -49,6 +49,8 @@ unsafe_code = "deny"
 dbg_macro = "warn"
 todo = "warn"
 unwrap_used = "warn"
+# `chunks_exact(2)` over byte buffers reads as what it does; the `as_chunks` form is no safer here.
+chunks_exact_to_as_chunks = "allow"
 
 [profile.release]
 lto = "thin"

@@ -103,7 +103,7 @@ impl<'a> StringPool<'a> {
         let available = data.len().saturating_sub(pos) / 2;
         let length = length.min(available).min(MAX_STRING_BYTES / 2);
         let raw = slice_at(data, pos, length * 2)?;
-        let units: Vec<u16> = raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        let units: Vec<u16> = raw.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
         Some(String::from_utf16_lossy(&units))
     }
 }

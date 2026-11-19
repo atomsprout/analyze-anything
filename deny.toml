@@ -11,3 +11,23 @@ multiple-versions = "warn"
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+
+# Each entry was read and judged not to apply to how this program uses the crate.
+[advisories]
+ignore = [
+    # Timing side channels on operations with secret keys. This program only verifies signatures
+    # with public keys read from the files it analyzes; it holds no secret key.
+    { id = "RUSTSEC-2023-0071", reason = "rsa: affects private-key operations; only public-key verification is used" },
+    { id = "RUSTSEC-2026-0387", reason = "crypto-bigint: affects arithmetic on secrets; only public values are handled" },
+    # quick-xml 0.38 is reached only through Typst's bibliography support, which the report
+    # template never uses, so no XML reaches it. Files under analysis are parsed with quick-xml 0.42.
+    { id = "RUSTSEC-2026-0194", reason = "quick-xml 0.38 via typst bibliography code that is never given input" },
+    { id = "RUSTSEC-2026-0195", reason = "quick-xml 0.38 via typst bibliography code that is never given input" },
+    # Unmaintained crates pulled in by Typst. None parses data taken from an analyzed file.
+    { id = "RUSTSEC-2024-0320", reason = "yaml-rust: unmaintained, transitive through typst, unused by the template" },
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml: unmaintained, transitive through typst, unused by the template" },
+    { id = "RUSTSEC-2024-0436", reason = "paste: unmaintained proc-macro, build time only" },
+    { id = "RUSTSEC-2025-0141", reason = "bincode: unmaintained, transitive through typst's syntax-highlighting data" },
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser: unmaintained, parses the embedded fonts and fonts the user passes" },
+    { id = "RUSTSEC-2026-0206", reason = "rustybuzz: unmaintained, shapes text with the embedded fonts" },
+]

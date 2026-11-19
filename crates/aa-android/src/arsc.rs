@@ -343,8 +343,13 @@ fn parse_package<'a>(
 ) -> Option<Package<'a>> {
     let end = start + size;
     let id = u32_at(data, start + 8)?;
-    let name_units: Vec<u16> =
-        slice_at(data, start + 12, 256)?.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).take_while(|u| *u != 0).collect();
+    let name_units: Vec<u16> = slice_at(data, start + 12, 256)?
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| u16::from_le_bytes([c[0], c[1]]))
+        .take_while(|u| *u != 0)
+        .collect();
     let type_strings = u32_at(data, start + 268)? as usize;
     let key_strings = u32_at(data, start + 276)? as usize;
     // Older tables have a 284-byte header without the type id offset.

@@ -40,7 +40,7 @@ const INCOMPAT_NORMALIZATION_INSENSITIVE: u64 = 8;
 fn checksum_ok(block: &[u8]) -> bool {
     let Some(stored) = le64(block, 0) else { return false };
     let (mut low, mut high) = (0u64, 0u64);
-    for word in block[8..].chunks_exact(4) {
+    for word in block[8..].as_chunks::<4>().0 {
         low = (low + u32::from_le_bytes([word[0], word[1], word[2], word[3]]) as u64) % 0xffff_ffff;
         high = (high + low) % 0xffff_ffff;
     }

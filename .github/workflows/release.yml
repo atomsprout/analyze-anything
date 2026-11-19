@@ -23,9 +23,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+      # rust-toolchain.toml names the version; add the target this job builds for.
+      - run: rustup target add ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }} -p aa-cli
