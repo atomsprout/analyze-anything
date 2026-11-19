@@ -3,6 +3,9 @@
 //! Code signatures, entitlements and FairPlay encryption belong to `aa-apple`; this module only
 //! records where `LC_CODE_SIGNATURE` and `LC_ENCRYPTION_INFO` point.
 
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+
 use aa_core::plugin::Output;
 use aa_core::{Artifact, Confidence, Evidence, Section, Severity};
 use serde_json::{Map, Value, json};
@@ -11,12 +14,17 @@ use crate::common::{
     Capped, EntropyBudget, MAX_LIBRARIES, MAX_SECTIONS, MAX_SYMBOLS, Marks, Problems, Rd, Symbol, finding, flag_names, hex, hx, sample,
     symbols_json, text,
 };
+use crate::dyld;
 use crate::lang::{self, Region};
 
 /// Slices of a universal binary read at most. Real files have two to five.
 const MAX_SLICES: u32 = 32;
 /// Load commands read at most.
 const MAX_COMMANDS: u32 = 16_384;
+
+/// Distinct symbol names told apart per list at most. Past this, names are no longer counted
+/// and a limitation says so; no real image comes near it.
+const MAX_DISTINCT: usize = 4_000_000;
 
 const MH_TWOLEVEL: u32 = 0x80;
 const MH_ALLOW_STACK_EXECUTION: u32 = 0x2_0000;
@@ -360,6 +368,142 @@ struct Dylib {
     compatibility: u32,
 }
 
+/// Where a list of imports or exports was read from. An image can hold the same symbol in its
+/// symbol table and in the tables dyld reads; a stripped image holds it only in the latter.
+#[derive(Clone, Copy)]
+enum Source {
+    Symtab,
+    ExportTrie,
+    ChainedFixups,
+    BindOpcodes,
+}
+
+impl Source {
+    const NAMES: [&'static str; 4] = ["symtab", "export-trie", "chained-fixups", "bind-opcodes"];
+
+    fn bit(self) -> u8 {
+        1 << self as u8
+    }
+}
+
+/// The largest number of symbols kept per list; tests lift it to compare whole lists.
+#[cfg(not(test))]
+fn symbol_cap() -> usize {
+    MAX_SYMBOLS
+}
+
+#[cfg(test)]
+thread_local! {
+    pub static SYMBOL_CAP: std::cell::Cell<usize> = const { std::cell::Cell::new(MAX_SYMBOLS) };
+}
+
+#[cfg(test)]
+fn symbol_cap() -> usize {
+    SYMBOL_CAP.with(std::cell::Cell::get)
+}
+
+/// A 128-bit digest of a symbol name, so that telling names apart costs the same for every name.
+fn name_key(name: &str) -> u128 {
+    let mut first = std::collections::hash_map::DefaultHasher::new();
+    name.hash(&mut first);
+    let mut second = std::collections::hash_map::DefaultHasher::new();
+    0x9e37_79b9u32.hash(&mut second);
+    name.hash(&mut second);
+    (u128::from(first.finish()) << 64) | u128::from(second.finish())
+}
+
+/// Imports or exports gathered from several tables of one image, each name once.
+struct Merged {
+    list: Capped<Symbol>,
+    cap: usize,
+    /// Every name met, with the sources that held it.
+    seen: HashMap<u128, u8>,
+    /// Where the kept symbols are in `list.items`.
+    kept: HashMap<u128, usize>,
+    /// The sources that were present and read, as bits.
+    read: u8,
+    /// How many distinct names each source held.
+    held: [u64; 4],
+    overflow: bool,
+}
+
+impl Merged {
+    fn new() -> Self {
+        let cap = symbol_cap();
+        Merged { list: Capped::new(cap), cap, seen: HashMap::new(), kept: HashMap::new(), read: 0, held: [0; 4], overflow: false }
+    }
+
+    /// Records that `source` is present in the image, whether or not it names any symbol.
+    fn source(&mut self, source: Source) {
+        self.read |= source.bit();
+    }
+
+    /// Adds a symbol met in `source`. The first source to name a symbol decides what is kept
+    /// about it; a later one only fills in a library the first did not know.
+    fn add(&mut self, source: Source, symbol: Symbol) {
+        self.read |= source.bit();
+        let key = name_key(&symbol.name);
+        if let Some(sources) = self.seen.get_mut(&key) {
+            if *sources & source.bit() == 0 {
+                *sources |= source.bit();
+                self.held[source as usize] += 1;
+            }
+            if let Some(known) = self.kept.get(&key).and_then(|index| self.list.items.get_mut(*index))
+                && known.library.is_none()
+            {
+                known.library = symbol.library;
+            }
+            return;
+        }
+        if self.seen.len() >= MAX_DISTINCT {
+            self.overflow = true;
+            return;
+        }
+        self.seen.insert(key, source.bit());
+        self.held[source as usize] += 1;
+        if self.list.items.len() < self.cap {
+            self.kept.insert(key, self.list.items.len());
+        }
+        self.list.push(symbol);
+    }
+
+    fn is_read(&self) -> bool {
+        self.read != 0
+    }
+
+    /// The fact: the shared symbol list plus which sources were read and what each held.
+    fn json(self, with_library: bool) -> Value {
+        let read = |index: &usize| self.read & (1 << index) != 0;
+        let sources: Vec<&str> = (0..4).filter(read).map(|i| Source::NAMES[i]).collect();
+        let by_source: Map<String, Value> = (0..4).filter(read).map(|i| (Source::NAMES[i].to_string(), self.held[i].into())).collect();
+        let mut value = symbols_json(self.list, with_library);
+        value["sources"] = sources.into();
+        value["by_source"] = by_source.into();
+        value
+    }
+}
+
+/// The library a bind ordinal names: a dylib load command by position, or one of dyld's special
+/// lookups.
+fn library_of(ordinal: i64, dylibs: &[Dylib]) -> Option<String> {
+    match ordinal {
+        0 => Some("(this image)".into()),
+        -1 => Some("(main executable)".into()),
+        -2 => Some("(dynamic lookup)".into()),
+        -3 => Some("(weak lookup)".into()),
+        other => usize::try_from(other).ok().and_then(|n| dylibs.get(n.checked_sub(1)?)).map(|d| d.name.clone()),
+    }
+}
+
+/// Records one symbol dyld binds as an import. `table` is the file offset of the table it was
+/// read from.
+fn add_bind(bind: dyld::Bind, table: u32, source: Source, dylibs: &[Dylib], imports: &mut Merged, marks: &mut Marks) {
+    marks.see(&bind.name, 1, true, u64::from(table) + bind.at);
+    let mut symbol = Symbol::new(bind.name).with("weak", bind.weak);
+    symbol.library = library_of(bind.ordinal, dylibs);
+    imports.add(source, symbol);
+}
+
 /// Parses one thin Mach-O image (`data` is the whole image, `base` its offset in the file),
 /// emits its findings, and returns its facts keyed without the `binary.` prefix.
 fn slice(
@@ -393,6 +537,10 @@ fn slice(
     let mut dylinker = None;
     let mut uuid: Option<(String, u64)> = None;
     let mut symtab = None;
+    // LC_DYLD_INFO: the offset and size of the bind, weak bind, lazy bind and export tables.
+    let mut dyld_info: Option<[(u32, u32); 4]> = None;
+    let mut exports_trie: Option<(u32, u32)> = None;
+    let mut chained_fixups: Option<(u32, u32)> = None;
     // The fact value, the command's offset, then platform, minimum OS and SDK as text.
     let mut min_os: Option<(Value, u64, String, String, String)> = None;
     // An SDK version of zero means the field was not filled in (usual in object files).
@@ -524,6 +672,12 @@ fn slice(
                 }
             }
             0x1d => code_signature = rd.u32(at + 8).zip(rd.u32(at + 12)),
+            0x22 | 0x8000_0022 => {
+                let pair = |field: u64| rd.u32(at + field).zip(rd.u32(at + field + 4));
+                dyld_info = (|| Some([pair(16)?, pair(24)?, pair(32)?, pair(40)?]))().filter(|_| cmdsize >= 48);
+            }
+            0x8000_0033 => exports_trie = rd.u32(at + 8).zip(rd.u32(at + 12)).filter(|_| cmdsize >= 16),
+            0x8000_0034 => chained_fixups = rd.u32(at + 8).zip(rd.u32(at + 12)).filter(|_| cmdsize >= 16),
             0x21 | 0x2c => encryption = (|| Some((rd.u32(at + 8)?, rd.u32(at + 12)?, rd.u32(at + 16)?)))(),
             0x24 | 0x25 | 0x2f | 0x30 => {
                 let platform = match cmd {
@@ -600,14 +754,16 @@ fn slice(
         entry_address = segments.iter().find(|s| s.name == "__TEXT").and_then(|s| s.vmaddr.checked_add(offset));
     }
 
-    // Symbols.
+    // Symbols: the symbol table first, then the tables dyld reads, which survive stripping.
     let mut marks = Marks::default();
-    let mut imports = Capped::new(MAX_SYMBOLS);
-    let mut exports = Capped::new(MAX_SYMBOLS);
+    let mut imports = Merged::new();
+    let mut exports = Merged::new();
     let mut symbols_read = None;
     let (mut locals, mut stabs) = (0u64, 0u64);
     let entry_size: u64 = if wide { 16 } else { 12 };
     if let Some((symoff, nsyms, stroff, strsize)) = symtab {
+        imports.source(Source::Symtab);
+        exports.source(Source::Symtab);
         let (symoff, nsyms, stroff, strsize) = (u64::from(symoff), u64::from(nsyms), u64::from(stroff), u64::from(strsize));
         let fits = rd.len().saturating_sub(symoff) / entry_size;
         if nsyms > fits {
@@ -653,12 +809,106 @@ fn slice(
                         ordinal => dylibs.get(ordinal - 1).map(|d| d.name.clone()),
                     };
                 }
-                imports.push(symbol);
+                imports.add(Source::Symtab, symbol);
             } else if external && !private && matches!(kind, 0x2 | 0xa | 0xe) {
-                exports.push(Symbol::new(name).with("address", value));
+                exports.add(Source::Symtab, Symbol::new(name).with("address", value));
             }
         }
         symbols_read = Some(read);
+    }
+    // How many bytes at a marker symbol's offset are its evidence: a symbol table entry, or
+    // the name itself in the tables below. A trie spells a name piecewise, so one byte there.
+    let mut marker_lengths: (Option<u64>, Option<u64>) = (None, None);
+    let mut settle = |marks: &Marks, length: &dyn Fn(&str) -> u64| {
+        for (slot, mark) in [(&mut marker_lengths.0, &marks.canary), (&mut marker_lengths.1, &marks.arc)] {
+            if slot.is_none()
+                && let Some((name, _)) = mark
+            {
+                *slot = Some(length(name));
+            }
+        }
+    };
+    settle(&marks, &|_| entry_size);
+
+    // A table of the link-edit data, or nothing when it is empty or not inside the file.
+    let table = |what: &str, (offset, size): (u32, u32), problems: &mut Problems| {
+        if size == 0 {
+            return None;
+        }
+        let bytes = rd.bytes(u64::from(offset), u64::from(size));
+        if bytes.is_none() {
+            problems.malformed(format!("{label}the {what} extend past the end of the file and were not read"));
+        }
+        bytes
+    };
+    let defect = |what: &str, problem: Option<dyld::Problem>, problems: &mut Problems| match problem {
+        Some(dyld::Problem::Malformed(text)) => problems.malformed(format!("{label}{text}; the rest of the {what} were not read")),
+        Some(dyld::Problem::Unsupported(text)) => problems.undetermined(format!("{label}{text}; the {what} were not read")),
+        None => {}
+    };
+
+    // Exports as dyld sees them. LC_DYLD_EXPORTS_TRIE is the newer home of the same trie.
+    let image_base = segments.iter().find(|s| s.fileoff == 0 && s.filesize > 0).or_else(|| segments.iter().find(|s| s.name == "__TEXT"));
+    let image_base = image_base.map(|s| s.vmaddr);
+    let trie_at = exports_trie.or(dyld_info.map(|tables| tables[3]));
+    if let Some(at) = trie_at {
+        exports.source(Source::ExportTrie);
+        if let Some(bytes) = table("exports (export trie)", at, problems) {
+            let problem = dyld::export_trie(bytes, |export| {
+                marks.see(&export.name, 1, false, u64::from(at.0) + export.at);
+                let mut symbol = Symbol::new(export.name);
+                let address =
+                    if export.absolute { export.address } else { export.address.and_then(|offset| image_base?.checked_add(offset)) };
+                if let Some(address) = address {
+                    symbol = symbol.with("address", address);
+                }
+                if let Some((ordinal, name)) = export.reexport {
+                    let library = usize::try_from(ordinal).ok().and_then(|n| dylibs.get(n.checked_sub(1)?)).map(|d| d.name.as_str());
+                    symbol = symbol.with("reexport", json!({ "library": library, "name": name }));
+                }
+                exports.add(Source::ExportTrie, symbol);
+            });
+            defect("exports (export trie)", problem, problems);
+        }
+    }
+    settle(&marks, &|_| 1);
+
+    // Imports as dyld binds them: the import table of chained fixups, or the older opcodes.
+    let mut chained_header = None;
+    if let Some(at) = chained_fixups {
+        imports.source(Source::ChainedFixups);
+        if let Some(bytes) = table("imports (chained fixups)", at, problems) {
+            let (header, problem) =
+                dyld::chained_imports(bytes, le, |bind| add_bind(bind, at.0, Source::ChainedFixups, &dylibs, &mut imports, &mut marks));
+            chained_header = header;
+            defect("imports (chained fixups)", problem, problems);
+        }
+    }
+    if let Some([bind, weak_bind, lazy_bind, _]) = dyld_info {
+        imports.source(Source::BindOpcodes);
+        // Weak binds last: they say a symbol is coalesced, not where it comes from, so a
+        // library named by an ordinary bind of the same symbol is the better answer.
+        for (what, at, lazy, weak) in [
+            ("imports (bind opcodes)", bind, false, false),
+            ("imports (lazy bind opcodes)", lazy_bind, true, false),
+            ("imports (weak bind opcodes)", weak_bind, false, true),
+        ] {
+            if let Some(bytes) = table(what, at, problems) {
+                let problem = dyld::bind_opcodes(bytes, lazy, |mut bind| {
+                    if weak {
+                        bind.ordinal = dyld::ORDINAL_WEAK_LOOKUP;
+                    }
+                    add_bind(bind, at.0, Source::BindOpcodes, &dylibs, &mut imports, &mut marks);
+                });
+                defect(what, problem, problems);
+            }
+        }
+    }
+    settle(&marks, &|name| name.len() as u64);
+    for (what, list) in [("imported", &imports), ("exported", &exports)] {
+        if list.overflow {
+            problems.undetermined(format!("{label}more than {MAX_DISTINCT} {what} symbols; the rest were not counted"));
+        }
     }
     // `strip` removes local symbols and debug entries; what dyld needs (imports, exports) stays.
     let local_symbols = symbols_read.map(|_| locals);
@@ -732,11 +982,21 @@ fn slice(
     }
 
     // Code.
-    if symbols_read.is_some() {
-        crate::emit_symbols(file, out, Some(stripped), Some(locals + stabs), Some((imports.total, exports.total)), label);
-    } else {
-        problems.undetermined(format!("{label}the file has no symbol table (LC_SYMTAB); imports and exports were not read"));
+    let counts = (imports.is_read() && exports.is_read()).then_some((imports.list.total, exports.list.total));
+    crate::emit_symbols(file, out, symbols_read.map(|_| stripped), Some(locals + stabs), counts, label);
+    match (imports.is_read(), exports.is_read()) {
+        (true, true) => {}
+        (false, false) => problems.undetermined(format!(
+            "{label}the file has no symbol table (LC_SYMTAB) and no dyld bind or export information; imports and exports were not read"
+        )),
+        (false, true) => problems
+            .undetermined(format!("{label}the file has no symbol table (LC_SYMTAB) and no dyld bind information; imports were not read")),
+        (true, false) => {
+            problems.undetermined(format!("{label}the file has no symbol table (LC_SYMTAB) and no export trie; exports were not read"))
+        }
     }
+    // Where "not referenced" was looked for.
+    let import_tables = if symbols_read.is_some() { "symbol table" } else { "dyld bind information" };
     if dwarf || stabs > 0 {
         let what = if dwarf {
             "DWARF sections (__DWARF segment)".to_string()
@@ -782,24 +1042,24 @@ fn slice(
 
         let unsafe_code = toolchain.has("C++") || toolchain.has("Objective-C");
         let safe_language = ["Go", "Rust", "Swift"].into_iter().find(|l| toolchain.has(l)).filter(|_| !unsafe_code);
-        match (&marks.canary, symbols_read) {
+        match (&marks.canary, imports.is_read()) {
             (Some((symbol, at)), _) => {
                 hardening.insert("canary".into(), true.into());
                 out.finding(
                     hard("binary.canary", Confidence::Derived, Severity::Info).param("symbol", symbol.as_str()).evidence(Evidence::bytes(
                         file,
                         base + at,
-                        entry_size,
+                        marker_lengths.0.unwrap_or(entry_size),
                         symbol.as_str(),
                     )),
                 );
             }
-            (None, None) => {
+            (None, false) => {
                 hardening.insert("canary".into(), Value::Null);
             }
-            (None, Some(_)) => {
+            (None, true) => {
                 hardening.insert("canary".into(), false.into());
-                let evidence = Evidence::field(file, format!("{label}symbol table"), "___stack_chk_fail not referenced");
+                let evidence = Evidence::field(file, format!("{label}{import_tables}"), "___stack_chk_fail not referenced");
                 match safe_language {
                     Some(language) => out.finding(
                         hard("binary.no-canary-safe-language", Confidence::Heuristic, Severity::Info)
@@ -812,21 +1072,21 @@ fn slice(
         }
 
         // ARC matters only where there is Objective-C code to manage.
-        if toolchain.has("Objective-C") && symbols_read.is_some() {
+        if toolchain.has("Objective-C") && imports.is_read() {
             match &marks.arc {
                 Some((symbol, at)) => {
                     hardening.insert("arc".into(), true.into());
                     out.finding(
                         hard("binary.macho-arc", Confidence::Derived, Severity::Info)
                             .param("symbol", symbol.as_str())
-                            .evidence(Evidence::bytes(file, base + at, entry_size, symbol.as_str())),
+                            .evidence(Evidence::bytes(file, base + at, marker_lengths.1.unwrap_or(entry_size), symbol.as_str())),
                     );
                 }
                 None => {
                     hardening.insert("arc".into(), false.into());
                     out.finding(hard("binary.macho-no-arc", Confidence::Heuristic, Severity::Low).evidence(Evidence::field(
                         file,
-                        format!("{label}symbol table"),
+                        format!("{label}{import_tables}"),
                         "_objc_release not referenced",
                     )));
                 }
@@ -880,6 +1140,7 @@ fn slice(
         .collect();
     let mut toolchain_value = toolchain.to_json();
     toolchain_value["build_tools"] = tools.iter().map(|(name, v, _)| json!({ "tool": name, "version": v })).collect::<Vec<_>>().into();
+    let span = |(offset, size): (u32, u32)| json!({ "offset": offset, "size": size });
     let debug_kinds: Vec<&str> = [dwarf.then_some("dwarf"), (stabs > 0).then_some("stabs")].into_iter().flatten().collect();
     let mut facts = vec![
         (
@@ -909,6 +1170,24 @@ fn slice(
                 "load_commands": commands,
                 "code_signature": code_signature.map(|(offset, size)| json!({ "offset": offset, "size": size })),
                 "encryption": encryption.map(|(offset, size, id)| json!({ "offset": offset, "size": size, "cryptid": id })),
+                "dyld": {
+                    "export_trie": trie_at.map(|(offset, size)| json!({
+                        "offset": offset,
+                        "size": size,
+                        "command": if exports_trie.is_some() { "LC_DYLD_EXPORTS_TRIE" } else { "LC_DYLD_INFO" },
+                    })),
+                    "chained_fixups": chained_fixups.map(|(offset, size)| json!({
+                        "offset": offset,
+                        "size": size,
+                        "version": chained_header.map(|h| h.version),
+                        "imports_format": chained_header.map(|h| h.imports_format),
+                        "imports": chained_header.map(|h| h.imports_count),
+                        "symbols_format": chained_header.map(|h| h.symbols_format),
+                    })),
+                    "bind": dyld_info.map(|tables| span(tables[0])),
+                    "weak_bind": dyld_info.map(|tables| span(tables[1])),
+                    "lazy_bind": dyld_info.map(|tables| span(tables[2])),
+                },
             }),
         ),
         ("sections", json!({ "sections": section_values, "total": sections_total, "truncated": sections_total > MAX_SECTIONS as u64 })),
@@ -926,9 +1205,11 @@ fn slice(
         ("toolchain", toolchain_value),
         ("hardening", Value::Object(hardening)),
     ];
-    if symbols_read.is_some() {
-        facts.push(("imports", symbols_json(imports, true)));
-        facts.push(("exports", symbols_json(exports, false)));
+    if imports.is_read() {
+        facts.push(("imports", imports.json(true)));
+    }
+    if exports.is_read() {
+        facts.push(("exports", exports.json(false)));
     }
     Some(facts)
 }

@@ -71,6 +71,22 @@
 //! `name` is `"#<ordinal>"`). Export: `name`, `address`, and for PE `ordinal` and `forwarder`;
 //! PE also has top-level `functions` (address-table size).
 //!
+//! Mach-O reads both lists from the symbol table (`LC_SYMTAB`) and from the tables dyld itself
+//! uses, which a stripped file keeps: the export trie (`LC_DYLD_EXPORTS_TRIE`, or the one in
+//! `LC_DYLD_INFO`), the import table of chained fixups (`LC_DYLD_CHAINED_FIXUPS`), and the bind,
+//! lazy bind and weak bind opcodes of `LC_DYLD_INFO`. A name found in several of them is one
+//! symbol. Two more keys say where the lists came from: `sources`, the tables present and read,
+//! in the order `symtab`, `export-trie`, `chained-fixups`, `bind-opcodes`; and `by_source`,
+//! `{<source>: <distinct names it holds>}`. Each list is absent only when none of its sources
+//! exists. The symbol table is read first and decides what is kept about a symbol; a dyld table
+//! adds the symbols it alone holds and the `library` of an import the symbol table left open.
+//! Besides a dylib's install name, `library` can be `(this image)`, `(main executable)`,
+//! `(dynamic lookup)` (flat namespace) or `(weak lookup)` (found by coalescing weak
+//! definitions; dyld tables say this where the symbol table names the defining library). An
+//! export read from the trie has `address` (as in the symbol table: a virtual address), or
+//! `reexport: {library, name}` when it is passed on from another library (`name` null when it
+//! is the same there), and then no `address`. Names are compared after cutting at 1024 bytes.
+//!
 //! ## `binary.linking` (ELF, Mach-O)
 //! ELF: `{static, interp, soname, rpath: [..], runpath: [..], dt_flags, dt_flags_1}`.
 //! Mach-O: `{install_name, dylinker, rpaths: [..]}`.
@@ -78,7 +94,8 @@
 //! ## `binary.symbols`
 //! ELF: `{stripped, symtab, dynsym}` (named-symbol counts, null when the table is absent).
 //! PE: `{stripped, coff_symbols, coff_symbol_entries}`. Mach-O: `{stripped, symbols, local,
-//! debug_entries}`. `stripped` means no local symbol names are left.
+//! debug_entries}`. `stripped` means no local symbol names are left. The Mach-O numbers are those
+//! of the symbol table alone (`symbols` and `local` are null without one).
 //!
 //! ## `binary.debug`
 //! `{has_debug_info, kinds: [..]}` with kinds `dwarf`, `stabs`, `pdb-reference`. ELF adds
@@ -113,9 +130,15 @@
 //!
 //! ## `binary.macho` (Mach-O)
 //! `{load_commands: [{cmd, offset, size}], code_signature: {offset, size} | null, encryption:
-//! {offset, size, cryptid} | null}`.
+//! {offset, size, cryptid} | null, dyld}`. `dyld` says where the tables dyld reads are:
+//! `{export_trie: {offset, size, command} | null, chained_fixups: {offset, size, version,
+//! imports_format, imports, symbols_format} | null, bind, weak_bind, lazy_bind: {offset, size} |
+//! null}`. `command` is the load command that holds the trie; the header fields of
+//! `chained_fixups` are null when its data could not be read; the three bind tables are null
+//! without `LC_DYLD_INFO`, and a table that is not there has size 0.
 
 mod common;
+mod dyld;
 mod elf;
 mod lang;
 mod macho;
