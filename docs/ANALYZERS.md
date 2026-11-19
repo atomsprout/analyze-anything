@@ -16,6 +16,13 @@ is a complete small analyzer, `crates/aa-unpack` a complete set of unpackers.
    (content, binary, apple, windows, android). It sees the facts and kinds every analyzer
    attached in the file pass, and those of the analyzers before it in the tree pass.
 
+A kind set in the file pass sticks to the first analyzer that sets it; the tree pass may replace
+it. `Tree::summary()` gives the facts about the input as a whole that earlier analyzers attached.
+A panic in an analyzer or an unpacker is caught and recorded as a limitation; it never ends the run.
+
+Within a chapter the report lists findings most severe first, then in the order their rules are
+declared in `rules()`. Declare rules in the order a reader should meet them.
+
 ## What an analyzer emits
 
 - **Findings** — statements the report prints. One `Finding` per statement, built with

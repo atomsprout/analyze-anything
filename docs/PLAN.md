@@ -1,7 +1,34 @@
 # Analyze Anything — 最终规划
 
-> 版本：v1.0 定稿（2026-11-18）。调研依据见 [RESEARCH.md](RESEARCH.md)。
+> 版本：v1.0 定稿（2026-11-18），第一阶段已实施（见下方“实施状态”）。调研依据见 [RESEARCH.md](RESEARCH.md)。
 > 一句话定位：**输入电脑上的任意产物（文件 / 文件夹 / 压缩包 / 安装包 / 应用包），输出一份可靠、可溯源、多维度的分析报告（PDF / HTML / Markdown / TXT）。** Rust 开发，纯静态分析，离线可用。
+
+---
+
+## 实施状态（2026-11-19）
+
+第一阶段（CLI，M0–M6）的代码已全部实现。下表是每个里程碑的实际结果；没有验证到的部分见 [LIMITATIONS.md](LIMITATIONS.md)。
+
+| 里程碑 | 状态 | 实际结果 |
+|---|---|---|
+| M0 地基与技术验证 | 完成 | 四项技术验证均有结论，记录在 `docs/spikes/` |
+| M1 通用层与渲染 | 完成 | 7 种归档格式、通用内容分析、JSON / Markdown / TXT / HTML / PDF |
+| M2 原生二进制 | 完成 | 与 `readelf`、`llvm-readobj`、`llvm-otool` 对照：2457 个 ELF、151 个 PE、34 个 Mach-O 无不一致 |
+| M3 Apple | 完成 | 9 个真实 DMG 与 7-Zip 逐文件一致；587 个已签名二进制与 `rcodesign` 一致 |
+| M4 Windows | 完成 | NSIS / Inno / MSI / CAB 与 7-Zip、`innoextract`、`msiextract`、`cabextract` 逐文件一致；签名与 `osslsigncode` 一致 |
+| M5 Android | 完成 | 13 个真实 APK 与 `aapt`、`apksigner`、`dexdump` 一致；21 个签名样本的接受 / 拒绝结果与 `apksigner` 一致 |
+| M6 关联与打磨 | 完成，发布未做 | 概览、结构统计、组件清单、SARIF、CycloneDX、`aa verify`、模糊测试；发布流程已写好但没有运行过，也没有打版本标签 |
+
+**与原规划的偏差**
+
+- **技术验证的结论**：PDF 用内嵌 Typst 可行；DMG 的现成库不够用，改为自研读取器；NSIS 用现成库并补了两处缺口；APK 签名自研校验。
+- **解析器多为自研**：二进制、DEX、AXML、Authenticode、Apple 签名块都没有用 §3 / RESEARCH 里列的现成库，原因是需要字节偏移作证据，且现成库在畸形输入上会崩溃或给错结果。现成库只在测试里当对照。
+- **没有做单一的风险评分**：改为按严重度计数并说明这不是安全性判定。单一分数没有可靠依据。
+- **crate 划分**：实际是 12 个（`aa-core`、`aa-engine`、`aa-unpack`、`aa-content`、`aa-binary`、`aa-apple`、`aa-windows`、`aa-android`、`aa-correlate`、`aa-export`、`aa-report`、`aa-cli`），没有单独的 `aa-vfs`、`aa-detect`、`aa-rules`。
+- **没有做的**：`--rules` 追加 YARA 规则、`--font` 覆盖 PDF 字体、TLSH 相似度哈希、`aa selftest`、`aa inspect`（用 `aa analyze --format json` 代替）、每分析器超时（只有崩溃隔离）。
+- **可执行文件体积**：带 PDF 约 49 MB，比 §5.3 估计的大（Typst 加字体约 39 MB）；不带 PDF 约 10 MB。
+- **差分测试的形式**：对照是在开发时用脚本对真实样本跑的，只有小样本的对照结果写成了自动测试；CI 里不调用外部工具。
+- **只在 Linux 上验证过**，没有用 macOS 的 `codesign` 和 Windows 的 `sigcheck` 对照。
 
 ---
 
@@ -216,7 +243,7 @@ SDK 指纹、Tracker 列表、密钥正则、加壳特征、权限风险等级�
 | `printpdf` / `krilla` 手写排版 | 工作量大，表格/分页/目录都要自己做 ✗ |
 | **`typst` 作为库内嵌** | **选用**：成熟的排版引擎，自动目录/页眉页脚/跨页表格/代码块，CJK 支持好，纯 Rust，产物可复现 ✓ |
 
-做法：IR → Typst 源（模板内嵌）→ `typst-pdf` 输出。内嵌一套开源字体（含中文，如 Noto Sans SC 子集）以保证跨机器一致；提供 `--font` 覆盖。代价是二进制增大约 15–25 MB，可用 `pdf` feature 开关。
+做法：IR → Typst 源（模板内嵌）→ `typst-pdf` 输出。内嵌一套开源字体（含中文，如 Noto Sans SC 子集）以保证跨机器一致；提供 `--font` 覆盖。实测二进制增大约 39 MB（其中字体 8.6 MB），可用 `pdf` feature 关闭。
 
 ### 5.4 HTML
 单文件、自包含（CSS/JS/图标内联，无外链），内含完整 IR 数据，支持：章节导航、全文搜索、产物树浏览、按置信度/严重度筛选、点击结论展开证据。深浅色自适应。
