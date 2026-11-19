@@ -8,7 +8,7 @@
 
 ```
 brew install --cask atomsprout/tap/analyze-anything-desktop   # 桌面版
-brew install atomsprout/tap/analyze-anything                  # 命令行 aa
+brew install atomsprout/tap/analyze-anything                  # 命令行，装成 analyze-anything
 ```
 
 两者互不依赖，可以只装一个。

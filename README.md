@@ -12,11 +12,11 @@
 ## 安装（macOS，Apple 芯片）
 
 ```
-brew install atomsprout/tap/analyze-anything                  # 命令行 aa
+brew install atomsprout/tap/analyze-anything                  # 命令行，装成 analyze-anything
 brew install --cask atomsprout/tap/analyze-anything-desktop   # 桌面版
 ```
 
-两者互不依赖。其他平台的命令行从源码构建：
+两者互不依赖。macOS 自带一个同名的 `/usr/bin/aa`（Apple Archive），所以 Homebrew 把 `aa` 装成 `analyze-anything`；下文的 `aa …` 在 Homebrew 安装后写作 `analyze-anything …`。其他平台的命令行从源码构建：
 
 ```
 cargo build --release
