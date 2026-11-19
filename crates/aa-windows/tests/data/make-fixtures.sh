@@ -1,6 +1,6 @@
 #!/bin/sh
 # Rebuilds every fixture in this folder. Needs: mingw-w64, osslsigncode (>= 2.6), openssl, nsis,
-# wixl + msitools, gcab, p7zip-full, cabextract, exiftool, mono-mcs + mono-utils, python3.
+# wixl + msitools, gcab, p7zip-full, cabextract, exiftool, mono-mcs + mono-utils, python3, cargo.
 #
 #   apt-get install -y mingw-w64 osslsigncode nsis wixl msitools gcab p7zip-full cabextract \
 #     libimage-exiftool-perl mono-mcs mono-utils
@@ -82,6 +82,24 @@ cp fixture.msi "$here/fixture.msi"
   echo "== files"
   mkdir x-msi && (cd x-msi && msiextract ../fixture.msi >/dev/null && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum)
 } > "$here/fixture.msi.ref.txt"
+
+# --- signed MSI packages ----------------------------------------------------------------------
+# tiny.bin does not compress, so the cabinet is larger than 4096 bytes and lives in ordinary
+# sectors; everything else in the package is in the mini stream.
+python3 -c "
+import hashlib, sys
+out = b''.join(hashlib.sha256(b'fixture %d' % i).digest() for i in range(188))
+sys.stdout.buffer.write(out[:6000])" > tiny.bin
+wixl -o tiny.msi tiny.wxs
+sign -certs leaf-chain.pem -key leaf.key -h sha256 -n "Tiny Fixture" -i https://example.invalid/tiny $tsa -in tiny.msi -out msi-signed.msi
+sign -certs self.crt -key self.key -h sha256 -add-msi-dse -in tiny.msi -out msi-signed-dse.msi
+# Storages inside storages, written by a test of the crate, to check recursion and sort order.
+(cd "$here/../.." && AA_NESTED_SAMPLE="$work/nested.msi" cargo test -q -p aa-windows --lib write_nested_sample -- --ignored)
+sign -certs leaf-chain.pem -key leaf.key -h sha384 -add-msi-dse -in nested.msi -out msi-nested-dse.msi
+for name in msi-signed msi-signed-dse msi-nested-dse; do
+  cp "$name.msi" "$here/$name.msi"
+  osslsigncode verify -CAfile ca.crt -TSA-CAfile ca.crt -in "$name.msi" > "$here/$name.ref.txt" 2>&1 || true
+done
 
 mkdir cabsrc && cp readme.txt payload.bin hello.exe cabsrc/
 (cd cabsrc && gcab -c -z ../fixture.cab readme.txt payload.bin hello.exe)

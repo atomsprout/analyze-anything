@@ -1,0 +1,85 @@
+Warning: MsiDigitalSignatureEx stream doesn't exist
+
+Signature Index: 0  (Primary Signature)
+
+Message digest algorithm         : SHA256
+Current DigitalSignature         : A2987209F7A4F174C92862F401F30BEE952C615D30F1D6F7B5A6ABE33A70E8C8 
+Calculated DigitalSignature      : A2987209F7A4F174C92862F401F30BEE952C615D30F1D6F7B5A6ABE33A70E8C8 
+Calculated simple message digest : EF1E6832D44740B25241643E5E0FFB7C638C3A7666F073215E0350EDC502F282 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Code Signing,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : CFC20010D5C5015C
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 16 08:29:35 2036 GMT
+
+Message digest algorithm: SHA256
+
+Authenticated attributes:
+	Signing time: Nov 20 08:29:36 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: C35E857F165D5A7FF5061E240A63C0F9013A589AB42C3A04FF14E22E94D06FF5 
+	URL description: https://example.invalid/tiny
+	Text description: Tiny Fixture
+
+Countersignatures:
+	Timestamp time: Nov 20 08:29:36 2026 GMT
+	Signing time: Nov 19 08:29:36 2026 GMT
+	Hash Algorithm: sha256
+	Issuer: CN=Fixture Test Root CA,O=Fixture Works,C=XX
+	Serial: CFC20010D5C5015D
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp verified using:
+	------------------
+	Signer #1:
+		Subject: CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : A0BD8D9FD4722B40
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 14 08:29:35 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Timestamp Authority,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : CFC20010D5C5015D
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:36 2026 GMT
+			notAfter : Nov 16 08:29:36 2036 GMT
+
+
+Timestamp serial number: 701A3090F01F6772
+
+Timestamp Server Signature verification: ok
+Signature verification time: Nov 20 08:29:36 2026 GMT
+Signing certificate chain verified using:
+	------------------
+	Signer #1:
+		Subject: CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : A0BD8D9FD4722B40
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 14 08:29:35 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Code Signing,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : CFC20010D5C5015C
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 16 08:29:35 2036 GMT
+
+Signature verification: ok
+
+Number of verified signatures: 1
+Succeeded

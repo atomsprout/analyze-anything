@@ -772,6 +772,298 @@ fn msi_tables_and_files_match_msitools() {
     assert_eq!(run.findings("windows.installer")[0].params["kind"], "MSI");
 }
 
+// ---- the signature of an MSI itself --------------------------------------------------------------
+
+/// The components of a distinguished name, whichever way the tool wrote it
+/// (`/C=XX/O=Example` or `CN=Name,O=Example`).
+fn name_parts(name: &str) -> BTreeSet<String> {
+    let separator = if name.starts_with('/') { '/' } else { ',' };
+    name.split(separator).map(|part| part.trim().to_string()).filter(|part| !part.is_empty()).collect()
+}
+
+/// Compares the signature of an MSI fixture with osslsigncode's verification output: the signed
+/// and the recomputed content digest, the metadata digest when the package has one, the signer.
+fn assert_msi_matches_osslsigncode(name: &str, algorithm: &str, checks: u64) -> Run {
+    let file = format!("{name}.msi");
+    let run = run_one(&file);
+    let reference = reference(&format!("{name}.ref.txt"));
+    let fact = run.fact(&file, "windows.msi-signature");
+    assert_eq!(fact["signed"], true, "{name}");
+    assert_eq!(fact["kind"], "MSI", "{name}");
+    assert_eq!(fact["errors"], serde_json::json!([]), "{name}");
+    let signatures = fact["signatures"].as_array().expect("signatures");
+    assert_eq!(signatures.len(), 1, "{name}");
+    let signature = &signatures[0];
+
+    assert_eq!(after(&reference, "Message digest algorithm         :"), [algorithm.replace('-', "")]);
+    assert_eq!(signature["digest_algorithm"], algorithm);
+    let signed = after(&reference, "Current DigitalSignature         :");
+    let calculated = after(&reference, "Calculated DigitalSignature      :");
+    assert_eq!((signed.len(), calculated.len()), (1, 1), "{name}: osslsigncode printed one signature");
+    assert_eq!(signed, calculated, "{name}: osslsigncode itself found the digest to match");
+    assert_eq!(signature["signed_digest"].as_str().expect("digest").to_uppercase(), signed[0], "{name}: signed digest");
+    assert_eq!(signature["computed_digest"].as_str().expect("digest").to_uppercase(), calculated[0], "{name}: computed digest");
+    for check in ["file_digest", "content_digest", "signature", "chain"] {
+        assert_eq!(signature["checks"][check], "passed", "{name}: {check}");
+    }
+
+    let stored = after(&reference, "Current MsiDigitalSignatureEx    :");
+    let recomputed = after(&reference, "Calculated MsiDigitalSignatureEx :");
+    assert_eq!(fact["metadata_stream"], !stored.is_empty(), "{name}: MsiDigitalSignatureEx present");
+    if let (Some(stored), Some(recomputed)) = (stored.first(), recomputed.first()) {
+        assert_eq!(fact["signed_metadata_digest"].as_str().expect("digest").to_uppercase(), *stored, "{name}: stored metadata digest");
+        assert_eq!(fact["computed_metadata_digest"].as_str().expect("digest").to_uppercase(), *recomputed, "{name}: metadata digest");
+        assert_eq!(fact["metadata_digest"], "passed", "{name}");
+    }
+
+    assert_eq!(name_parts(signature["signer"]["subject"].as_str().expect("subject")), name_parts(after(&reference, "Subject:")[0]));
+    assert_eq!(name_parts(signature["signer"]["issuer"].as_str().expect("issuer")), name_parts(after(&reference, "Issuer :")[0]));
+    assert_eq!(signature["signer"]["serial"].as_str().expect("serial").to_uppercase(), after(&reference, "Serial :")[0]);
+
+    let found = run.findings("windows.msi-signature");
+    assert_eq!(found.len(), 1, "{name}");
+    assert_eq!(found[0].severity, aa_core::Severity::Info, "{name}");
+    assert_eq!(found[0].confidence, aa_core::Confidence::Verified, "{name}");
+    assert_eq!((found[0].params["passed"].as_u64(), found[0].params["checks"].as_u64()), (Some(checks), Some(checks)), "{name}");
+    assert_eq!(found[0].params["algorithm"], algorithm);
+    for rule in [
+        "windows.msi-unsigned",
+        "windows.signature-digest-mismatch",
+        "windows.signature-invalid",
+        "windows.signature-chain-broken",
+        "windows.msi-signature-metadata-mismatch",
+        "windows.msi-signature-extra-data",
+    ] {
+        assert!(run.findings(rule).is_empty(), "{name}: {rule}");
+    }
+    assert!(!run.out.limitations.iter().any(|l| l.code.starts_with("windows.msi-signature")), "{name}: {:?}", run.out.limitations);
+    // The package's signature is not a PE signature and is not counted as one.
+    assert!(!run.tree.get(&file).expect("artifact").facts.contains_key("windows.authenticode"));
+    run
+}
+
+#[test]
+fn msi_signature_with_timestamp_matches_osslsigncode() {
+    let run = assert_msi_matches_osslsigncode("msi-signed", "SHA-256", 4);
+    let reference = reference("msi-signed.ref.txt");
+    let signature = &run.fact("msi-signed.msi", "windows.msi-signature")["signatures"][0];
+    assert_eq!(signature["program_name"].as_str(), after(&reference, "Text description:").first().copied());
+    assert_eq!(signature["more_info_url"].as_str(), after(&reference, "URL description:").first().copied());
+    assert_eq!(signature["issuers"].as_array().map(Vec::len), Some(1));
+    assert_eq!(signature["chain_reaches_embedded_root"], true);
+    let stamp = &signature["timestamps"][0];
+    assert_eq!(stamp["time"].as_str(), Some(openssl_time(after(&reference, "Timestamp time:")[0]).as_str()));
+    for check in ["covers_signature", "content_digest", "signature", "chain_check"] {
+        assert_eq!(stamp[check], "passed", "timestamp {check}");
+    }
+    assert_eq!(signature["valid_at_timestamp"], true);
+    let found = run.findings("windows.msi-signature");
+    assert_eq!(found[0].params["signer"], "Fixture Code Signing");
+    assert_eq!(found[0].params["authority"], "Fixture Timestamp Authority");
+    assert_eq!(found[0].params["timestamp"], stamp["time"]);
+    assert!(run.findings("windows.signature-no-timestamp").is_empty());
+    assert!(run.findings("windows.signature-self-signed").is_empty());
+    // The package is still read as an installer.
+    assert_eq!(run.unpacked.get("msi-signed.msi").map(String::as_str), Some("msi"));
+    assert_eq!(run.fact("msi-signed.msi", "windows.installer")["product"], "Tiny Fixture");
+    assert_eq!(run.fact("msi-signed.msi", "windows.installer")["has_digital_signature"], true);
+}
+
+#[test]
+fn msi_signature_with_metadata_hash_matches_osslsigncode() {
+    let run = assert_msi_matches_osslsigncode("msi-signed-dse", "SHA-256", 5);
+    assert_eq!(run.findings("windows.signature-self-signed").len(), 1);
+    assert_eq!(run.findings("windows.signature-no-timestamp").len(), 1);
+    assert_eq!(run.findings("windows.msi-signature")[0].params["timestamp"], "—");
+}
+
+#[test]
+fn msi_signature_over_nested_storages_matches_osslsigncode() {
+    // Not a real installer database: a compound file with storages inside storages and names
+    // whose stored order differs from their code-unit order, signed with SHA-384.
+    let run = assert_msi_matches_osslsigncode("msi-nested-dse", "SHA-384", 5);
+    assert!(run.findings("windows.signature-self-signed").is_empty());
+}
+
+#[test]
+fn unsigned_msi_is_reported_as_unsigned() {
+    let run = run_one("fixture.msi");
+    assert_eq!(run.fact("fixture.msi", "windows.msi-signature"), &serde_json::json!({ "signed": false, "kind": "MSI" }));
+    let found = run.findings("windows.msi-unsigned");
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].severity, aa_core::Severity::Info);
+    assert!(run.findings("windows.msi-signature").is_empty());
+    assert_eq!(run.fact("fixture.msi", "windows.installer")["has_digital_signature"], false);
+    // A signed package with its signature stream removed is unsigned too.
+    let mut file = cfb::CompoundFile::open(std::io::Cursor::new(data("msi-signed.msi"))).expect("open");
+    file.remove_stream("/\u{5}DigitalSignature").expect("remove");
+    file.flush().expect("flush");
+    let run = analyze(&[("stripped.msi", file.into_inner().into_inner())]);
+    assert_eq!(run.findings("windows.msi-unsigned").len(), 1);
+    // Compound files that are not installer packages are left alone.
+    let mut other = cfb::CompoundFile::create(std::io::Cursor::new(Vec::new())).expect("create");
+    other.create_stream("/WordDocument").expect("stream");
+    other.flush().expect("flush");
+    let run = analyze(&[("old.doc", other.into_inner().into_inner())]);
+    assert!(run.out.findings.iter().all(|f| !f.rule.starts_with("windows.msi")));
+    assert!(!run.tree.get("old.doc").expect("artifact").facts.contains_key("windows.msi-signature"));
+}
+
+#[test]
+fn msi_modified_after_signing_is_detected() {
+    // A byte of the string pool changed (the last place the manufacturer's name occurs; the
+    // earlier ones are in the certificates): the content digest no longer matches, the
+    // signature itself is intact.
+    let original = data("msi-signed.msi");
+    let mut changed = original.clone();
+    let at = original.windows(13).rposition(|w| w == b"Fixture Works").expect("string pool");
+    changed[at] = b'f';
+    let run = analyze(&[("changed.msi", changed)]);
+    let signature = &run.fact("changed.msi", "windows.msi-signature")["signatures"][0];
+    assert_eq!(signature["checks"]["file_digest"], "failed");
+    assert_eq!(signature["checks"]["signature"], "passed");
+    assert_eq!(signature["checks"]["content_digest"], "passed");
+    assert_ne!(signature["signed_digest"], signature["computed_digest"]);
+    let reference = reference("msi-signed.ref.txt");
+    assert_eq!(
+        signature["signed_digest"].as_str().expect("digest").to_uppercase(),
+        after(&reference, "Current DigitalSignature         :")[0]
+    );
+    let found = run.findings("windows.signature-digest-mismatch");
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].severity, aa_core::Severity::High);
+    assert_eq!(found[0].evidence[0].location, aa_core::Location::Field("\\x05DigitalSignature stream".into()));
+    let summary = run.findings("windows.msi-signature");
+    assert_eq!(summary[0].severity, aa_core::Severity::Medium);
+    assert_eq!((summary[0].params["passed"].as_u64(), summary[0].params["checks"].as_u64()), (Some(3), Some(4)));
+
+    // A byte of an embedded file changed (the cabinet lives in ordinary sectors, not the mini stream).
+    let mut changed = original.clone();
+    let at = position(&changed, b"MSCF") + 300;
+    changed[at] ^= 0xff;
+    let run = analyze(&[("changed.msi", changed)]);
+    assert_eq!(run.findings("windows.signature-digest-mismatch").len(), 1);
+
+    // The signature data itself damaged: the signed attributes no longer verify.
+    let mut changed = original.clone();
+    let digest = unhex(run.fact("changed.msi", "windows.msi-signature")["signatures"][0]["signed_digest"].as_str().expect("digest"));
+    let at = position(&changed, &digest);
+    changed[at] ^= 0xff;
+    let run = analyze(&[("changed.msi", changed)]);
+    assert_eq!(run.findings("windows.signature-invalid").len(), 1);
+    assert_eq!(run.findings("windows.signature-digest-mismatch").len(), 1);
+}
+
+/// File offset of the directory entry called `name`.
+fn directory_entry(bytes: &[u8], name: &str) -> usize {
+    let mut stored: Vec<u8> = name.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    stored.extend([0, 0]);
+    let at = position(bytes, &stored);
+    assert_eq!((at - 512) % 128, 0, "a directory entry starts here");
+    at
+}
+
+#[test]
+fn msi_metadata_changed_after_signing_is_detected() {
+    let original = data("msi-signed-dse.msi");
+    // The state bits of a stream's directory entry: metadata, not content.
+    let mut changed = original.clone();
+    changed[directory_entry(&original, "\u{5}SummaryInformation") + 96] = 1;
+    let run = analyze(&[("changed.msi", changed.clone())]);
+    let fact = run.fact("changed.msi", "windows.msi-signature");
+    assert_eq!(fact["metadata_digest"], "failed");
+    assert_ne!(fact["signed_metadata_digest"], fact["computed_metadata_digest"]);
+    assert_eq!(fact["signatures"][0]["checks"]["file_digest"], "passed", "the content is unchanged");
+    let found = run.findings("windows.msi-signature-metadata-mismatch");
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].severity, aa_core::Severity::High);
+    let summary = run.findings("windows.msi-signature");
+    assert_eq!(summary[0].severity, aa_core::Severity::Medium);
+    assert_eq!((summary[0].params["passed"].as_u64(), summary[0].params["checks"].as_u64()), (Some(4), Some(5)));
+
+    // Without MsiDigitalSignatureEx the same change is outside the signature, and nothing is claimed about it.
+    let plain = data("msi-signed.msi");
+    let mut changed = plain.clone();
+    changed[directory_entry(&plain, "\u{5}SummaryInformation") + 96] = 1;
+    let run = analyze(&[("changed.msi", changed)]);
+    assert_eq!(run.findings("windows.msi-signature")[0].severity, aa_core::Severity::Info);
+
+    // The stored metadata hash itself changed: it is part of the signed content digest.
+    let stored = unhex(fact["signed_metadata_digest"].as_str().expect("digest"));
+    let mut changed = original.clone();
+    let at = position(&changed, &stored);
+    changed[at] ^= 0xff;
+    let run = analyze(&[("changed.msi", changed)]);
+    assert_eq!(run.findings("windows.signature-digest-mismatch").len(), 1);
+    assert_eq!(run.findings("windows.msi-signature-metadata-mismatch").len(), 1);
+}
+
+#[test]
+fn data_hidden_in_the_msi_signature_stream_is_reported() {
+    use std::io::{Seek, SeekFrom, Write};
+    let append = |extra: &[u8]| {
+        let mut file = cfb::CompoundFile::open(std::io::Cursor::new(data("msi-signed.msi"))).expect("open");
+        let mut stream = file.open_stream("/\u{5}DigitalSignature").expect("stream");
+        let length = stream.seek(SeekFrom::End(0)).expect("seek");
+        stream.write_all(extra).expect("write");
+        drop(stream);
+        file.flush().expect("flush");
+        (length, file.into_inner().into_inner())
+    };
+    let (length, changed) = append(b"smuggled");
+    let run = analyze(&[("extra.msi", changed)]);
+    let found = run.findings("windows.msi-signature-extra-data");
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].params["bytes"], 8);
+    assert_eq!(found[0].params["offset"].as_u64(), Some(length));
+    assert_eq!(found[0].severity, aa_core::Severity::Medium);
+    // The stream is outside the hash: the signature still verifies, which is the point.
+    let summary = run.findings("windows.msi-signature");
+    assert_eq!((summary[0].params["passed"].as_u64(), summary[0].params["checks"].as_u64()), (Some(4), Some(4)));
+    // Zero padding carries nothing and is not reported.
+    let (_, padded) = append(&[0; 8]);
+    let run = analyze(&[("padded.msi", padded)]);
+    assert!(run.findings("windows.msi-signature-extra-data").is_empty());
+    assert_eq!(run.findings("windows.msi-signature").len(), 1);
+}
+
+#[test]
+fn unreadable_msi_signature_is_a_limitation() {
+    // The stream is there but does not hold PKCS#7 data.
+    let original = data("msi-signed.msi");
+    let run = run_one("msi-signed.msi");
+    let digest = unhex(run.fact("msi-signed.msi", "windows.msi-signature")["signatures"][0]["signed_digest"].as_str().expect("digest"));
+    let blob_start = {
+        // The blob begins with the SignedData OID a few bytes in; walk back to its SEQUENCE.
+        let oid = position(&original, &[0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x07, 0x02]);
+        assert!(oid < position(&original, &digest));
+        oid - 4
+    };
+    let mut changed = original.clone();
+    changed[blob_start] = 0x04;
+    changed[blob_start + 5] = 0xff;
+    let run = analyze(&[("broken.msi", changed)]);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.msi-signature-unreadable"), "{:?}", run.out.limitations);
+    assert!(run.findings("windows.msi-signature").is_empty());
+    assert!(run.findings("windows.msi-unsigned").is_empty(), "an unreadable signature is not an absent one");
+    assert_eq!(run.fact("broken.msi", "windows.msi-signature")["signed"], false);
+}
+
+#[test]
+fn damaged_signed_msi_never_panics() {
+    // Header, FAT, directory and signature streams hit byte by byte: the header densely, the
+    // rest sampled. (The compound-file reader has its own, denser test.)
+    for name in ["msi-signed-dse.msi", "msi-nested-dse.msi"] {
+        let original = data(name);
+        let places = (0..128).step_by(3).chain((128..original.len()).step_by(83));
+        for at in places {
+            let mut changed = original.clone();
+            changed[at] = if original[at] == 0xff { 0x00 } else { 0xff };
+            analyze(&[(name, changed)]);
+        }
+    }
+}
+
 #[test]
 fn cabinet_files_match_cabextract() {
     let run = run_one("fixture.cab");
@@ -947,6 +1239,9 @@ fn damaged_files_never_panic() {
         "nsis-lzma-solid.exe",
         "nsis-bzip2-ansi.exe",
         "fixture.msi",
+        "msi-signed.msi",
+        "msi-signed-dse.msi",
+        "msi-nested-dse.msi",
         "fixture.cab",
         "fixture.asar",
         "sfx-7z.exe",

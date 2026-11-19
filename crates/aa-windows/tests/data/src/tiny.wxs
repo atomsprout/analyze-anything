@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="22222222-3333-4444-5555-666666666666" Name="Tiny Fixture" Language="1033" Version="1.0.0"
+           Manufacturer="Fixture Works" UpgradeCode="BBBBBBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF">
+    <Package InstallerVersion="200" Compressed="yes" />
+    <Media Id="1" Cabinet="tiny.cab" EmbedCab="yes" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="Tiny Fixture">
+          <Component Id="Data" Guid="22222222-0000-0000-0000-000000000001">
+            <File Id="Readme" Source="readme.txt" KeyPath="yes" />
+            <File Id="Payload" Source="tiny.bin" />
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Feature Id="Main" Level="1">
+      <ComponentRef Id="Data" />
+    </Feature>
+  </Product>
+</Wix>

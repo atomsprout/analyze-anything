@@ -1,0 +1,55 @@
+
+Signature Index: 0  (Primary Signature)
+
+Message digest algorithm         : SHA384
+Current MsiDigitalSignatureEx    : EC9DA7BD865B9A03FBD7A7FA68735F0B1CF383C38E7ED52D9BF453E468F794BFFE187D05168B45383F577C6C3486D694 
+Calculated MsiDigitalSignatureEx : EC9DA7BD865B9A03FBD7A7FA68735F0B1CF383C38E7ED52D9BF453E468F794BFFE187D05168B45383F577C6C3486D694 
+Current DigitalSignature         : 98515642085A42190FC4EEB486C4B31CC12586720C99C2B38670EA66F111DB9921B18313F164E02511D4C5D9804B385B 
+Calculated DigitalSignature      : 98515642085A42190FC4EEB486C4B31CC12586720C99C2B38670EA66F111DB9921B18313F164E02511D4C5D9804B385B 
+Calculated simple message digest : 4FDC87A9EA6EF9AFA81029D0409AE10721AF3AB164AF3EBFD8DB90CEBB8F72802993C7761D1DF97186DB13A522FA4A29 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Code Signing,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : CFC20010D5C5015C
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 16 08:29:35 2036 GMT
+
+Message digest algorithm: SHA384
+
+Authenticated attributes:
+	Signing time: Nov 20 08:39:53 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: 567618370C678F0D4D34FD5871B4473F708D44E3C30871A25696B807BB5C0157B49C391A5021984299D29AD183EAD6B5 
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp is not available
+
+Signing certificate chain verified using:
+	------------------
+	Signer #1:
+		Subject: CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : A0BD8D9FD4722B40
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 14 08:29:35 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Code Signing,O=Fixture Works,C=XX
+		Issuer : CN=Fixture Test Root CA,O=Fixture Works,C=XX
+		Serial : CFC20010D5C5015C
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:35 2026 GMT
+			notAfter : Nov 16 08:29:35 2036 GMT
+
+Signature verification: ok
+
+Number of verified signatures: 1
+Succeeded

@@ -1,4 +1,5 @@
-//! Authenticode: the PKCS#7 signature embedded in a PE file's certificate table.
+//! Authenticode: the PKCS#7 signature embedded in a PE file's certificate table, or kept in a
+//! stream of an MSI package.
 //!
 //! What is checked here, offline, for every signature (primary and nested):
 //!
@@ -12,6 +13,9 @@
 //! 4. **Chain** — each embedded certificate from the signer upwards is signed by the next one.
 //! 5. **Timestamp** — an RFC 3161 token or legacy countersignature covers the signature value,
 //!    and the timestamp authority's own signature verifies.
+//!
+//! The same checks are made for the signature of an MSI package (`analyze_blob`, used by
+//! `msisig`), where only the way the file digest is computed differs.
 //!
 //! What is not checked: whether the root is trusted by Windows, revocation, certificate
 //! policies, extended key usage rules, and whether a certificate has expired today.
@@ -63,7 +67,7 @@ impl Check {
         *self == Check::Failed
     }
 
-    fn json(&self) -> Value {
+    pub fn json(&self) -> Value {
         match self {
             Check::Passed => json!("passed"),
             Check::Failed => json!("failed"),
@@ -130,6 +134,17 @@ impl Hash {
         }
     }
 
+    /// A running hash, for data that is not in one piece.
+    pub fn hasher(self) -> Hasher {
+        match self {
+            Hash::Md5 => Hasher::Md5(Md5::new()),
+            Hash::Sha1 => Hasher::Sha1(Sha1::new()),
+            Hash::Sha256 => Hasher::Sha256(Sha256::new()),
+            Hash::Sha384 => Hasher::Sha384(Sha384::new()),
+            Hash::Sha512 => Hasher::Sha512(Sha512::new()),
+        }
+    }
+
     fn pe_digest(self, pe: &Pe) -> Option<Vec<u8>> {
         match self {
             Hash::Md5 => pe.authenticode_digest::<Md5>(),
@@ -157,6 +172,42 @@ impl Hash {
         }
     }
 }
+
+/// A hash being computed with one of the algorithms of [`Hash`].
+pub enum Hasher {
+    Md5(Md5),
+    Sha1(Sha1),
+    Sha256(Sha256),
+    Sha384(Sha384),
+    Sha512(Sha512),
+}
+
+impl Hasher {
+    pub fn update(&mut self, data: &[u8]) {
+        match self {
+            Hasher::Md5(h) => h.update(data),
+            Hasher::Sha1(h) => h.update(data),
+            Hasher::Sha256(h) => h.update(data),
+            Hasher::Sha384(h) => h.update(data),
+            Hasher::Sha512(h) => h.update(data),
+        }
+    }
+
+    pub fn finish(self) -> Vec<u8> {
+        match self {
+            Hasher::Md5(h) => h.finalize().to_vec(),
+            Hasher::Sha1(h) => h.finalize().to_vec(),
+            Hasher::Sha256(h) => h.finalize().to_vec(),
+            Hasher::Sha384(h) => h.finalize().to_vec(),
+            Hasher::Sha512(h) => h.finalize().to_vec(),
+        }
+    }
+}
+
+/// Computes the digest of the signed file with the algorithm a signature names, or says why
+/// that cannot be done. The second argument is the digest inside the signature, for formats
+/// whose digest can be computed in more than one way.
+pub type FileDigest<'f> = dyn Fn(Hash, &[u8]) -> Result<Vec<u8>, String> + 'f;
 
 /// A public key this module can verify with.
 #[derive(Debug, Clone)]
@@ -367,6 +418,8 @@ pub fn analyze(pe: &Pe) -> Option<Authenticode> {
     if end < pe.data.len() {
         out.after_table = Some((end, pe.data.len() - end));
     }
+    let digest =
+        |hash: Hash, _: &[u8]| hash.pe_digest(pe).ok_or_else(|| "the PE headers do not allow the file digest to be computed".to_string());
     let mut position = table;
     while position + 8 <= end && out.signatures.len() < MAX_SIGNATURES {
         let length = u32_at(pe.data, position).unwrap_or(0) as usize;
@@ -386,7 +439,7 @@ pub fn analyze(pe: &Pe) -> Option<Authenticode> {
                         out.extra_in_table.push((blob_offset + content_info.raw.len(), rest.len()));
                     }
                     let before = out.signatures.len();
-                    if let Err(error) = read_signed_data(pe, content_info, blob_offset, false, 0, &mut out.signatures) {
+                    if let Err(error) = read_signed_data(&digest, content_info, blob_offset, false, 0, &mut out.signatures) {
                         out.errors.push(format!("signature at offset {blob_offset}: {error}"));
                         out.signatures.truncate(before);
                     }
@@ -402,6 +455,26 @@ pub fn analyze(pe: &Pe) -> Option<Authenticode> {
         out.extra_in_table.push((position, end - position));
     }
     Some(out)
+}
+
+/// Reads and checks an Authenticode signature kept outside a PE certificate table (the
+/// `DigitalSignature` stream of an MSI): one PKCS#7 blob, whose signed digest is compared with
+/// what `file_digest_of` computes. Offsets in the result are relative to `blob`.
+pub fn analyze_blob(blob: &[u8], file_digest_of: &FileDigest) -> Authenticode {
+    let mut out = Authenticode::default();
+    match der::parse_prefix(blob) {
+        Ok((content_info, rest)) => {
+            if !rest.is_empty() {
+                out.extra_in_table.push((content_info.raw.len(), rest.len()));
+            }
+            if let Err(error) = read_signed_data(file_digest_of, content_info, 0, false, 0, &mut out.signatures) {
+                out.errors.push(error);
+                out.signatures.clear();
+            }
+        }
+        Err(error) => out.errors.push(error),
+    }
+    out
 }
 
 struct SignedData<'a> {
@@ -629,7 +702,7 @@ fn build_chain<'c, 'a>(signer: &'c Certificate<'a>, bag: &'c [Certificate<'a>]) 
 }
 
 fn read_signed_data<'a>(
-    pe: &Pe,
+    file_digest_of: &FileDigest,
     content_info: Tlv<'a>,
     offset: usize,
     nested: bool,
@@ -648,12 +721,13 @@ fn read_signed_data<'a>(
     let digest_oid = digest_info.expect(TAG_SEQUENCE)?.children().expect(TAG_OID)?.oid().unwrap_or_default();
     let signed_digest = digest_info.expect(TAG_OCTET_STRING)?.content;
     let hash = Hash::from_oid(&digest_oid);
-    let computed = hash.and_then(|h| h.pe_digest(pe));
-    let file_digest = match (&hash, &computed) {
-        (None, _) => Check::NotChecked(format!("digest algorithm {digest_oid} is not supported")),
-        (_, None) => Check::NotChecked("the PE headers do not allow the file digest to be computed".into()),
-        (_, Some(computed)) if computed.as_slice() == signed_digest => Check::Passed,
-        _ => Check::Failed,
+    let (computed, file_digest) = match hash.map(|h| file_digest_of(h, signed_digest)) {
+        None => (None, Check::NotChecked(format!("digest algorithm {digest_oid} is not supported"))),
+        Some(Err(why)) => (None, Check::NotChecked(why)),
+        Some(Ok(computed)) => {
+            let check = if computed.as_slice() == signed_digest { Check::Passed } else { Check::Failed };
+            (Some(computed), check)
+        }
     };
     let content_bytes = signed_content(&content);
 
@@ -721,7 +795,7 @@ fn read_signed_data<'a>(
             }
             // A nested signature that cannot be read does not invalidate the one holding it.
             let before = out.len();
-            if read_signed_data(pe, blob, offset, true, depth + 1, out).is_err() {
+            if read_signed_data(file_digest_of, blob, offset, true, depth + 1, out).is_err() {
                 out.truncate(before);
             }
         }

@@ -10,7 +10,9 @@
 //! Authenticode signature with offline verification (`authenticode`), version resource and
 //! manifest (`resources`), .NET metadata (`dotnet`), structure checks and packer triage,
 //! imports grouped into capabilities (`behaviour`) and kernel-driver facts; it also reads
-//! what an installer does (`installer`) and `AppxManifest.xml` (`appx`). The tree pass
+//! what an installer does (`installer`), verifies the signature an MSI package carries for
+//! itself (`msisig`, over the compound-file reader `compound`) and reads `AppxManifest.xml`
+//! (`appx`). The tree pass
 //! (`tree`) reports what needs several files: who signed what, vendors, capabilities across
 //! files, Electron applications and other frameworks recognised from the folder layout.
 //!
@@ -23,11 +25,13 @@ mod asar;
 mod authenticode;
 mod behaviour;
 mod cab;
+mod compound;
 mod der;
 mod dotnet;
 mod inno;
 mod installer;
 mod msi;
+mod msisig;
 mod nsis;
 mod pe;
 mod pefile;
@@ -102,10 +106,11 @@ impl Analyzer for Windows {
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
         asar_fact(file, &bytes, out);
-        if let Some(model) = nsis::analyze(tree, file, &bytes, out)
+        let model = nsis::analyze(tree, file, &bytes, out)
             .or_else(|| inno::analyze(tree, file, &bytes, out))
-            .or_else(|| msi::analyze(file, &bytes, out))
-        {
+            .or_else(|| msi::analyze(file, &bytes, out));
+        msisig::analyze(file, &bytes, model.as_ref().is_some_and(|m| m.kind == "MSI"), out);
+        if let Some(model) = model {
             installer::report(file, &model, out);
         }
     }

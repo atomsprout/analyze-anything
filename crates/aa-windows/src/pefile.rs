@@ -7,7 +7,7 @@ use aa_core::plugin::Output;
 use aa_core::{Artifact, Confidence, Evidence, Finding, Section, Severity};
 use serde_json::{Value, json};
 
-use crate::authenticode::{self, Authenticode};
+use crate::authenticode::{self, Authenticode, Signature};
 use crate::pe::{self, Pe, RT_GROUP_ICON, RT_ICON, RT_MANIFEST, RT_VERSION, ResId, SUBSYSTEM_NATIVE};
 use crate::{ID, behaviour, dotnet, resources};
 
@@ -151,9 +151,34 @@ fn signature(file: &Artifact, pe: &Pe, out: &mut Output) {
 }
 
 fn signature_findings(file: &Artifact, auth: &Authenticode, out: &mut Output) {
-    for signature in &auth.signatures {
+    let locate = |signature: &Signature, value: Value| Evidence::bytes(file, signature.offset as u64, signature.length as u64, value);
+    signature_problems(&auth.signatures, &locate, out);
+    for &(offset, length) in &auth.extra_in_table {
+        out.finding(
+            finding(Section::Anomalies, "windows.signature-extra-data", Confidence::Verified, Severity::Medium)
+                .param("bytes", length)
+                .param("offset", offset)
+                .reference("CVE-2013-3900")
+                .evidence(Evidence::bytes(file, offset as u64, length as u64, json!({ "bytes": length }))),
+        );
+    }
+    if let Some((offset, length)) = auth.after_table {
+        out.finding(
+            finding(Section::Anomalies, "windows.data-after-signature", Confidence::Verified, Severity::Medium)
+                .param("bytes", length)
+                .param("offset", offset)
+                .evidence(Evidence::bytes(file, offset as u64, length as u64, json!({ "bytes": length }))),
+        );
+    }
+}
+
+/// The findings about what is wrong with, or missing from, each Authenticode signature. They
+/// are the same wherever the signature is kept (a PE certificate table, an MSI stream);
+/// `locate` says where a signature is, as evidence.
+pub(crate) fn signature_problems(signatures: &[Signature], locate: &dyn Fn(&Signature, Value) -> Evidence, out: &mut Output) {
+    for signature in signatures {
         let signer = signature.signer_name.clone().unwrap_or_else(|| "?".into());
-        let at = |value: Value| Evidence::bytes(file, signature.offset as u64, signature.length as u64, value);
+        let at = |value: Value| locate(signature, value);
         if signature.file_digest.failed() {
             out.finding(
                 finding(Section::Provenance, "windows.signature-digest-mismatch", Confidence::Verified, Severity::High)
@@ -226,31 +251,14 @@ fn signature_findings(file: &Artifact, auth: &Authenticode, out: &mut Output) {
         }
     }
     // A weak digest matters only when no signature on the file uses a strong one.
-    if let Some(first) = auth.signatures.first()
-        && auth.signatures.iter().all(|s| s.digest_algorithm.is_some_and(|h| h.weak()))
+    if let Some(first) = signatures.first()
+        && signatures.iter().all(|s| s.digest_algorithm.is_some_and(|h| h.weak()))
     {
         out.finding(
             finding(Section::Provenance, "windows.signature-weak-digest", Confidence::Verified, Severity::Low)
                 .param("algorithm", first.digest_algorithm_name.clone())
                 .reference("CWE-328")
-                .evidence(Evidence::bytes(file, first.offset as u64, first.length as u64, first.digest_algorithm_name.clone())),
-        );
-    }
-    for &(offset, length) in &auth.extra_in_table {
-        out.finding(
-            finding(Section::Anomalies, "windows.signature-extra-data", Confidence::Verified, Severity::Medium)
-                .param("bytes", length)
-                .param("offset", offset)
-                .reference("CVE-2013-3900")
-                .evidence(Evidence::bytes(file, offset as u64, length as u64, json!({ "bytes": length }))),
-        );
-    }
-    if let Some((offset, length)) = auth.after_table {
-        out.finding(
-            finding(Section::Anomalies, "windows.data-after-signature", Confidence::Verified, Severity::Medium)
-                .param("bytes", length)
-                .param("offset", offset)
-                .evidence(Evidence::bytes(file, offset as u64, length as u64, json!({ "bytes": length }))),
+                .evidence(locate(first, json!(first.digest_algorithm_name))),
         );
     }
 }

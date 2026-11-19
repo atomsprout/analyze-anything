@@ -48,6 +48,34 @@ pub const RULES: &[Rule] = &[
         text_zh: "{unsigned} / {total} 个 PE 文件没有内嵌的 Authenticode 签名。Windows 自带的文件可能改由目录（catalog）签名，目录签名不在文件内，这里无法判断。",
         text_en: "{unsigned} of {total} PE files carry no embedded Authenticode signature. Files that ship with Windows may be catalog-signed instead; a catalog signature is not stored in the file and cannot be seen here.",
     },
+    // The signature of an MSI itself; the rules after these apply to it as to a PE signature.
+    Rule {
+        id: "windows.msi-signature",
+        title_zh: "安装包自身的数字签名",
+        title_en: "The installer package's own signature",
+        text_zh: concat!(
+            "这个 {kind} 文件自身带有“{signer}”的 Authenticode 签名（颁发者：{issuer}；摘要算法：{algorithm}；时间戳：{timestamp}，时间戳机构：{authority}）。",
+            "按 Windows 的算法重新计算了包内容的哈希并与签名内的摘要比对、核对了签名属性摘要、用内嵌证书的公钥验证了签名值，",
+            "并验证了内嵌证书链各级签名（带 MsiDigitalSignatureEx 流时还核对了元数据哈希）：{checks} 项中 {passed} 项通过。",
+            "未通过的各项另有说明，无法核对的各项列在“未能确定的事项”中。",
+            scope_zh!()
+        ),
+        text_en: concat!(
+            "This {kind} file carries its own Authenticode signature by \"{signer}\" (issuer: {issuer}; digest: {algorithm}; timestamp: {timestamp}, timestamp authority: {authority}). ",
+            "The hash of the package content was recomputed the way Windows does and compared with the signed digest, the signed-attribute digest was checked, ",
+            "the signature value was verified with the embedded certificate's public key, and each link of the embedded certificate chain was verified ",
+            "(with an MsiDigitalSignatureEx stream, the metadata hash as well): {passed} of {checks} checks passed. ",
+            "Checks that failed are reported separately; checks that could not be made are listed as limitations. ",
+            scope_en!()
+        ),
+    },
+    Rule {
+        id: "windows.msi-unsigned",
+        title_zh: "安装包没有数字签名",
+        title_en: "The installer package is not signed",
+        text_zh: "这个 {kind} 文件自身没有 Authenticode 签名（包内没有 DigitalSignature 流）：无法从文件本身确认它由谁发布、发布后是否被改动。包内各个文件的签名另行列出。",
+        text_en: "This {kind} file carries no Authenticode signature of its own (it has no DigitalSignature stream): the file itself does not show who published it or whether it was changed since. Signatures of the files inside it are reported separately.",
+    },
     Rule {
         id: "windows.signature-digest-mismatch",
         title_zh: "文件在签名后被修改",
@@ -124,6 +152,35 @@ pub const RULES: &[Rule] = &[
         title_en: "Signature data could not be read",
         text_zh: "证书表存在，但其中的签名结构无法解析，签名未作验证。",
         text_en: "A certificate table is present but its signature structure could not be parsed; the signature was not verified.",
+    },
+    // ---- the signature of an MSI itself: what is wrong with it -----------------------------
+    Rule {
+        id: "windows.msi-signature-metadata-mismatch",
+        title_zh: "安装包的元数据在签名后被修改",
+        title_en: "Package metadata changed after it was signed",
+        text_zh: "重新计算的元数据 {algorithm} 哈希（{computed}）与 MsiDigitalSignatureEx 流中“{signer}”签名所覆盖的值（{signed}）不一致：包内条目的名称、大小、CLSID、状态位或时间戳在签名之后被改动过。",
+        text_en: "The recomputed {algorithm} hash of the package metadata ({computed}) differs from the value in the MsiDigitalSignatureEx stream that the signature of \"{signer}\" covers ({signed}): names, sizes, CLSIDs, state bits or timestamps of entries in the package were changed after signing.",
+    },
+    Rule {
+        id: "windows.msi-signature-extra-data",
+        title_zh: "签名流内藏有额外数据",
+        title_en: "Extra data inside the signature stream",
+        text_zh: "DigitalSignature 流中在签名结构之后还有 {bytes} 字节不属于签名的数据（流内偏移 {offset}）。这个流不在包内容哈希的覆盖范围内，这些字节可以在不破坏签名的情况下任意改写。",
+        text_en: "The DigitalSignature stream holds {bytes} bytes after the signature structure that are not part of it (offset {offset} in the stream). The stream is outside the package content hash, so these bytes can be changed without breaking the signature.",
+    },
+    Rule {
+        id: "windows.msi-signature-unreadable",
+        title_zh: "安装包的签名无法读取",
+        title_en: "The package signature could not be read",
+        text_zh: "无法读取这个安装包的复合文件结构或其中的签名数据，安装包自身的签名未作验证（也不能据此认为它没有签名）。",
+        text_en: "The compound-file structure of this installer package, or the signature data in it, could not be read. The package's own signature was not verified, and this does not mean the package is unsigned.",
+    },
+    Rule {
+        id: "windows.msi-signature-not-checked",
+        title_zh: "安装包签名的部分核对未能进行",
+        title_en: "Some checks of the package signature could not be made",
+        text_zh: "安装包自身签名的部分核对项无法进行（具体项目和原因见详情）；这些项既不算通过，也不算失败。",
+        text_en: "Some checks of the installer package's own signature could not be made (the detail names them and says why); they count neither as passed nor as failed.",
     },
     // ---- PE resources -------------------------------------------------------------------------
     Rule {

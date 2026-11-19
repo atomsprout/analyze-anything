@@ -1,0 +1,60 @@
+00D2C60702000000:error:10800075:PKCS7 routines:PKCS7_verify:certificate verify error:crypto/pkcs7/pk7_smime.c:320:Verify error: self-signed certificate
+
+Signature Index: 0  (Primary Signature)
+
+Message digest algorithm         : SHA256
+Current MsiDigitalSignatureEx    : 73E44C61DACB54F0E9D3961D8081B672A06DE65F9F2427DF72A8C09B35213D0C 
+Calculated MsiDigitalSignatureEx : 73E44C61DACB54F0E9D3961D8081B672A06DE65F9F2427DF72A8C09B35213D0C 
+Current DigitalSignature         : 3AE45E2586B5C5ECA987A3803A5307F96BE1B78CEE0A7ADECCE975656D6DDB5E 
+Calculated DigitalSignature      : 3AE45E2586B5C5ECA987A3803A5307F96BE1B78CEE0A7ADECCE975656D6DDB5E 
+Calculated simple message digest : A36E1A0A17D98DD1BA1587E05AB1E1AF6C3CC44F5DCAF1A31D2634E464636A3E 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Self Signed
+		Issuer : CN=Fixture Self Signed
+		Serial : B8589E82140EA5C1
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:36 2026 GMT
+			notAfter : Nov 16 08:29:36 2036 GMT
+
+Message digest algorithm: SHA256
+
+Authenticated attributes:
+	Signing time: Nov 20 08:29:36 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: 3001305C5D8EA62FE1953345C0547454D6494696B4B602A4DCA5DABC48144B3A 
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp is not available
+
+Signing certificate chain verified using:
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Self Signed
+		Issuer : CN=Fixture Self Signed
+		Serial : B8589E82140EA5C1
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:36 2026 GMT
+			notAfter : Nov 16 08:29:36 2036 GMT
+
+	Error: self-signed certificate
+
+PKCS7_verify error
+Failed signing certificate chain retrieved from the signature:
+	------------------
+	Signer #0:
+		Subject: CN=Fixture Self Signed
+		Issuer : CN=Fixture Self Signed
+		Serial : B8589E82140EA5C1
+		Certificate expiration date:
+			notBefore : Nov 19 08:29:36 2026 GMT
+			notAfter : Nov 16 08:29:36 2036 GMT
+
+Signature verification: failed
+
+Number of verified signatures: 1
+Failed
