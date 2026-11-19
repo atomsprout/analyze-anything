@@ -73,7 +73,12 @@ impl Run {
     ) -> Result<Run, WorkerError> {
         let arguments: Vec<&str> = program.arguments.iter().map(String::as_str).collect();
         let mut worker = Worker::start(&program.path, &arguments, &program.scratch_root)?;
-        worker.analyze(input, limits)?;
+        match worker.analyze(input, limits) {
+            // A worker that ended before it could be asked: the run's thread finds out how it
+            // ended and says so, as it does for one that dies later.
+            Ok(()) | Err(WorkerError::Gone(_)) => {}
+            Err(other) => return Err(other),
+        }
         let (commands, inbox) = std::sync::mpsc::channel();
         let thread = std::thread::spawn(move || drive(worker, inbox, on_update));
         Ok(Run { commands, thread: Some(thread) })

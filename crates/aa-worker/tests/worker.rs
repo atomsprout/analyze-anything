@@ -4,8 +4,10 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use aa_engine::{Event, NoProgress, Options, Registry};
+#[cfg(unix)]
+use aa_worker::WorkerError;
 use aa_worker::protocol::{LimitOverrides, MAX_CHUNK, Request, Response};
-use aa_worker::{Worker, WorkerError, serve};
+use aa_worker::{Worker, serve};
 
 const WAIT: Duration = Duration::from_secs(60);
 

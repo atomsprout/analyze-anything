@@ -6,11 +6,13 @@ use std::path::Path;
 use std::time::Duration;
 
 use aa_core::{Confidence, Coverage, Evidence, Finding, Input, InputKind, Location, Report, RuleText, Section, Severity, Tool};
+#[cfg(unix)]
+use aa_interpret::Processes;
 use aa_interpret::config::{Overrides, resolve};
 use aa_interpret::delegate::Finished;
 use aa_interpret::provider::HttpRequest;
 use aa_interpret::tools::Tools;
-use aa_interpret::{Context, Engine, Language, Net, Processes, Provider, Runner, Settings, Transport, interpret, markdown};
+use aa_interpret::{Context, Engine, Language, Net, Provider, Runner, Settings, Transport, interpret, markdown};
 use serde_json::{Value, json};
 
 fn rule(title: &str, text: &str) -> RuleText {
