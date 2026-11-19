@@ -321,6 +321,10 @@ pub struct Coverage {
     pub containers_unpacked: u64,
     /// True when the run stopped early (a limit was hit or it was cancelled).
     pub truncated: bool,
+    /// How many times content was lost: a file or entry that could not be read, a container that
+    /// could not be opened in full, an analyzer that failed. Zero means everything found was read.
+    #[serde(default)]
+    pub content_lost: u64,
 }
 
 /// The words for one rule or limitation code, in each language.

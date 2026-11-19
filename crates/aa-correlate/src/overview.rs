@@ -240,6 +240,13 @@ const RULES: &[Rule] = &[
         text_en: "The signing certificate's SHA-256 fingerprint is {sha256}. Android uses it to decide whether an update comes from the same publisher; the Provenance chapter gives the result for each signature scheme.",
     },
     Rule {
+        id: "overview.android-signature-problem",
+        title_zh: "签名",
+        title_en: "Signing",
+        text_zh: "包内带有签名数据，但没有任何一个签名方案校验通过，因此无法确认签名者。详情见“来源与签名”一章。",
+        text_en: "The package carries signature data, but no signature scheme verified, so the signer cannot be confirmed. See the Provenance chapter.",
+    },
+    Rule {
         id: "overview.android-unsigned",
         title_zh: "签名",
         title_en: "Signing",
@@ -551,11 +558,16 @@ fn android(tree: &dyn Tree, out: &mut Output) {
                     sha256,
                 )))
             }
-            None => out.finding(finding("overview.android-unsigned", Confidence::Verified).evidence(Evidence::field(
-                file,
-                "signer certificate",
-                "none",
-            ))),
+            None => {
+                // No verified signer: either nothing is signed, or signatures exist and failed.
+                let schemes = file.facts.get("android.signing").and_then(|f| f.get("schemes")).and_then(Value::as_array);
+                let rule = if schemes.is_some_and(|list| !list.is_empty()) {
+                    "overview.android-signature-problem"
+                } else {
+                    "overview.android-unsigned"
+                };
+                out.finding(finding(rule, Confidence::Verified).evidence(Evidence::field(file, "signer certificate", "none")));
+            }
         }
     }
 }

@@ -250,6 +250,7 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         (f.section, std::cmp::Reverse(f.severity), position, f.rule.clone(), f.evidence.first().map(|e| e.artifact.clone()), f.id.clone())
     });
     findings.dedup_by(|a, b| a.id == b.id);
+    coverage.content_lost += limitations.iter().filter(|l| l.code == "analyzer_failed").count() as u64;
     limitations.sort();
     limitations.dedup();
 

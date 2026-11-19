@@ -58,6 +58,7 @@ fn report(name: &str, artifacts: Vec<Artifact>, findings: Vec<Finding>, limitati
             bytes_analyzed: artifacts.iter().map(|a| a.size).sum(),
             containers_unpacked: 0,
             truncated: false,
+            content_lost: 0,
         },
         artifacts,
         findings,

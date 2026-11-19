@@ -151,11 +151,14 @@ impl Builder<'_> {
         if artifact.is_none() && !self.reported.insert(code) {
             return;
         }
+        self.coverage.content_lost += 1;
         self.sink.event(Event::Warning { code: code.into(), path: artifact.map(str::to_string) });
         self.limitations.push(Limitation::new(code, artifact, detail));
     }
 
+    /// Records content that could not be read or unpacked.
     fn warn(&mut self, code: &str, artifact: &str, detail: Option<String>) {
+        self.coverage.content_lost += 1;
         self.sink.event(Event::Warning { code: code.into(), path: Some(artifact.to_string()) });
         self.limitations.push(Limitation::new(code, Some(artifact), detail));
     }

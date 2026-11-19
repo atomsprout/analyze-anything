@@ -953,7 +953,7 @@
     var w = V.words[lang];
     var limitations = R.limitations.length;
     // "Partial" is for content that was skipped or unreadable; limitations alone are notes on scope.
-    var cut = R.coverage.truncated || R.coverage.artifacts_analyzed < R.coverage.artifacts_total;
+    var cut = R.coverage.truncated || R.coverage.content_lost > 0 || R.coverage.artifacts_analyzed < R.coverage.artifacts_total;
     var partial = cut || limitations > 0;
     var sha = R.input.sha256;
     var rootArtifact = R.input.kind === 'file' ? R.artifacts[artifactIndex.get(R.input.name)] : null;

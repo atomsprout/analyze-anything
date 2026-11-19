@@ -290,7 +290,8 @@ fn run(cli: Cli) -> Result<u8, String> {
     {
         return Ok(EXIT_FINDINGS);
     }
-    let partial = report.coverage.truncated || report.coverage.artifacts_analyzed < report.coverage.artifacts_total;
+    let coverage = &report.coverage;
+    let partial = coverage.truncated || coverage.content_lost > 0 || coverage.artifacts_analyzed < coverage.artifacts_total;
     Ok(if partial { EXIT_PARTIAL } else { 0 })
 }
 
