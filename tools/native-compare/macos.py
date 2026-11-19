@@ -223,7 +223,7 @@ def main():
         check("encrypted image could be made", False, made.stderr)
 
     # 7. Installer packages made here by pkgbuild, in the old and the current payload format.
-    for label, extra in (("default", []), ("latest", ["--compression", "latest"])):
+    for label, extra in (("default", []), ("latest", ["--compression", "latest", "--min-os-version", "12.0"])):
         name = f"made-{label}.pkg"
         path = os.path.join(WORK, name)
         made = run("pkgbuild", "--root", source, "--identifier", "test.native.compare", "--version", "1.0", "--install-location", "/opt/compare", *extra, path)

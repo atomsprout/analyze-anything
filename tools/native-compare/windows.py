@@ -40,9 +40,18 @@ def compare(path):
         check(f"{name}: recognised as a Windows program", False)
         return None
     signatures = fact.get("signatures") or []
-    if native["Type"] != "Authenticode":
-        # Signed through a catalog, or not at all: there is no signature inside the file.
-        check(f"{name}: no embedded signature ({native['Type']})", not signatures, len(signatures))
+    if native["Type"] == "None":
+        check(f"{name}: no signature of either kind, and none found in the file", not signatures, len(signatures))
+        return native
+    if native["Type"] == "Catalog":
+        # Windows names the catalog first even when the file also carries its own signature
+        # (system files often have both), so an embedded one is not a disagreement. If there
+        # is one, Windows vouching for the file means ours must verify too.
+        if signatures and native["Status"] == "Valid":
+            passed = all(signatures[0]["checks"].get(key) == "passed" for key in CHECKS)
+            check(f"{name}: catalog-signed and also signed inside; the embedded signature verifies", passed, signatures[0]["checks"])
+        else:
+            check(f"{name}: catalog-signed, nothing embedded", not signatures, len(signatures))
         return native
     check(f"{name}: embedded signature found", bool(signatures))
     if not signatures:
