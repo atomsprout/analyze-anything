@@ -1,58 +1,65 @@
-# 剩余待办
+# What is left to do
 
-第一阶段（命令行工具）和第二阶段的 macOS 桌面版（D0–D5）已完成。这里记录还没做完的事。已知的功能局限见 [LIMITATIONS.md](LIMITATIONS.md)，桌面版的说明见 [DESKTOP.md](DESKTOP.md)。
+Phase one (the command line) and the macOS desktop app of phase two (D0–D5) are done, and so is the optional AI interpretation of phase three. This file lists what is not finished. Known limits of what the program does are in [LIMITATIONS.md](LIMITATIONS.md); the desktop app is described in [DESKTOP.md](DESKTOP.md).
 
-## 已完成（2026-11-19，在一台 Apple 芯片的 Mac 上）
+## Done (2026-11-19, on one Apple silicon Mac)
 
-- [x] **在 Mac 上实测命令行**：8 个已安装的应用、5 个真实的 IPA 和 DMG。与 `codesign` 对照 332 项一致。实测发现并修掉了 5 处问题：App Store 后加的文件被报成“签名后新增”、描述文件的通配符和沙箱权利被报成越权、只有私钥标记没有密钥内容被报成“内嵌私钥（高）”、输入文件夹本身是应用时名称为空、中文报告里夹着英文的文件类型。
-- [x] **App Store 下载的加密 IPA**：能识别 FairPlay 加密，元数据、签名、资源完整分析。
-- [x] 通用二进制各架构切片相同的结论合并成一条，方括号里列出适用的架构。
-- [x] MSI 自身的数字签名：校验内容摘要、元数据摘要、签名值和证书链（与 osslsigncode 对照）。
-- [x] Mach-O 的导出字典树、链式修正和绑定操作码（与 `dyld_info`、`nm`、`objdump` 对照）。
-- [x] 进程被强行终止后遗留的临时目录：下一次运行开始时清理。
-- [x] 对真实样本的对照脚本进仓库：`tools/native-compare/macos_real.py`（签名）、`macos_symbols.py`（导入导出）。
-- [x] 分析器卡死时真正终止：桌面版把分析放进子进程，取消后强制结束。命令行仍是“放弃等待”。
-- [x] 桌面版 D0–D5：技术验证、引擎补齐、主流程、证据与十六进制视图、历史与对比（含 `analyze-anything diff`）、打包签名公证。
-- [x] 通过 Homebrew 发布：命令行和桌面版分开安装，仅 Apple 芯片。
+- [x] **The command line tried on a Mac**: 8 installed apps, 5 real IPAs and DMGs. 332 points agree with `codesign`. Five problems were found and fixed: files added by the App Store reported as "added after signing"; wildcard profiles and sandbox entitlements reported as exceeding the profile; a private-key marker with no key material reported as "embedded private key (high)"; an empty name when the input folder is itself an app; English file types inside Chinese reports.
+- [x] **Encrypted IPAs from the App Store**: FairPlay encryption is recognized; metadata, signature and resources are analyzed in full.
+- [x] Findings that are the same for every slice of a universal binary are merged into one, with the architectures in brackets.
+- [x] An MSI's own digital signature: content digest, metadata digest, signature value and certificate chain are verified (compared with osslsigncode).
+- [x] Mach-O export tries, chained fixups and bind opcodes (compared with `dyld_info`, `nm`, `objdump`).
+- [x] Temporary folders left by a run that was killed are removed when the next run starts.
+- [x] Scripts that compare against real samples are in the repository: `tools/native-compare/macos_real.py` (signatures), `macos_symbols.py` (imports and exports).
+- [x] A stuck analyzer is really stopped in the desktop app, which runs the analysis in a child process and kills it on cancel. The command line still only stops waiting.
+- [x] The desktop app, D0–D5: spikes, engine additions, the main flow, evidence and the hex view, history and comparison (with `analyze-anything diff`), packaging, signing and notarization.
+- [x] Released through Homebrew: the command line and the desktop app install separately; Apple silicon only.
+- [x] Reports and the app are in English unless another language is asked for.
+- [x] The command is `analyze-anything` everywhere (it was `aa`, which macOS already has as Apple Archive), with the short name `aaaa`; a bare path is analyzed; the report goes to `<input>.report`.
+- [x] The optional AI interpretation: the model looks things up in the report through read-only tools; run by Claude Code, Codex, a model service with an API key, or a command; settings in `~/.analyze-anything/config.toml`. See [AI.md](AI.md).
+- [x] An interface for AI agents: `analyze-anything mcp` serves a report's read-only tools over MCP.
 
-## 等待人工操作
+## The AI interpretation
 
-- [ ] **恢复 GitHub Actions 并重跑 CI**（已决定推迟：2026-11-19 定下目前只管 macOS Apple 芯片，其他平台的验证和发布不挡当前工作）：2026-11-19 起组织的 Actions 任务不再启动（“recent account payments have failed or your spending limit needs to be increased”）。在此之前，`v0.1.0` 标签的五平台构建里 Windows x64、macOS x64 / arm64、Linux arm64 的测试全部通过，Linux x64 有一项测试失败（工作进程崩溃时退出码的竞态，已修复）。修复之后的提交没有在 Linux 和 Windows 上跑过测试，只在 macOS 上跑过，并从 macOS 对 Linux x64 和 Windows x64 做过编译检查。账单恢复后重跑 CI，再重新触发标签构建以生成其他平台的草稿发布。
+- [ ] Run the `claude` engine for real: it needs a signed-in `claude` on the machine. So far its arguments and the tool server are tested apart.
+- [ ] Run the `codex` engine for real: it was written from the documentation and never met a real `codex`.
+- [ ] Run the Anthropic protocol of the `api` engine with a real key. The OpenAI-compatible protocol was run against DeepSeek.
+- [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
+- [ ] Offer it in the desktop app.
+- [ ] Follow-up questions about a report: `analyze-anything ask out/ "which hosts does it mention?"`.
+- [ ] A SKILL.md, and a tool-server mode in which an agent can also ask for an analysis.
 
-- [ ] **决定命令行的名字**：`analyze-anything` 与 macOS 自带的 `/usr/bin/aa`（Apple Archive）重名，Homebrew 安装时改成了 `analyze-anything`。是否在所有平台统一改名（包括 `--version` 的输出、CI 的打包名、文档），需要定一下。
+## Waiting for a person
 
-- [ ] **桌面版的三处人工检查**：原生菜单和快捷键、拖放、系统的打开 / 保存对话框（见 [DESKTOP.md](DESKTOP.md)）。其余流程由应用的自检模式在真实窗口里跑过。
-- [ ] **读一遍真实报告**：`report.html` 和 `report.pdf` 哪里啰嗦、哪里缺内容，需要人来判断；章节详略和同类结论的合并上限（目前每组列 10 条）等这轮反馈再调。
-- [ ] **在 Windows 机器上实测**（已决定推迟）：用真实的安装包和已安装程序目录各跑一遍；用 `sigcheck` 或 `signtool verify /pa /v` 对照签名结论，包括新加的 MSI 签名校验。
-- [ ] 把 [tools/native-compare/](../tools/native-compare/) 里的两个新脚本接进 “Native comparison” 工作流（它们需要机器上有真实的应用，GitHub 的 runner 上要先挑定样本）。
+- [ ] **Three manual checks of the desktop app**: native menus and shortcuts, drag and drop, the system's open and save dialogs (see [DESKTOP.md](DESKTOP.md)). Everything else is exercised by the app's self-check in its real window.
+- [ ] **Read a real report through**: where `report.html` and `report.pdf` are wordy or lack something takes a person to judge. How much each chapter says, and how many findings of a kind are listed before they are merged (10 now), wait for that.
+- [ ] **Try it on a Windows machine** (postponed): run a real installer and an installed program folder; compare the signature findings, the MSI ones included, with `sigcheck` or `signtool verify /pa /v`.
+- [ ] Wire the two new scripts of [tools/native-compare/](../tools/native-compare/) into the "Native comparison" workflow. They need real apps on the machine; samples must be chosen for GitHub's runners first.
 
-## 需要真实样本才能验证
+## Needs real samples
 
-以下格式只用构造的数据测试过，本机没有真实样本：
+These formats were tested with constructed data only:
 
-- [ ] **加固过的 APK**（360、腾讯乐固、梆梆等）：确认能识别加固壳，并说明真实代码不可见。
-- [ ] **XAPK / APKS / APKM**：可用 Google 的 bundletool 从 AAB 生成 `.apks`：
+- [ ] **Packed APKs** (360, Tencent Legu, Bangcle and the like): confirm that the packer is recognized and that the report says the real code is not visible.
+- [ ] **XAPK / APKS / APKM**. An `.apks` can be made from an AAB with Google's bundletool:
       `java -jar bundletool-all.jar build-apks --bundle=app.aab --output=app.apks`
-- [ ] **加密的 DMG**：目前只验证了“能识别为加密、不声称读出内容”。
-- [ ] **Inno Setup 6.4 安装包**：能解出文件，但参考工具 `innoextract` 读不了这个版本，结果未核对。
+- [ ] **Encrypted DMGs**: only "recognized as encrypted, and no content is claimed" was verified.
+- [ ] **Inno Setup 6.4 installers**: the files come out, but the reference tool `innoextract` cannot read this version, so the result is unchecked.
 
-## 第一阶段的收尾改进
+## Loose ends of phase one
 
-- [ ] 规则文字里剩余的英文片段：文件类型已按语言输出；签名失败的技术原因（来自解析库的英文错误文本）仍是原文。
-- [ ] 命令行可以复用子进程方案，让 `--analyzer-timeout` 真正终止卡住的分析。
-- [ ] 对比时，文字里带输入名字的结论会被算作“变化”；可以在比较前把输入名字从参数里去掉。
+- [ ] English fragments left in Chinese rule text: file types follow the language now; the technical reason a signature failed (an error text from the parsing library) does not.
+- [ ] The command line could use the child process too, so that `--analyzer-timeout` really stops a stuck analysis.
+- [ ] In a comparison, findings whose text holds the input's name count as changed; the name could be taken out of the parameters before comparing.
 
-## 第二阶段的后续
+## After phase two
 
-- [ ] D6：Windows 和 Linux 版桌面应用（构建、安装包、平台差异、Linux 上的端到端自动化）。
-- [ ] Intel Mac 的发布包（目前只发 Apple 芯片）。
-- [ ] 自动更新（第二阶段不做）。
-- [ ] 签名的发布构建目前在本机用 `tools/release/macos.sh` 完成；放进 CI 需要把证书和公证凭据配成仓库密钥。
+- [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
+- [ ] Released builds of the command line for Linux, Windows and Intel Macs. They are built in CI on a version tag but have not been tried by hand.
+- [ ] Automatic updates (out of scope for phase two).
+- [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 
-## 第三阶段：生态（未开始）
+## Phase three: the ecosystem
 
-- [ ] 给 AI Agent 调用的接口：MCP server 与 SKILL.md。
-- [x] 可选的 AI 解读层：`analyze-anything interpret`，只读 `report.json`，每句话必须引用结论 ID，支持 Claude 和 OpenAI 兼容的服务（见 [AI.md](AI.md)）。
-- [ ] AI 解读的后续：用真实的 Claude 密钥跑一遍 Anthropic 协议（OpenAI 兼容协议已用 DeepSeek 跑通，2026-11-19）；接入桌面版；把解读作为一章放进 HTML / PDF 报告。
-- [ ] 更多输入：Linux 包（deb / rpm / AppImage）、鸿蒙 HAP、PyInstaller 等打包程序。
-- [ ] `deep` 档：函数级分析，可选对接 Ghidra 或 Kuna。
+- [ ] More inputs: Linux packages (deb, rpm, AppImage), HarmonyOS HAP, PyInstaller and similar bundles.
+- [ ] A `deep` level: function-level analysis, optionally through Ghidra or Kuna.

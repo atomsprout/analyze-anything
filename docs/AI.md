@@ -1,99 +1,128 @@
-# AI 解读（可选）
+# The optional AI interpretation
 
-`analyze-anything interpret` 把一份已经写好的报告交给语言模型，换回一段通俗的说明：这是什么、值得注意什么、接下来可以做什么。它不参与分析，报告本身不会被改动。
+Once a report is written, a language model can explain it in plain words: what this is, what deserves attention, what you could do next. It takes no part in the analysis, and the report itself is never changed.
 
-默认关闭：没有配置服务之前，程序不会连接任何地方。这也是整个程序里唯一会联网的部分。
+It is **off until you set it up**. Until then the program connects to nothing. This is also the only part of the program that sends anything anywhere.
 
 ```
-analyze-anything analyze 某应用.ipa -o out
-analyze-anything interpret out/report.json            # 写出 out/ai.json 和 out/ai.md，并把说明打印出来
+analyze-anything ai claude            # once: choose who does it
+analyze-anything App.ipa --ai         # analyze, then interpret
+analyze-anything interpret out/       # or interpret a report that already exists
 ```
 
-Homebrew 安装后命令写作 `analyze-anything interpret …`。
+The interpretation is written next to the report as `ai.md` (to read) and `ai.json` (the same as data).
 
-## 配置模型
+## Who does it
 
-支持两类服务：
+A model does not get one question and give one answer. It is shown a brief of the report and then looks things up in it, round after round, until it is ready to answer. Who runs that conversation is your choice:
 
-| `provider` | 说明 | 默认地址 | 默认的密钥环境变量 | 默认模型 |
-|---|---|---|---|---|
-| `anthropic` | Claude，使用 Anthropic 的 Messages API | `https://api.anthropic.com` | `ANTHROPIC_API_KEY` | `claude-opus-5-5` |
-| `openai-compatible` | 任何使用 OpenAI chat completions 协议的服务：OpenAI、各家网关、本机的模型服务（Ollama、LM Studio、vLLM 等） | `https://api.openai.com/v1` | `OPENAI_API_KEY` | 无，必须写 `model` |
+| Engine | Who runs the conversation | What it needs |
+|---|---|---|
+| `claude` | Claude Code, the `claude` command | `claude` installed and signed in. No API key |
+| `codex` | Codex, the `codex` command | `codex` installed and signed in. No API key |
+| `api` | This program, talking to a model service | An API key, or a model server of your own |
+| `command` | A program of your choice | A command you write |
 
-配置写在 `~/.config/analyze-anything/config.toml`（Windows 是 `%APPDATA%\analyze-anything\config.toml`；也可以用环境变量 `AA_CONFIG` 或 `--config` 指定别的文件）：
+Choose with `analyze-anything ai`:
+
+```
+analyze-anything ai claude
+analyze-anything ai codex
+analyze-anything ai api --provider anthropic --api-key-stdin
+analyze-anything ai api --provider openai-compatible --base-url https://api.deepseek.com/v1 --model deepseek-chat --api-key-stdin
+analyze-anything ai api --provider openai-compatible --base-url http://localhost:11434/v1 --model qwen3
+analyze-anything ai command -- my-agent --prompt {prompt_file} --mcp {mcp_config}
+analyze-anything ai                   # show what is set up
+analyze-anything ai off
+```
+
+`--api-key-stdin` asks for the key and keeps it in the configuration file. Add `--auto` to any of these to interpret after every analysis without writing `--ai`; `--no-ai` then skips it for one run.
+
+### The configuration file
+
+`analyze-anything ai` writes `~/.analyze-anything/config.toml` (`%USERPROFILE%\.analyze-anything\config.toml` on Windows; the environment variable `AA_CONFIG` or `--config` names another file). You can also edit it by hand:
 
 ```toml
-# Claude
 [ai]
-provider = "anthropic"
-model = "claude-opus-5-5"          # 可省略
-# api_key_env = "ANTHROPIC_API_KEY"  # 可省略：存放密钥的环境变量的名字
+engine = "claude"     # api | claude | codex | command
+auto = false          # true: interpret after every analysis
 ```
 
 ```toml
-# OpenAI 兼容的服务
 [ai]
-provider = "openai-compatible"
-base_url = "https://api.example.com/v1"   # 会在后面加上 /chat/completions
-model = "模型的名字"
-api_key_env = "EXAMPLE_API_KEY"
+engine = "api"
+provider = "anthropic"            # Claude through Anthropic's API
+model = "claude-opus-5-5"         # optional; this is the default
+api_key = "sk-ant-…"
 ```
 
 ```toml
-# DeepSeek
 [ai]
-provider = "openai-compatible"
+engine = "api"
+provider = "openai-compatible"    # anything that speaks OpenAI's chat-completions protocol
 base_url = "https://api.deepseek.com/v1"
 model = "deepseek-chat"
-api_key_env = "DEEPSEEK_API_KEY"
+api_key = "sk-…"
 ```
 
 ```toml
-# 本机的模型服务，不需要密钥
 [ai]
-provider = "openai-compatible"
-base_url = "http://localhost:11434/v1"
-model = "qwen3"
+engine = "command"
+command = ["my-agent", "--prompt", "{prompt_file}", "--mcp", "{mcp_config}"]
 ```
 
-其他可选项：`max_findings`（最多发送多少条结论，默认 300）、`timeout_seconds`（等待回答的秒数，默认 600）。
+Other settings: `max_turns` (how many rounds of questions the model may ask before it must answer; default 12), `timeout_seconds` (default 600), and `model` for the `claude` and `codex` engines when you want them to use a particular one.
 
-密钥本身不写进配置文件，文件里只写**环境变量的名字**；写了 `api_key` 会被拒绝。给出了 `base_url` 而没有写 `api_key_env` 时，不带密钥发送请求（适合本机服务）。
+**The API key.** Write it in the file as `api_key`, or keep it in an environment variable: `ANTHROPIC_API_KEY` for Anthropic, `OPENAI_API_KEY` for an OpenAI-compatible service, or the one you name with `api_key_env`. The variable wins over the file. The file is created readable by you alone, and the program warns when a file that holds a key can be read by others. A service at a `base_url` you gave, with no key anywhere, is asked without one; that suits a model server on your own machine.
 
-每一项都可以在命令行上临时指定，优先于配置文件：
+Flags on `interpret` override the file for one run: `--engine`, `--provider`, `--model`, `--base-url`, `--api-key-env`, and `--lang zh` to have it written in Chinese.
 
-```
-analyze-anything interpret out/report.json --provider anthropic --model claude-sonnet-5-5
-analyze-anything interpret out/report.json --provider openai-compatible --base-url http://localhost:11434/v1 --model qwen3
-analyze-anything interpret out/report.json --lang zh        # 用中文写；默认英文
-analyze-anything interpret out/report.json --dry-run        # 只打印将要发送的内容，什么都不发
-```
+### A program of your own
 
-## 发送什么
+The `command` engine starts your program in an empty folder. It receives the instructions and the brief on standard input, and must print its answer on standard output: the JSON object the instructions describe. In the command, `{prompt_file}` becomes a file holding the same text as standard input, `{report}` the report's path, and `{mcp_config}` a JSON file in the usual `mcpServers` form that says how to start the report's tool server.
 
-只发送报告的摘要，不发送被分析的文件，也不发送证据里的原始值：
+## What the model can see
 
-- 输入的名字和类型、覆盖度、局限；
-- 每条结论的标题和正文（就是报告里印出来的那句话）、所在章节、严重度、置信度、所在文件的路径；
-- 最严重的结论优先；同一条规则的“信息”级结论最多 12 条，总数最多 `max_findings` 条。
+The report, and only the report. The analyzed files are not sent and cannot be asked for.
 
-报告里的密钥类结论本来就是打过码的，发出去的也是打过码的文字。即便如此，摘要里仍有文件路径、网址、标识符等内容：**如果被分析的东西不该让第三方看到，请用本机的模型服务，或者不要使用这个功能。** `--dry-run` 可以先看清楚要发的每一个字。
+- **The brief**, sent first: the input's name and kind, coverage, limitations, how many findings there are in each chapter and at each severity, and every finding above severity "info".
+- **Three read-only tools** for the rest: `list_findings` (filter by chapter, severity or words), `get_finding` (one finding with its evidence: which file, where in it, the value that was read there, cut to 400 characters), and `list_files` (paths, sizes and types of the files of the input).
 
-## 可靠性是怎么保住的
+Findings about secrets are already redacted in the report, and that is what the model sees. Even so, the report holds file paths, addresses, identifiers and strings read from the analyzed files. **If what you analyze must not be seen by a third party, use a model on your own machine, or do not use this.** `analyze-anything interpret out/ --dry-run` prints the instructions and the brief and sends nothing.
 
-- 模型被要求每句话都列出它依据的结论。程序逐句核对：没有引用结论的、引用了不存在或没发送过的结论的，整句丢掉，并在结果里记下丢了几句。
-- 留下来的每句话后面都带结论 ID，用 `analyze-anything explain out/report.json <ID>` 可以看到那条结论和它的全部证据。
-- 输出是单独的 `ai.json` 和 `ai.md`，开头写明“AI 生成”，不混进报告正文。报告是依据，两者不一致时以报告为准。
-- 输出文件夹里有 `manifest.json` 时，新写的两个文件会登记进去，`analyze-anything verify` 照常通过。
+With the `claude`, `codex` and `command` engines the conversation is run by that program, which talks to whatever service it is signed in to, on that account's terms. This program starts it with only the report's tools allowed: no file access, no commands, no other tool servers. For Claude Code that is `--tools ""`, `--strict-mcp-config` and an allow-list of the three tools; for Codex, its read-only sandbox.
 
-核对只能保证每句话**指向了**真实存在的结论，不能保证模型对这条结论的**理解**是对的。请把它当作读报告的向导，而不是结论本身。同一份报告两次解读的措辞一般不同。
+## How it stays honest
 
-## 不需要这个功能
+- The model is told to cite, for every statement, the findings it rests on. The program checks each statement: one that cites nothing, or cites a finding that is not in the report, is dropped whole, and the result records how many were dropped.
+- Every statement that stays ends with the ids of its findings. `analyze-anything explain out/report.json <id>` shows that finding and all its evidence.
+- The output is its own pair of files, headed "AI-generated", and is not mixed into the report. The report is the authority: where the two differ, the report is right.
+- When the output folder has a `manifest.json`, the two new files are added to it, so `verify` still passes.
 
-构建时去掉 `ai` 特性，程序里就没有任何联网的代码：
+The check makes sure every statement **points at** a real finding. It cannot make sure the model **understood** that finding, or that it drew no conclusion of its own from several of them. Treat the interpretation as a guide to the report, not as a finding. Two interpretations of one report will usually be worded differently.
+
+## What has been tried
+
+| | |
+|---|---|
+| `api`, OpenAI-compatible | Run against a real service (DeepSeek), on a real 456-finding IPA report among others: the model made 17 lookups and every statement it returned cited existing findings |
+| `api`, Anthropic | Tested against a stand-in service only. Against the real service it was confirmed to connect and to report a wrong key properly; no full answer has been produced yet |
+| `claude` | The command line is started with the right arguments (tested), and the tool server works (tested with a stand-in agent). A full run has not been made: the `claude` on the development machine was not signed in |
+| `codex` | Written from Codex's documentation and tested against a stand-in. Never run with a real `codex` |
+| `command` | Run for real with a stand-in agent that speaks to the tool server |
+
+A model or service that does not support tools is noticed on the first request, and is then asked once with the brief alone.
+
+## For agents: the tool server
+
+`analyze-anything mcp out/report.json` serves the same three read-only tools over the Model Context Protocol on standard input and output. Any agent that speaks MCP can use it to read a report on its own initiative, apart from the interpretation described here.
+
+## Without it
+
+Build without the `ai` feature and the program has no network code at all:
 
 ```
 cargo build --release --no-default-features --features pdf
 ```
 
-桌面版目前没有接入这个功能。
+The desktop app does not include the AI interpretation.

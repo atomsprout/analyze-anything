@@ -1,183 +1,183 @@
-# Analyze Anything — 最终规划
+# Analyze Anything — Final Plan
 
-> 版本：v1.0 定稿（2026-11-18），第一阶段已实施（见下方“实施状态”）。调研依据见 [RESEARCH.md](RESEARCH.md)。
-> 一句话定位：**输入电脑上的任意产物（文件 / 文件夹 / 压缩包 / 安装包 / 应用包），输出一份可靠、可溯源、多维度的分析报告（PDF / HTML / Markdown / TXT）。** Rust 开发，纯静态分析，离线可用。
+> Version: v1.0 final (2026-11-18). Phase one has been implemented (see "Implementation status" below). The research behind this plan is in [RESEARCH.md](RESEARCH.md).
+> Positioning in one sentence: **take any artifact on a computer (file / folder / archive / installer / app package) as input, and output a reliable, traceable, multi-dimensional analysis report (PDF / HTML / Markdown / TXT).** Written in Rust, purely static analysis, works offline.
 
 ---
 
-## 实施状态（2026-11-19）
+## Implementation status (2026-11-19)
 
-第一阶段（CLI，M0–M6）的代码已全部实现。下表是每个里程碑的实际结果；没有验证到的部分见 [LIMITATIONS.md](LIMITATIONS.md)。
+All code for phase one (CLI, M0–M6) has been implemented. The table below gives the actual result of each milestone; the parts that were not verified are listed in [LIMITATIONS.md](LIMITATIONS.md).
 
-| 里程碑 | 状态 | 实际结果 |
+| Milestone | Status | Actual result |
 |---|---|---|
-| M0 地基与技术验证 | 完成 | 四项技术验证均有结论，记录在 `docs/spikes/` |
-| M1 通用层与渲染 | 完成 | 7 种归档格式、通用内容分析、JSON / Markdown / TXT / HTML / PDF |
-| M2 原生二进制 | 完成 | 与 `readelf`、`llvm-readobj`、`llvm-otool` 对照：2457 个 ELF、151 个 PE、34 个 Mach-O 无不一致 |
-| M3 Apple | 完成 | 9 个真实 DMG 与 7-Zip 逐文件一致；587 个已签名二进制与 `rcodesign` 一致 |
-| M4 Windows | 完成 | NSIS / Inno / MSI / CAB 与 7-Zip、`innoextract`、`msiextract`、`cabextract` 逐文件一致；签名与 `osslsigncode` 一致 |
-| M5 Android | 完成 | 13 个真实 APK 与 `aapt`、`apksigner`、`dexdump` 一致；21 个签名样本的接受 / 拒绝结果与 `apksigner` 一致 |
-| M6 关联与打磨 | 完成，未打版本标签 | 概览、结构统计、组件清单、SARIF、CycloneDX、`analyze-anything verify`、模糊测试；发布流程已在 5 个目标平台上试跑成功（构建、发布模式测试、产物自检、打包），但没有打版本标签，也没有创建正式发布 |
+| M0 Foundation and technical validation | Done | All four technical validations reached a conclusion, recorded in `docs/spikes/` |
+| M1 Generic layer and rendering | Done | 7 archive formats, generic content analysis, JSON / Markdown / TXT / HTML / PDF |
+| M2 Native binaries | Done | Compared against `readelf`, `llvm-readobj`, `llvm-otool`: 2457 ELF, 151 PE and 34 Mach-O files with no mismatch |
+| M3 Apple | Done | 9 real DMGs match 7-Zip file by file; 587 signed binaries match `rcodesign` |
+| M4 Windows | Done | NSIS / Inno / MSI / CAB match 7-Zip, `innoextract`, `msiextract`, `cabextract` file by file; signatures match `osslsigncode` |
+| M5 Android | Done | 13 real APKs match `aapt`, `apksigner`, `dexdump`; accept / reject results for 21 signature samples match `apksigner` |
+| M6 Correlation and polish | Done, no version tag | Overview, structure statistics, component inventory, SARIF, CycloneDX, `analyze-anything verify`, fuzzing; the release process was trial-run successfully on 5 target platforms (build, release-mode tests, artifact self-check, packaging), but no version tag was created and no formal release was made |
 
-**与原规划的偏差**
+**Deviations from the original plan**
 
-- **技术验证的结论**：PDF 用内嵌 Typst 可行；DMG 的现成库不够用，改为自研读取器；NSIS 用现成库并补了两处缺口；APK 签名自研校验。
-- **解析器多为自研**：二进制、DEX、AXML、Authenticode、Apple 签名块都没有用 §3 / RESEARCH 里列的现成库，原因是需要字节偏移作证据，且现成库在畸形输入上会崩溃或给错结果。现成库只在测试里当对照。
-- **风险分级而非单一分数**：给出关注度等级（高 / 中 / 低 / 无，取结论中的最高严重度）和各级数量，并说明这不是安全性判定。没有做加权的单一分数，因为权重没有可靠依据。
-- **crate 划分**：实际是 12 个（`aa-core`、`aa-engine`、`aa-unpack`、`aa-content`、`aa-binary`、`aa-apple`、`aa-windows`、`aa-android`、`aa-correlate`、`aa-export`、`aa-report`、`aa-cli`），没有单独的 `aa-vfs`、`aa-detect`、`aa-rules`。
-- **规划内的功能都已实现**：包括 `analyze-anything inspect`、`analyze-anything selftest`、`--rules`（YARA）、`--font`、TLSH 相似度哈希、分析器与解包的超时。超时的实现方式是放弃等待而不是终止线程，细节见 LIMITATIONS。
-- **可执行文件体积**：带 PDF 约 49 MB，比 §5.3 估计的大（Typst 加字体约 39 MB）；不带 PDF 约 10 MB。
-- **差分测试的形式**：对照是在开发时用脚本对真实样本跑的，只有小样本的对照结果写成了自动测试；CI 里不调用外部工具。
-- **CI 在 Linux、macOS、Windows 上通过**（格式、lint、全部测试、许可证与安全公告检查）。另有一个手动触发的对照流程，在 macOS 和 Windows 上用 `codesign`、`hdiutil`、`pkgbuild`、`Get-AuthenticodeSignature`、`makecab` 核对结果，共 230 项全部一致，细节见 LIMITATIONS。
+- **Conclusions of the technical validations**: embedding Typst for PDF works; the existing DMG libraries were not sufficient, so a reader was written in-house; NSIS uses an existing library with two gaps filled; APK signature verification was written in-house.
+- **Most parsers are written in-house**: binaries, DEX, AXML, Authenticode and Apple signature blobs do not use the existing libraries listed in §3 / RESEARCH. The reason is that byte offsets are needed as evidence, and the existing libraries crash or give wrong results on malformed input. Existing libraries are used only in tests, as a reference.
+- **Risk levels instead of a single score**: the report gives an attention level (high / medium / low / none, taken from the highest severity among the findings) and the count at each level, and states that this is not a safety verdict. No weighted single score was built, because there is no reliable basis for the weights.
+- **Crate layout**: there are actually 12 (`aa-core`, `aa-engine`, `aa-unpack`, `aa-content`, `aa-binary`, `aa-apple`, `aa-windows`, `aa-android`, `aa-correlate`, `aa-export`, `aa-report`, `aa-cli`). There is no separate `aa-vfs`, `aa-detect` or `aa-rules`.
+- **All planned features are implemented**: including `analyze-anything inspect`, `analyze-anything selftest`, `--rules` (YARA), `--font`, TLSH similarity hash, and timeouts for analyzers and unpacking. The timeout is implemented by giving up waiting rather than terminating the thread; details are in LIMITATIONS.
+- **Executable size**: about 49 MB with PDF, larger than the §5.3 estimate (Typst plus fonts is about 39 MB); about 10 MB without PDF.
+- **Form of the differential tests**: the comparisons were run with scripts on real samples during development. Only the comparison results for small samples were written as automated tests; CI does not call external tools.
+- **CI passes on Linux, macOS and Windows** (format, lint, all tests, license and security advisory checks). There is also a manually triggered comparison workflow that checks results on macOS and Windows with `codesign`, `hdiutil`, `pkgbuild`, `Get-AuthenticodeSignature`, `makecab`; all 230 items match. Details are in LIMITATIONS.
 
 ---
 
-## 0. 定稿摘要
+## 0. Summary of the final plan
 
-**已确定的决策**
+**Decisions made**
 
-| 事项 | 决定 |
+| Item | Decision |
 |---|---|
-| 开发语言 | Rust，依赖只取 crates.io，不引入 GPL 库 |
-| 产品形态 | **先做 CLI（第一阶段，到 v1.0），之后做桌面版（第二阶段）** |
-| 格式顺序 | Apple → Windows → Android |
-| 桌面版框架 | Tauri |
-| 参考项目 | Craft Anything、RESX、REA 等只作代码与设计参考，不 fork、不依赖 |
-| 输出 | `report.json` 为唯一事实来源，渲染为 PDF / HTML / Markdown / TXT |
-| 可靠性 | 每条结论带证据与置信度；事实抽取不使用 LLM；固定的"覆盖度与局限"章节 |
+| Language | Rust; dependencies only from crates.io; no GPL libraries |
+| Product form | **CLI first (phase one, up to v1.0), then the desktop app (phase two)** |
+| Format order | Apple → Windows → Android |
+| Desktop app framework | Tauri |
+| Reference projects | Craft Anything, RESX, REA and others serve only as code and design references; no fork, no dependency |
+| Output | `report.json` is the single source of truth, rendered to PDF / HTML / Markdown / TXT |
+| Reliability | Every finding carries evidence and a confidence; fact extraction does not use an LLM; a fixed "coverage and limitations" section |
 
-**按默认值定下、可随时改的事项**：命令名 `analyze-anything`；报告中英可切换、默认中文；AI 解读层不进 v1.0。
+**Items set to defaults that can be changed at any time**: the command name is `analyze-anything`; reports can switch between Chinese and English, Chinese by default; the AI interpretation layer is not part of v1.0.
 
-**三个阶段**
+**Three phases**
 
-| 阶段 | 目标 | 估时 |
+| Phase | Goal | Estimate |
 |---|---|---|
-| 第一阶段：CLI | M0–M6，发布 CLI v1.0 | 14–18 周 |
-| 第二阶段：桌面版 | 在同一套引擎上做图形界面 | CLI v1.0 之后，另行估时 |
-| 第三阶段：生态 | Agent 接口、AI 解读层、版本对比、更多格式 | 与第二阶段并行或之后 |
+| Phase one: CLI | M0–M6, release CLI v1.0 | 14–18 weeks |
+| Phase two: desktop app | A graphical interface on the same engine | After CLI v1.0, estimated separately |
+| Phase three: ecosystem | Agent interface, AI interpretation layer, version comparison, more formats | In parallel with phase two or after it |
 
 ---
 
-## 1. 产品定义
+## 1. Product definition
 
-### 1.1 输入（限定为"电脑上的产物"）
+### 1.1 Input (limited to "artifacts on a computer")
 
-| 类别 | 具体格式 | 优先级 |
+| Category | Formats | Priority |
 |---|---|---|
-| iOS | `.ipa`、解压后的 `Payload/*.app` | P0 |
-| Android | `.apk`、`.aab`、`.xapk` / `.apks` | P0 |
-| macOS | `.app` 目录、`.dmg`、`.pkg`、单个 Mach-O、`.framework` / `.dylib` | P0 |
-| Windows | `.exe` / `.dll`（PE）、**NSIS 安装包**、Inno Setup、`.msi`、`.msix`、**已安装程序目录** | P0（NSIS/PE/目录）P1（其余） |
-| Linux | ELF、`.deb`、`.rpm`、AppImage | P2 |
-| 通用 | 任意文件夹、zip / tar.* / 7z / (rar)、未知文件（降级为通用分析） | P0 |
+| iOS | `.ipa`, unpacked `Payload/*.app` | P0 |
+| Android | `.apk`, `.aab`, `.xapk` / `.apks` | P0 |
+| macOS | `.app` directory, `.dmg`, `.pkg`, single Mach-O, `.framework` / `.dylib` | P0 |
+| Windows | `.exe` / `.dll` (PE), **NSIS installers**, Inno Setup, `.msi`, `.msix`, **installed program directories** | P0 (NSIS/PE/directory) P1 (the rest) |
+| Linux | ELF, `.deb`, `.rpm`, AppImage | P2 |
+| Generic | Any folder, zip / tar.* / 7z / (rar), unknown files (fall back to generic analysis) | P0 |
 
-未知格式**永不报错退出**：降级到"通用文件分析"（类型猜测、哈希、熵、字符串、嵌入数据扫描）。
+An unknown format **never exits with an error**: it falls back to "generic file analysis" (type guessing, hashes, entropy, strings, embedded data scan).
 
-### 1.2 输出
+### 1.2 Output
 
-- `report.json` —— **唯一事实来源**（带 JSON Schema 的中间表示，IR）
-- `report.md` / `report.txt` / `report.html`（单文件自包含，可离线打开，带搜索与目录）/ `report.pdf`
-- 可选：`sbom.cdx.json`（CycloneDX）、`--extract-dir` 保留解包产物
+- `report.json` — **the single source of truth** (an intermediate representation, IR, with a JSON Schema)
+- `report.md` / `report.txt` / `report.html` (single self-contained file, opens offline, with search and a table of contents) / `report.pdf`
+- Optional: `sbom.cdx.json` (CycloneDX), `--extract-dir` to keep the unpacked artifacts
 
-四种人类可读格式**全部由同一个 IR 渲染**，保证内容一致。
+All four human-readable formats **are rendered from the same IR**, which keeps their content consistent.
 
-### 1.3 CLI 形态
+### 1.3 CLI form
 
 ```
 analyze-anything analyze <PATH> [-o out/] [--format pdf,html,md,txt,json] [--lang zh|en]
                   [--profile quick|standard|deep] [--rules extra.yar] [--offline]
-analyze-anything inspect <PATH> --json          # 只做识别 + 结构树，给 Agent/脚本用
-analyze-anything render report.json --format pdf # 由已有 IR 重新渲染，不重新分析
-analyze-anything explain <FINDING_ID>           # 打印某条结论的完整证据
-analyze-anything verify out/                    # 校验输出目录的清单哈希，确认报告未被改动
-analyze-anything selftest                       # 用内置样本自检
+analyze-anything inspect <PATH> --json          # identification + structure tree only, for agents/scripts
+analyze-anything render report.json --format pdf # re-render from an existing IR, without re-analyzing
+analyze-anything explain <FINDING_ID>           # print the full evidence of one finding
+analyze-anything verify out/                    # check the manifest hashes of the output directory, confirm the report was not changed
+analyze-anything selftest                       # self-check with built-in samples
 ```
 
-CLI 约定：结果写文件，进度与诊断写 stderr；所有子命令支持 `--json`；退出码区分"成功 / 部分分析器失败 / 输入不可读"；`--fail-on <severity>` 供 CI 使用。
+CLI conventions: results go to files, progress and diagnostics go to stderr; every subcommand supports `--json`; exit codes distinguish "success / some analyzers failed / input unreadable"; `--fail-on <severity>` is for CI use.
 
-### 1.4 非目标（明确不做）
+### 1.4 Non-goals (explicitly out of scope)
 
-- 不执行、不安装、不动态调试被分析对象（纯静态）
-- 不做反编译到伪代码（那是 Ghidra/IDA/REA 的领域；后续可通过可选插件对接）
-- 不做 FairPlay 解密、不脱壳、不绕过任何保护；遇到加密/加壳，如实报告"此处不可见"
-- 不联网查询（默认离线；VirusTotal 等查询作为显式开启的可选项）
+- No executing, installing or dynamic debugging of the analyzed object (purely static)
+- No decompiling to pseudocode (that is the domain of Ghidra/IDA/REA; an optional plugin may connect to them later)
+- No FairPlay decryption, no unpacking of packers, no bypassing of any protection; when encryption or packing is encountered, report truthfully that "this part is not visible"
+- No network lookups (offline by default; lookups such as VirusTotal are optional and must be turned on explicitly)
 
 ---
 
-## 2. "可靠"如何落地（核心设计原则）
+## 2. How "reliable" is achieved (core design principles)
 
-这是整个项目的第一优先级，以机制而不是口号来保证：
+This is the top priority of the whole project, guaranteed by mechanisms rather than slogans:
 
-1. **证据优先的数据模型**。报告中每一条结论（Finding）都必须携带：
-   - `evidence[]`：来源文件（在解包树中的完整路径）、字节偏移 / 结构字段名、原始值、该文件的 SHA-256
-   - `method`：由哪个分析器、哪条规则（含规则版本）得出
-   - `id`：结论规范化 JSON 的 SHA-256（借鉴 Craft Anything）—— 同一观察永远得到同一 ID，任何篡改可检测，也让 `analyze-anything explain <ID>` 和两份报告的 diff 变得简单
-   - `confidence`：三级（与 Craft Anything 的 Observed / Derived / Inferred 对应，便于将来互通）——
-     - **Verified 已验证**：直接从规范定义的结构读出或经密码学校验（如"签名校验通过""Info.plist 中 CFBundleIdentifier = …"）
-     - **Derived 推导**：由已验证事实确定性推出（如"链接了 libswiftCore → 含 Swift 代码"）
-     - **Heuristic 启发式**：模式匹配 / 规则命中（如"疑似 AWS 密钥""疑似 UPX 加壳"），报告中明确标注，并给出误报提示
-2. **无证据不成文**。渲染层只能引用 IR 中的 Finding；模板里不允许出现无 Finding ID 支撑的断言性文字。
-3. **如实声明盲区**。未解决的问题作为一等公民 `Unknown` 记录（"是什么没搞清楚 + 用什么手段可以搞清楚"）；每个分析器输出 `Coverage`（已检查 / 总量）。每份报告固定有"分析覆盖度与局限"章节：哪些文件解析失败、哪些被加密（FairPlay / 加密 DMG）、哪些因超限被跳过、哪些分析器未启用。**"没发现"与"没检查"严格区分**。
-4. **确定性与可复现**。缺失的值在 IR 中一律为 null，绝不用 0 或空串顶替；命中限额时显式记录截断（借鉴 RESX）。同一输入 + 同一版本 + 同一规则库 ⇒ 字节级相同的 `report.json`（排序稳定、无时间戳进入正文、并行结果归并有序）。报告页眉记录：工具版本、规则库版本、输入 SHA-256、命令行参数。
-5. **核心流程不使用 LLM**。事实抽取 100% 由确定性代码完成。LLM 仅作为后期**可选**的"解读层"（见 §7），且只能读取 IR、必须逐句引用 Finding ID，在报告中单独成章并标注"AI 生成"。
-6. **对照验证（差分测试）**。CI 中把我们的结果与权威工具对比：`codesign -dvvv` / `apksigner verify` / `aapt2 dump` / `sigcheck` / `otool` / `readelf` / MobSF。不一致即视为 bug。
-7. **面对恶意输入的健壮性**。输入是不可信数据：解包限额（总大小、文件数、嵌套深度、压缩比 → 防 zip bomb）、路径穿越防护、符号链接不跟随、解析器 panic 隔离（`catch_unwind` + 每分析器超时）、对所有解析器做 `cargo-fuzz`。单个分析器失败只会降级为一条"局限"记录，不影响整份报告。
+1. **An evidence-first data model**. Every finding (Finding) in the report must carry:
+   - `evidence[]`: source file (full path in the unpacked tree), byte offset / structure field name, raw value, SHA-256 of that file
+   - `method`: which analyzer and which rule (including the rule version) produced it
+   - `id`: SHA-256 of the finding's canonical JSON (borrowed from Craft Anything) — the same observation always gets the same ID, any tampering is detectable, and `analyze-anything explain <ID>` and the diff of two reports become simple
+   - `confidence`: three levels (corresponding to Craft Anything's Observed / Derived / Inferred, for future interoperability) —
+     - **Verified**: read directly from a structure defined by a specification, or cryptographically verified (e.g. "signature verification passed", "CFBundleIdentifier = … in Info.plist")
+     - **Derived**: deterministically deduced from verified facts (e.g. "links libswiftCore → contains Swift code")
+     - **Heuristic**: pattern match / rule hit (e.g. "possible AWS key", "possible UPX packing"), clearly marked in the report, with a false-positive note
+2. **Nothing is written without evidence**. The rendering layer may only reference Findings in the IR; templates may not contain assertive text that is not backed by a Finding ID.
+3. **Declare blind spots truthfully**. Unresolved questions are recorded as first-class `Unknown` items ("what was not figured out + what means could figure it out"); each analyzer outputs `Coverage` (checked / total). Every report has a fixed "analysis coverage and limitations" section: which files failed to parse, which are encrypted (FairPlay / encrypted DMG), which were skipped because a limit was exceeded, which analyzers were not enabled. **"Not found" and "not checked" are strictly distinguished**.
+4. **Deterministic and reproducible**. Missing values are always null in the IR, never replaced with 0 or an empty string; when a limit is hit, the truncation is recorded explicitly (borrowed from RESX). Same input + same version + same rule library ⇒ byte-identical `report.json` (stable ordering, no timestamps in the body, ordered merging of parallel results). The report header records: tool version, rule library version, input SHA-256, command-line arguments.
+5. **The core flow does not use an LLM**. Fact extraction is done 100% by deterministic code. An LLM is only a later, **optional** "interpretation layer" (see §7); it may only read the IR, must cite a Finding ID for every sentence, and gets its own chapter in the report marked "AI-generated".
+6. **Cross-validation (differential testing)**. In CI, our results are compared with authoritative tools: `codesign -dvvv` / `apksigner verify` / `aapt2 dump` / `sigcheck` / `otool` / `readelf` / MobSF. Any mismatch is treated as a bug.
+7. **Robustness against malicious input**. Input is untrusted data: unpack limits (total size, file count, nesting depth, compression ratio → zip bomb protection), path traversal protection, symlinks are not followed, parser panic isolation (`catch_unwind` + a timeout per analyzer), `cargo-fuzz` on all parsers. A single analyzer failure only degrades into one "limitation" record and does not affect the whole report.
 
 ---
 
-## 3. 架构
+## 3. Architecture
 
-### 3.1 流水线（6 个阶段）
+### 3.1 Pipeline (6 stages)
 
 ```
- 输入路径
+ Input path
    │
    ▼
-① Identify   识别类型（魔数 + 结构探测 + 扩展名仅作参考）
+① Identify   Identify the type (magic numbers + structure probing; the extension is only a hint)
    │
    ▼
-② Unpack     递归解包 → 构建「产物树」(Artifact Tree)
+② Unpack     Unpack recursively → build the artifact tree (Artifact Tree)
    │           IPA → Payload/X.app → Mach-O(fat) → arm64 slice
-   │           NSIS.exe → 安装脚本 + 内嵌文件 → app.asar → JS …
+   │           NSIS.exe → install script + embedded files → app.asar → JS …
    ▼
-③ Analyze    对树上每个节点并行运行匹配的分析器 → Facts + Findings
+③ Analyze    Run the matching analyzers on every node of the tree in parallel → Facts + Findings
    │
    ▼
-④ Correlate  跨节点关联：权限声明 vs 实际 API 使用、SDK 归并、
-   │           重复文件、同一证书签了哪些文件、URL→域名聚合
+④ Correlate  Cross-node correlation: declared permissions vs actual API use, SDK merging,
+   │           duplicate files, which files the same certificate signed, URL→domain aggregation
    ▼
-⑤ Assess     评分与摘要：风险分级、关键信息卡、覆盖度统计
+⑤ Assess     Scoring and summary: risk levels, key info cards, coverage statistics
    │
    ▼
 ⑥ Render     report.json → md / txt / html / pdf
 ```
 
-### 3.2 Workspace 划分
+### 3.2 Workspace layout
 
 ```
 analyze-anything/
 ├── crates/
-│   ├── aa-core        # 数据模型：Artifact / Fact / Finding / Evidence / Confidence，IR schema
-│   ├── aa-vfs         # 产物树 + 只读虚拟文件系统（内存 / 临时目录 / mmap），限额与安全策略
-│   ├── aa-detect      # 类型识别
-│   ├── aa-unpack      # 解包器：zip tar 7z dmg xar/pkg nsis inno msi cab asar ar/deb rpm …
-│   ├── aa-binary      # 通用二进制：PE / Mach-O / ELF、加固检查、符号、导入导出、编译器/语言识别
-│   ├── aa-apple       # .app / .ipa：Info.plist、签名、entitlements、provisioning、PrivacyInfo
-│   ├── aa-android     # APK/AAB：Manifest、resources、DEX、签名 v1–v4、native libs
-│   ├── aa-windows     # Authenticode、版本资源、manifest、.NET、安装包语义、已安装目录
-│   ├── aa-content     # 通用内容：字符串、URL/域名/IP、密钥、熵、嵌入文件、脚本/配置
-│   ├── aa-rules       # 规则引擎与规则库（YARA、密钥正则、SDK/Tracker 指纹、加壳特征）
-│   ├── aa-correlate   # 跨产物关联与评估
-│   ├── aa-report      # 渲染器：json / md / txt / html / pdf（typst），i18n
-│   ├── aa-engine      # 门面：把上面各层串成一个调用入口，CLI 与桌面版都只依赖它
-│   └── aa-cli         # 二进制 `analyze-anything`（薄壳：解析参数、显示进度、写文件）
-├── apps/              # 第二阶段：桌面版放这里，复用 aa-engine
-├── rules/             # 版本化的规则数据（YAML/YAR），编译期内嵌，也可运行时覆盖
-├── testdata/          # 自建的最小样本 + 期望输出（golden）
+│   ├── aa-core        # Data model: Artifact / Fact / Finding / Evidence / Confidence, IR schema
+│   ├── aa-vfs         # Artifact tree + read-only virtual file system (memory / temp directory / mmap), limits and safety policy
+│   ├── aa-detect      # Type identification
+│   ├── aa-unpack      # Unpackers: zip tar 7z dmg xar/pkg nsis inno msi cab asar ar/deb rpm …
+│   ├── aa-binary      # Generic binaries: PE / Mach-O / ELF, hardening checks, symbols, imports/exports, compiler/language identification
+│   ├── aa-apple       # .app / .ipa: Info.plist, signature, entitlements, provisioning, PrivacyInfo
+│   ├── aa-android     # APK/AAB: Manifest, resources, DEX, signature v1–v4, native libs
+│   ├── aa-windows     # Authenticode, version resources, manifest, .NET, installer semantics, installed directories
+│   ├── aa-content     # Generic content: strings, URLs/domains/IPs, secrets, entropy, embedded files, scripts/configs
+│   ├── aa-rules       # Rule engine and rule library (YARA, secret regexes, SDK/Tracker fingerprints, packer signatures)
+│   ├── aa-correlate   # Cross-artifact correlation and assessment
+│   ├── aa-report      # Renderers: json / md / txt / html / pdf (typst), i18n
+│   ├── aa-engine      # Facade: chains the layers above into one entry point; both the CLI and the desktop app depend only on it
+│   └── aa-cli         # Binary `analyze-anything` (thin shell: parse arguments, show progress, write files)
+├── apps/              # Phase two: the desktop app goes here and reuses aa-engine
+├── rules/             # Versioned rule data (YAML/YAR), embedded at compile time, can also be overridden at run time
+├── testdata/          # Self-built minimal samples + expected output (golden)
 └── docs/
 ```
 
-### 3.3 关键抽象
+### 3.3 Key abstractions
 
 ```rust
 trait Unpacker { fn probe(&self, a: &Artifact) -> Match; fn unpack(&self, a: &Artifact, ctx: &mut Ctx) -> Result<Vec<Artifact>>; }
@@ -186,149 +186,149 @@ trait Analyzer { fn id(&self) -> &'static str; fn applies(&self, a: &Artifact) -
 trait Renderer { fn render(&self, report: &Report, opts: &RenderOpts) -> Result<Vec<u8>>; }
 ```
 
-新增一种格式 = 实现一个 `Unpacker` 和/或 `Analyzer` 并注册，不动核心。
+Adding a format = implementing an `Unpacker` and/or an `Analyzer` and registering it, without touching the core.
 
-### 3.4 为桌面版预留（第一阶段就要守住的约束）
+### 3.4 Provisions for the desktop app (constraints to hold from phase one)
 
-先做 CLI，但从 M0 起按"引擎是库、CLI 是薄壳"来写，桌面版才不用返工：
+The CLI comes first, but from M0 on the code is written as "the engine is a library, the CLI is a thin shell", so the desktop app needs no rework:
 
-1. **所有分析逻辑在库里**。`aa-cli` 不含任何分析代码；库 crate 不直接打印、不读命令行、不调用 `process::exit`。
-2. **统一入口** `aa_engine::analyze(input, options, &mut dyn ProgressSink) -> Result<Report>`。
-3. **进度是结构化事件**（阶段开始/结束、当前文件、已完成/总量、警告），CLI 渲染成进度条，桌面版渲染成界面。
-4. **可取消**：长任务定期检查取消标记，取消后返回已完成部分并记为"局限"。
-5. **`report.json` 自包含**：桌面版和 `analyze-anything render` 一样，只凭它就能展示和重新导出，不需要原始文件。
-6. **产物树可按需读取**：提供"按节点 ID 取字节 / 取十六进制片段"的接口，供桌面版点开证据时使用。
-7. **配置是数据**：限额、档位、规则路径都在 `Options` 结构里，不依赖环境变量或全局状态。
+1. **All analysis logic is in libraries**. `aa-cli` contains no analysis code; library crates do not print directly, do not read the command line, and do not call `process::exit`.
+2. **One entry point** `aa_engine::analyze(input, options, &mut dyn ProgressSink) -> Result<Report>`.
+3. **Progress is structured events** (stage start/end, current file, done/total, warnings). The CLI renders them as a progress bar, the desktop app renders them as UI.
+4. **Cancellable**: long tasks check a cancel flag periodically; after cancellation they return the completed part and record it as a "limitation".
+5. **`report.json` is self-contained**: the desktop app, like `analyze-anything render`, can display and re-export from it alone, without the original file.
+6. **The artifact tree can be read on demand**: provide an interface to "get bytes / get a hex fragment by node ID", used when the desktop app opens a piece of evidence.
+7. **Configuration is data**: limits, profiles and rule paths are all in the `Options` struct, with no dependence on environment variables or global state.
 
 ---
 
-## 4. 报告维度（"全方位解读"的具体含义）
+## 4. Report dimensions (what "all-round interpretation" means concretely)
 
-报告固定为以下章节；某章节不适用时显示"不适用"而不是省略，保证结构稳定。
+The report always has the sections below. When a section does not apply, it shows "not applicable" instead of being omitted, which keeps the structure stable.
 
-| # | 章节 | 内容 | 例子 |
+| # | Section | Content | Example |
 |---|---|---|---|
-| 0 | **摘要** | 一页看懂：这是什么、谁发布的、多大、用什么做的、关键风险点、覆盖度 | "iOS 应用 com.x.y 3.2.1，Team ABCDE12345，Swift + Flutter，含 14 个三方 SDK" |
-| 1 | **身份** | 名称、包名/Bundle ID、版本、构建号、最低系统、架构、哈希（MD5/SHA-1/SHA-256/TLSH）、图标 | |
-| 2 | **来源与签名** | 证书链、签名者、有效期、时间戳、签名是否完整覆盖、公证/Notarization ticket、provisioning 类型（开发/AdHoc/企业/商店）、APK 签名方案 v1–v4、Authenticode | |
-| 3 | **结构清单** | 产物树、体积分布（Treemap）、文件类型统计、Top N 大文件、重复文件、嵌套包 | |
-| 4 | **技术栈与组成** | 语言（Swift/ObjC/Kotlin/Java/C++/Rust/Go/.NET）、框架（Flutter / React Native / Electron / Unity / Qt / Xamarin / Tauri…）、编译器与 SDK 版本、三方库/SDK 清单（含版本）、SBOM | |
-| 5 | **权限与能力** | Android 权限与组件导出、iOS entitlements 与 usage descriptions、URL Scheme / deep link、Windows manifest（UAC 级别）、安装包行为（写注册表、自启动、服务、驱动） | |
-| 6 | **安全加固** | PIE/ASLR、NX/DEP、Stack Canary、RELRO、CFG、ARC、是否 strip、调试标志、ATS / cleartext、备份开关、加壳/混淆识别 | |
-| 7 | **网络与端点** | URL、域名、IP、证书固定配置、云服务端点归类 | |
-| 8 | **敏感信息** | 硬编码密钥/Token/私钥（启发式，脱敏显示）、内嵌证书、配置文件中的凭据 | |
-| 9 | **隐私** | Tracker/广告/分析 SDK、PrivacyInfo.xcprivacy、Data Safety 相关权限、采集能力推断 | |
-| 10 | **代码洞察** | 导入/导出符号、ObjC/Swift 类名、DEX 类包结构、.NET 类型、有趣的字符串、Electron 主进程入口与 IPC | |
-| 11 | **异常与可疑点** | 高熵节、签名后被修改、扩展名与内容不符、隐藏文件、YARA 命中 | |
-| 12 | **分析覆盖度与局限** | 见 §2 第 3 条 | |
-| 附录 | 完整证据表、文件清单（含哈希）、规则版本、术语表 | |
+| 0 | **Summary** | Understand it in one page: what this is, who published it, how big it is, what it was built with, key risk points, coverage | "iOS app com.x.y 3.2.1, Team ABCDE12345, Swift + Flutter, contains 14 third-party SDKs" |
+| 1 | **Identity** | Name, package name/Bundle ID, version, build number, minimum OS, architectures, hashes (MD5/SHA-1/SHA-256/TLSH), icon | |
+| 2 | **Origin and signature** | Certificate chain, signer, validity period, timestamp, whether the signature covers everything, notarization/Notarization ticket, provisioning type (development/AdHoc/enterprise/store), APK signature scheme v1–v4, Authenticode | |
+| 3 | **Structure inventory** | Artifact tree, size distribution (Treemap), file type statistics, Top N largest files, duplicate files, nested packages | |
+| 4 | **Tech stack and composition** | Languages (Swift/ObjC/Kotlin/Java/C++/Rust/Go/.NET), frameworks (Flutter / React Native / Electron / Unity / Qt / Xamarin / Tauri…), compiler and SDK versions, third-party library/SDK inventory (with versions), SBOM | |
+| 5 | **Permissions and capabilities** | Android permissions and exported components, iOS entitlements and usage descriptions, URL Scheme / deep link, Windows manifest (UAC level), installer behavior (registry writes, autostart, services, drivers) | |
+| 6 | **Security hardening** | PIE/ASLR, NX/DEP, Stack Canary, RELRO, CFG, ARC, whether stripped, debug flags, ATS / cleartext, backup switch, packer/obfuscation identification | |
+| 7 | **Network and endpoints** | URLs, domains, IPs, certificate pinning configuration, classification of cloud service endpoints | |
+| 8 | **Sensitive information** | Hard-coded keys/tokens/private keys (heuristic, shown redacted), embedded certificates, credentials in configuration files | |
+| 9 | **Privacy** | Tracker/advertising/analytics SDKs, PrivacyInfo.xcprivacy, permissions related to Data Safety, inferred collection capabilities | |
+| 10 | **Code insights** | Imported/exported symbols, ObjC/Swift class names, DEX class package structure, .NET types, interesting strings, Electron main process entry and IPC | |
+| 11 | **Anomalies and suspicious points** | High-entropy sections, modified after signing, extension does not match content, hidden files, YARA hits | |
+| 12 | **Analysis coverage and limitations** | See §2 item 3 | |
+| Appendix | Full evidence table, file inventory (with hashes), rule versions, glossary | |
 
 ---
 
-## 5. 关键技术决策
+## 5. Key technical decisions
 
-### 5.1 产物树 + 递归解包
-所有输入统一成一棵树，节点 = `Artifact { id, path_in_tree, kind, size, sha256, parent, source: OnDisk|InMemory|Lazy }`。小文件驻留内存，大文件落临时目录并 mmap。文件夹输入与压缩包输入走同一条路，"已安装的 Windows 程序目录"和".app 目录"自然被支持。
+### 5.1 Artifact tree + recursive unpacking
+All inputs are unified into one tree; node = `Artifact { id, path_in_tree, kind, size, sha256, parent, source: OnDisk|InMemory|Lazy }`. Small files stay in memory; large files go to a temp directory and are mmapped. Folder input and archive input take the same path, so "an installed Windows program directory" and "a .app directory" are supported naturally.
 
-### 5.2 规则数据与代码分离
-SDK 指纹、Tracker 列表、密钥正则、加壳特征、权限风险等级全部是 `rules/` 下的版本化数据文件，编译期内嵌，可 `--rules` 追加。规则库有独立版本号并写入报告。
+### 5.2 Rule data separated from code
+SDK fingerprints, Tracker lists, secret regexes, packer signatures and permission risk levels are all versioned data files under `rules/`, embedded at compile time, and can be extended with `--rules`. The rule library has its own version number, which is written into the report.
 
-### 5.3 PDF 方案：内嵌 Typst
-对比结论：
+### 5.3 PDF approach: embedded Typst
+Comparison results:
 
-| 方案 | 结论 |
+| Approach | Conclusion |
 |---|---|
-| headless Chrome 打印 HTML | 效果好但引入外部依赖，违背"单文件离线" ✗ |
-| `fulgur`（Blitz + krilla，纯 Rust HTML→PDF） | 很有前景，但较新，长表格分页 / CJK 需验证，作为备选 |
-| `printpdf` / `krilla` 手写排版 | 工作量大，表格/分页/目录都要自己做 ✗ |
-| **`typst` 作为库内嵌** | **选用**：成熟的排版引擎，自动目录/页眉页脚/跨页表格/代码块，CJK 支持好，纯 Rust，产物可复现 ✓ |
+| headless Chrome printing HTML | Good output but brings in an external dependency, which violates "single file, offline" ✗ |
+| `fulgur` (Blitz + krilla, pure Rust HTML→PDF) | Promising, but fairly new; long-table pagination / CJK need validation; kept as a fallback |
+| `printpdf` / `krilla` with hand-written layout | A lot of work; tables/pagination/table of contents all have to be built by hand ✗ |
+| **`typst` embedded as a library** | **Chosen**: a mature typesetting engine, automatic table of contents/headers and footers/tables across pages/code blocks, good CJK support, pure Rust, reproducible output ✓ |
 
-做法：IR → Typst 源（模板内嵌）→ `typst-pdf` 输出。内嵌一套开源字体（含中文，如 Noto Sans SC 子集）以保证跨机器一致；提供 `--font` 覆盖。实测二进制增大约 39 MB（其中字体 8.6 MB），可用 `pdf` feature 关闭。
+How: IR → Typst source (templates embedded) → `typst-pdf` output. A set of open-source fonts is embedded (including Chinese, e.g. a Noto Sans SC subset) to keep output consistent across machines; `--font` overrides it. Measured binary growth is about 39 MB (of which fonts are 8.6 MB); it can be turned off with the `pdf` feature.
 
 ### 5.4 HTML
-单文件、自包含（CSS/JS/图标内联，无外链），内含完整 IR 数据，支持：章节导航、全文搜索、产物树浏览、按置信度/严重度筛选、点击结论展开证据。深浅色自适应。
+Single file, self-contained (CSS/JS/icons inlined, no external links), containing the full IR data. Supports: section navigation, full-text search, artifact tree browsing, filtering by confidence/severity, clicking a finding to expand its evidence. Adapts to light and dark mode.
 
 ### 5.5 i18n
-IR 中结论以 `message_id + 参数` 存储，渲染时按 `--lang zh|en` 取文案；首发中文 + 英文。
+Findings are stored in the IR as `message_id + parameters`; at render time the text is picked by `--lang zh|en`. The first release ships Chinese + English.
 
-### 5.6 性能目标
-`rayon` 并行分析；500 MB 的 IPA 在 `standard` 档 ≤ 60 秒、内存峰值 ≤ 1 GB（笔记本）。`quick` 档跳过全量字符串/YARA 扫描。
+### 5.6 Performance targets
+Parallel analysis with `rayon`; a 500 MB IPA at the `standard` profile in ≤ 60 seconds with peak memory ≤ 1 GB (laptop). The `quick` profile skips the full strings/YARA scan.
 
 ---
 
-## 6. 路线图
+## 6. Roadmap
 
-### 6.1 第一阶段：CLI（M0–M6 → v1.0）
+### 6.1 Phase one: CLI (M0–M6 → v1.0)
 
-每个里程碑都以"可演示的端到端结果 + golden 测试"为验收标准，并发布一个可用的预览版。
+Every milestone is accepted on "a demonstrable end-to-end result + golden tests", and releases a usable preview version.
 
-| 里程碑 | 内容 | 验收 | 版本 |
+| Milestone | Content | Acceptance | Version |
 |---|---|---|---|
-| **M0 地基与技术验证**（约 1 周） | workspace 骨架、`aa-core` 数据模型与 IR schema、`aa-engine` 入口与进度事件、CI（fmt/clippy/test/deny）；**4 个 spike**：① typst 内嵌出中文 PDF ② DMG（HFS+/APFS）读取 ③ NSIS 提取 ④ apk-info 签名能力 | `analyze-anything analyze 任意文件` 输出含哈希/类型/熵的 JSON + MD；spike 结论文档，确定各格式走现成 crate 还是自研 | — |
-| **M1 通用层 + 四种渲染**（约 2 周） | 产物树、zip/tar/7z 递归解包与限额、通用内容分析（字符串、URL、密钥、熵）、规则引擎、md/txt/html/pdf 渲染器 | 对任意文件夹/压缩包产出完整四格式报告 | v0.1 |
-| **M2 原生二进制**（约 2 周） | PE / Mach-O / ELF：头、节、导入导出、加固、符号、语言/编译器/框架识别、依赖库 | 与 `otool`/`readelf`/`dumpbin` 差分一致 | v0.2 |
-| **M3 Apple 全家桶**（约 2–3 周） | `.app` / `.ipa` / `.dmg` / `.pkg`：Info.plist、代码签名校验、entitlements、provisioning profile、PrivacyInfo、frameworks、FairPlay 加密检测；结论映射 OWASP MASVS / CWE 编号 | 与 `codesign -dvvv --entitlements` 差分一致 | v0.3 |
-| **M4 Windows**（约 3–4 周） | Authenticode、版本资源、manifest、.NET、NSIS / Inno / MSI 安装包语义（安装了什么、写了哪些注册表、是否自启动）、已安装目录、Electron(asar)；PE 结构合法性校验与加壳初筛、按类别归纳导入 API 的行为画像（网络 / 加密 / 进程间通信 / 持久化）；内核驱动（.sys）识别与基础信息 | 与 `sigcheck` / 7-Zip 清单差分一致 | v0.4 |
-| **M5 Android**（约 2–3 周） | APK / AAB / XAPK：Manifest、resources、签名 v1–v4 校验、DEX 结构、native libs、SDK/Tracker 指纹、加壳识别；结论映射 OWASP MASVS / CWE 编号 | 与 `apksigner` / `aapt2` 差分一致；与 MobSF 报告项对照 | v0.5 |
-| **M6 关联、评估与打磨**（约 2–3 周） | 跨产物关联、风险评分、SBOM 导出、SARIF 输出、输出清单哈希与 `analyze-anything verify`、报告视觉打磨、fuzz、性能、发布（各平台预编译二进制） | 全部 golden / 差分 / fuzz 通过；三平台预编译包 | **v1.0** |
+| **M0 Foundation and technical validation** (about 1 week) | Workspace skeleton, `aa-core` data model and IR schema, `aa-engine` entry point and progress events, CI (fmt/clippy/test/deny); **4 spikes**: ① embedded typst producing a Chinese PDF ② DMG (HFS+/APFS) reading ③ NSIS extraction ④ apk-info signature capability | `analyze-anything analyze <any file>` outputs JSON + MD with hashes/type/entropy; a spike conclusions document that decides, per format, between an existing crate and in-house code | — |
+| **M1 Generic layer + four renderers** (about 2 weeks) | Artifact tree, recursive zip/tar/7z unpacking with limits, generic content analysis (strings, URLs, secrets, entropy), rule engine, md/txt/html/pdf renderers | A complete four-format report for any folder/archive | v0.1 |
+| **M2 Native binaries** (about 2 weeks) | PE / Mach-O / ELF: headers, sections, imports/exports, hardening, symbols, language/compiler/framework identification, dependent libraries | Differential match with `otool`/`readelf`/`dumpbin` | v0.2 |
+| **M3 The Apple family** (about 2–3 weeks) | `.app` / `.ipa` / `.dmg` / `.pkg`: Info.plist, code signature verification, entitlements, provisioning profile, PrivacyInfo, frameworks, FairPlay encryption detection; findings mapped to OWASP MASVS / CWE numbers | Differential match with `codesign -dvvv --entitlements` | v0.3 |
+| **M4 Windows** (about 3–4 weeks) | Authenticode, version resources, manifest, .NET, NSIS / Inno / MSI installer semantics (what is installed, which registry keys are written, whether it autostarts), installed directories, Electron (asar); PE structure validity checks and initial packer screening, behavior profile summarizing imported APIs by category (network / crypto / inter-process communication / persistence); kernel driver (.sys) identification and basic information | Differential match with `sigcheck` / 7-Zip listings | v0.4 |
+| **M5 Android** (about 2–3 weeks) | APK / AAB / XAPK: Manifest, resources, signature v1–v4 verification, DEX structure, native libs, SDK/Tracker fingerprints, packer identification; findings mapped to OWASP MASVS / CWE numbers | Differential match with `apksigner` / `aapt2`; compared against MobSF report items | v0.5 |
+| **M6 Correlation, assessment and polish** (about 2–3 weeks) | Cross-artifact correlation, risk scoring, SBOM export, SARIF output, output manifest hashes and `analyze-anything verify`, visual polish of the report, fuzz, performance, release (prebuilt binaries for each platform) | All golden / differential / fuzz tests pass; prebuilt packages for three platforms | **v1.0** |
 
-合计 14–18 周。M3 / M4 / M5 相互独立，顺序为 Apple → Windows → Android。
+14–18 weeks in total. M3 / M4 / M5 are independent of each other; the order is Apple → Windows → Android.
 
-**M0 的四项技术验证**决定对应格式用现成的库还是自研，结论写入 `docs/SPIKES.md`：
+**The four technical validations in M0** decide whether each format uses an existing library or in-house code. The conclusions go into `docs/SPIKES.md`:
 
-| 验证项 | 通过标准 | 不通过时的退路 |
+| Validation | Pass criteria | Fallback if it fails |
 |---|---|---|
-| Typst 内嵌出中文 PDF | 含目录、跨页长表格、中文不缺字 | 改用 `fulgur`（HTML → PDF） |
-| DMG 读取 | 能列出并读取 HFS+ 与 APFS、常见压缩方式的镜像内文件 | 自研 UDIF 层；不支持的变体只分析外层并记为"局限" |
-| NSIS 提取 | 能还原安装脚本并提取内嵌文件 | 降级为 PE + 附加数据的通用分析 |
-| APK 签名校验 | v1–v3 验证结果与 `apksigner` 一致 | 自研签名块解析与校验 |
+| Embedded Typst producing a Chinese PDF | Has a table of contents, long tables across pages, no missing Chinese glyphs | Switch to `fulgur` (HTML → PDF) |
+| DMG reading | Can list and read files inside HFS+ and APFS images with the common compression methods | In-house UDIF layer; for unsupported variants analyze only the outer layer and record a "limitation" |
+| NSIS extraction | Can recover the install script and extract the embedded files | Fall back to generic analysis of PE + appended data |
+| APK signature verification | v1–v3 verification results match `apksigner` | In-house signing block parsing and verification |
 
-### 6.2 第二阶段：桌面版（CLI v1.0 之后）
+### 6.2 Phase two: desktop app (after CLI v1.0)
 
-- **定位**：同一套引擎的图形界面，不新增分析能力。拖入文件 → 看进度 → 浏览报告 → 导出 PDF / HTML / Markdown / TXT。
-- **比 CLI 多的东西**：产物树浏览、点击结论跳到证据（含十六进制视图）、按置信度和严重度筛选、历史报告列表、两份报告对比。
-- **框架：Tauri**（2026-11-18 确认）。界面直接复用第一阶段的 HTML 报告，安装包小；依赖系统 WebView。Rust 侧只依赖 `aa-engine`。
-- **前提**：§3.4 的七条约束在第一阶段全部守住。
-- 开工前单独出一份桌面版规划并估时。
+- **Positioning**: a graphical interface on the same engine, with no new analysis capability. Drop a file in → watch progress → browse the report → export PDF / HTML / Markdown / TXT.
+- **What it has beyond the CLI**: artifact tree browsing, clicking a finding to jump to its evidence (with a hex view), filtering by confidence and severity, a list of past reports, comparison of two reports.
+- **Framework: Tauri** (confirmed 2026-11-18). The UI directly reuses the HTML report from phase one, and the installer is small; it depends on the system WebView. The Rust side depends only on `aa-engine`.
+- **Precondition**: all seven constraints in §3.4 are held throughout phase one.
+- A separate desktop app plan with estimates will be written before work starts.
 
-### 6.3 第三阶段：生态（v1.x）
+### 6.3 Phase three: ecosystem (v1.x)
 
-- 给 AI Agent 调用的接口：MCP server 与 SKILL.md
-- 可选的 AI 解读层（§7）
-- 两个版本的对比报告
-- 更多输入：Linux 包（deb / rpm / AppImage）、鸿蒙 HAP、PyInstaller 等打包程序
-- `deep` 档：函数级分析，可选对接 Ghidra 或 Kuna
-
----
-
-## 7. 可选的 AI 解读层（v1.x，默认关闭）
-
-- 输入只有 `report.json`，不接触原始文件
-- 输出"通俗解读 / 值得关注的点 / 建议的后续动作"，每句话必须引用 Finding ID；渲染器校验引用存在，否则丢弃该句
-- 在报告中独立成章并显式标注"AI 生成，基于上述已验证事实"
-- 这样既获得"可读性"，又不污染"可靠性"
+- Interfaces for AI agents to call: MCP server and SKILL.md
+- Optional AI interpretation layer (§7)
+- Comparison report between two versions
+- More inputs: Linux packages (deb / rpm / AppImage), HarmonyOS HAP, packaged programs such as PyInstaller
+- `deep` profile: function-level analysis, optionally connecting to Ghidra or Kuna
 
 ---
 
-## 8. 测试与质量
+## 7. Optional AI interpretation layer (v1.x, off by default)
 
-- **Golden 测试**：`testdata/` 中自建的最小合法样本（自己编译/打包的 hello-world 级 IPA/APK/NSIS/DMG…，可入库、无版权问题）+ 期望 `report.json`，`cargo insta` 快照
-- **差分测试**：CI 中调用权威工具对比（见 §2 第 6 条）
-- **畸形样本**：截断、损坏、zip bomb、路径穿越、超深嵌套 —— 必须优雅降级
-- **Fuzz**：`cargo-fuzz` 覆盖所有自研解析器
-- **确定性测试**：同一输入跑两次，`report.json` 字节一致
-- **供应链**：`cargo-deny`（许可证 + 安全公告）、锁定依赖
+- The only input is `report.json`; it does not touch the original files
+- It outputs "plain-language interpretation / points worth attention / suggested next actions"; every sentence must cite a Finding ID; the renderer checks that the citation exists, otherwise it drops the sentence
+- It gets its own chapter in the report, explicitly marked "AI-generated, based on the verified facts above"
+- This gains "readability" without contaminating "reliability"
 
 ---
 
-## 9. 风险与对策
+## 8. Testing and quality
 
-| 风险 | 对策 |
+- **Golden tests**: self-built minimal valid samples in `testdata/` (hello-world-level IPA/APK/NSIS/DMG… that we compile/package ourselves, can be checked in, no copyright issues) + expected `report.json`, `cargo insta` snapshots
+- **Differential tests**: call authoritative tools in CI and compare (see §2 item 6)
+- **Malformed samples**: truncated, corrupted, zip bomb, path traversal, extremely deep nesting — must degrade gracefully
+- **Fuzz**: `cargo-fuzz` covers all in-house parsers
+- **Determinism tests**: run the same input twice; `report.json` is byte-identical
+- **Supply chain**: `cargo-deny` (licenses + security advisories), locked dependencies
+
+---
+
+## 9. Risks and mitigations
+
+| Risk | Mitigation |
 |---|---|
-| App Store 下载的 IPA 主二进制被 FairPlay 加密，代码段不可读 | 检测 `LC_ENCRYPTION_INFO.cryptid`，如实标注；元数据、资源、签名、frameworks 仍可完整分析 |
-| DMG 变体多（APFS、加密、分段、LZFSE/ULMO） | M0 spike；不支持的变体明确报"无法读取"并仍分析外层；必要时自研 UDIF 层 |
-| NSIS / Inno 版本众多、有魔改版 | 依赖专门的解析 crate；失败时降级为 PE + overlay 的通用分析 |
-| 部分 crate 维护不活跃（dex、apple-dmg 等） | 格式规范公开稳定，必要时 vendor 或自研轻量解析器；所有三方解析器都包在 panic 隔离内 |
-| 启发式结论误报（密钥、Tracker） | 置信度分级 + 脱敏 + 证据可点开核对；规则带测试用例 |
-| 二进制体积（typst + 字体 + yara-x） | feature 开关；规则引擎先用 `boreal`，确有需要再换 `yara-x` |
-| 合规：逆向分析的法律边界 | 纯静态、只读、不解密不绕过；README 声明仅用于有权分析的对象 |
+| The main binary of an IPA downloaded from the App Store is FairPlay-encrypted and the code segment is unreadable | Detect `LC_ENCRYPTION_INFO.cryptid` and mark it truthfully; metadata, resources, signature and frameworks can still be analyzed in full |
+| Many DMG variants (APFS, encrypted, segmented, LZFSE/ULMO) | M0 spike; for unsupported variants clearly report "cannot be read" and still analyze the outer layer; write an in-house UDIF layer if necessary |
+| Many NSIS / Inno versions, including modified builds | Rely on dedicated parsing crates; on failure fall back to generic analysis of PE + overlay |
+| Some crates are not actively maintained (dex, apple-dmg, etc.) | The format specifications are public and stable; vendor or write a lightweight in-house parser if necessary; all third-party parsers are wrapped in panic isolation |
+| False positives in heuristic findings (secrets, Trackers) | Confidence levels + redaction + evidence that can be opened and checked; rules come with test cases |
+| Binary size (typst + fonts + yara-x) | Feature switches; the rule engine starts with `boreal` and moves to `yara-x` only if truly needed |
+| Compliance: the legal boundary of reverse analysis | Purely static, read-only, no decryption, no bypassing; the README states it is only for objects you are entitled to analyze |
