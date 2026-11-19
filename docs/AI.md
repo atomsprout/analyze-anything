@@ -116,8 +116,8 @@ The check makes sure every statement **points at** a real finding. It cannot mak
 |---|---|
 | `api`, OpenAI-compatible | Run against a real service (DeepSeek), on a real 456-finding IPA report among others: the model made 17 lookups and every statement it returned cited existing findings |
 | `api`, Anthropic | Run against the real service with `claude-opus-5-5`, on the same 456-finding IPA report: the model made 9 lookups and every statement it returned cited existing findings |
-| `claude` | The command line is started with the right arguments (tested), and the tool server works (tested with a stand-in agent). A full run has not been made: the `claude` on the development machine was not signed in |
-| `codex` | Written from Codex's documentation and tested against a stand-in. Never run with a real `codex` |
+| `claude` | Run for real with a signed-in Claude Code on the same 456-finding IPA report: a full answer in about half a minute, every statement citing existing findings. Lookups made through the tool server are not counted for this engine |
+| `codex` | Run for real with a signed-in Codex CLI 0.170 on the same report: a full answer in under a minute, every statement citing existing findings. Lookups are not counted for this engine either |
 | `ollama` | Run against a real Ollama (0.40) with `qwen3:4b`, on the same 456-finding IPA report: the request with the tools was accepted, the model answered from the brief without looking anything up, and every statement it returned cited existing findings. It took under four minutes on an Apple silicon Mac. Whether a model uses the tools depends on the model; one that cannot take them is asked with the brief alone |
 | `command` | Run for real with a stand-in agent that speaks to the tool server |
 

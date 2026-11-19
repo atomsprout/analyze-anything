@@ -22,8 +22,8 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## The AI interpretation
 
-- [ ] Run the `claude` engine for real: it needs a signed-in `claude` on the machine. So far its arguments and the tool server are tested apart.
-- [ ] Run the `codex` engine for real: it was written from the documentation and never met a real `codex`.
+- [x] Run the `claude` engine for real: done with a signed-in Claude Code on a 456-finding IPA report (no statement dropped).
+- [x] Run the `codex` engine for real: done with Codex CLI 0.170 on the same report (no statement dropped).
 - [x] Run the `ollama` engine against a real Ollama: done with `qwen3:4b` on a 456-finding IPA report (no lookups made by this small model, no statement dropped). A larger model that uses the tools has not been tried.
 - [x] Run the Anthropic protocol of the `api` engine with a real key: done with `claude-opus-5-5` on a 456-finding IPA report (9 lookups, no statement dropped).
 - [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
