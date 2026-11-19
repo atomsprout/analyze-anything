@@ -226,6 +226,27 @@ const RULES: &[Rule] = &[
         text_en: "It installs to {dir} by default.",
     },
     Rule {
+        id: "overview.android-sdk",
+        title_zh: "系统版本要求",
+        title_en: "Android versions",
+        text_zh: "最低支持 API {min_sdk}，目标 API {target_sdk}。",
+        text_en: "Minimum API level {min_sdk}, target API level {target_sdk}.",
+    },
+    Rule {
+        id: "overview.android-signer",
+        title_zh: "签名",
+        title_en: "Signing",
+        text_zh: "签名证书的 SHA-256 指纹为 {sha256}。Android 用这个指纹判断更新是否来自同一个发布者；各签名方案的校验结果见“来源与签名”一章。",
+        text_en: "The signing certificate's SHA-256 fingerprint is {sha256}. Android uses it to decide whether an update comes from the same publisher; the Provenance chapter gives the result for each signature scheme.",
+    },
+    Rule {
+        id: "overview.android-unsigned",
+        title_zh: "签名",
+        title_en: "Signing",
+        text_zh: "没有读到任何签名者证书。未签名的包无法安装到普通设备上。",
+        text_en: "No signer certificate was read. An unsigned package cannot be installed on an ordinary device.",
+    },
+    Rule {
         id: "overview.electron",
         title_zh: "技术栈",
         title_en: "Technology",
@@ -274,6 +295,7 @@ impl Analyzer for Overview {
             );
         }
         apple(tree, out);
+        android(tree, out);
         windows_tree(tree, first, out);
     }
 }
@@ -479,4 +501,61 @@ fn apple(tree: &dyn Tree, out: &mut Output) {
         None => finding("overview.apple-unsigned", Confidence::Derived),
     };
     out.finding(signing.evidence(Evidence::whole(info, text(bundle, "signing_type").unwrap_or("none"))));
+}
+
+/// The main Android package: the first one the Android analyzer listed that is not a split.
+fn android(tree: &dyn Tree, out: &mut Output) {
+    let Some(packages) = tree.summary().get("android.packages").and_then(|f| f.get("packages")).and_then(Value::as_array) else { return };
+    let Some(package) = packages.iter().find(|p| p.get("split").is_none_or(Value::is_null)).or(packages.first()) else { return };
+    let Some(file) = text(package, "path").and_then(|path| tree.get(path)) else { return };
+    if let Some(label) = text(package, "label") {
+        out.finding(finding("overview.product", Confidence::Verified).param("name", label).evidence(Evidence::field(
+            file,
+            "application label",
+            label,
+        )));
+    }
+    if let Some(id) = text(package, "package") {
+        out.finding(finding("overview.identifier", Confidence::Verified).param("id", id).evidence(Evidence::field(
+            file,
+            "manifest package",
+            id,
+        )));
+    }
+    if let Some(version) = text(package, "version_name") {
+        let shown = match package.get("version_code").and_then(Value::as_u64) {
+            Some(code) => format!("{version} (versionCode {code})"),
+            None => version.to_string(),
+        };
+        out.finding(finding("overview.version", Confidence::Verified).param("version", shown).evidence(Evidence::field(
+            file,
+            "versionName",
+            version,
+        )));
+    }
+    if let (Some(min), Some(target)) = (package.get("min_sdk").and_then(Value::as_u64), package.get("target_sdk").and_then(Value::as_u64)) {
+        out.finding(
+            finding("overview.android-sdk", Confidence::Verified)
+                .param("min_sdk", min)
+                .param("target_sdk", target)
+                .evidence(Evidence::field(file, "uses-sdk", target)),
+        );
+    }
+    // The signer list is present only when the signing data was read; an empty one means unsigned.
+    if let Some(signers) = package.get("signer_sha256").and_then(Value::as_array) {
+        match signers.first().and_then(Value::as_str) {
+            Some(sha256) => {
+                out.finding(finding("overview.android-signer", Confidence::Verified).param("sha256", sha256).evidence(Evidence::field(
+                    file,
+                    "signer certificate",
+                    sha256,
+                )))
+            }
+            None => out.finding(finding("overview.android-unsigned", Confidence::Verified).evidence(Evidence::field(
+                file,
+                "signer certificate",
+                "none",
+            ))),
+        }
+    }
 }
