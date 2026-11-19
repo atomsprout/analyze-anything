@@ -118,7 +118,7 @@ The check makes sure every statement **points at** a real finding. It cannot mak
 | `api`, Anthropic | Run against the real service with `claude-opus-5-5`, on the same 456-finding IPA report: the model made 9 lookups and every statement it returned cited existing findings |
 | `claude` | The command line is started with the right arguments (tested), and the tool server works (tested with a stand-in agent). A full run has not been made: the `claude` on the development machine was not signed in |
 | `codex` | Written from Codex's documentation and tested against a stand-in. Never run with a real `codex` |
-| `ollama` | The same protocol as the OpenAI-compatible `api` engine, which ran against a real service; the engine's own settings are tested against a stand-in. Never run with a real Ollama. Whether a model can use the tools depends on the model; one that cannot is asked with the brief alone |
+| `ollama` | Run against a real Ollama (0.40) with `qwen3:4b`, on the same 456-finding IPA report: the request with the tools was accepted, the model answered from the brief without looking anything up, and every statement it returned cited existing findings. It took under four minutes on an Apple silicon Mac. Whether a model uses the tools depends on the model; one that cannot take them is asked with the brief alone |
 | `command` | Run for real with a stand-in agent that speaks to the tool server |
 
 A model or service that does not support tools is noticed on the first request, and is then asked once with the brief alone.
