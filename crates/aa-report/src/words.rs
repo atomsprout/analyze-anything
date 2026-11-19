@@ -282,6 +282,7 @@ pub const UI: &[(&str, &str, &str)] = &[
     ("files_total", "全部文件", "All files"),
     ("by_confidence", "按置信度", "By confidence"),
     ("partial_title", "这份分析不完整", "This analysis is partial"),
+    ("limits_title", "有未检查或未能分析的内容", "Some things were not checked or could not be analyzed"),
     ("limitations_recorded", "记录了 {n} 条局限", "{n} limitations were recorded"),
     ("see_coverage", "查看覆盖度与局限", "See coverage and limitations"),
     ("summary_facts", "整体事实", "Facts about the whole input"),

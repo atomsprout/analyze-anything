@@ -24,22 +24,13 @@ pub const SCRIPT_NAME: &str = "[NSIS script].txt";
 
 pub struct Nsis;
 
-pub const RULES: &[Rule] = &[
-    Rule {
-        id: "nsis.files-unreadable",
-        title_zh: "NSIS 安装包内部分文件无法提取",
-        title_en: "Some files in the NSIS installer could not be extracted",
-        text_zh: "安装包里有文件无法解压（数据损坏、超出解压预算，或使用了不支持的变体），这些文件没有分析。",
-        text_en: "Some files in the installer could not be decompressed (damaged data, over the decompression budget, or an unsupported variant). They were not analyzed.",
-    },
-    Rule {
-        id: "nsis.script-synthetic",
-        title_zh: "NSIS 脚本是还原出来的",
-        title_en: "The NSIS script is a reconstruction",
-        text_zh: "“[NSIS script].txt”不是安装包里原有的文件，而是由安装包内的脚本字节码逐条还原出的文本，供阅读和提取其中的网址。",
-        text_en: "\"[NSIS script].txt\" is not a file stored in the installer: it is the installer's script bytecode rendered as text, entry by entry, for reading and for URL extraction.",
-    },
-];
+pub const RULES: &[Rule] = &[Rule {
+    id: "nsis.files-unreadable",
+    title_zh: "NSIS 安装包内部分文件无法提取",
+    title_en: "Some files in the NSIS installer could not be extracted",
+    text_zh: "安装包里有文件无法解压（数据损坏、超出解压预算，或使用了不支持的变体），这些文件没有分析。",
+    text_en: "Some files in the installer could not be decompressed (damaged data, over the decompression budget, or an unsupported variant). They were not analyzed.",
+}];
 
 /// True when `bytes` is a PE file with an NSIS first header in its overlay.
 pub fn is_nsis(bytes: &[u8]) -> bool {
@@ -129,9 +120,8 @@ impl Unpacker for Nsis {
         }
         if !stopped {
             let script = script_text(&installer);
-            if sink.add(SCRIPT_NAME, &mut script.as_bytes()).is_ok() {
-                sink.limitation("nsis.script-synthetic", None);
-            }
+            // The analyzer says on this child that it is a reconstruction (see `script_note`).
+            let _ = sink.add(SCRIPT_NAME, &mut script.as_bytes());
         }
         if !failures.is_empty() {
             let shown = failures.iter().take(5).cloned().collect::<Vec<_>>().join("; ");
@@ -436,4 +426,22 @@ pub fn analyze(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output)
     );
     model.extra.insert("script_entries".into(), json!(installer.entry_count()));
     Some(model)
+}
+
+/// Says that the reconstructed script child is not a file of the installer.
+pub fn script_note(tree: &dyn aa_core::plugin::Tree, file: &Artifact, out: &mut Output) {
+    let from_nsis =
+        file.parent.as_deref().and_then(|parent| tree.get(parent)).is_some_and(|parent| parent.unpacked_by.as_deref() == Some("nsis"));
+    if file.name() == SCRIPT_NAME && from_nsis {
+        out.finding(
+            aa_core::Finding::new(
+                aa_core::Section::Structure,
+                "windows",
+                "windows.nsis-script-synthetic",
+                aa_core::Confidence::Verified,
+                aa_core::Severity::Info,
+            )
+            .evidence(aa_core::Evidence::whole(file, SCRIPT_NAME)),
+        );
+    }
 }

@@ -625,7 +625,7 @@ fn assert_nsis_matches_7zip(name: &str, format: &str) {
     assert!(ours.remove("[NSIS script].txt").is_some());
     let theirs: BTreeMap<String, String> = expected.into_iter().map(|(hash, path)| (path, hash)).collect();
     assert_eq!(ours, theirs, "{name}: extracted files");
-    assert_eq!(run.unpack_limitations.iter().filter(|c| *c != "nsis.script-synthetic").count(), 0);
+    assert_eq!(run.unpack_limitations.len(), 0);
 
     let installer = run.fact(&file, "windows.installer");
     assert_eq!(installer["kind"], "NSIS");

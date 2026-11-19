@@ -94,6 +94,7 @@ impl Analyzer for Windows {
     }
 
     fn analyze_file(&self, tree: &dyn Tree, file: &Artifact, out: &mut Output) {
+        nsis::script_note(tree, file, out);
         if file.size < 64 {
             return;
         }

@@ -952,7 +952,9 @@
   function summarySection() {
     var w = V.words[lang];
     var limitations = R.limitations.length;
-    var partial = R.coverage.truncated || limitations > 0 || R.coverage.artifacts_analyzed < R.coverage.artifacts_total;
+    // "Partial" is for content that was skipped or unreadable; limitations alone are notes on scope.
+    var cut = R.coverage.truncated || R.coverage.artifacts_analyzed < R.coverage.artifacts_total;
+    var partial = cut || limitations > 0;
     var sha = R.input.sha256;
     var rootArtifact = R.input.kind === 'file' ? R.artifacts[artifactIndex.get(R.input.name)] : null;
     var overview = bySection.overview.slice(0, 4);
@@ -974,7 +976,7 @@
         field(w.tool, R.tool.name + ' ' + R.tool.version),
         field(w.input_sha256, sha || (R.input.kind === 'directory' ? w.not_applicable : w.unknown), !!sha, sha)),
       partial ? el('div', { class: 'banner', role: 'note' },
-        el('strong', null, el('span', { 'aria-hidden': 'true' }, '◆ '), t('partial_title')),
+        el('strong', null, el('span', { 'aria-hidden': 'true' }, '◆ '), t(cut ? 'partial_title' : 'limits_title')),
         R.coverage.truncated ? el('span', null, w.truncated) : null,
         el('span', null, t('files_analyzed') + ' ' + group(R.coverage.artifacts_analyzed) + ' / ' + group(R.coverage.artifacts_total)),
         limitations ? el('span', null, t('limitations_recorded', group(limitations))) : null,

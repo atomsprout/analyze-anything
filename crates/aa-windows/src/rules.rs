@@ -15,6 +15,13 @@ macro_rules! scope_en {
 }
 
 pub const RULES: &[Rule] = &[
+    Rule {
+        id: "windows.nsis-script-synthetic",
+        title_zh: "NSIS 脚本是还原出来的",
+        title_en: "The NSIS script is a reconstruction",
+        text_zh: "“[NSIS script].txt”不是安装包里原有的文件，而是由安装包内的脚本字节码逐条还原出的文本，供阅读和提取其中的网址。",
+        text_en: "\"[NSIS script].txt\" is not a file stored in the installer: it is the installer's script bytecode rendered as text, entry by entry, for reading and for URL extraction.",
+    },
     // ---- Authenticode -------------------------------------------------------------------------
     Rule {
         id: "windows.signers",
