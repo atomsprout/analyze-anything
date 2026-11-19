@@ -1,0 +1,2 @@
+DOES NOT VERIFY
+ERROR: SHA-256 digest of classes.dex does not match the digest specified in META-INF/MANIFEST.MF. Expected: <+7wVgd7zr9RuWaKVBEOxGBfxN7Pb7+mi9k+HV8GBNg8=>, actual: <0DTUVyXPQdliNs5GHHTaPcfAcG8oVOK9sxsvX0G+wPI=>

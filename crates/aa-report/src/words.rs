@@ -1,0 +1,373 @@
+//! The fixed words of a report, in each language. Everything about a specific rule comes from
+//! the report's own rule texts instead.
+
+use aa_core::{Confidence, InputKind, Section, Severity};
+
+use crate::Lang;
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct Words {
+    pub title: &'static str,
+    pub tool: &'static str,
+    pub input_sha256: &'static str,
+    pub summary: &'static str,
+    pub input: &'static str,
+    pub artifacts: &'static str,
+    pub containers: &'static str,
+    pub bytes_read: &'static str,
+    pub findings: &'static str,
+    pub by_severity: &'static str,
+    pub no_findings_here: &'static str,
+    pub inventory: &'static str,
+    pub path: &'static str,
+    pub size: &'static str,
+    pub kind: &'static str,
+    pub entropy: &'static str,
+    pub confidence: &'static str,
+    pub evidence: &'static str,
+    pub references: &'static str,
+    pub finding_id: &'static str,
+    pub coverage: &'static str,
+    pub complete: &'static str,
+    pub truncated: &'static str,
+    pub no_limitations: &'static str,
+    pub unknown: &'static str,
+    /// For a value that does not exist for this input, as opposed to one that could not be read.
+    pub not_applicable: &'static str,
+    pub affected: &'static str,
+    pub whole_run: &'static str,
+    pub reading_guide: &'static str,
+    pub reading_guide_text: &'static str,
+}
+
+pub fn words(lang: Lang) -> Words {
+    match lang {
+        Lang::Zh => Words {
+            title: "分析报告",
+            tool: "工具",
+            input_sha256: "输入 SHA-256",
+            summary: "摘要",
+            input: "输入",
+            artifacts: "已分析文件 / 全部文件（含解包得到的）",
+            containers: "已解包的容器",
+            bytes_read: "已读取字节",
+            findings: "结论数",
+            by_severity: "按严重度",
+            no_findings_here: "本章没有结论。这只代表已启用的检查没有命中，不代表不存在相关内容。",
+            inventory: "文件清单",
+            path: "路径",
+            size: "大小（字节）",
+            kind: "类型",
+            entropy: "熵",
+            confidence: "置信度",
+            evidence: "证据",
+            references: "对应标准",
+            finding_id: "结论 ID",
+            coverage: "覆盖度与局限",
+            complete: "树中的文件全部读取完毕。",
+            truncated: "分析提前停止或有内容被跳过，下面的局限说明了原因。没有读到的部分没有任何结论。",
+            no_limitations: "没有记录到局限。",
+            unknown: "未知",
+            not_applicable: "不适用（输入是文件夹，各文件的哈希见文件清单）",
+            affected: "涉及",
+            whole_run: "整次分析",
+            reading_guide: "如何阅读",
+            reading_guide_text: "每条结论都标有置信度：“已验证”是直接从文件结构读出或经密码学校验的；“推导”是由已读出的事实按固定规则得出的；“启发式”是规则匹配的猜测，可能误报。严重度为“提示”的条目是中性事实，不是问题。",
+        },
+        Lang::En => Words {
+            title: "Analysis report",
+            tool: "Tool",
+            input_sha256: "Input SHA-256",
+            summary: "Summary",
+            input: "Input",
+            artifacts: "Files analyzed / all files (unpacked ones included)",
+            containers: "Containers unpacked",
+            bytes_read: "Bytes read",
+            findings: "Findings",
+            by_severity: "By severity",
+            no_findings_here: "No findings in this chapter. This means no enabled check matched, not that nothing of the kind exists.",
+            inventory: "File inventory",
+            path: "Path",
+            size: "Size (bytes)",
+            kind: "Type",
+            entropy: "Entropy",
+            confidence: "Confidence",
+            evidence: "Evidence",
+            references: "Standards",
+            finding_id: "Finding ID",
+            coverage: "Coverage and limitations",
+            complete: "Every file in the tree was read in full.",
+            truncated: "The analysis stopped early or skipped content; the limitations below say why. Nothing is concluded about what was not read.",
+            no_limitations: "No limitations were recorded.",
+            unknown: "unknown",
+            not_applicable: "not applicable (the input is a folder; each file's digest is in the inventory)",
+            affected: "Affects",
+            whole_run: "the whole run",
+            reading_guide: "How to read this",
+            reading_guide_text: "Every finding states its confidence: \"Verified\" was read directly from a file structure or checked cryptographically; \"Derived\" follows from what was read by a fixed rule; \"Heuristic\" is a rule's guess and may be wrong. Entries with severity \"Info\" are neutral facts, not problems.",
+        },
+    }
+}
+
+pub fn input_kind(lang: Lang, kind: InputKind) -> &'static str {
+    match (lang, kind) {
+        (Lang::Zh, InputKind::File) => "单个文件",
+        (Lang::Zh, InputKind::Directory) => "文件夹",
+        (Lang::En, InputKind::File) => "single file",
+        (Lang::En, InputKind::Directory) => "folder",
+    }
+}
+
+pub fn severity(lang: Lang, severity: Severity) -> &'static str {
+    match (lang, severity) {
+        (Lang::Zh, Severity::Info) => "提示",
+        (Lang::Zh, Severity::Low) => "低",
+        (Lang::Zh, Severity::Medium) => "中",
+        (Lang::Zh, Severity::High) => "高",
+        (Lang::En, Severity::Info) => "Info",
+        (Lang::En, Severity::Low) => "Low",
+        (Lang::En, Severity::Medium) => "Medium",
+        (Lang::En, Severity::High) => "High",
+    }
+}
+
+pub fn confidence(lang: Lang, confidence: Confidence) -> &'static str {
+    match (lang, confidence) {
+        (Lang::Zh, Confidence::Verified) => "已验证",
+        (Lang::Zh, Confidence::Derived) => "推导",
+        (Lang::Zh, Confidence::Heuristic) => "启发式",
+        (Lang::En, Confidence::Verified) => "Verified",
+        (Lang::En, Confidence::Derived) => "Derived",
+        (Lang::En, Confidence::Heuristic) => "Heuristic",
+    }
+}
+
+pub fn section(lang: Lang, section: Section) -> &'static str {
+    match (lang, section) {
+        (Lang::Zh, Section::Overview) => "概览",
+        (Lang::Zh, Section::Identity) => "身份",
+        (Lang::Zh, Section::Provenance) => "来源与签名",
+        (Lang::Zh, Section::Structure) => "结构",
+        (Lang::Zh, Section::Composition) => "技术栈与组成",
+        (Lang::Zh, Section::Capabilities) => "权限与能力",
+        (Lang::Zh, Section::Hardening) => "安全加固",
+        (Lang::Zh, Section::Network) => "网络与端点",
+        (Lang::Zh, Section::Secrets) => "敏感信息",
+        (Lang::Zh, Section::Privacy) => "隐私",
+        (Lang::Zh, Section::Code) => "代码洞察",
+        (Lang::Zh, Section::Anomalies) => "异常与可疑点",
+        (Lang::En, Section::Overview) => "Overview",
+        (Lang::En, Section::Identity) => "Identity",
+        (Lang::En, Section::Provenance) => "Provenance and signing",
+        (Lang::En, Section::Structure) => "Structure",
+        (Lang::En, Section::Composition) => "Technology and composition",
+        (Lang::En, Section::Capabilities) => "Permissions and capabilities",
+        (Lang::En, Section::Hardening) => "Hardening",
+        (Lang::En, Section::Network) => "Network and endpoints",
+        (Lang::En, Section::Secrets) => "Secrets",
+        (Lang::En, Section::Privacy) => "Privacy",
+        (Lang::En, Section::Code) => "Code insight",
+        (Lang::En, Section::Anomalies) => "Anomalies",
+    }
+}
+
+/// The machine name of a section, as it is written in report.json.
+pub fn section_key(section: Section) -> &'static str {
+    match section {
+        Section::Overview => "overview",
+        Section::Identity => "identity",
+        Section::Provenance => "provenance",
+        Section::Structure => "structure",
+        Section::Composition => "composition",
+        Section::Capabilities => "capabilities",
+        Section::Hardening => "hardening",
+        Section::Network => "network",
+        Section::Secrets => "secrets",
+        Section::Privacy => "privacy",
+        Section::Code => "code",
+        Section::Anomalies => "anomalies",
+    }
+}
+
+/// The machine name of a severity, as it is written in report.json.
+pub fn severity_key(severity: Severity) -> &'static str {
+    match severity {
+        Severity::Info => "info",
+        Severity::Low => "low",
+        Severity::Medium => "medium",
+        Severity::High => "high",
+    }
+}
+
+/// The machine name of a confidence level, as it is written in report.json.
+pub fn confidence_key(confidence: Confidence) -> &'static str {
+    match confidence {
+        Confidence::Verified => "verified",
+        Confidence::Derived => "derived",
+        Confidence::Heuristic => "heuristic",
+    }
+}
+
+/// Words only the HTML and PDF reports use: `(key, 中文, English)`. `{n}`, `{m}` are filled in by
+/// the renderer.
+pub const UI: &[(&str, &str, &str)] = &[
+    ("contents", "目录", "Contents"),
+    ("severity", "严重度", "Severity"),
+    ("chapter", "章节", "Chapter"),
+    ("chapters", "章节", "Chapters"),
+    ("more_evidence", "另有 {n} 条证据未在此列出", "{n} more pieces of evidence not shown here"),
+    (
+        "pdf_findings_capped",
+        "本章共 {n} 条结论，这里按严重度从高到低列出前 {m} 条；全部结论见 report.html 或 report.json。",
+        "This chapter has {n} findings; the first {m}, most severe first, are shown here. report.html and report.json hold them all.",
+    ),
+    (
+        "pdf_scope",
+        "本 PDF 供阅读与存档：过长的列表会截断并注明，完整数据见 report.html 与 report.json。",
+        "This PDF is for reading and filing: long lists are cut and say so; report.html and report.json hold the complete data.",
+    ),
+    ("page", "页", "Page"),
+    // Grouped findings
+    ("chapter_counts", "{n} 类 / {m} 条", "{n} kinds / {m} findings"),
+    ("group_count", "共 {n} 条", "{n} findings"),
+    ("group_shared", "同一结论共 {n} 条，涉及", "The same holds {n} times, for"),
+    (
+        "group_not_shown",
+        "本类另有 {n} 条未在此列出；report.html 和 report.json 有全部。",
+        "{n} more of this kind are not listed here; report.html and report.json hold them all.",
+    ),
+    (
+        "grouping_guide",
+        "同一条规则得出的多条结论归并为一条：相同的句子只写一次，后面列出它适用的文件。列表过长时只列出前几项并注明未列出的条数；每一条的证据与结论 ID 见 report.html 或 report.json。",
+        "Findings of the same rule are shown as one entry: a sentence that repeats is written once, followed by the files it holds for. Long lists show their first items and say how many are left out; the evidence and ID of every finding are in report.html and report.json.",
+    ),
+    (
+        "grouping_guide_html",
+        "同一条规则得出的多条结论归并为一条：相同的句子只写一次，后面列出它适用的文件。点开文件名可以看到那一条的证据与结论 ID。",
+        "Findings of the same rule are shown as one entry: a sentence that repeats is written once, followed by the files it holds for. Open a file name to see that finding's evidence and ID.",
+    ),
+    ("attention", "需要关注", "Needs attention"),
+    (
+        "attention_text",
+        "严重度高于“提示”的全部结论，按规则归并。它们在各自的章节里还会出现一次。",
+        "Every finding above \"Info\", grouped by rule. Each appears again in its own chapter.",
+    ),
+    (
+        "attention_none",
+        "没有严重度高于“提示”的结论。这只代表已启用的检查没有命中，不代表没有问题。",
+        "No finding is above \"Info\". This means no enabled check matched, not that nothing is wrong.",
+    ),
+    ("unpacked_by_note", "由 {n} 解包", "unpacked by {n}"),
+    ("same_finding", "同一结论", "Same finding"),
+    ("subject_none", "（无证据）", "(no evidence)"),
+    ("group_rest", "其余 {n} 条尚未列出", "{n} more not listed yet"),
+    ("of_total", "筛选前共 {n} 条", "{n} before filtering"),
+    // Controls
+    ("skip", "跳到正文", "Skip to content"),
+    ("navigation", "报告导航", "Report navigation"),
+    ("language", "语言", "Language"),
+    ("theme", "配色", "Theme"),
+    ("theme_light", "浅色", "Light"),
+    ("theme_dark", "深色", "Dark"),
+    ("print", "打印", "Print"),
+    ("copy", "复制", "Copy"),
+    ("copied", "已复制", "Copied"),
+    ("copy_failed", "复制失败", "Copy failed"),
+    ("top", "回到顶部", "Back to top"),
+    // Summary
+    ("what_it_is", "这是什么", "What this is"),
+    ("name", "名称", "Name"),
+    ("coverage_short", "覆盖度", "Coverage"),
+    ("files_analyzed", "已分析文件", "Files analyzed"),
+    ("files_total", "全部文件", "All files"),
+    ("by_confidence", "按置信度", "By confidence"),
+    ("partial_title", "这份分析不完整", "This analysis is partial"),
+    ("limits_title", "有未检查或未能分析的内容", "Some things were not checked or could not be analyzed"),
+    ("limitations_recorded", "记录了 {n} 条局限", "{n} limitations were recorded"),
+    ("see_coverage", "查看覆盖度与局限", "See coverage and limitations"),
+    ("summary_facts", "整体事实", "Facts about the whole input"),
+    (
+        "summary_facts_note",
+        "各分析器对整个输入给出的结构化数据，按“分析器.名称”列出。",
+        "Structured data the analyzers recorded about the input as a whole, keyed analyzer.name.",
+    ),
+    // Findings
+    ("findings_title", "结论", "Findings"),
+    ("file_size", "大小", "Size"),
+    ("filters", "筛选", "Filters"),
+    ("search", "搜索", "Search"),
+    ("search_findings", "搜索结论：标题、内容、路径、证据、ID…", "Search findings: title, text, path, evidence, ID…"),
+    ("all_chapters", "全部章节", "All chapters"),
+    ("reset", "清除筛选", "Clear filters"),
+    ("showing", "显示 {n} / {m} 条结论", "Showing {n} of {m} findings"),
+    ("no_match", "没有符合筛选条件的结论。", "No findings match the filters."),
+    ("no_match_chapter", "本章没有符合筛选条件的结论（共 {n} 条）。", "No findings in this chapter match the filters ({n} in total)."),
+    ("show_more", "再显示 {n} 条", "Show {n} more"),
+    ("show_all", "全部显示（{n}）", "Show all ({n})"),
+    ("analyzer", "分析器", "Analyzer"),
+    ("rule", "规则", "Rule"),
+    ("location", "位置", "Location"),
+    ("value", "值", "Value"),
+    ("offset", "偏移", "offset"),
+    ("length", "长度", "length"),
+    ("field", "字段", "field"),
+    ("whole_file", "整个文件", "whole file"),
+    ("bytes", "字节", "bytes"),
+    ("show_full_value", "显示完整内容（{n} 个字符）", "Show the full value ({n} characters)"),
+    ("open_in_files", "在文件树中查看", "Show in the file tree"),
+    ("expand_all", "全部展开", "Expand all"),
+    ("collapse_all", "全部收起", "Collapse all"),
+    // Files
+    ("files", "文件", "Files"),
+    ("filter_files", "按路径筛选文件…", "Filter files by path…"),
+    ("with_findings_only", "只看有结论的", "With findings only"),
+    ("file_tree", "文件树", "File tree"),
+    ("select_file", "在左侧选择一个文件或文件夹查看详情。", "Select a file or folder in the tree to see its details."),
+    ("folder", "文件夹", "Folder"),
+    ("container", "容器（已解包）", "Container (unpacked)"),
+    ("files_inside", "包含文件", "Files inside"),
+    ("total_size", "合计大小（含解包内容）", "Total size (unpacked content included)"),
+    ("mime", "MIME 类型", "MIME type"),
+    ("usual_extension", "常见扩展名", "Usual extension"),
+    ("unpacked_by", "解包器", "Unpacked by"),
+    ("parent_container", "所在容器", "Inside container"),
+    ("digests", "哈希", "Digests"),
+    ("facts", "事实数据", "Facts"),
+    ("no_facts", "没有记录到这个文件的事实数据。", "No facts were recorded for this file."),
+    ("findings_citing", "引用这个文件的结论", "Findings that cite this file"),
+    ("no_findings_citing", "没有结论引用这个文件。", "No finding cites this file."),
+    ("go_to_finding", "跳到这条结论", "Go to this finding"),
+    ("no_files_match", "没有符合条件的文件。", "No files match."),
+    ("files_count", "{n} 个文件", "{n} files"),
+    ("items", "{n} 项", "{n} items"),
+    ("keys", "{n} 个键", "{n} keys"),
+    ("show_next", "再显示 {n} 项", "Show {n} more"),
+    ("back_to_tree", "回到文件树", "Back to the tree"),
+    (
+        "print_inventory_note",
+        "打印版只列出前 {n} 个文件，共 {m} 个；完整清单在本文件的交互视图和 report.json 中。",
+        "The printed version lists the first {n} of {m} files; the interactive view of this file and report.json list them all.",
+    ),
+    // Fallbacks
+    (
+        "noscript",
+        "脚本未启用：下面是完整的静态内容；筛选、搜索、文件树和语言切换需要启用 JavaScript。",
+        "Scripts are off: the complete static content follows. Filters, search, the file tree and the language switch need JavaScript.",
+    ),
+    (
+        "script_failed",
+        "交互视图加载失败，下面显示的是静态内容。",
+        "The interactive view failed to load; the static content is shown instead.",
+    ),
+];
+
+/// A word from [`UI`] in `lang`; `?` when there is no such word, so a mistake shows.
+pub fn ui(lang: Lang, key: &str) -> &'static str {
+    UI.iter()
+        .find(|(k, _, _)| *k == key)
+        .map(|(_, zh, en)| match lang {
+            Lang::Zh => *zh,
+            Lang::En => *en,
+        })
+        .unwrap_or("?")
+}

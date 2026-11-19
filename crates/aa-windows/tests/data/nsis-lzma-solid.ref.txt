@@ -1,0 +1,70 @@
+
+7-Zip 23.01 (x64) : Copyright (c) 1999-2023 Igor Pavlov : 2023-06-20
+ 64-bit locale=C.UTF-8 Threads:4 OPEN_MAX:20000
+
+Scanning the drive for archives:
+1 file, 108174 bytes (106 KiB)
+
+Listing archive: nsis-lzma-solid.exe
+
+--
+Path = nsis-lzma-solid.exe
+Type = Nsis
+Physical Size = 108174
+Method = LZMA:23
+Solid = +
+Headers Size = 6054
+Embedded Stub Size = 99328
+SubType = NSIS-3 Unicode
+
+----------
+Path = hello.exe
+Size = 18432
+Packed Size = 8842
+Modified = 2026-11-18 23:00:44.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 0
+
+Path = readme.txt
+Size = 16
+Packed Size = 
+Modified = 2026-11-18 23:00:46.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 18436
+
+Path = data/copy.txt
+Size = 16
+Packed Size = 
+Modified = 2026-11-18 23:00:46.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 18436
+
+Path = data/payload.bin
+Size = 20000
+Packed Size = 
+Modified = 2026-11-18 23:00:46.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 18456
+
+Path = uninstall.exe
+Size = 
+Packed Size = 
+Modified = 
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 38460
+
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./data/copy.txt
+86999324511ad84c69f01938832689a50bebda2d4c65061db2e73b4b0857e831  ./data/payload.bin
+afa842ca77436006bf1376f7f2ba7dadb6f13a317c9f061d10c646eb3db03a38  ./hello.exe
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./readme.txt
+e541de14c55632f78c96b51a1d2dd406d518cfb09d7ce7ad5747a0db0265bd31  ./uninstall.exe

@@ -1,0 +1,33 @@
+[package]
+name = "aa-apple"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aa-core.workspace = true
+serde_json.workspace = true
+sha1 = { workspace = true, features = ["oid"] }
+sha2 = { workspace = true, features = ["oid"] }
+hex.workspace = true
+flate2.workspace = true
+bzip2.workspace = true
+lzma-rust2.workspace = true
+# Property lists, XML and binary (MIT).
+plist = { version = "1.7", default-features = false }
+# The xar table of contents is XML (MIT OR Apache-2.0).
+roxmltree = "0.20"
+# LZFSE and LZVN chunks of disk images and compressed files (MIT OR Apache-2.0).
+lzfse_rust = "0.2"
+# CMS signatures and X.509 certificates (RustCrypto; Apache-2.0 OR MIT).
+cms = "0.2"
+x509-cert = { version = "0.2", default-features = false }
+der = { version = "0.7", features = ["alloc", "oid"] }
+rsa = { version = "0.9", default-features = false, features = ["std"] }
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+p384 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }

@@ -1,0 +1,5 @@
+# One toolchain for everyone and for CI, so a new compiler release cannot change which lints
+# pass. Raise it deliberately, fixing whatever the new version reports.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]

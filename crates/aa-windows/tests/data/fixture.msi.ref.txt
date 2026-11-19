@@ -1,0 +1,63 @@
+== Property
+Property	Value
+s72	l0
+Property	Property
+UpgradeCode	{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}
+ALLUSERS	1
+Manufacturer	Fixture Works
+ProductLanguage	1033
+ProductCode	{11111111-2222-3333-4444-555555555555}
+ProductName	Fixture MSI
+ProductVersion	3.2.1
+== File
+File	Component_	FileName	FileSize	Version	Language	Attributes	Sequence
+s72	s72	l255	i4	S72	S20	I2	i4
+File	File
+HelloExe	MainExe	hello.exe	18432			512	1
+Readme	Data	readme.txt	16			512	2
+Payload	Data	payload.bin	20000			512	3
+== Component
+Component	ComponentId	Directory_	Attributes	Condition	KeyPath
+s72	S38	s72	i2	S255	S72
+Component	Component
+MainExe	{11111111-0000-0000-0000-000000000001}	INSTALLDIR	0		HelloExe
+Data	{11111111-0000-0000-0000-000000000002}	DataDir	0		Readme
+== Directory
+Directory	Directory_Parent	DefaultDir
+s72	S72	l255
+Directory	Directory
+ProgramMenuFolder	TARGETDIR	.
+DataDir	INSTALLDIR	data
+INSTALLDIR	ProgramFilesFolder	Fixture MSI
+ProgramFilesFolder	TARGETDIR	.
+TARGETDIR		SourceDir
+== Registry
+Registry	Root	Key	Name	Value	Component_
+s72	i2	l255	L255	L0	s72
+Registry	Registry
+reg6EE358079EB7B88D2F628E031DDF4821	2	Software\Microsoft\Windows\CurrentVersion\Run	FixtureMsi	[INSTALLDIR]hello.exe --autostart	MainExe
+== ServiceInstall
+ServiceInstall	Name	DisplayName	ServiceType	StartType	ErrorControl	LoadOrderGroup	Dependencies	StartName	Password	Arguments	Component_	Description
+s72	s255	L255	i4	i4	i4	S255	S255	S255	S255	S255	s72	L255
+ServiceInstall	ServiceInstall
+Svc	FixtureMsiSvc	Fixture MSI Service	16	2	1			LocalSystem		--service	MainExe	
+== CustomAction
+Action	Type	Source	Target	ExtendedType
+s72	i2	S72	S255	I4
+CustomAction	Action
+RunAfter	3154	HelloExe	--first-run	
+== Shortcut
+Shortcut	Directory_	Name	Component_	Target	Arguments	Description	Hotkey	Icon_	IconIndex	ShowCmd	WkDir	DisplayResourceDLL	DisplayResourceId	DescriptionResourceDLL	DescriptionResourceId
+s72	s72	l128	s72	s72	S255	L255	I2	S72	I2	I2	S72	S255	I2	S255	I2
+Shortcut	Shortcut
+StartMenu	ProgramMenuFolder	Fixture MSI	MainExe	Main											
+== Environment
+== LaunchCondition
+Condition	Description
+s255	l255
+LaunchCondition	Condition
+VersionNT >= 601	Windows 7 or later is required.
+== files
+86999324511ad84c69f01938832689a50bebda2d4c65061db2e73b4b0857e831  ./Program Files/Fixture MSI/data/payload.bin
+1d33ebc7ade8e21661d0c7c43a5ecebb2818243565956ea618299ee15446deba  ./Program Files/Fixture MSI/data/readme.txt
+afa842ca77436006bf1376f7f2ba7dadb6f13a317c9f061d10c646eb3db03a38  ./Program Files/Fixture MSI/hello.exe

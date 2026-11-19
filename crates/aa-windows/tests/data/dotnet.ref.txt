@@ -1,0 +1,32 @@
+Assembly Table
+Name:          dotnet
+Hash Algoritm: 0x00008004
+Version:       2.3.4.5
+Flags:         0x00000000
+PublicKey:     BlobPtr (0x00000000)
+	Zero sized public key
+Culture:       
+
+AssemblyRef Table
+1: Version=4.0.0.0
+	Name=mscorlib
+	Flags=0x00000000
+	Public Key:
+0x00000000: B7 7A 5C 56 19 34 E0 89 
+	Zero sized hash value
+2: Version=4.0.0.0
+	Name=System
+	Flags=0x00000000
+	Public Key:
+0x00000000: B7 7A 5C 56 19 34 E0 89 
+	Zero sized hash value
+
+ImplMap Table (1..2)
+1: native int class Fixture.Net.Native::VirtualAllocEx(native int, native int, unsigned int32, unsigned int32, unsigned int32) 256 (VirtualAllocEx kernel32.dll)
+2: int32 class Fixture.Net.Native::Box(native int, string, string, unsigned int32) 260 (MessageBoxW user32)
+Typedef Table
+1: (null) (flist=1, mlist=1, flags=0x0, extends=0x0)
+2: Fixture.Net.Native (flist=1, mlist=1, flags=0x100180, extends=0x15)
+3: Fixture.Net.Program (flist=1, mlist=3, flags=0x100180, extends=0x15)
+4: Fixture.Net.Protection.ConfusedByAttribute (flist=1, mlist=4, flags=0x100100, extends=0x11)
+

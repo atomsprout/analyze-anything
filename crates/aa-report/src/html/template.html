@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="{{html_lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  This file is complete in itself and never contacts anything. The policy below backs that up:
+  nothing may be loaded from anywhere (default-src 'none'), and the only style sheet and script
+  that may run are the two shipped in this file, named by their SHA-256. Text from the analyzed
+  input is escaped wherever it appears; if some of it did get through as markup, the policy
+  would still refuse to run it or let it fetch anything. Hashes, unlike a nonce, are the same on
+  every render and work when the file is opened from disk. Inline style attributes are not
+  allowed, and the page uses none.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src '{{style_hash}}'; script-src '{{script_hash}}'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="{{generator}}">
+<title>{{title}}</title>
+<style>{{style}}</style>
+</head>
+<body>
+<div id="static">
+<noscript><p class="note">{{noscript}}</p></noscript>
+<p class="note" id="script-failed" hidden>{{script_failed}}</p>
+{{static}}
+</div>
+<div id="app" hidden></div>
+<script type="application/json" id="report-data">{{report}}</script>
+<script type="application/json" id="view-data">{{view}}</script>
+<script>{{script}}</script>
+</body>
+</html>

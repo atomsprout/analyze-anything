@@ -1,0 +1,94 @@
+# 使用说明
+
+`aa` 对文件或文件夹做纯静态分析，输出一份带证据的报告。被分析的输入只会被读取，不会被执行、安装或加载。
+
+## 构建
+
+```
+cargo build --release            # 带 PDF，约 49 MB
+cargo build --release --no-default-features   # 不带 PDF，约 10 MB
+```
+
+需要 Rust 1.90 或更新版本。产物是 `target/release/aa`。
+
+## 分析
+
+```
+aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang zh|en]
+```
+
+默认写出 `report.json`、`report.html`、`report.pdf`、`report.md`、`report.txt` 和 `manifest.json`。
+
+| 格式 | 文件 | 用途 |
+|---|---|---|
+| `json` | `report.json` | 唯一事实来源：完整的文件树、全部结论和证据、局限、规则文案。其他格式都由它渲染 |
+| `html` | `report.html` | 单个自包含文件，可离线打开；可筛选、搜索、浏览文件树、切换中英文 |
+| `pdf` | `report.pdf` | 用于阅读和存档；内容过多时会截断并在截断处说明 |
+| `md` / `txt` | `report.md` / `report.txt` | 纯文本阅读 |
+| `sarif` | `report.sarif` | SARIF 2.1.0，供 CI 和代码扫描平台读取 |
+| `sbom` | `sbom.cdx.json` | CycloneDX 1.5 组件清单 |
+
+限额（防止恶意或超大输入耗尽机器），超出时报告会记为局限：
+
+```
+--max-files <N>            树中最多的文件数（含解包得到的），默认 200000
+--max-depth <N>            最多解包几层嵌套，默认 6
+--max-unpacked-bytes <N>   解包总字节上限，默认 8 GiB
+--max-entry-bytes <N>      单个被解包文件的上限，默认 2 GiB
+--analyzer-timeout <秒>    单个分析器处理单个文件的时间上限，默认 300
+--unpack-timeout <秒>      解开单个容器的时间上限，默认 900
+```
+
+`--fail-on low|medium|high`：存在达到该严重度的结论时以退出码 3 结束，供 CI 使用。
+
+`--rules <文件>`：追加你自己的 YARA 规则（可重复）。规则里的 `meta: severity = "high"`（或 `medium`、`low`、`info`）决定结论的严重度，不写则为低。
+
+`--font <字体文件>`：给 PDF 追加后备字体（可重复），用于内置字体显示不了的文字，例如韩文、阿拉伯文、表情符号。使用后 PDF 的内容也取决于这些字体文件。
+
+## 其他命令
+
+```
+aa render out/report.json -o out2 --format pdf --lang en   # 由已有报告重新渲染，不重新分析
+aa explain out/report.json <结论 ID 的前几位>               # 查看一条结论的全部证据
+aa verify out/                                             # 检查输出文件是否与 manifest.json 一致
+aa inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出），不做分析
+aa selftest                                                # 用内置样本自检：解包、哈希、分析、各格式渲染
+```
+
+`manifest.json` 记录每个输出文件的大小和 SHA-256。`aa verify` 会指出被改动、丢失或多出来的文件。清单本身没有签名：它能发现无意的改动；如果另外保存了清单自己的 SHA-256，也能发现有意的改动。
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 完成 |
+| 1 | 无法运行（输入读不了等），或 `aa verify` 发现不一致 |
+| 2 | 已运行，但分析不完整（原因在报告的“覆盖度与局限”里） |
+| 3 | 有结论达到了 `--fail-on` 指定的严重度 |
+
+## 如何读报告
+
+- **置信度**：“已验证”是直接从文件结构读出或经密码学校验的；“推导”是由已读出的事实按固定规则得出的；“启发式”是规则匹配的猜测，可能误报。
+- **严重度**：“提示”是中性事实，不是问题。低、中、高是每条规则固定的设定，用来排列阅读顺序，不是对输入是否安全的判定。
+- **覆盖度与局限**：列出没能分析的部分和原因（读不了、被加密、超出限额、解包失败等）。“没有发现”和“没有检查”是两回事，后者一定会出现在这一章。
+- **签名**：报告会写明校验了哪些项。根证书是否受信任、证书是否被吊销、Apple 的公证状态都需要联网或系统信任库，本工具不检查，报告里会注明。
+
+## 支持的输入
+
+| 类别 | 格式 |
+|---|---|
+| 通用 | 任意文件、文件夹；zip、tar、7z、gzip、bzip2、xz、zstd（可嵌套） |
+| 原生二进制 | PE（exe / dll / sys）、ELF、Mach-O（含通用二进制） |
+| Apple | `.app` 等 bundle、IPA、DMG（HFS+ / APFS）、pkg；代码签名、entitlements、描述文件、隐私清单 |
+| Windows | Authenticode、版本信息与清单、.NET 程序集、NSIS / Inno Setup / MSI / CAB 安装包、自解压程序、Electron（asar）、MSIX、已安装程序目录 |
+| Android | APK、AAB、XAPK / APKS / APKM；清单、资源、签名 v1–v3.1、DEX、SDK 与加固壳识别 |
+
+已知不支持或只能识别的情况见 [LIMITATIONS.md](LIMITATIONS.md)。
+
+## 模糊测试
+
+需要 nightly 工具链和 `cargo-fuzz`：
+
+```
+cargo +nightly fuzz run analyze fuzz/corpus/analyze crates/*/tests/data
+```

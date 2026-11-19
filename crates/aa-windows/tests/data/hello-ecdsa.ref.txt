@@ -1,0 +1,54 @@
+PE checksum   : 0000DE54
+
+
+Signature Index: 0  (Primary Signature)
+
+Message digest algorithm  : SHA384
+Current message digest    : E9177534620A85FF6745897A6248565F7126D6F7415D4FE789136351112EAE62CA6FBCCD4F191F331C695F7366B956B0 
+Calculated message digest : E9177534620A85FF6745897A6248565F7126D6F7415D4FE789136351112EAE62CA6FBCCD4F191F331C695F7366B956B0 
+
+Signer's certificate:
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture EC Signing
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 366EBA3F8E949B8EDF8C83DADEE898E0811BF6E3
+		Certificate expiration date:
+			notBefore : Nov 18 23:00:45 2026 GMT
+			notAfter : Nov 15 23:00:45 2036 GMT
+
+Message digest algorithm: SHA384
+
+Authenticated attributes:
+	Signing time: Nov 19 23:00:46 2026 GMT
+	Microsoft Individual Code Signing purpose
+	Message digest: AE1D95B551C7C13E056380E4AE4B8E70CB6FA71630756790DAB57FC3873EC66CB78968F39DCC1ABA55FEBCEE50C1C75A 
+
+CAfile: ca.crt
+TSA's certificates file: ca.crt
+
+Timestamp is not available
+
+Signing certificate chain verified using:
+	------------------
+	Signer #1:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 15A2272F0B9C60D90D9238D71E52A24AFAF8326E
+		Certificate expiration date:
+			notBefore : Nov 18 23:00:45 2026 GMT
+			notAfter : Nov 13 23:00:45 2046 GMT
+
+	------------------
+	Signer #0:
+		Subject: /C=XX/O=Fixture Works/CN=Fixture EC Signing
+		Issuer : /C=XX/O=Fixture Works/CN=Fixture Test Root CA
+		Serial : 366EBA3F8E949B8EDF8C83DADEE898E0811BF6E3
+		Certificate expiration date:
+			notBefore : Nov 18 23:00:45 2026 GMT
+			notAfter : Nov 15 23:00:45 2036 GMT
+
+Signature verification: ok
+
+Number of verified signatures: 1
+Succeeded
