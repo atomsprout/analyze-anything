@@ -20,7 +20,7 @@ const TINY_DMG: &[u8] = include_bytes!("../tests/data/tiny.dmg");
 const APFS_EMPTY_DMG: &[u8] = include_bytes!("../tests/data/apfs-empty.dmg");
 const LAUNCH_AT_LOGIN: &[u8] = include_bytes!("../tests/data/LaunchAtLogin.macho");
 const RECTANGLE_SIGNATURE: &[u8] = include_bytes!("../tests/data/rectangle-arm64.codesig");
-const PKG_HEAD: &[u8] = include_bytes!("../tests/data/macfuse-pkg-head.xar");
+const PKG_HEAD: &[u8] = include_bytes!("../tests/data/node-pkg-head.xar");
 const PROFILE: &[u8] = include_bytes!("../tests/data/synthetic.mobileprovision");
 
 fn artifact(path: &str, bytes: &[u8], parent: Option<&str>) -> Artifact {
@@ -314,7 +314,7 @@ fn unsigned_package_with_scripts() {
 
 #[test]
 fn real_package_signature_verifies_and_tampering_is_seen() {
-    // The first 15 KB of "Install macFUSE.pkg": header, table of contents, checksum, signatures.
+    // The first 15 KB of the Node.js installer package: header, table of contents, checksum, signatures.
     let fact = crate::inspect::xar_fact(PKG_HEAD).expect("xar");
     assert_eq!(fact["toc_checksum"]["matches"], true);
     assert_eq!(fact["is_package"], true);
@@ -324,7 +324,7 @@ fn real_package_signature_verifies_and_tampering_is_seen() {
         assert_eq!(signature["signature"], "valid", "{signature}");
         assert_eq!(signature["anchored"], true);
         assert_eq!(signature["signing_type"], "developer-id-installer");
-        assert_eq!(signature["chain"]["certificates"][0]["common_name"], "Developer ID Installer: Benjamin Fleischer (3T5GSNBU6W)");
+        assert_eq!(signature["chain"]["certificates"][0]["common_name"], "Developer ID Installer: Node.js Foundation (HX7739G8FX)");
         assert_eq!(signature["chain"]["anchor"], "known root: Apple Root CA");
     }
     let (_, out) = analyze_with(&[("m.pkg", PKG_HEAD.to_vec())], |a| a.kind = Some("xar".into()));

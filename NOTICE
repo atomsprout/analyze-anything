@@ -29,8 +29,8 @@ by the tests only, not part of the program):
     (https://github.com/rxhanson/Rectangle), MIT licence.
   - LaunchAtLogin.macho: a helper program from Stats
     (https://github.com/exelban/stats), MIT licence.
-  - macfuse-pkg-head.xar: the first 15,103 bytes of the macFUSE 4.4.3
-    installer package (https://macfuse.github.io): its table of contents and
-    signatures, with no program code or file data.
+  - node-pkg-head.xar: the first 14,849 bytes of the Node.js 22.11.0
+    installer package (https://nodejs.org), MIT licence: its table of contents
+    and signatures, with no program code or file data.
 
 Every other test sample is built by scripts in this repository.
