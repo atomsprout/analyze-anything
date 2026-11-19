@@ -42,11 +42,11 @@ impl Format {
     }
 }
 
-/// Language of the human-readable outputs.
+/// Language of the human-readable outputs. English unless another is asked for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Lang {
-    #[default]
     Zh,
+    #[default]
     En,
 }
 

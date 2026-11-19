@@ -30,7 +30,7 @@ pub struct AppState {
     pub initial: Mutex<Option<PathBuf>>,
     /// Set when the app was started to check itself; see `selftest.rs`.
     pub selftest: Option<crate::selftest::Plan>,
-    /// True when the menus and dialogs are in English, false for Chinese.
+    /// True when the menus and dialogs are in English (the default), false for Chinese.
     pub english: std::sync::atomic::AtomicBool,
 }
 
@@ -51,7 +51,7 @@ impl AppState {
             reports: Mutex::new(Vec::new()),
             initial: Mutex::new(None),
             selftest,
-            english: std::sync::atomic::AtomicBool::new(false),
+            english: std::sync::atomic::AtomicBool::new(true),
         };
         if let Some(path) = initial {
             state.allow(&path);

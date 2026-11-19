@@ -14,10 +14,12 @@ cargo build --release --no-default-features   # 不带 PDF，约 10 MB
 ## 分析
 
 ```
-aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang zh|en]
+aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang en|zh]
 ```
 
 默认写出 `report.json`、`report.html`、`report.pdf`、`report.md`、`report.txt` 和 `manifest.json`。
+
+报告默认是英文；`--lang zh` 输出中文。`report.html` 里两种语言都有，打开后可以切换；JSON、SARIF、CycloneDX 是数据，不受语言影响。桌面版同样默认英文，在“View”菜单里切换，选择会记住。
 
 | 格式 | 文件 | 用途 |
 |---|---|---|

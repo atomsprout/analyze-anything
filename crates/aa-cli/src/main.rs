@@ -57,7 +57,7 @@ enum Command {
         /// The finding's id, or its first characters as the readable reports print them
         id: String,
         /// Language of the text
-        #[arg(long, default_value = "zh")]
+        #[arg(long, default_value = "en")]
         lang: LangArg,
     },
     /// Check that the files in an output folder are the ones the run wrote, unchanged
@@ -75,7 +75,7 @@ enum Command {
         #[arg(long)]
         json: bool,
         /// Language of the text
-        #[arg(long, default_value = "zh")]
+        #[arg(long, default_value = "en")]
         lang: LangArg,
         /// Exit with code 3 when the reports differ
         #[arg(long)]
@@ -114,7 +114,7 @@ struct Output {
     #[arg(short, long, value_delimiter = ',', default_value = DEFAULT_FORMATS)]
     format: Vec<FormatArg>,
     /// Language of the readable formats
-    #[arg(long, default_value = "zh")]
+    #[arg(long, default_value = "en")]
     lang: LangArg,
     /// A font file for PDF text the built-in fonts cannot show (other scripts, emoji); repeatable
     #[arg(long)]

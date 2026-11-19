@@ -28,11 +28,11 @@ async function start(): Promise<void> {
   const dialogs = el("div", { class: "dialogs" });
   root.append(stage, toasts, dialogs);
 
-  const systemLang: Lang = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
   const app: App = {
     backend,
     info: await backend.appInfo(),
-    lang: remembered("lang", ["zh", "en"] as const, systemLang),
+    // English until the user chooses otherwise in the View menu; the choice is remembered.
+    lang: remembered("lang", ["zh", "en"] as const, "en"),
     theme: remembered("theme", ["system", "light", "dark"] as const, "system"),
     t: (key, values) => word(app.lang, key, values),
     toast: toaster(toasts),

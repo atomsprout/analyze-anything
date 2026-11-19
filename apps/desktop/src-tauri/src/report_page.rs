@@ -23,8 +23,8 @@ pub fn serve(app: &tauri::AppHandle, request: &Request<Vec<u8>>) -> Response<Vec
     let uri = request.uri();
     let id = uri.path().trim_matches('/');
     let lang = match uri.query().unwrap_or("").split('&').find_map(|pair| pair.strip_prefix("lang=")) {
-        Some("en") => Lang::En,
-        _ => Lang::Zh,
+        Some("zh") => Lang::Zh,
+        _ => Lang::En,
     };
     let state = app.state::<AppState>();
     let report = match state.report(id) {

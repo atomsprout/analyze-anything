@@ -23,7 +23,7 @@ const MAX_READ: u64 = 256 * 1024;
 type CommandResult<T> = Result<T, String>;
 
 fn language(lang: &str) -> Lang {
-    if lang == "en" { Lang::En } else { Lang::Zh }
+    if lang == "zh" { Lang::Zh } else { Lang::En }
 }
 
 #[derive(Serialize)]
@@ -282,7 +282,7 @@ async fn compare_reports(state: State<'_, AppState>, before: String, after: Stri
 /// Puts the menu bar and the dialogs in Chinese (`zh`) or English (`en`).
 #[tauri::command]
 fn set_menu_language(app: AppHandle, state: State<'_, AppState>, lang: String) -> CommandResult<()> {
-    let english = lang == "en";
+    let english = lang != "zh";
     state.english.store(english, Ordering::Relaxed);
     let built = menu::build(&app, english).map_err(|e| e.to_string())?;
     app.set_menu(built).map(|_| ()).map_err(|e| e.to_string())
@@ -319,7 +319,7 @@ pub fn run(initial: Option<PathBuf>) {
             run::clean_scratch(&scratch);
             let program = Program { path: std::env::current_exe()?, arguments: vec![WORKER_FLAG.to_string()], scratch_root: scratch };
             app.manage(AppState::new(History::open(&history)?, program, initial, selftest::Plan::from_environment()));
-            app.set_menu(menu::build(app.handle(), false)?)?;
+            app.set_menu(menu::build(app.handle(), true)?)?;
             Ok(())
         })
         .on_menu_event(|app, event| {
