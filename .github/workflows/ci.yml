@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Lets a branch be checked on all three systems before a pull request exists.
+  workflow_dispatch:
 
 permissions:
   contents: read
