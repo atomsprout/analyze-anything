@@ -17,6 +17,8 @@
 
 ## 等待人工操作
 
+- [ ] **恢复 GitHub Actions 并重跑 CI**：2026-11-19 起组织的 Actions 任务不再启动（“recent account payments have failed or your spending limit needs to be increased”）。在此之前，`v0.1.0` 标签的五平台构建里 Windows x64、macOS x64 / arm64、Linux arm64 的测试全部通过，Linux x64 有一项测试失败（工作进程崩溃时退出码的竞态，已修复）。修复之后的提交没有在 Linux 和 Windows 上跑过测试，只在 macOS 上跑过，并从 macOS 对 Linux x64 和 Windows x64 做过编译检查。账单恢复后重跑 CI，再重新触发标签构建以生成其他平台的草稿发布。
+
 - [ ] **决定命令行的名字**：`aa` 与 macOS 自带的 `/usr/bin/aa`（Apple Archive）重名，Homebrew 安装时改成了 `analyze-anything`。是否在所有平台统一改名（包括 `--version` 的输出、CI 的打包名、文档），需要定一下。
 
 - [ ] **桌面版的三处人工检查**：原生菜单和快捷键、拖放、系统的打开 / 保存对话框（见 [DESKTOP.md](DESKTOP.md)）。其余流程由应用的自检模式在真实窗口里跑过。
