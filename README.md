@@ -38,7 +38,7 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-Released builds exist for Apple silicon Macs only. The code builds and its tests pass on Linux and Windows in CI, but nothing has been tried by hand there yet.
+Released builds exist for Apple silicon Macs only, and that is where the current code was tested. Linux and Windows are meant to work and passed their tests at an earlier commit, but the current code has not been run there: see [docs/TODO.md](docs/TODO.md).
 
 ## Use
 

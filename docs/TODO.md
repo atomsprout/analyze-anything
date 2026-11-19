@@ -31,6 +31,9 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Waiting for a person
 
+- [ ] **Get CI running again.** GitHub Actions does not start jobs for this organization ("recent account payments have failed or your spending limit needs to be increased"), for the public repository too. The last full run on Linux, macOS and Windows was at the first `v0.1.0` tag; one Linux test failed there and was fixed since. Everything after that, the renamed command and the AI interpretation included, was tested on macOS only, plus a compile check for Linux x64 and Windows x64 from the Mac at an earlier commit. Once billing is settled: run the CI workflow on `main`, then the Release workflow for the other platforms.
+- [ ] The website is published by hand with `tools/site/publish.sh` for the same reason; a workflow can take that over.
+
 - [ ] **Three manual checks of the desktop app**: native menus and shortcuts, drag and drop, the system's open and save dialogs (see [DESKTOP.md](DESKTOP.md)). Everything else is exercised by the app's self-check in its real window.
 - [ ] **Read a real report through**: where `report.html` and `report.pdf` are wordy or lack something takes a person to judge. How much each chapter says, and how many findings of a kind are listed before they are merged (10 now), wait for that.
 - [ ] **Try it on a Windows machine** (postponed): run a real installer and an installed program folder; compare the signature findings, the MSI ones included, with `sigcheck` or `signtool verify /pa /v`.
