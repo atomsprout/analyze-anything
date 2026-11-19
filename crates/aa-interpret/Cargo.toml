@@ -14,7 +14,7 @@ workspace = true
 aa-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
+toml = { version = "0.9", default-features = false, features = ["parse", "serde", "display"] }
 ureq = { version = "3", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]

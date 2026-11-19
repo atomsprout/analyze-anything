@@ -39,6 +39,14 @@ enum Command {
         /// A file of YARA rules to match against every file, in addition to the built-in checks
         #[arg(long)]
         rules: Vec<PathBuf>,
+        /// Also have the AI you set up explain the report (see `analyze-anything ai`)
+        #[cfg(feature = "ai")]
+        #[arg(long)]
+        ai: bool,
+        /// Do not, even when the configuration says to after every analysis
+        #[cfg(feature = "ai")]
+        #[arg(long, conflicts_with = "ai")]
+        no_ai: bool,
     },
     /// Print the tree of files as JSON: what the input is and what is inside it, without analysis
     Inspect {
@@ -87,18 +95,33 @@ enum Command {
         #[arg(long)]
         fail_on_difference: bool,
     },
-    /// Ask a language model to explain a report in plain words (optional; off until configured)
+    /// Have a language model explain a report in plain words (optional; off until set up)
     ///
-    /// Sends a digest of the report's findings, never the analyzed files, to the model set in the
-    /// configuration file or by the flags, and keeps only statements that cite findings.
+    /// The model is shown a brief of the report and may look things up in it; the analyzed files
+    /// are never sent. Only statements that cite findings of the report are kept.
     #[cfg(feature = "ai")]
     Interpret(InterpretArgs),
+    /// Choose who does the AI interpretation, or show what is set up
+    #[cfg(feature = "ai")]
+    Ai {
+        #[command(subcommand)]
+        choice: Option<AiChoice>,
+    },
+    /// Serve a report's read-only tools to an AI agent over standard input and output (MCP)
+    #[cfg(feature = "ai")]
+    Mcp {
+        /// A report.json written by `analyze-anything analyze`
+        report: PathBuf,
+        /// Language of the text
+        #[arg(long, default_value = "en")]
+        lang: LangArg,
+    },
 }
 
 #[cfg(feature = "ai")]
 #[derive(clap::Args)]
 struct InterpretArgs {
-    /// A report.json written by `analyze-anything analyze`
+    /// A report.json written by `analyze-anything analyze`, or the folder it is in
     report: PathBuf,
     /// Folder to write ai.json and ai.md into [default: the report's folder]
     #[arg(short, long)]
@@ -106,24 +129,48 @@ struct InterpretArgs {
     /// Language of the interpretation
     #[arg(long, default_value = "en")]
     lang: LangArg,
-    /// The kind of service to ask
+    #[command(flatten)]
+    how: AiFlags,
+    /// Print what the model would be shown first, and send nothing
+    #[arg(long)]
+    dry_run: bool,
+}
+
+/// Settings of the AI interpretation for this run, over those of the configuration file.
+#[cfg(feature = "ai")]
+#[derive(clap::Args, Default)]
+struct AiFlags {
+    /// Who runs the conversation with the model
+    #[arg(long)]
+    engine: Option<EngineArg>,
+    /// The kind of model service, for the api engine
     #[arg(long)]
     provider: Option<ProviderArg>,
     /// The model to ask [default for anthropic: claude-opus-5-5]
     #[arg(long)]
     model: Option<String>,
-    /// Address of the service, for a gateway or a model server of your own
+    /// Address of the model service, for a gateway or a model server of your own
     #[arg(long)]
     base_url: Option<String>,
-    /// Name of the environment variable that holds the API key
+    /// Name of an environment variable that holds the API key
     #[arg(long)]
     api_key_env: Option<String>,
-    /// Configuration file to read instead of the usual one
+    /// Configuration file to read instead of ~/.analyze-anything/config.toml
     #[arg(long)]
     config: Option<PathBuf>,
-    /// Print what would be sent, and send nothing
-    #[arg(long)]
-    dry_run: bool,
+}
+
+#[cfg(feature = "ai")]
+#[derive(Clone, Copy, ValueEnum)]
+enum EngineArg {
+    /// This program, with an API key
+    Api,
+    /// The Claude Code command line, with the account it is signed in to
+    Claude,
+    /// The Codex command line, with the account it is signed in to
+    Codex,
+    /// A command of your own, set in the configuration file
+    Command,
 }
 
 #[cfg(feature = "ai")]
@@ -133,6 +180,65 @@ enum ProviderArg {
     Anthropic,
     /// Any service that speaks OpenAI's chat-completions protocol
     OpenaiCompatible,
+}
+
+#[cfg(feature = "ai")]
+#[derive(Subcommand)]
+enum AiChoice {
+    /// Hand it to Claude Code (the `claude` command); no API key needed
+    Claude {
+        /// A model for Claude Code to use instead of its own choice
+        #[arg(long)]
+        model: Option<String>,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Hand it to Codex (the `codex` command); no API key needed
+    Codex {
+        /// A model for Codex to use instead of its own choice
+        #[arg(long)]
+        model: Option<String>,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Talk to a model service directly, with an API key
+    Api {
+        /// The kind of service
+        #[arg(long)]
+        provider: ProviderArg,
+        /// The model to ask [default for anthropic: claude-opus-5-5]
+        #[arg(long)]
+        model: Option<String>,
+        /// Address of the service, for a gateway or a model server of your own
+        #[arg(long)]
+        base_url: Option<String>,
+        /// Name of an environment variable that holds the API key, instead of keeping the key in the file
+        #[arg(long)]
+        api_key_env: Option<String>,
+        /// Read the API key from standard input and keep it in the configuration file
+        #[arg(long)]
+        api_key_stdin: bool,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Hand it to a program of your own: the command and its arguments follow `--`
+    Command {
+        /// The program and its arguments; {prompt_file}, {mcp_config} and {report} are filled in
+        #[arg(last = true, required = true)]
+        command: Vec<String>,
+        #[command(flatten)]
+        common: AiCommon,
+    },
+    /// Turn the AI interpretation off again
+    Off,
+}
+
+#[cfg(feature = "ai")]
+#[derive(clap::Args)]
+struct AiCommon {
+    /// Interpret after every analysis, without `--ai`
+    #[arg(long)]
+    auto: bool,
 }
 
 #[derive(clap::Args)]
@@ -395,65 +501,218 @@ fn verify(dir: &Path) -> Result<u8, String> {
 }
 
 #[cfg(feature = "ai")]
-fn interpret(args: InterpretArgs) -> Result<u8, String> {
-    use aa_interpret::config::{self, Overrides};
-    let report = load(&args.report)?;
-    let file = match &args.config {
-        // A file that was named must be there; the usual one may be absent.
-        Some(path) if !path.is_file() => return Err(format!("cannot read {}: no such file", path.display())),
-        Some(path) => config::read_file(path)?,
-        None => config::default_path().map(|path| config::read_file(&path)).transpose()?.unwrap_or_default(),
-    };
-    let flags = Overrides {
-        provider: args.provider.map(|provider| match provider {
+mod ai {
+    //! The commands of the optional AI interpretation.
+
+    use super::*;
+    use aa_interpret::config::{self, Engine, Overrides};
+
+    fn config_path(named: &Option<PathBuf>) -> Result<PathBuf, String> {
+        match named {
+            // A file that was named must be there; the usual one may be absent.
+            Some(path) if !path.is_file() => Err(format!("cannot read {}: no such file", path.display())),
+            Some(path) => Ok(path.clone()),
+            None => config::default_path().ok_or_else(|| "cannot tell where the home folder is; pass --config".to_string()),
+        }
+    }
+
+    fn language(lang: LangArg) -> aa_interpret::Language {
+        match lang {
+            LangArg::Zh => aa_interpret::Language::Zh,
+            LangArg::En => aa_interpret::Language::En,
+        }
+    }
+
+    fn provider(provider: ProviderArg) -> aa_interpret::Provider {
+        match provider {
             ProviderArg::Anthropic => aa_interpret::Provider::Anthropic,
             ProviderArg::OpenaiCompatible => aa_interpret::Provider::OpenaiCompatible,
-        }),
-        model: args.model,
-        base_url: args.base_url,
-        api_key_env: args.api_key_env,
-        ..Overrides::default()
-    };
-    let settings = config::resolve(file, flags)?;
-    let language = match args.lang {
-        LangArg::Zh => aa_interpret::Language::Zh,
-        LangArg::En => aa_interpret::Language::En,
-    };
-    if args.dry_run {
-        let (instructions, data) = aa_interpret::preview(&report, &settings, language);
-        println!("To: {} ({}, model {})\n\n{instructions}\n\n{data}", settings.base_url, settings.provider.id(), settings.model);
-        return Ok(0);
-    }
-    let key = std::env::var(&settings.api_key_env).ok().filter(|key| !key.trim().is_empty());
-    eprintln!("asking {} at {} …", settings.model, settings.base_url);
-    let result = aa_interpret::interpret(&report, &settings, language, key.as_deref(), &aa_interpret::Net)?;
-    let text = aa_interpret::markdown(&result);
-    let dir = match args.out {
-        Some(dir) => dir,
-        None => args.report.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new(".")).to_path_buf(),
-    };
-    std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    let files = [(aa_interpret::JSON_NAME, aa_interpret::json(&result)), (aa_interpret::MARKDOWN_NAME, text.clone().into_bytes())];
-    for (name, bytes) in &files {
-        let path = dir.join(name);
-        std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-        eprintln!("{}", path.display());
-    }
-    // In a folder `analyze-anything analyze` wrote, list the new files so that `analyze-anything verify` still accepts it.
-    if let Ok(mut listed) = manifest::Manifest::load(&dir) {
-        for (name, _) in &files {
-            listed.add(&dir, name).map_err(|e| e.to_string())?;
         }
-        let path = dir.join(manifest::MANIFEST_NAME);
-        std::fs::write(&path, listed.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
     }
-    print!("{text}");
-    Ok(0)
+
+    /// True when the configuration says to interpret after every analysis.
+    pub fn automatic() -> bool {
+        config::default_path().and_then(|path| config::read_file(&path).ok()).and_then(|file| file.auto).unwrap_or(false)
+    }
+
+    fn settings(flags: &AiFlags) -> Result<aa_interpret::Settings, String> {
+        let path = config_path(&flags.config)?;
+        let file = config::read_file(&path)?;
+        if file.api_key.is_some() && config::readable_by_others(&path) {
+            eprintln!("warning: {} holds an API key and other users of this machine can read it; `chmod 600` it", path.display());
+        }
+        let overrides = Overrides {
+            engine: flags.engine.map(|engine| match engine {
+                EngineArg::Api => Engine::Api,
+                EngineArg::Claude => Engine::Claude,
+                EngineArg::Codex => Engine::Codex,
+                EngineArg::Command => Engine::Command,
+            }),
+            provider: flags.provider.map(provider),
+            model: flags.model.clone(),
+            base_url: flags.base_url.clone(),
+            api_key_env: flags.api_key_env.clone(),
+            ..Overrides::default()
+        };
+        config::resolve(file, overrides, &|name| std::env::var(name).ok())
+    }
+
+    /// Interprets `report`, which is the file at `path`, and writes ai.json and ai.md into `dir`.
+    pub fn write(report: &Report, path: &Path, dir: &Path, lang: LangArg, flags: &AiFlags) -> Result<(), String> {
+        let settings = settings(flags)?;
+        let live = std::io::stderr().is_terminal();
+        eprintln!("asking {} …", settings.describe());
+        let mut on_step = |step: &str| {
+            let shown: String = step.chars().take(100).collect();
+            if live {
+                eprint!("\r\x1b[K  {shown}");
+            }
+        };
+        let program = std::env::current_exe().map_err(|e| format!("cannot tell where this program is: {e}"))?;
+        // A program that is handed the work starts elsewhere; it needs the whole path.
+        let report_path = std::fs::canonicalize(path).map_err(|e| format!("cannot find {}: {e}", path.display()))?;
+        let context = aa_interpret::Context {
+            report_path: &report_path,
+            program: &program,
+            transport: &aa_interpret::Net,
+            runner: &aa_interpret::Processes,
+            on_step: &mut on_step,
+        };
+        let result = aa_interpret::interpret(report, &settings, language(lang), context);
+        if live {
+            eprint!("\r\x1b[K");
+        }
+        let result = result?;
+        let text = aa_interpret::markdown(&result);
+        std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+        let files = [(aa_interpret::JSON_NAME, aa_interpret::json(&result)), (aa_interpret::MARKDOWN_NAME, text.into_bytes())];
+        for (name, bytes) in &files {
+            let path = dir.join(name);
+            std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+            println!("{}", path.display());
+        }
+        // In a folder an analysis wrote, list the new files so that `verify` still accepts it.
+        if let Ok(mut listed) = manifest::Manifest::load(dir) {
+            for (name, _) in &files {
+                listed.add(dir, name).map_err(|e| e.to_string())?;
+            }
+            let path = dir.join(manifest::MANIFEST_NAME);
+            std::fs::write(&path, listed.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+        }
+        Ok(())
+    }
+
+    pub fn interpret(args: InterpretArgs) -> Result<u8, String> {
+        let path = if args.report.is_dir() { args.report.join("report.json") } else { args.report.clone() };
+        let report = load(&path)?;
+        if args.dry_run {
+            let (instructions, brief) = aa_interpret::preview(&report, language(args.lang));
+            println!("{instructions}\n\n{brief}");
+            return Ok(0);
+        }
+        let dir = match &args.out {
+            Some(dir) => dir.clone(),
+            None => path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new(".")).to_path_buf(),
+        };
+        write(&report, &path, &dir, args.lang, &args.how)?;
+        // The interpretation is what was asked for: show it.
+        let text = std::fs::read_to_string(dir.join(aa_interpret::MARKDOWN_NAME)).unwrap_or_default();
+        print!("\n{text}");
+        Ok(0)
+    }
+
+    pub fn serve(report: &Path, lang: LangArg) -> Result<u8, String> {
+        let report = load(report)?;
+        aa_interpret::mcp::serve(&report, language(lang), std::io::stdin().lock(), std::io::stdout().lock()).map_err(|e| e.to_string())?;
+        Ok(0)
+    }
+
+    /// Shows or changes who does the interpretation.
+    pub fn choose(choice: Option<AiChoice>) -> Result<u8, String> {
+        let path = config_path(&None)?;
+        let Some(choice) = choice else {
+            let file = config::read_file(&path)?;
+            match config::resolve(file.clone(), Overrides::default(), &|name| std::env::var(name).ok()) {
+                Ok(settings) => {
+                    println!("AI interpretation: {} (engine: {})", settings.describe(), settings.engine().id());
+                    println!("after every analysis: {}", if file.auto == Some(true) { "yes" } else { "no, only with --ai" });
+                }
+                Err(problem) if file == Overrides::default() => println!("AI interpretation: off.\n{problem}"),
+                Err(problem) => println!("AI interpretation: set up, but it cannot run: {problem}"),
+            }
+            println!("configuration file: {}", path.display());
+            return Ok(0);
+        };
+        let auto = |common: &AiCommon| common.auto.then_some(true);
+        let settings = match choice {
+            AiChoice::Off => {
+                if path.is_file() {
+                    config::write_file(&path, &Overrides::default())?;
+                }
+                println!("AI interpretation is off.");
+                return Ok(0);
+            }
+            AiChoice::Claude { model, common } => {
+                Overrides { engine: Some(Engine::Claude), model, auto: auto(&common), ..Overrides::default() }
+            }
+            AiChoice::Codex { model, common } => {
+                Overrides { engine: Some(Engine::Codex), model, auto: auto(&common), ..Overrides::default() }
+            }
+            AiChoice::Command { command, common } => {
+                Overrides { engine: Some(Engine::Command), command: Some(command), auto: auto(&common), ..Overrides::default() }
+            }
+            AiChoice::Api { provider: kind, model, base_url, api_key_env, api_key_stdin, common } => {
+                let api_key = if api_key_stdin {
+                    if std::io::stdin().is_terminal() {
+                        eprint!("API key (it is kept in {}): ", path.display());
+                    }
+                    let mut line = String::new();
+                    std::io::stdin().read_line(&mut line).map_err(|e| format!("cannot read the key: {e}"))?;
+                    let key = line.trim().to_string();
+                    if key.is_empty() {
+                        return Err("no key was given".into());
+                    }
+                    Some(key)
+                } else {
+                    None
+                };
+                Overrides {
+                    engine: Some(Engine::Api),
+                    provider: Some(provider(kind)),
+                    model,
+                    base_url,
+                    api_key,
+                    api_key_env,
+                    auto: auto(&common),
+                    ..Overrides::default()
+                }
+            }
+        };
+        // Say now what would stop it later, a missing key or model for instance; a key may still
+        // be on its way into the environment, so this is a warning and the choice is kept.
+        let check = config::resolve(settings.clone(), Overrides::default(), &|name| std::env::var(name).ok());
+        config::write_file(&path, &settings)?;
+        println!("{}", path.display());
+        match check {
+            Ok(resolved) => println!("AI interpretation: {}. Use it with `analyze-anything <file> --ai`.", resolved.describe()),
+            Err(problem) => println!("saved, but it cannot run yet: {problem}"),
+        }
+        Ok(0)
+    }
 }
 
 fn run(cli: Cli) -> Result<u8, String> {
-    let (report, output) = match cli.command {
-        Command::Analyze { path, output, limits: limit_args, rules } => {
+    let (report, mut output, wants_ai) = match cli.command {
+        Command::Analyze {
+            path,
+            output,
+            limits: limit_args,
+            rules,
+            #[cfg(feature = "ai")]
+            ai,
+            #[cfg(feature = "ai")]
+            no_ai,
+        } => {
             let mut progress = StderrProgress { live: std::io::stderr().is_terminal() };
             let options = Options { limits: limits(&limit_args), ..Options::default() };
             // A run that was killed could not remove what it had unpacked; do it now.
@@ -466,15 +725,29 @@ fn run(cli: Cli) -> Result<u8, String> {
                 registry.analyzers.insert(1, analyzer.into());
             }
             let report = aa_engine::analyze_with(&registry, &path, &options, &mut progress).map_err(|e| e.to_string())?;
-            (report, output)
+            #[cfg(feature = "ai")]
+            let wants_ai = if ai {
+                Some(true)
+            } else if !no_ai && ai::automatic() {
+                Some(false)
+            } else {
+                None
+            };
+            #[cfg(not(feature = "ai"))]
+            let wants_ai: Option<bool> = None;
+            (report, output, wants_ai)
         }
         Command::Inspect { path, limits } => return inspect(&path, &limits),
         Command::Selftest => return selftest::run(),
-        Command::Render { report, output } => (load(&report)?, output),
+        Command::Render { report, output } => (load(&report)?, output, None),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
         Command::Verify { dir } => return verify(&dir),
         #[cfg(feature = "ai")]
-        Command::Interpret(args) => return interpret(args),
+        Command::Interpret(args) => return ai::interpret(args),
+        #[cfg(feature = "ai")]
+        Command::Ai { choice } => return ai::choose(choice),
+        #[cfg(feature = "ai")]
+        Command::Mcp { report, lang } => return ai::serve(&report, lang),
         Command::Diff { before, after, json, lang, fail_on_difference } => {
             let difference = aa_export::diff::diff(&load(&before)?, &load(&after)?);
             if json {
@@ -489,7 +762,25 @@ fn run(cli: Cli) -> Result<u8, String> {
             return Ok(if fail_on_difference && !difference.is_empty() { EXIT_FINDINGS } else { 0 });
         }
     };
+    // The interpretation is made from report.json, so that file is written whatever was asked.
+    if wants_ai.is_some() && !output.format.contains(&FormatArg::Json) {
+        output.format.push(FormatArg::Json);
+    }
     write_outputs(&report, &output)?;
+    #[cfg(feature = "ai")]
+    if let Some(asked) = wants_ai {
+        let dir = out_dir(&report, &output);
+        if let Err(problem) = ai::write(&report, &dir.join("report.json"), &dir, output.lang, &AiFlags::default()) {
+            // The report is written and stands on its own. Asked for with --ai, a failure is
+            // the command's failure; done by the configuration's standing order, it is a warning.
+            if asked {
+                return Err(format!("the report is written, but the AI interpretation failed: {problem}"));
+            }
+            eprintln!("warning: the AI interpretation failed: {problem}");
+        }
+    }
+    #[cfg(not(feature = "ai"))]
+    let _ = wants_ai;
     let threshold = output.fail_on.map(|severity| match severity {
         SeverityArg::Low => Severity::Low,
         SeverityArg::Medium => Severity::Medium,
