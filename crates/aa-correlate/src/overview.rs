@@ -456,7 +456,9 @@ fn apple(tree: &dyn Tree, out: &mut Output) {
     // The bundle's Info.plist is the artifact its identity was read from.
     let join = |rest: &str| if path.is_empty() { rest.to_string() } else { format!("{path}/{rest}") };
     let Some(info) = tree.get(&join("Info.plist")).or_else(|| tree.get(&join("Contents/Info.plist"))) else { return };
-    if let Some(name) = path.rsplit('/').next().filter(|name| !name.is_empty()) {
+    // An app given as the input folder itself has no path in the tree; its name is the input's.
+    if let Some(name) = path.rsplit('/').next().filter(|name| !name.is_empty()).or(Some(tree.input_name()).filter(|name| !name.is_empty()))
+    {
         out.finding(finding("overview.product", Confidence::Verified).param("name", name).evidence(Evidence::whole(info, name)));
     }
     if let Some(id) = text(bundle, "bundle_id") {
@@ -490,7 +492,7 @@ fn apple(tree: &dyn Tree, out: &mut Output) {
         out.finding(
             finding("overview.apple-bundles", Confidence::Derived)
                 .param("total", bundles.len())
-                .param("path", path)
+                .param("path", if path.is_empty() { tree.input_name() } else { path })
                 .evidence(Evidence::whole(info, bundles.len())),
         );
     }

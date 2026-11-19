@@ -257,6 +257,7 @@ fn fat(file: &Artifact, data: &[u8], count: u32, wide: bool, out: &mut Output, p
             .evidence(Evidence::bytes(file, 0, 8 + u64::from(count) * entry_size, archs.join(", "))),
     );
     let mut slices = Vec::new();
+    let first_of_slices = out.findings.len();
     for (cputype, cpusubtype, offset, size, align, _) in &entries {
         let arch = arch_of(*cputype, *cpusubtype);
         let mut value = Map::new();
@@ -289,8 +290,54 @@ fn fat(file: &Artifact, data: &[u8], count: u32, wide: bool, out: &mut Output, p
         value.insert("kind".into(), kind.into());
         slices.push(Value::Object(value));
     }
+    merge_slices(out, first_of_slices);
     out.fact(file, "binary.header", json!({ "format": "macho-fat", "fat64": wide, "slices": count, "archs": archs }));
     out.fact(file, "binary.slices", Value::Array(slices));
+}
+
+/// Joins what the slices of a universal binary have in common. The slices are usually one
+/// program built several times, so most statements hold for all of them; each is then made once
+/// with every architecture in its label (`[x86_64, arm64] `), keeping the evidence of each
+/// slice. A statement that differs between slices stays separate, which is how a difference
+/// shows. Only the findings from index `first` on, those of the slices, are touched.
+fn merge_slices(out: &mut Output, first: usize) {
+    let arch_of = |finding: &aa_core::Finding| {
+        let label = finding.params.get("label")?.as_str()?;
+        Some(label.strip_prefix('[')?.strip_suffix("] ")?.to_string())
+    };
+    let mut merged: Vec<(aa_core::Finding, Vec<String>)> = Vec::new();
+    for finding in out.findings.split_off(first) {
+        let Some(arch) = arch_of(&finding) else {
+            merged.push((finding, Vec::new()));
+            continue;
+        };
+        let same = |known: &aa_core::Finding| {
+            known.rule == finding.rule
+                && known.section == finding.section
+                && known.confidence == finding.confidence
+                && known.severity == finding.severity
+                && known.references == finding.references
+                && known
+                    .params
+                    .iter()
+                    .filter(|(key, _)| key.as_str() != "label")
+                    .eq(finding.params.iter().filter(|(key, _)| key.as_str() != "label"))
+        };
+        match merged.iter_mut().find(|(known, archs)| !archs.is_empty() && !archs.contains(&arch) && same(known)) {
+            Some((known, archs)) => {
+                archs.push(arch);
+                known.evidence.extend(finding.evidence);
+            }
+            None => merged.push((finding, vec![arch])),
+        }
+    }
+    for (mut finding, archs) in merged {
+        if archs.len() > 1 {
+            finding.params.insert("label".into(), format!("[{}] ", archs.join(", ")).into());
+        }
+        // Sealing again gives the joined finding the id of its final content.
+        out.finding(finding);
+    }
 }
 
 struct Segment {
@@ -631,6 +678,7 @@ fn slice(
             .param("bits", bits)
             .param("arch", arch_text.as_str())
             .param("file_type", file_type_text.as_str())
+            .param("file_type_zh", crate::rules::file_type_zh(&file_type_text))
             .evidence(Evidence::bytes(file, base, header_size, hex(rd.bytes(0, header_size).unwrap_or(&[])))),
     );
     if let Some((_, at, platform, minimum, sdk)) = &min_os {
@@ -883,4 +931,60 @@ fn slice(
         facts.push(("exports", symbols_json(exports, false)));
     }
     Some(facts)
+}
+
+#[cfg(test)]
+mod merge_tests {
+    use super::*;
+
+    fn artifact() -> Artifact {
+        Artifact {
+            path: "tool".into(),
+            parent: None,
+            size: 0,
+            digests: None,
+            detected: None,
+            kind: None,
+            entropy: None,
+            unpacked_by: None,
+            facts: Default::default(),
+        }
+    }
+
+    #[test]
+    fn slices_that_agree_are_stated_once_and_differences_stay_apart() {
+        let file = artifact();
+        let mut out = Output::default();
+        let pie = |arch: &str, offset| {
+            finding(Section::Hardening, "binary.macho-pie", Confidence::Verified, Severity::Info)
+                .param("label", format!("[{arch}] "))
+                .evidence(Evidence::bytes(&file, offset, 4, "MH_PIE"))
+        };
+        let min_os = |arch: &str, minos: &str| {
+            finding(Section::Identity, "binary.macho-min-os", Confidence::Verified, Severity::Info)
+                .param("label", format!("[{arch}] "))
+                .param("minos", minos)
+        };
+        out.finding(finding(Section::Identity, "binary.macho-fat", Confidence::Verified, Severity::Info));
+        out.finding(pie("x86_64", 0));
+        out.finding(min_os("x86_64", "10.15"));
+        out.finding(pie("arm64", 4096));
+        out.finding(min_os("arm64", "11.0"));
+        merge_slices(&mut out, 1);
+
+        let rules: Vec<(&str, &str)> =
+            out.findings.iter().map(|f| (f.rule.as_str(), f.params.get("label").and_then(Value::as_str).unwrap_or(""))).collect();
+        assert_eq!(
+            rules,
+            [
+                ("binary.macho-fat", ""),
+                ("binary.macho-pie", "[x86_64, arm64] "),
+                ("binary.macho-min-os", "[x86_64] "),
+                ("binary.macho-min-os", "[arm64] "),
+            ]
+        );
+        // The joined finding keeps the evidence of both slices and has the id of its content.
+        assert_eq!(out.findings[1].evidence.len(), 2);
+        assert_eq!(out.findings[1].id, out.findings[1].clone().seal().id);
+    }
 }

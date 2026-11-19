@@ -690,6 +690,7 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             .param("format", format)
             .param("arch", arch_text)
             .param("file_type", file_type)
+            .param("file_type_zh", crate::rules::file_type_zh(file_type))
             .param("subsystem", subsystem_name(subsystem).map_or_else(|| format!("subsystem {subsystem}"), str::to_string))
             .evidence(Evidence::bytes(file, coff, 20, hex(rd.bytes(coff, 20).unwrap_or(&[]))))
             .evidence(Evidence::bytes(file, opt + 68, 2, subsystem)),

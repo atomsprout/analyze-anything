@@ -71,8 +71,15 @@ const RULES: &[Rule] = &[
         id: "content.private-key",
         title_zh: "内嵌私钥",
         title_en: "Embedded private key",
-        text_zh: "文件中有 {kind} 的起始标记。私钥随程序分发后，任何拿到程序的人都能取出它。",
-        text_en: "The file contains the opening marker of a {kind}. A private key shipped with a program can be extracted by anyone who has the program.",
+        text_zh: "文件中有 {kind} 的起始标记，后面跟着编码的密钥内容。私钥随程序分发后，任何拿到程序的人都能取出它。",
+        text_en: "The file contains the opening marker of a {kind}, followed by encoded key material. A private key shipped with a program can be extracted by anyone who has the program.",
+    },
+    Rule {
+        id: "content.private-key-marker",
+        title_zh: "私钥格式的标记",
+        title_en: "Private key marker",
+        text_zh: "文件中有 {kind} 的起始标记，但后面没有密钥内容。这通常是程序用来识别或生成密钥文件的字符串，不是一把内嵌的私钥。",
+        text_en: "The file holds the opening marker of a {kind}, with no key material after it. This is usually a string the program uses to recognise or write key files, not an embedded key.",
     },
 ];
 

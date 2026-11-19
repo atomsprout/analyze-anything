@@ -663,6 +663,13 @@ fn cdhashes_at(tree: &dyn Tree, bundles: &[Bundle<'_>], path: &str) -> Option<Ve
     )
 }
 
+/// Whether the App Store puts this file into a bundle after the developer signed it, so that it
+/// is never in the seal: the FairPlay licence data of the application and of each nested bundle,
+/// and the purchase receipt of a Mac App Store copy. `relative` is the path inside the bundle.
+fn store_added(relative: &str) -> bool {
+    relative.starts_with("SC_Info/") || relative.contains("/SC_Info/") || relative == "_MASReceipt/receipt"
+}
+
 /// Compares the bundle's files with the digests sealed in `_CodeSignature/CodeResources`.
 /// With `quiet`, only problems are reported. Returns true when files were checked and all matched.
 pub fn resources(tree: &dyn Tree, bundles: &[Bundle<'_>], bundle: &Bundle<'_>, quiet: bool, out: &mut Output) -> bool {
@@ -747,8 +754,7 @@ pub fn resources(tree: &dyn Tree, bundles: &[Bundle<'_>], bundle: &Bundle<'_>, q
             || relative.ends_with(".lproj/locversion.plist")
             || main_executable.as_deref() == Some(artifact.path.as_str())
             || nested_roots.iter().any(|nested| artifact.path.starts_with(nested.as_str()))
-            // iOS seals the application's own folder contents but not these store-added files.
-            || relative.starts_with("SC_Info/");
+            || store_added(relative);
         if !exempt {
             added.push(artifact);
         }
@@ -932,6 +938,8 @@ fn grants(allowed: &Value, wanted: &Value) -> bool {
             })
         }),
         (Value::Array(allowed), single) => allowed.iter().any(|a| grants(a, single)),
+        // A profile may give one pattern (often just `*`) where the binary lists its values.
+        (Value::String(allowed), Value::Array(wanted)) => wanted.iter().all(|w| w.as_str().is_some_and(|w| pattern(allowed, w))),
         // A profile that allows debugging also covers a binary that does not ask for it.
         (Value::Bool(true), Value::Bool(_)) => true,
         _ => allowed == wanted,
@@ -946,6 +954,10 @@ pub fn compare_profile(file: &Artifact, profile_file: &Artifact, profile: &Profi
         for (key, wanted) in entitlements {
             match granted.get(key) {
                 Some(allowed) if grants(allowed, wanted) => {}
+                // Sandbox and hardened-runtime entitlements are the developer's to claim: a
+                // profile does not list them, and the system does not look for them there.
+                // App groups are the exception: they are granted through the profile.
+                None if key.starts_with("com.apple.security.") && key != "com.apple.security.application-groups" => {}
                 _ => beyond.push(key.clone()),
             }
         }
@@ -990,10 +1002,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn files_the_store_adds_are_not_counted_as_added() {
+        assert!(store_added("SC_Info/App.sinf"));
+        assert!(store_added("PlugIns/Share.appex/SC_Info/Share.supp"));
+        assert!(store_added("Frameworks/Flutter.framework/SC_Info/Flutter.supf"));
+        assert!(store_added("_MASReceipt/receipt"));
+        assert!(!store_added("Resources/_MASReceipt/receipt"));
+        assert!(!store_added("Resources/SC_Info.txt"));
+        assert!(!store_added("extra.txt"));
+    }
+
+    #[test]
     fn profile_grants() {
         assert!(grants(&json!("TEAM.*"), &json!("TEAM.com.example.app")));
         assert!(!grants(&json!("TEAM.com.example.*"), &json!("TEAM.org.other")));
         assert!(grants(&json!(["TEAM.*"]), &json!(["TEAM.a", "TEAM.b"])));
+        assert!(grants(&json!("*"), &json!(["CloudKit"])));
+        assert!(!grants(&json!("TEAM.*"), &json!(["OTHER.a"])));
         assert!(!grants(&json!(["TEAM.a"]), &json!(["TEAM.a", "OTHER.b"])));
         assert!(grants(&json!(["development", "production"]), &json!("production")));
         assert!(grants(&json!(true), &json!(false)));

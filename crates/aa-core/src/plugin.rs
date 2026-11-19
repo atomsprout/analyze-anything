@@ -51,6 +51,12 @@ pub trait Tree: Sync {
         &NONE
     }
 
+    /// The name of the file or folder being analyzed, as it was given. Empty when the tree does
+    /// not know (a test double, say).
+    fn input_name(&self) -> &str {
+        ""
+    }
+
     /// The artifact at exactly `path`.
     fn get(&self, path: &str) -> Option<&Artifact> {
         let artifacts = self.artifacts();

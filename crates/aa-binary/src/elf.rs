@@ -709,6 +709,8 @@ fn parse(file: &Artifact, data: &[u8], out: &mut Output, problems: &mut Problems
             .param("endian", endian)
             .param("arch", arch_text)
             .param("file_type", file_type.replace('-', " "))
+            .param("file_type_zh", crate::rules::file_type_zh(&file_type.replace('-', " ")))
+            .param("endian_zh", if rd.le { "小" } else { "大" })
             .evidence(Evidence::bytes(file, 0, 20, hex(data.get(..20).unwrap_or(&[])))),
     );
     if let Some((id, at)) = &build_id {

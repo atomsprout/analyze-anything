@@ -38,6 +38,35 @@ static PRIVATE_KEY: LazyLock<Regex> = LazyLock::new(|| {
         .unwrap_or_else(|error| panic!("invalid built-in pattern: {error}"))
 });
 
+/// Base64 characters that must follow a marker for it to count as a key. The shortest real key
+/// (an Ed25519 key in PKCS#8) encodes to 64 characters.
+const KEY_BODY_MIN: usize = 60;
+
+/// True when base64 data follows a key marker: line breaks (real, or written as `\n` in a
+/// string literal) and PEM header lines may come in between.
+fn key_material_follows(rest: &[u8]) -> bool {
+    let window = &rest[..rest.len().min(4096)];
+    let mut run = 0usize;
+    let mut index = 0;
+    while index < window.len() {
+        let byte = window[index];
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'/' | b'=' => run += 1,
+            b'\r' | b'\n' | b' ' | b'\t' => {}
+            // `\n` or `\r` spelled out, as keys embedded in source code and JSON are.
+            b'\\' if matches!(window.get(index + 1), Some(b'n' | b'r')) => index += 1,
+            // A header line such as `Proc-Type: 4,ENCRYPTED` sits between marker and data.
+            b':' | b',' | b'-' if run < KEY_BODY_MIN && !window[index..].starts_with(b"-----") => run = 0,
+            _ => break,
+        }
+        if run >= KEY_BODY_MIN {
+            return true;
+        }
+        index += 1;
+    }
+    false
+}
+
 /// Keeps the first four and last two characters, enough to find the value again, not to use it.
 fn redact(value: &str) -> String {
     let chars: Vec<char> = value.chars().collect();
@@ -65,13 +94,14 @@ pub fn find(file: &Artifact, bytes: &[u8], out: &mut Output) {
     for hit in PRIVATE_KEY.find_iter(bytes).take(PER_PATTERN) {
         let marker = String::from_utf8_lossy(hit.as_bytes()).into_owned();
         let kind = marker.trim_matches('-').trim_start_matches("BEGIN ").to_string();
-        out.finding(
-            // The marker is read as written; whether a usable key follows is not checked.
-            Finding::new(Section::Secrets, "content", "content.private-key", Confidence::Heuristic, Severity::High)
-                .param("kind", kind)
-                .reference("CWE-321")
-                .evidence(Evidence::bytes(file, hit.start() as u64, hit.len() as u64, marker)),
-        );
+        // A program that reads or writes key files holds the marker as a plain string. Only a
+        // marker with encoded data after it is a key; whether that key is usable is not checked.
+        let found = if key_material_follows(&bytes[hit.end()..]) {
+            Finding::new(Section::Secrets, "content", "content.private-key", Confidence::Heuristic, Severity::High).reference("CWE-321")
+        } else {
+            Finding::new(Section::Secrets, "content", "content.private-key-marker", Confidence::Heuristic, Severity::Info)
+        };
+        out.finding(found.param("kind", kind).evidence(Evidence::bytes(file, hit.start() as u64, hit.len() as u64, marker)));
     }
 }
 
@@ -118,10 +148,27 @@ mod tests {
 
     #[test]
     fn private_key_marker_is_found() {
-        let found = run("x\n-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----BEGIN PUBLIC KEY-----");
+        let body = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7\nVJTUt9Us8cKjMzEfYyjiWA4R4/M2bS1GB4t7NXp98C3SC6dVMvDu";
+        let found = run(&format!("x\n-----BEGIN RSA PRIVATE KEY-----\n{body}\n-----BEGIN PUBLIC KEY-----"));
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].rule, "content.private-key");
+        assert_eq!(found[0].severity, Severity::High);
         assert_eq!(found[0].params["kind"], "RSA PRIVATE KEY");
+        // Written into source code as one string, and with PEM headers before the data.
+        let escaped = body.replace('\n', "\\n");
+        assert_eq!(run(&format!("key = \"-----BEGIN PRIVATE KEY-----\\n{escaped}\"; "))[0].rule, "content.private-key");
+        let headed = format!("-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,0123456789ABCDEF\n\n{body}");
+        assert_eq!(run(&headed)[0].rule, "content.private-key");
+    }
+
+    #[test]
+    fn marker_without_key_material_is_only_a_marker() {
+        // What a program that parses key files contains: the markers, one after the other.
+        let found = run("-----BEGIN OPENSSH PRIVATE KEY-----\0-----END OPENSSH PRIVATE KEY-----\0openssh-key-v1");
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].rule, "content.private-key-marker");
+        assert_eq!(found[0].severity, Severity::Info);
+        assert_eq!(run("-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n")[0].rule, "content.private-key-marker");
     }
 
     #[test]

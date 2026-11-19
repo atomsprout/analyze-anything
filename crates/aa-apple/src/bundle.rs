@@ -35,6 +35,8 @@ pub struct Bundle<'t> {
     pub plist: Result<Dictionary, String>,
     /// Index of the bundle this one is nested in.
     pub parent: Option<usize>,
+    /// What to call the bundle when it has no folder of its own: the name of the input.
+    pub input: String,
 }
 
 fn join(dir: &str, rest: &str) -> String {
@@ -51,9 +53,14 @@ impl Bundle<'_> {
         join(&self.root, rest)
     }
 
-    /// The folder name, or `(input folder)` when the input itself is the bundle.
+    /// The folder name. When the input itself is the bundle that is the input's name, or `.`
+    /// (the folder that was given) when the tree does not know it.
     pub fn name(&self) -> &str {
-        if self.dir.is_empty() { "(input folder)" } else { self.dir.rsplit('/').next().unwrap_or(&self.dir) }
+        match self.dir.rsplit('/').next() {
+            Some(name) if !self.dir.is_empty() => name,
+            _ if !self.input.is_empty() => &self.input,
+            _ => ".",
+        }
     }
 
     pub fn string(&self, key: &str) -> Option<&str> {
@@ -152,7 +159,10 @@ pub fn discover(tree: &dyn Tree) -> Vec<Bundle<'_>> {
         if dir.is_empty() && layout == Layout::Flat && !plist.as_ref().is_ok_and(|p| p.contains_key("CFBundleIdentifier")) {
             continue;
         }
-        bundles.push(Bundle { extension: extension_of(&dir), dir, layout, root, info: artifact, plist, parent: None });
+        let input = if dir.is_empty() { tree.input_name().to_string() } else { String::new() };
+        // A folder given as the input keeps its extension in the input's name, not in a path.
+        let extension = if dir.is_empty() { extension_of(&input) } else { extension_of(&dir) };
+        bundles.push(Bundle { extension, dir, layout, root, info: artifact, plist, parent: None, input });
     }
     bundles.sort_by(|a, b| a.dir.cmp(&b.dir));
     for index in 0..bundles.len() {

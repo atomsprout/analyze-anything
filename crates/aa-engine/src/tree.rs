@@ -22,6 +22,8 @@ pub struct BuiltTree {
     pub artifacts: Vec<Artifact>,
     /// Facts about the input as a whole, filled in as analyzers run.
     pub summary: BTreeMap<String, serde_json::Value>,
+    /// The name of the input, for [`Tree::input_name`].
+    input: String,
     stores: BTreeMap<String, Store>,
     /// Holds spilled children; removed from disk when the last copy of the tree is dropped.
     _temp: Option<Arc<tempfile::TempDir>>,
@@ -34,6 +36,10 @@ impl Tree for BuiltTree {
 
     fn summary(&self) -> &BTreeMap<String, serde_json::Value> {
         &self.summary
+    }
+
+    fn input_name(&self) -> &str {
+        &self.input
     }
 
     fn read(&self, path: &str) -> std::io::Result<Bytes> {
@@ -97,6 +103,9 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
         unpacked_bytes: 0,
         reported: BTreeSet::new(),
     };
+    let input_name = match &roots {
+        Roots::Memory { name, .. } | Roots::Disk { name, .. } => name.to_string(),
+    };
     let files: Vec<(String, Store)> = match roots {
         Roots::Memory { name, bytes } => vec![(name.to_string(), Store::Memory(bytes))],
         Roots::Disk { input, kind: InputKind::File, name } => vec![(name.to_string(), Store::Disk(input.to_path_buf()))],
@@ -138,6 +147,7 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
         tree: BuiltTree {
             artifacts: builder.artifacts,
             summary: BTreeMap::new(),
+            input: input_name,
             stores: builder.stores,
             _temp: builder.temp.map(Arc::new),
         },

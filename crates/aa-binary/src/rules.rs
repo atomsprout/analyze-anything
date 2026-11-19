@@ -21,29 +21,29 @@ pub const RULES: &[Rule] = &[
         id: "binary.elf-identity",
         title_zh: "ELF 文件",
         title_en: "ELF file",
-        text_zh: "这是 {bits} 位 {endian} 端序的 ELF 文件，类型为 {file_type}，面向 {arch} 架构。",
+        text_zh: "这是 {bits} 位{endian_zh}端序的 ELF 文件，类型为{file_type_zh}，面向 {arch} 架构。",
         text_en: "An ELF {bits}-bit {endian}-endian {file_type} for {arch}.",
     },
     Rule {
         id: "binary.pe-identity",
         title_zh: "PE 文件",
         title_en: "PE file",
-        text_zh: "这是 {format} 格式的 Windows 程序，类型为 {file_type}，面向 {arch} 架构，子系统为 {subsystem}。",
+        text_zh: "这是 {format} 格式的 Windows 程序，类型为{file_type_zh}，面向 {arch} 架构，子系统为 {subsystem}。",
         text_en: "A Windows {format} {file_type} for {arch}, subsystem {subsystem}.",
     },
     Rule {
         id: "binary.macho-identity",
         title_zh: "Mach-O 文件",
         title_en: "Mach-O file",
-        text_zh: "{label}这是 {bits} 位 Mach-O 文件，类型为 {file_type}，面向 {arch} 架构。",
+        text_zh: "{label}这是 {bits} 位 Mach-O 文件，类型为{file_type_zh}，面向 {arch} 架构。",
         text_en: "{label}A Mach-O {bits}-bit {file_type} for {arch}.",
     },
     Rule {
         id: "binary.macho-fat",
         title_zh: "通用二进制（多架构）",
         title_en: "Universal binary",
-        text_zh: "这是包含 {count} 个架构切片的通用 Mach-O 文件：{archs}。下面带方括号前缀的结论分别针对各个切片。",
-        text_en: "A universal Mach-O file with {count} architecture slices: {archs}. Statements below that start with a name in brackets are about that slice.",
+        text_zh: "这是包含 {count} 个架构切片的通用 Mach-O 文件：{archs}。各切片相同的结论只写一次，方括号里列出它适用的架构；只列出一个架构的结论是该切片独有的。",
+        text_en: "A universal Mach-O file with {count} architecture slices: {archs}. What the slices have in common is stated once, with the architectures it holds for in brackets; a statement naming one architecture is particular to that slice.",
     },
     Rule {
         id: "binary.macho-min-os",
@@ -515,3 +515,26 @@ pub const RULES: &[Rule] = &[
         text_en: "{label}The file has a __RESTRICT,__restrict section. It makes dyld ignore environment variables such as DYLD_INSERT_LIBRARIES, which makes injecting a library into the process harder.",
     },
 ];
+
+/// The Chinese word for a file type named in English, for the Chinese text of the identity
+/// rules. A type without a word here is shown as it is.
+pub fn file_type_zh(name: &str) -> String {
+    let word = match name {
+        "executable" | "pie executable" => "可执行文件",
+        "shared object" | "shared-object" => "共享库",
+        "relocatable" | "object" => "目标文件",
+        "core" => "核心转储",
+        "dylib" => "动态库",
+        "dylib-stub" => "动态库存根",
+        "dylinker" => "动态链接器",
+        "bundle" => "可加载模块（bundle）",
+        "dsym" => "调试符号文件（dSYM）",
+        "kext" => "内核扩展",
+        "preload" => "预加载的可执行文件",
+        "fileset" => "文件集",
+        "dll" => "动态链接库（DLL）",
+        "driver" => "驱动程序",
+        other => return format!(" {other} "),
+    };
+    word.to_string()
+}
