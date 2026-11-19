@@ -5,8 +5,14 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  # A manual run builds and packages every target without creating a release: a rehearsal.
+  # A manual run without a version builds and packages every target and stops: a rehearsal.
+  # With a version it also creates the draft release, tagging the commit it ran on.
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to release as, e.g. v0.1.0. Leave empty for a rehearsal."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -24,6 +30,9 @@ jobs:
           - { os: macos-latest, target: x86_64-apple-darwin, archive: tar.gz }
           - { os: windows-latest, target: x86_64-pc-windows-msvc, archive: zip }
     runs-on: ${{ matrix.os }}
+    env:
+      # The version being released, or the branch name for a rehearsal.
+      RELEASE_NAME: ${{ inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
       # rust-toolchain.toml names the version; add the target this job builds for.
@@ -36,7 +45,7 @@ jobs:
       - name: Package (Unix)
         if: matrix.archive == 'tar.gz'
         run: |
-          name="aa-${GITHUB_REF_NAME//\//-}-${{ matrix.target }}"
+          name="aa-${RELEASE_NAME//\//-}-${{ matrix.target }}"
           mkdir "$name"
           cp "target/${{ matrix.target }}/release/aa" README.md "$name/"
           tar czf "$name.tar.gz" "$name"
@@ -45,7 +54,7 @@ jobs:
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          $name = "aa-$($env:GITHUB_REF_NAME -replace '/', '-')-${{ matrix.target }}"
+          $name = "aa-$($env:RELEASE_NAME -replace '/', '-')-${{ matrix.target }}"
           New-Item -ItemType Directory $name | Out-Null
           Copy-Item "target/${{ matrix.target }}/release/aa.exe", "README.md" $name
           Compress-Archive $name "$name.zip"
@@ -60,7 +69,7 @@ jobs:
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.version != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -69,4 +78,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
+          tag_name: ${{ inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: aa-*
