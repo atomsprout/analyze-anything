@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "aa-android"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "base64 0.22.1",
@@ -23,7 +23,7 @@ dependencies = [
 
 [[package]]
 name = "aa-apple"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "bzip2",
@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "aa-binary"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "goblin",
@@ -56,7 +56,7 @@ dependencies = [
 
 [[package]]
 name = "aa-cli"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-content",
  "aa-core",
@@ -69,7 +69,7 @@ dependencies = [
 
 [[package]]
 name = "aa-content"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "boreal",
@@ -81,7 +81,7 @@ dependencies = [
 
 [[package]]
 name = "aa-core"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "hex",
  "serde",
@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "aa-correlate"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "serde_json",
@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "aa-engine"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-android",
  "aa-apple",
@@ -125,7 +125,7 @@ dependencies = [
 
 [[package]]
 name = "aa-export"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "hex",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "aa-report"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "serde",
@@ -150,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = "aa-unpack"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "bzip2",
@@ -165,7 +165,7 @@ dependencies = [
 
 [[package]]
 name = "aa-windows"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aa-core",
  "aa-unpack",

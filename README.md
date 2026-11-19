@@ -30,6 +30,6 @@ cargo test
 
 ## 许可证
 
-MIT 或 Apache-2.0，任选其一。内嵌字体（Noto Sans SC、JetBrains Mono）使用 SIL Open Font License，许可证文件在 `crates/aa-report/fonts/`。
+Apache-2.0，见 [LICENSE](LICENSE)。内嵌字体（Noto Sans SC、JetBrains Mono）使用 SIL Open Font License，许可证文件在 `crates/aa-report/fonts/`。
 
 仅用于分析你有权分析的对象。
