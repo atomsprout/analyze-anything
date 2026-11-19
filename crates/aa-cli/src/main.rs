@@ -82,6 +82,12 @@ struct LimitArgs {
     /// Largest single entry to unpack from a container
     #[arg(long)]
     max_entry_bytes: Option<u64>,
+    /// Seconds one analyzer may spend on one file before it is given up on
+    #[arg(long)]
+    analyzer_timeout: Option<u64>,
+    /// Seconds unpacking one container may take before the rest is left unopened
+    #[arg(long)]
+    unpack_timeout: Option<u64>,
 }
 
 #[derive(clap::Args)]
@@ -231,6 +237,8 @@ fn limits(args: &LimitArgs) -> Limits {
         max_depth: args.max_depth.unwrap_or(defaults.max_depth),
         max_unpacked_bytes: args.max_unpacked_bytes.unwrap_or(defaults.max_unpacked_bytes),
         max_entry_bytes: args.max_entry_bytes.unwrap_or(defaults.max_entry_bytes),
+        analyzer_seconds: args.analyzer_timeout.unwrap_or(defaults.analyzer_seconds),
+        unpack_seconds: args.unpack_timeout.unwrap_or(defaults.unpack_seconds),
         ..defaults
     }
 }
@@ -342,7 +350,7 @@ fn run(cli: Cli) -> Result<u8, String> {
                 let source = std::fs::read_to_string(file).map_err(|e| format!("cannot read {}: {e}", file.display()))?;
                 let analyzer = aa_content::yara::analyzer(&source).map_err(|e| format!("{}: {e}", file.display()))?;
                 // After the built-in content checks, before the analyzers that summarise.
-                registry.analyzers.insert(1, analyzer);
+                registry.analyzers.insert(1, analyzer.into());
             }
             let report = aa_engine::analyze_with(&registry, &path, &options, &mut progress).map_err(|e| e.to_string())?;
             (report, output)

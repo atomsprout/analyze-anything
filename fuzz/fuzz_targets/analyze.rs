@@ -24,7 +24,7 @@ static REGISTRY: LazyLock<Registry> = LazyLock::new(|| {
 
 fuzz_target!(|data: &[u8]| {
     // Tight limits keep each run short, so the fuzzer explores parsers instead of waiting.
-    let limits = Limits { max_files: 2_000, max_total_bytes: 1 << 26, max_unpacked_bytes: 1 << 24, max_entry_bytes: 1 << 22, max_depth: 3 };
+    let limits = Limits { max_files: 2_000, max_total_bytes: 1 << 26, max_unpacked_bytes: 1 << 24, max_entry_bytes: 1 << 22, max_depth: 3, analyzer_seconds: 20, unpack_seconds: 20 };
     let options = Options { limits, cancel: None };
     let report = analyze_bytes(&REGISTRY, "input", data.to_vec(), &options, &mut NoProgress);
     // A caught panic becomes a limitation. Its text names the analyzer or unpacker; a panic in

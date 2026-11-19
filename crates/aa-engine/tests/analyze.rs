@@ -341,7 +341,7 @@ impl Analyzer for Panics {
 fn a_failing_analyzer_does_not_stop_the_run() {
     let dir = folder();
     let mut registry = Registry::standard();
-    registry.analyzers.insert(0, Box::new(Panics));
+    registry.analyzers.insert(0, Arc::new(Panics));
     // The panic message would otherwise be printed by the default hook.
     let hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|_| {}));
@@ -433,4 +433,73 @@ fn a_failing_unpacker_does_not_stop_the_run() {
     assert_eq!(report.limitations[0].detail.as_deref(), Some("the unpacker failed: decoder boom"));
     assert!(paths(&report).contains(&"b.txt/kept.txt"), "what was extracted before the failure is kept");
     assert_eq!(report.coverage.artifacts_total, 5);
+}
+
+struct Stalls;
+
+impl Analyzer for Stalls {
+    fn id(&self) -> &'static str {
+        "stalls"
+    }
+
+    fn rules(&self) -> &'static [Rule] {
+        &[]
+    }
+
+    fn analyze_file(&self, _tree: &dyn Tree, file: &Artifact, out: &mut Output) {
+        if file.path == "b.txt" {
+            // Longer than any test waits; the thread is left behind and ends with the process.
+            std::thread::sleep(std::time::Duration::from_secs(3600));
+        }
+        out.fact(file, "stalls.seen", true);
+    }
+}
+
+#[test]
+fn a_stalled_analyzer_is_given_up_on_and_the_run_finishes() {
+    let dir = folder();
+    let mut registry = Registry::standard();
+    registry.analyzers.insert(0, Arc::new(Stalls));
+    let started = std::time::Instant::now();
+    let report = analyze_with(&registry, dir.path(), &limits(|l| l.analyzer_seconds = 1), &mut NoProgress).expect("readable");
+    assert!(started.elapsed() < std::time::Duration::from_secs(60), "the run must not wait for the stalled call");
+
+    assert_eq!(codes(&report), ["analyzer_timeout"]);
+    assert_eq!(report.limitations[0].artifact.as_deref(), Some("b.txt"));
+    assert_eq!(report.limitations[0].detail.as_deref(), Some("stalls: no result after 1 seconds"));
+    assert_eq!(report.coverage.content_lost, 1);
+    let fact = |path: &str| report.artifacts.iter().find(|a| a.path == path).and_then(|a| a.facts.get("stalls.seen")).is_some();
+    assert!(fact("a.bin") && fact("sub/photo.jpg"), "other files are unaffected");
+    assert!(!fact("b.txt"));
+    assert_eq!(report.summary["content.hosts"]["hosts"][0]["host"], "example.com", "the other analyzers still ran on the stalled file");
+}
+
+struct SlowUnpacker;
+
+impl aa_core::plugin::Unpacker for SlowUnpacker {
+    fn id(&self) -> &'static str {
+        "slow"
+    }
+
+    fn unpack(&self, file: &Artifact, _bytes: &[u8], sink: &mut dyn aa_core::plugin::UnpackSink) -> aa_core::plugin::Unpack {
+        if file.path != "b.txt" {
+            return aa_core::plugin::Unpack::NotMine;
+        }
+        sink.add("first.txt", &mut &b"1"[..]).expect("add");
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let second = sink.add("second.txt", &mut &b"2"[..]);
+        assert_eq!(second, Err(aa_core::plugin::SinkError::LimitReached));
+        aa_core::plugin::Unpack::Done { kind: "slow" }
+    }
+}
+
+#[test]
+fn unpacking_that_takes_too_long_is_cut_off() {
+    let dir = folder();
+    let mut registry = Registry::standard();
+    registry.unpackers.insert(0, Box::new(SlowUnpacker));
+    let report = analyze_with(&registry, dir.path(), &limits(|l| l.unpack_seconds = 1), &mut NoProgress).expect("readable");
+    assert_eq!(codes(&report), ["unpack_timeout"]);
+    assert!(paths(&report).contains(&"b.txt/first.txt") && !paths(&report).contains(&"b.txt/second.txt"));
+    assert!(report.coverage.truncated);
 }

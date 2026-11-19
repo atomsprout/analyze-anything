@@ -25,7 +25,7 @@
 - **解析器多为自研**：二进制、DEX、AXML、Authenticode、Apple 签名块都没有用 §3 / RESEARCH 里列的现成库，原因是需要字节偏移作证据，且现成库在畸形输入上会崩溃或给错结果。现成库只在测试里当对照。
 - **风险分级而非单一分数**：给出关注度等级（高 / 中 / 低 / 无，取结论中的最高严重度）和各级数量，并说明这不是安全性判定。没有做加权的单一分数，因为权重没有可靠依据。
 - **crate 划分**：实际是 12 个（`aa-core`、`aa-engine`、`aa-unpack`、`aa-content`、`aa-binary`、`aa-apple`、`aa-windows`、`aa-android`、`aa-correlate`、`aa-export`、`aa-report`、`aa-cli`），没有单独的 `aa-vfs`、`aa-detect`、`aa-rules`。
-- **没有做的**：每分析器超时（线程无法被安全地强行终止，只做了崩溃隔离）。`aa inspect`、`aa selftest`、`--rules`（YARA）、`--font`、TLSH 相似度哈希均已实现。
+- **规划内的功能都已实现**：包括 `aa inspect`、`aa selftest`、`--rules`（YARA）、`--font`、TLSH 相似度哈希、分析器与解包的超时。超时的实现方式是放弃等待而不是终止线程，细节见 LIMITATIONS。
 - **可执行文件体积**：带 PDF 约 49 MB，比 §5.3 估计的大（Typst 加字体约 39 MB）；不带 PDF 约 10 MB。
 - **差分测试的形式**：对照是在开发时用脚本对真实样本跑的，只有小样本的对照结果写成了自动测试；CI 里不调用外部工具。
 - **CI 在 Linux、macOS、Windows 上通过**（格式、lint、全部测试、许可证与安全公告检查）。真实样本的分析和对照只在 Linux 上做过，没有用 macOS 的 `codesign` 和 Windows 的 `sigcheck` 对照。

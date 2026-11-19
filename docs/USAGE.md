@@ -35,6 +35,8 @@ aa analyze <文件或文件夹> [-o out] [--format json,html,pdf,md,txt] [--lang
 --max-depth <N>            最多解包几层嵌套，默认 6
 --max-unpacked-bytes <N>   解包总字节上限，默认 8 GiB
 --max-entry-bytes <N>      单个被解包文件的上限，默认 2 GiB
+--analyzer-timeout <秒>    单个分析器处理单个文件的时间上限，默认 300
+--unpack-timeout <秒>      解开单个容器的时间上限，默认 900
 ```
 
 `--fail-on low|medium|high`：存在达到该严重度的结论时以退出码 3 结束，供 CI 使用。

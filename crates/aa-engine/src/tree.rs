@@ -17,13 +17,14 @@ const KEEP_IN_MEMORY_BELOW: usize = 256 * 1024;
 /// Total size of children kept in memory before everything spills to disk.
 const MEMORY_BUDGET: u64 = 512 * 1024 * 1024;
 
+#[derive(Clone)]
 pub struct BuiltTree {
     pub artifacts: Vec<Artifact>,
     /// Facts about the input as a whole, filled in as analyzers run.
     pub summary: BTreeMap<String, serde_json::Value>,
     stores: BTreeMap<String, Store>,
-    /// Holds spilled children; removed from disk when the tree is dropped.
-    _temp: Option<tempfile::TempDir>,
+    /// Holds spilled children; removed from disk when the last copy of the tree is dropped.
+    _temp: Option<Arc<tempfile::TempDir>>,
 }
 
 impl Tree for BuiltTree {
@@ -134,7 +135,12 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
     builder.coverage.artifacts_analyzed = builder.artifacts.iter().filter(|a| a.digests.is_some()).count() as u64;
     builder.artifacts.sort_by(|a, b| a.path.cmp(&b.path));
     Built {
-        tree: BuiltTree { artifacts: builder.artifacts, summary: BTreeMap::new(), stores: builder.stores, _temp: builder.temp },
+        tree: BuiltTree {
+            artifacts: builder.artifacts,
+            summary: BTreeMap::new(),
+            stores: builder.stores,
+            _temp: builder.temp.map(Arc::new),
+        },
         limitations: builder.limitations,
         coverage: builder.coverage,
     }
@@ -200,8 +206,16 @@ impl Builder<'_> {
             let at_depth_limit = depth >= self.options.limits.max_depth;
             let unpackers = self.unpackers;
             for unpacker in unpackers {
-                let mut sink =
-                    Sink { builder: self, container: &child.path, children: Vec::new(), refuse: at_depth_limit, refused: false, added: 0 };
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(self.options.limits.unpack_seconds);
+                let mut sink = Sink {
+                    builder: self,
+                    container: &child.path,
+                    deadline,
+                    children: Vec::new(),
+                    refuse: at_depth_limit,
+                    refused: false,
+                    added: 0,
+                };
                 // Unpackers lean on third-party decoders; a panic in one must not end the run.
                 // Children added before the panic are kept, like after any other failure.
                 let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| unpacker.unpack(&artifact, &bytes, &mut sink)));
@@ -265,6 +279,8 @@ impl Builder<'_> {
 struct Sink<'a, 'b> {
     builder: &'a mut Builder<'b>,
     container: &'a str,
+    /// When unpacking this container has taken too long. Checked each time an entry arrives.
+    deadline: std::time::Instant,
     children: Vec<Child>,
     /// At the depth limit nothing is unpacked; the first entry records why.
     refuse: bool,
@@ -278,6 +294,15 @@ impl UnpackSink for Sink<'_, '_> {
             if !self.refused {
                 self.refused = true;
                 self.builder.warn("depth_limit", self.container, None);
+                self.builder.coverage.truncated = true;
+            }
+            return Err(SinkError::LimitReached);
+        }
+        if std::time::Instant::now() > self.deadline {
+            if !self.refused {
+                self.refused = true;
+                let detail = format!("stopped after {} seconds", self.builder.options.limits.unpack_seconds);
+                self.builder.warn("unpack_timeout", self.container, Some(detail));
                 self.builder.coverage.truncated = true;
             }
             return Err(SinkError::LimitReached);

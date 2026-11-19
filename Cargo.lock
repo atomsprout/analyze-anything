@@ -114,7 +114,6 @@ dependencies = [
  "infer 0.22.0",
  "md-5 0.10.6",
  "memmap2",
- "rayon",
  "serde_json",
  "sha1 0.10.7",
  "sha2 0.10.9",

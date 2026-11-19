@@ -5,6 +5,7 @@
 //! executes anything from the input. Progress is reported as [`Event`]s through a
 //! [`ProgressSink`]; a run is stopped by setting [`Options::cancel`].
 
+mod passes;
 mod scan;
 mod store;
 mod tree;
@@ -15,10 +16,10 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use aa_core::plugin::{Analyzer, Output, Rule, Tree, Unpacker};
 use aa_core::{Confidence, Evidence, Input, InputKind, Limitation, Report, RuleText, SCHEMA_VERSION, Section, Severity, Tool};
-use rayon::prelude::*;
 
 /// Bounds that keep a hostile or huge input from exhausting the machine.
 #[derive(Debug, Clone)]
@@ -33,12 +34,24 @@ pub struct Limits {
     pub max_entry_bytes: u64,
     /// How many containers deep unpacking goes (an archive in an archive is depth 2).
     pub max_depth: u32,
+    /// Longest one analyzer may spend on one artifact, or on the tree, before it is given up on.
+    pub analyzer_seconds: u64,
+    /// Longest unpacking one container may take before the rest of it is left unopened.
+    pub unpack_seconds: u64,
 }
 
 impl Default for Limits {
     fn default() -> Self {
         const GIB: u64 = 1024 * 1024 * 1024;
-        Limits { max_files: 200_000, max_total_bytes: 16 * GIB, max_unpacked_bytes: 8 * GIB, max_entry_bytes: 2 * GIB, max_depth: 6 }
+        Limits {
+            max_files: 200_000,
+            max_total_bytes: 16 * GIB,
+            max_unpacked_bytes: 8 * GIB,
+            max_entry_bytes: 2 * GIB,
+            max_depth: 6,
+            analyzer_seconds: 300,
+            unpack_seconds: 900,
+        }
     }
 }
 
@@ -109,7 +122,8 @@ pub enum EngineError {
 #[derive(Default)]
 pub struct Registry {
     pub unpackers: Vec<Box<dyn Unpacker>>,
-    pub analyzers: Vec<Box<dyn Analyzer>>,
+    /// Shared so that a call which overruns its time can be left behind on its own thread.
+    pub analyzers: Vec<Arc<dyn Analyzer>>,
 }
 
 impl Registry {
@@ -120,12 +134,12 @@ impl Registry {
         registry.unpackers.extend(aa_windows::unpackers());
         registry.unpackers.extend(aa_android::unpackers());
         registry.unpackers.extend(aa_unpack::unpackers());
-        registry.analyzers.extend(aa_content::analyzers());
-        registry.analyzers.extend(aa_binary::analyzers());
-        registry.analyzers.extend(aa_apple::analyzers());
-        registry.analyzers.extend(aa_windows::analyzers());
-        registry.analyzers.extend(aa_android::analyzers());
-        registry.analyzers.extend(aa_correlate::analyzers());
+        registry.analyzers.extend(aa_content::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_binary::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_apple::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_windows::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_android::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_correlate::analyzers().into_iter().map(Arc::from));
         registry
     }
 
@@ -182,28 +196,20 @@ pub fn analyze_bytes(registry: &Registry, name: &str, bytes: Vec<u8>, options: &
 
 /// Runs the analyzers over a built tree and assembles the report.
 fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, options: &Options, sink: &mut dyn ProgressSink) -> Report {
-    let (mut tree, mut limitations, mut coverage) = (built.tree, built.limitations, built.coverage);
+    let (tree, mut limitations, mut coverage) = (built.tree, built.limitations, built.coverage);
     sink.event(Event::Analyzing { artifacts: tree.artifacts.len() as u64 });
 
     let cancelled = || options.cancel.as_ref().is_some_and(|flag| flag.load(Ordering::Relaxed));
     let mut findings = Vec::new();
 
-    // File pass: every analyzer looks at every readable artifact. Results come back in artifact
-    // order whatever the thread scheduling, so the report does not depend on it.
-    let outputs: Vec<Output> = tree
-        .artifacts
-        .par_iter()
-        .map(|artifact| {
-            let mut out = Output::default();
-            if artifact.digests.is_none() || cancelled() {
-                return out;
-            }
-            for analyzer in &registry.analyzers {
-                guarded(analyzer.as_ref(), Some(&artifact.path), &mut out, |out| analyzer.analyze_file(&tree, artifact, out));
-            }
-            out
-        })
-        .collect();
+    // File pass: every analyzer looks at every readable artifact, on several threads. Results are
+    // put back in artifact and analyzer order, so the report does not depend on the scheduling.
+    let timeout = Duration::from_secs(options.limits.analyzer_seconds);
+    let shared = Arc::new(tree);
+    let (outputs, timed_out) = passes::file_pass(&shared, &registry.analyzers, timeout, options.cancel.clone());
+    // A call that overran is still running and holds the tree; work on a copy in that case.
+    let mut tree = Arc::try_unwrap(shared).unwrap_or_else(|still_shared| (*still_shared).clone());
+    limitations.extend(timed_out);
     // In the file pass the first analyzer to recognise an artifact names it: analyzers run in
     // registration order, most general knowledge of the format first, and cannot see each other.
     let mut named = std::collections::BTreeSet::new();
@@ -217,9 +223,10 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         if cancelled() {
             break;
         }
-        let mut out = Output::default();
-        guarded(analyzer.as_ref(), None, &mut out, |out| analyzer.analyze_tree(&tree, out));
-        merge(&mut tree, out, &mut findings, &mut limitations);
+        match passes::tree_pass(&tree, analyzer, timeout) {
+            Some(out) => merge(&mut tree, out, &mut findings, &mut limitations),
+            None => limitations.push(Limitation::new("analyzer_timeout", None, Some(passes::timeout_detail(analyzer.id(), timeout)))),
+        }
     }
     if cancelled() && !limitations.iter().any(|l| l.code == "cancelled") {
         limitations.push(Limitation::new("cancelled", None, None));
@@ -267,7 +274,7 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
         (f.section, std::cmp::Reverse(f.severity), position, f.rule.clone(), f.evidence.first().map(|e| e.artifact.clone()), f.id.clone())
     });
     findings.dedup_by(|a, b| a.id == b.id);
-    coverage.content_lost += limitations.iter().filter(|l| l.code == "analyzer_failed").count() as u64;
+    coverage.content_lost += limitations.iter().filter(|l| l.code == "analyzer_failed" || l.code == "analyzer_timeout").count() as u64;
     limitations.sort();
     limitations.dedup();
 
@@ -305,7 +312,7 @@ fn run(registry: &Registry, built: tree::Built, name: String, kind: InputKind, o
 }
 
 /// Runs one analyzer call, turning a panic into a limitation instead of a crash.
-fn guarded(analyzer: &dyn Analyzer, artifact: Option<&str>, out: &mut Output, call: impl FnOnce(&mut Output)) {
+pub(crate) fn guarded(analyzer: &dyn Analyzer, artifact: Option<&str>, out: &mut Output, call: impl FnOnce(&mut Output)) {
     let mut scratch = Output::default();
     match catch_unwind(AssertUnwindSafe(|| call(&mut scratch))) {
         Ok(()) => {
@@ -423,6 +430,20 @@ const ENGINE_RULES: &[Rule] = &[
         title_en: "Unsafe entry name",
         text_zh: "容器内有一个文件的名字试图指向容器之外（含 ..），已跳过。正常打包工具不会产生这样的名字。",
         text_en: "An entry's name points outside its container (it contains ..) and was skipped. Ordinary packaging tools do not produce such names.",
+    },
+    Rule {
+        id: "analyzer_timeout",
+        title_zh: "分析器超时",
+        title_en: "Analyzer timed out",
+        text_zh: "一个分析器在这个对象上运行时间超过上限，已放弃等待，它对这个对象的结论缺失。其他分析器不受影响。",
+        text_en: "An analyzer ran past its time limit here and was given up on, so its conclusions about this item are missing. Other analyzers are unaffected.",
+    },
+    Rule {
+        id: "unpack_timeout",
+        title_zh: "解包超时",
+        title_en: "Unpacking timed out",
+        text_zh: "解开这个容器的时间超过上限，剩余内容没有解出，也没有分析。",
+        text_en: "Unpacking this container ran past its time limit; the rest of its content was not extracted or analyzed.",
     },
     Rule {
         id: "analyzer_failed",
