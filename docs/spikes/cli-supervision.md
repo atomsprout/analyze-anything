@@ -38,3 +38,30 @@ its modified-byte copy and generated MSZIP/LZX cabinets. Native signature identi
 shared cryptographic checks agreed for the installed executable; both tools detected tampering,
 and extracted cabinet contents matched their original bytes. The raw development record is
 under ignored out/windows-baseline/supervised-native.json.
+
+## Parent disconnect and scratch recovery
+
+Standalone worker entry points now impose a five-second shutdown deadline after their request
+pipe closes or Close arrives. A stuck analyzer cannot indefinitely keep those workers alive.
+The library serve entry points retain host-managed lifetime and never exit the embedding process.
+
+Both supervisor and worker hold a shared lock on .owner.lock inside the worker scratch folder.
+The next worker start recovers only recognized worker folders whose markers can be exclusively
+locked. It checks the resolved target is a direct child of the intended root and skips reparse
+points. Unmarked and unrelated folders remain untouched, including legacy folders that cannot
+be proven to belong to this recovery scheme. This is recovery on the next run, not immediate
+cleanup after every possible crash.
+
+On Windows, seven worker integration tests and two scratch unit tests passed. A real blocked
+worker exits after its parent pipe closes, releases ownership and can then be recovered. Shared
+locks prevent recovery while either owner remains; a junction cannot redirect recovery outside
+the test scratch root. The CLI/app targeted suites passed after preserving the existing missing
+input error path. A broad regression caught an old spill-count assertion including the new marker;
+that assertion was corrected and the affected tests passed.
+
+CLI and app supervisors also validate scratch placement before creating the worker directory.
+Storage inside a selected input directory is refused; users must choose a narrower input or an
+external temporary location. Engine tests cover existing/missing nested paths and parent-directory
+components without writing into the input. Per-parser process isolation, disassembler descendant
+termination and actual parent-kill scenarios beyond the tested pipe-disconnect behavior remain
+open. No claim of complete W2 coverage is made by these checks.

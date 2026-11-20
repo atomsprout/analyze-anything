@@ -71,6 +71,7 @@ impl Run {
         limits: LimitOverrides,
         on_update: impl FnMut(Update) + Send + 'static,
     ) -> Result<Run, WorkerError> {
+        aa_engine::validate_scratch_root(input, &program.scratch_root).map_err(WorkerError::Scratch)?;
         let arguments: Vec<&str> = program.arguments.iter().map(String::as_str).collect();
         let mut worker = Worker::start(&program.path, &arguments, &program.scratch_root)?;
         match worker.analyze(input, limits) {

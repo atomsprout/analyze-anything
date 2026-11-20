@@ -254,6 +254,23 @@ fn duplicate_entry_names_are_both_kept() {
 }
 
 #[test]
+fn supervisors_refuse_scratch_storage_inside_the_input_before_creating_it() {
+    let dir = tempfile::tempdir().expect("private fixture root");
+    let input = dir.path().join("input");
+    std::fs::create_dir(&input).expect("input directory");
+    let scratch = input.join("new").join("scratch");
+    assert!(aa_engine::validate_scratch_root(&input, &scratch).is_err());
+    assert!(!input.join("new").exists(), "validation must not write inside the input");
+    let missing = dir.path().join("missing");
+    assert!(aa_engine::validate_scratch_root(&missing, &missing.join("scratch")).is_err());
+    assert!(aa_engine::validate_scratch_root(&input, &dir.path().join("missing").join("..").join("input").join("scratch")).is_err());
+    assert!(aa_engine::validate_scratch_root(&input, &dir.path().join("external")).is_ok());
+    let file = input.join("file.txt");
+    std::fs::write(&file, "ordinary bytes").expect("input file");
+    assert!(aa_engine::validate_scratch_root(&file, &input.join("scratch")).is_ok());
+}
+
+#[test]
 fn windows_archive_names_are_logical_even_when_spilled_to_disk() {
     let names = ["CON", "case.txt", "CASE.txt", "name.", "name:stream", "C:\\absolute", "same", "same"];
     let mut writer = tar::Builder::new(flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default()));

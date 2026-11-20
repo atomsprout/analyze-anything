@@ -29,6 +29,7 @@ pub struct Worker {
     stdin: Option<ChildStdin>,
     responses: Receiver<Response>,
     scratch: PathBuf,
+    _ownership: std::fs::File,
 }
 
 impl Worker {
@@ -42,7 +43,9 @@ impl Worker {
     /// Like start, preserving native argument encoding for paths passed by the CLI.
     pub fn start_os(program: &Path, arguments: &[std::ffi::OsString], scratch_root: &Path) -> Result<Worker, WorkerError> {
         std::fs::create_dir_all(scratch_root).map_err(WorkerError::Scratch)?;
+        crate::scratch::sweep(scratch_root);
         let scratch = unique_folder(scratch_root).map_err(WorkerError::Scratch)?;
+        let ownership = crate::scratch::hold(&scratch).map_err(WorkerError::Scratch)?;
         let mut command = Command::new(program);
         command
             .args(arguments)
@@ -81,7 +84,7 @@ impl Worker {
                 }
             });
         }
-        Ok(Worker { child, stdin, responses, scratch })
+        Ok(Worker { child, stdin, responses, scratch, _ownership: ownership })
     }
 
     /// The folder the worker is told to unpack into.

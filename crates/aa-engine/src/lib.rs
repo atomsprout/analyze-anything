@@ -14,6 +14,60 @@ mod walk;
 
 pub use tree::Reader;
 
+/// Checks storage placement before a supervisor creates its worker directory.
+/// Scratch files must not become part of the input being listed or modify that input.
+pub fn validate_scratch_root(input: &std::path::Path, scratch: &std::path::Path) -> std::io::Result<()> {
+    let lexical = |path: &std::path::Path| -> std::io::Result<std::path::PathBuf> {
+        let mut result = std::path::PathBuf::new();
+        for part in std::path::absolute(path)?.components() {
+            match part {
+                std::path::Component::CurDir => {}
+                std::path::Component::ParentDir => {
+                    if result.file_name().is_some() {
+                        result.pop();
+                    }
+                }
+                _ => result.push(part.as_os_str()),
+            }
+        }
+        Ok(result)
+    };
+    let input_absolute = lexical(input)?;
+    let scratch_absolute = lexical(scratch)?;
+    let overlap = scratch_absolute.starts_with(&input_absolute);
+    let overlap = overlap
+        || cfg!(windows)
+            && std::path::Path::new(&scratch_absolute.to_string_lossy().to_lowercase())
+                .starts_with(input_absolute.to_string_lossy().to_lowercase());
+    if overlap {
+        return Err(std::io::Error::other(
+            "worker scratch storage lies inside the selected input; use an external scratch location or a narrower input",
+        ));
+    }
+    let metadata = match disk::metadata(input) {
+        Ok(metadata) => metadata,
+        // Preserve the worker's existing error path for missing inputs; no input bytes exist.
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error),
+    };
+    if !metadata.is_dir() {
+        return Ok(());
+    }
+    let input = input.canonicalize()?;
+    let mut ancestor = std::path::absolute(scratch)?;
+    while !ancestor.exists() {
+        if !ancestor.pop() {
+            return Err(std::io::Error::other("scratch root has no existing ancestor"));
+        }
+    }
+    if ancestor.canonicalize()?.starts_with(input) {
+        return Err(std::io::Error::other(
+            "worker scratch storage lies inside the selected input; use an external scratch location or a narrower input",
+        ));
+    }
+    Ok(())
+}
+
 use std::collections::BTreeMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};

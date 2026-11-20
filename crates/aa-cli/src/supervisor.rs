@@ -37,6 +37,7 @@ pub fn analyze(path: &Path, limits: &Limits, seconds: Option<u64>, progress: &mu
     let mut arguments: Vec<_> = crate::arguments().into_iter().skip(1).collect();
     arguments.push("--analysis-worker".into());
     let scratch_root = std::env::temp_dir().join("analyze-anything-workers");
+    aa_engine::validate_scratch_root(path, &scratch_root).map_err(|e| e.to_string())?;
     let mut worker = Worker::start_os(&executable, &arguments, &scratch_root).map_err(|e| e.to_string())?;
     worker
         .analyze(

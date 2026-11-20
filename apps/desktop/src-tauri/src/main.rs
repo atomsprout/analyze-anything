@@ -22,7 +22,7 @@ fn main() {
     let mut arguments = std::env::args_os().skip(1);
     let first = arguments.next();
     if first.as_deref().is_some_and(|argument| argument == WORKER_FLAG) {
-        aa_worker::serve(std::io::stdin().lock(), std::io::stdout());
+        aa_worker::serve_process(std::io::stdin().lock(), std::io::stdout());
         return;
     }
     // Started as `mcp <report.json>`, it is the read-only tool server of an AI interpretation

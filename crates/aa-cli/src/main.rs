@@ -863,7 +863,7 @@ fn run(cli: Cli) -> Result<u8, String> {
                     let before_last = registry.analyzers.len().saturating_sub(1);
                     registry.analyzers.insert(before_last, aa_deep::analyzer(settings));
                 }
-                aa_worker::serve_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
+                aa_worker::serve_process_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
                 return Ok(0);
             } else {
                 supervisor::analyze(&path, &options.limits, run_timeout, &mut progress)?

@@ -27,7 +27,7 @@ fn unresponsive_worker_fixture() {
         }
     }
     let registry = Registry { analyzers: vec![Arc::new(Stuck)], unpackers: Vec::new() };
-    aa_worker::serve_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
+    aa_worker::serve_process_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
 }
 
 #[test]
@@ -102,7 +102,59 @@ fn until_done(worker: &mut Worker) -> (Response, Vec<Event>) {
 }
 
 fn files_in(dir: &Path) -> usize {
-    std::fs::read_dir(dir).map(|entries| entries.count()).unwrap_or(0)
+    std::fs::read_dir(dir).map(|entries| entries.flatten().filter(|entry| entry.file_name() != ".owner.lock").count()).unwrap_or(0)
+}
+
+#[test]
+fn losing_the_parent_pipe_ends_a_permanently_blocked_worker() {
+    use std::process::{Command, Stdio};
+    let dir = tempfile::tempdir().expect("private fixture root");
+    let input = dir.path().join("input.txt");
+    std::fs::write(&input, "unexecuted input").expect("fixture bytes");
+    let scratch = dir.path().join("worker-123-abc-0");
+    std::fs::create_dir(&scratch).expect("scratch directory");
+    let mut child = Command::new(std::env::current_exe().expect("test program"))
+        .args(["--ignored", "--exact", "unresponsive_worker_fixture", "--nocapture"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("helper process");
+    let request = Request::Analyze { path: input, scratch: scratch.clone(), limits: LimitOverrides::default() };
+    let mut stdin = child.stdin.take().expect("parent pipe");
+    writeln!(stdin, "{}", serde_json::to_string(&request).expect("request JSON")).expect("send analysis");
+    stdin.flush().expect("flush request");
+    // Keep stdout draining and confirm the analyzer actually starts before closing the parent pipe.
+    let stdout = child.stdout.take().expect("worker output");
+    let (sender, started) = std::sync::mpsc::channel();
+    let reader = std::thread::spawn(move || {
+        use std::io::BufRead;
+        for line in std::io::BufReader::new(stdout).lines().map_while(Result::ok) {
+            if matches!(serde_json::from_str::<Response>(&line), Ok(Response::Progress { step: Event::Analyzing { .. } })) {
+                let _ = sender.send(());
+            }
+        }
+    });
+    started.recv_timeout(WAIT).expect("worker analysis started");
+    std::thread::sleep(Duration::from_millis(100));
+    assert_eq!(aa_worker::sweep_stale_workers(dir.path()), 0, "the child owns its scratch folder");
+    drop(stdin);
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        if let Some(status) = child.try_wait().expect("worker status") {
+            assert!(!status.success(), "the permanently blocked worker cannot finish normally");
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("the worker outlived its disconnected parent pipe");
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    reader.join().expect("output reader");
+    assert_eq!(aa_worker::sweep_stale_workers(dir.path()), 1, "the next run recovers the orphan");
+    assert!(!scratch.exists());
 }
 
 #[test]
