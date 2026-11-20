@@ -132,7 +132,8 @@ def size_text(count):
 
 
 def both(en, zh):
-    return f"<span data-en>{en}</span><span data-zh>{zh}</span>"
+    """The website is in English; the other wording is kept beside it should that change."""
+    return en
 
 
 def card(sample, path, report, pdf, pages):

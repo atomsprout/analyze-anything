@@ -81,7 +81,8 @@ A format is done when:
 
 ## Documentation
 
-- English is the default everywhere. Only `README` and `docs/USAGE` have Chinese versions (`README.zh-CN.md`, `docs/USAGE.zh-CN.md`); change both together.
+- English is the default everywhere, and the reference when texts differ. The README is also kept in Simplified Chinese (`README.zh-CN.md`) and in 22 more languages (`docs/readme/README_<code>.md`); `docs/USAGE` has a Chinese version. The website is English only.
+- When `README.md` changes, change `README.zh-CN.md` with it. The other translations keep the same structure line for line (headings, code blocks, diagrams and links are identical; only prose is translated), which is how a change is carried over; one that lags says at its top that the English README may be newer.
 - Say only what was checked. A claim such as "runs on Windows" or "works with engine X" needs the run behind it; otherwise write what was tried and what was not. `docs/AI.md` ("What has been tried") and `docs/LIMITATIONS.md` are where that is recorded.
 - Open work goes in [docs/TODO.md](docs/TODO.md); direction in [docs/ROADMAP.md](docs/ROADMAP.md).
 
