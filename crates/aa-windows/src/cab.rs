@@ -186,7 +186,7 @@ impl Cabinet<'_> {
         let mut problems = Vec::new();
         let partial = self.files.iter().filter(|f| f.folder.is_none()).count();
         if partial > 0 {
-            problems.push(format!("{partial} files continue in another cabinet of the set"));
+            problems.push(aa_core::counted(partial as u64, "files continue in another cabinet of the set"));
         }
         for (index, folder) in self.folders.iter().enumerate() {
             let mut wanted: Vec<&CabFile> = self.files.iter().filter(|f| f.folder == Some(index as u16)).collect();

@@ -323,10 +323,13 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
         let mut modified = 0u64;
         let mut broken_slots: BTreeSet<&str> = BTreeSet::new();
         for other in slices(file) {
-            for directory in other["signature"]["directories"].as_array().into_iter().flatten() {
+            let directories = other["signature"]["directories"].as_array().map(Vec::as_slice).unwrap_or_default();
+            // A bundle's main program seals the bundle's Info.plist, not a copy inside itself.
+            let plist_is_the_bundles = signing::seals_plist_beside(tree, &file.path, directories);
+            for directory in directories {
                 modified += directory["pages"]["mismatched"].as_u64().unwrap_or(0);
                 for (slot, outcome) in directory["slots"].as_object().into_iter().flatten() {
-                    if outcome == "mismatch" {
+                    if outcome == "mismatch" && !(slot == "embedded_info_plist" && plist_is_the_bundles) {
                         broken_slots.insert(slot.as_str());
                     }
                 }

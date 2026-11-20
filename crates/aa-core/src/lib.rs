@@ -384,15 +384,12 @@ pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
                     Value::String(text) => out.push_str(text),
                     other => out.push_str(&other.to_string()),
                 }
-                let one = match &params[name] {
-                    Value::Number(number) => number.as_u64() == Some(1),
-                    Value::String(text) => text == "1",
-                    _ => false,
-                };
+                // Only a number counts things; a text that happens to read "1" is a name.
+                let one = matches!(&params[name], Value::Number(number) if number.as_u64() == Some(1));
                 rest = match one.then(|| singular(tail)).flatten() {
-                    Some((word, after_word)) => {
-                        out.push_str(word);
-                        after_word
+                    Some((words, after_words)) => {
+                        out.push_str(&words);
+                        after_words
                     }
                     None => tail,
                 };
@@ -407,33 +404,148 @@ pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
     out
 }
 
-/// If `tail` starts with a plural noun that rule texts use after a count, the singular wording to
-/// write instead and what follows it.
-fn singular(tail: &str) -> Option<(&'static str, &str)> {
-    const WORDS: &[(&str, &str)] = &[
-        (" files are ", " file is "),
-        (" functions use ", " function uses "),
-        (" functions", " function"),
-        (" files", " file"),
-        (" entries", " entry"),
-        (" binaries", " binary"),
-        (" certificates", " certificate"),
-        (" components", " component"),
-        (" languages", " language"),
-        (" bundles", " bundle"),
-        (" hosts", " host"),
-        (" bytes", " byte"),
-        (" shortcuts", " shortcut"),
-        (" findings", " finding"),
-        (" items", " item"),
-        (" pages", " page"),
-    ];
-    WORDS.iter().find_map(|(plural, single)| {
-        let after = tail.strip_prefix(plural)?;
-        // A whole word only: "files" in "filesystem" is left alone.
-        let ends = plural.ends_with(' ') || !after.starts_with(|c: char| c.is_alphanumeric());
-        ends.then_some((*single, after))
-    })
+/// A sentence that starts with a count, with its noun and verb agreeing with the count, the way
+/// [`fill`] writes a rule's text: `counted(1, "files are missing")` is "1 file is missing".
+/// For the details of limitations, which are written where they arise and not from a rule.
+pub fn counted(count: u64, rest: &str) -> String {
+    fill(&format!("{{n}} {rest}"), &BTreeMap::from([("n".to_string(), Value::from(count))]))
+}
+
+/// The nouns rule texts count, plural and singular.
+const NOUNS: &[(&str, &str)] = &[
+    ("activities", "activity"),
+    ("anomalies", "anomaly"),
+    ("APKs", "APK"),
+    ("apps", "app"),
+    ("assemblies", "assembly"),
+    ("binaries", "binary"),
+    ("blocks", "block"),
+    ("bundles", "bundle"),
+    ("bytes", "byte"),
+    ("catalogs", "catalog"),
+    ("categories", "category"),
+    ("certificates", "certificate"),
+    ("checks", "check"),
+    ("claims", "claim"),
+    ("classes", "class"),
+    ("commands", "command"),
+    ("components", "component"),
+    ("containers", "container"),
+    ("dependencies", "dependency"),
+    ("devices", "device"),
+    ("domains", "domain"),
+    ("entitlements", "entitlement"),
+    ("entries", "entry"),
+    ("extensions", "extension"),
+    ("executables", "executable"),
+    ("facts", "fact"),
+    ("features", "feature"),
+    ("files", "file"),
+    ("findings", "finding"),
+    ("functions", "function"),
+    ("groups", "group"),
+    ("handlers", "handler"),
+    ("hashes", "hash"),
+    ("hosts", "host"),
+    ("identifiers", "identifier"),
+    ("items", "item"),
+    ("kinds", "kind"),
+    ("languages", "language"),
+    ("libraries", "library"),
+    ("methods", "method"),
+    ("modules", "module"),
+    ("names", "name"),
+    ("packages", "package"),
+    ("pages", "page"),
+    ("permissions", "permission"),
+    ("places", "place"),
+    ("points", "point"),
+    ("providers", "provider"),
+    ("receivers", "receiver"),
+    ("records", "record"),
+    ("resources", "resource"),
+    ("schemes", "scheme"),
+    ("sections", "section"),
+    ("services", "service"),
+    ("sets", "set"),
+    ("shortcuts", "shortcut"),
+    ("signers", "signer"),
+    ("slices", "slice"),
+    ("symbols", "symbol"),
+    ("times", "time"),
+    ("tools", "tool"),
+    ("types", "type"),
+    ("URLs", "URL"),
+    ("values", "value"),
+    ("vendors", "vendor"),
+    ("ways", "way"),
+];
+
+/// The verbs that follow those nouns in rule texts, for many and for one.
+const VERBS: &[(&str, &str)] = &[
+    ("accept", "accepts"),
+    ("appear", "appears"),
+    ("are", "is"),
+    ("carry", "carries"),
+    ("continue", "continues"),
+    ("define", "defines"),
+    ("differ", "differs"),
+    ("disagree", "disagrees"),
+    ("do", "does"),
+    ("have", "has"),
+    ("implement", "implements"),
+    ("import", "imports"),
+    ("lie", "lies"),
+    ("mark", "marks"),
+    ("match", "matches"),
+    ("register", "registers"),
+    ("set", "sets"),
+    ("use", "uses"),
+    ("were", "was"),
+];
+
+/// Words that end a run of describing words: after one of them the noun is not what was counted
+/// ("1 of the files").
+const NOT_DESCRIBING: &[&str] = &[
+    "of", "the", "a", "an", "in", "on", "at", "to", "and", "or", "for", "with", "by", "from", "that", "which", "is", "are", "was", "were",
+    "has", "have",
+];
+
+/// If `tail` goes on with a noun that rule texts count, perhaps after a word or two describing
+/// it ("Mach-O files", "nested code items"), the wording for one of them and what follows it.
+/// A verb right after the noun is made to agree ("files are" becomes "file is").
+fn singular(tail: &str) -> Option<(String, &str)> {
+    let mut written = String::new();
+    let mut rest = tail;
+    for _ in 0..4 {
+        let after_space = rest.strip_prefix(' ')?;
+        let end = after_space.find(|c: char| !(c.is_alphanumeric() || c == '-')).unwrap_or(after_space.len());
+        let (word, after) = after_space.split_at(end);
+        if word.is_empty() {
+            return None;
+        }
+        if let Some((_, one)) = NOUNS.iter().find(|(many, _)| *many == word) {
+            written.push(' ');
+            written.push_str(one);
+            // The verb, when it comes at once.
+            if let Some(next) = after.strip_prefix(' ') {
+                let end = next.find(|c: char| !c.is_alphabetic()).unwrap_or(next.len());
+                if let Some((_, one)) = VERBS.iter().find(|(many, _)| *many == &next[..end]) {
+                    written.push(' ');
+                    written.push_str(one);
+                    return Some((written, &next[end..]));
+                }
+            }
+            return Some((written, after));
+        }
+        if NOT_DESCRIBING.contains(&word) {
+            return None;
+        }
+        written.push(' ');
+        written.push_str(word);
+        rest = after;
+    }
+    None
 }
 
 #[cfg(test)]
@@ -488,15 +600,33 @@ mod tests {
 
     #[test]
     fn a_count_of_one_takes_the_singular() {
-        let params = |n: u64| BTreeMap::from([("files".to_string(), Value::from(n))]);
-        assert_eq!(fill("it holds {files} files.", &params(1)), "it holds 1 file.");
-        assert_eq!(fill("it holds {files} files.", &params(2)), "it holds 2 files.");
-        assert_eq!(fill("it holds {files} files.", &params(11)), "it holds 11 files.");
-        assert_eq!(fill("{files} files are stored outside", &params(1)), "1 file is stored outside");
-        assert_eq!(fill("{files} filesystems", &params(1)), "1 filesystems");
-        assert_eq!(fill("{files} functions use it", &params(1)), "1 function uses it");
-        assert_eq!(fill("by {files} functions: a", &params(1)), "by 1 function: a");
-        assert_eq!(fill("里面有 {files} 个文件。", &params(1)), "里面有 1 个文件。");
+        let one = |template: &str| fill(template, &BTreeMap::from([("n".to_string(), Value::from(1))]));
+        let two = |template: &str| fill(template, &BTreeMap::from([("n".to_string(), Value::from(2))]));
+        assert_eq!(one("it holds {n} files."), "it holds 1 file.");
+        assert_eq!(two("it holds {n} files."), "it holds 2 files.");
+        assert_eq!(fill("it holds {n} files.", &BTreeMap::from([("n".to_string(), Value::from(11))])), "it holds 11 files.");
+        // The verb that follows agrees.
+        assert_eq!(one("{n} files are stored outside"), "1 file is stored outside");
+        assert_eq!(one("{n} functions use it"), "1 function uses it");
+        assert_eq!(one("{n} PE files carry no signature"), "1 PE file carries no signature");
+        assert_eq!(one("{n} entries lie outside"), "1 entry lies outside");
+        // Words that describe the noun stay as they are.
+        assert_eq!(one("Registers {n} URL schemes: x"), "Registers 1 URL scheme: x");
+        assert_eq!(one("{n} Mach-O files in all"), "1 Mach-O file in all");
+        assert_eq!(one("and {n} nested code items match their cdhash"), "and 1 nested code item matches their cdhash");
+        assert_eq!(one("signed by {n} distinct signers."), "signed by 1 distinct signer.");
+        assert_eq!(one("by {n} functions: a"), "by 1 function: a");
+        // What is not a counted noun is left alone.
+        assert_eq!(one("{n} filesystems"), "1 filesystems");
+        assert_eq!(one("{n} of the files"), "1 of the files");
+        assert_eq!(one("{n} is too large"), "1 is too large");
+        assert_eq!(one("version {n} has no files"), "version 1 has no files");
+        assert_eq!(one("里面有 {n} 个文件。"), "里面有 1 个文件。");
+        assert_eq!(counted(1, "encrypted entries"), "1 encrypted entry");
+        assert_eq!(counted(3, "files are stored outside"), "3 files are stored outside");
+        assert_eq!(counted(1, "files are stored outside"), "1 file is stored outside");
+        // A name that reads "1" is not a count.
+        assert_eq!(fill("{n} files", &BTreeMap::from([("n".to_string(), Value::from("1"))])), "1 files");
     }
 
     #[test]

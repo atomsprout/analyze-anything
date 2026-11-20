@@ -368,6 +368,27 @@ pub const UI: &[(&str, &str, &str)] = &[
 ];
 
 /// A word from [`UI`] in `lang`; `?` when there is no such word, so a mistake shows.
+/// The report's own count words with the count put in: "1 kind / 1 finding", not "1 kinds / 1
+/// findings". The words of the page's script are made to agree the same way (`t` in app.js).
+pub fn agree(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut after_one = false;
+    for (index, word) in text.split(' ').enumerate() {
+        if index > 0 {
+            out.push(' ');
+        }
+        out.push_str(match (after_one, word) {
+            (true, "kinds") => "kind",
+            (true, "findings") => "finding",
+            (true, "files") => "file",
+            (true, "items") => "item",
+            _ => word,
+        });
+        after_one = word == "1";
+    }
+    out
+}
+
 pub fn ui(lang: Lang, key: &str) -> &'static str {
     UI.iter()
         .find(|(k, _, _)| *k == key)
@@ -376,4 +397,18 @@ pub fn ui(lang: Lang, key: &str) -> &'static str {
             Lang::En => *en,
         })
         .unwrap_or("?")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_reports_own_counts_agree_with_their_number() {
+        assert_eq!(agree("1 kinds / 1 findings"), "1 kind / 1 finding");
+        assert_eq!(agree("2 kinds / 1 findings"), "2 kinds / 1 finding");
+        assert_eq!(agree("11 kinds / 21 findings"), "11 kinds / 21 findings");
+        assert_eq!(agree("1 files"), "1 file");
+        assert_eq!(agree("共 1 条"), "共 1 条");
+    }
 }

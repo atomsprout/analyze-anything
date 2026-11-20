@@ -157,7 +157,7 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-0.1.0 is the first release. Any file or folder gets a report today; Apple, Android and Windows formats are understood in depth. It is released for Apple silicon Macs and has been used by hand on one; on Linux and Windows the code builds and passes its tests in CI.
+0.1 is the first release line (0.1.1 now). Any file or folder gets a report today; Apple, Android and Windows formats are understood in depth. It is released for Apple silicon Macs and has been used by hand on one; on Linux and Windows the code builds and passes its tests in CI.
 
 "Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
 

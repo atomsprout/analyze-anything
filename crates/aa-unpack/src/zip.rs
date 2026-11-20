@@ -57,7 +57,7 @@ impl Unpacker for Zip {
             }
         }
         if encrypted > 0 {
-            sink.limitation("zip.entry-encrypted", Some(format!("{encrypted} encrypted entries")));
+            sink.limitation("zip.entry-encrypted", Some(aa_core::counted(encrypted, "encrypted entries")));
         }
         if failures.is_empty() {
             Unpack::Done { kind: "zip" }

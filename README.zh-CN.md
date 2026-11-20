@@ -159,7 +159,7 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-0.1.0 是第一个版本。今天任何文件或文件夹都能得到一份报告；Apple、Android、Windows 的格式能深入理解。目前只发布了 Apple 芯片 Mac 的版本，也只在一台这样的 Mac 上手工用过；在 Linux 和 Windows 上，代码能构建并通过 CI 里的测试。
+0.1 是第一个发布系列（目前是 0.1.1）。今天任何文件或文件夹都能得到一份报告；Apple、Android、Windows 的格式能深入理解。目前只发布了 Apple 芯片 Mac 的版本，也只在一台这样的 Mac 上手工用过；在 Linux 和 Windows 上，代码能构建并通过 CI 里的测试。
 
 “Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
 

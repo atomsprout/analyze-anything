@@ -179,7 +179,8 @@ pub fn heading(lang: Lang, title: &str, groups: &[Group]) -> String {
         return title.to_string();
     }
     let findings: usize = groups.iter().map(|group| group.count).sum();
-    let counts = ui(lang, "chapter_counts").replace("{n}", &thousands(groups.len())).replace("{m}", &thousands(findings));
+    let counts =
+        crate::words::agree(&ui(lang, "chapter_counts").replace("{n}", &thousands(groups.len())).replace("{m}", &thousands(findings)));
     format!("{title} · {counts}")
 }
 

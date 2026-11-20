@@ -20,6 +20,22 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 - [x] CI passes on Linux, macOS and Windows for the current code (run of 2026-11-19). It found two things macOS had hidden: a worker that ended before it was asked was reported as a broken pipe, and two imports unused outside Unix.
 - [x] An interface for AI agents: `analyze-anything mcp` serves a report's read-only tools over MCP.
 
+## Done for 0.1.1 (2026-11-20)
+
+- [x] **Every app in the Applications folder of one Mac**: 52 apps, 677,336 files, about seven and a half minutes, no failure. What looked wrong was compared with `codesign`, and six things were fixed:
+  - a program whose bundle's `Info.plist` names no executable (the key absent, or empty) was reported as a file added after signing; the system goes by the bundle's name then, and so does this now;
+  - a main program with a plist section of its own was reported as having a broken seal, though its Info.plist slot seals the bundle's file;
+  - a framework that holds two versions (Chrome keeps the previous one beside the new) was reported as replaced code;
+  - a TIFF picture was taken for an HFS+ disk because of two letters;
+  - team-prefixed macOS app groups were reported as beyond the provisioning profile;
+  - a bundle given as a folder was called "a folder".
+- [x] Counts read right: "1 file", "1 URL scheme", "1 kind / 1 finding", with the verb agreeing, in rule texts, limitation details and the report's own words.
+
+Left from that run, both honest limitations rather than wrong findings:
+
+- [ ] The CMS signature of one Apple pkg inside Xcode (`XcodeSystemResources.pkg`) is not read: a tag the parser does not expect.
+- [ ] The file system of Xcode's device-support disk images (`*_DDI.dmg`) is read only in part ("block 12 is not a B-tree node").
+
 ## The AI interpretation
 
 - [x] Run the `claude` engine for real: done with a signed-in Claude Code on a 456-finding IPA report (no statement dropped).

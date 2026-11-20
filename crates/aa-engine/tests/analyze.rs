@@ -595,3 +595,31 @@ fn progress_names_every_file_in_both_passes_and_survives_json() {
     }
     assert_eq!(serde_json::to_string(&Event::Listed { files: 3 }).expect("json"), r#"{"event":"listed","files":3}"#);
 }
+
+#[test]
+fn a_bundle_given_as_a_folder_is_called_a_bundle_and_finds_its_program_by_its_own_name() {
+    // An app whose Info.plist names no executable: the system then goes by the bundle's name.
+    let dir = tempfile::tempdir().expect("temp dir");
+    let app = dir.path().join("Mini.app");
+    std::fs::create_dir_all(app.join("Contents/MacOS")).expect("folders");
+    let plist = |executable: &str| {
+        format!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\"><dict>\
+             <key>CFBundleIdentifier</key><string>com.example.mini</string>{executable}</dict></plist>\n"
+        )
+    };
+    std::fs::write(app.join("Contents/MacOS/Mini"), b"#!/bin/sh\n").expect("program");
+    for named in ["", "<key>CFBundleExecutable</key><string></string>"] {
+        std::fs::write(app.join("Contents/Info.plist"), plist(named)).expect("plist");
+        let report = run(&app, &Options::default());
+        let kind = report.findings.iter().find(|f| f.rule.starts_with("overview.kind")).expect("says what it is");
+        assert_eq!((kind.rule.as_str(), kind.params["name"].as_str()), ("overview.kind-bundle", Some("Mini.app")));
+        assert!(!report.findings.iter().any(|f| f.rule == "apple.executable-missing"), "the program is there, under the bundle's name");
+    }
+
+    // A folder that is not named like a bundle stays a folder, whatever it holds.
+    let plain = dir.path().join("Mini");
+    std::fs::rename(&app, &plain).expect("renamed");
+    let report = run(&plain, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-folder"));
+}

@@ -84,7 +84,7 @@ pub const RULES: &[Rule] = &[
         "签名验证通过",
         "Signature verified",
         "{scheme} 签名验证通过（{signers} 个签名者）：{details_zh}。这说明文件自签名后未被改动，并且确由持有下述证书私钥的人签名。",
-        "The {scheme} signature verifies ({signers} signer(s)): {details_en}. The file has not changed since it was signed, and it was signed by the holder of the certificate's private key.",
+        "The {scheme} signature verifies ({signers} signers): {details_en}. The file has not changed since it was signed, and it was signed by the holder of the certificate's private key.",
     ),
     r(
         "android.signature-invalid",

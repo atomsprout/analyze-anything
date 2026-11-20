@@ -1,6 +1,6 @@
 # Where it stands and where it is going
 
-Version 0.1.0 is the first release. This page says what it can do today, what "anything" means, and what comes next. The itemized list of open work is [TODO.md](TODO.md); what the program cannot do, or has not been checked to do, is in [LIMITATIONS.md](LIMITATIONS.md).
+Version 0.1 is the first release line; 0.1.1 is current. This page says what it can do today, what "anything" means, and what comes next. The itemized list of open work is [TODO.md](TODO.md); what the program cannot do, or has not been checked to do, is in [LIMITATIONS.md](LIMITATIONS.md).
 
 ## What it does today
 
@@ -25,7 +25,7 @@ Version 0.1.0 is the first release. This page says what it can do today, what "a
 
 **An optional AI reading.** Off unless set up. A model explains a finished report in plain words: through an API key, Claude Code, Codex, a model in Ollama, or a program of your own. It sees the report, never the files, and a statement that cites no finding of the report is dropped.
 
-**How far it has been checked.** 400 and more automated tests on Linux, macOS and Windows. Signature results agree with `codesign` on 332 points across real apps, and with Windows' own tools on 132. The desktop app checks itself in its real window (67 checks). Used by hand on one Apple silicon Mac only; released for Apple silicon Macs only. [LIMITATIONS.md](LIMITATIONS.md) has the exact list.
+**How far it has been checked.** 400 and more automated tests on Linux, macOS and Windows. Signature results agree with `codesign` on 332 points across real apps, and with Windows' own tools on 132. The desktop app checks itself in its real window (67 checks). Run over all 52 apps in the Applications folder of one Mac (677,000 files) without a failure, with the results that looked wrong checked against `codesign`. Used by hand on one Apple silicon Mac only; released for Apple silicon Macs only. [LIMITATIONS.md](LIMITATIONS.md) has the exact list.
 
 ## What "anything" means
 

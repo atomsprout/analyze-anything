@@ -94,6 +94,13 @@ const RULES: &[Rule] = &[
         text_en: "This is a {format} archive; it was opened and holds {files} files.",
     },
     Rule {
+        id: "overview.kind-bundle",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个应用包（{name}）：一个按 Apple 的约定组织的文件夹，直接包含 {files} 个文件（不含解包得到的）。",
+        text_en: "This is an application bundle ({name}): a folder laid out the way Apple's systems expect, holding {files} files (not counting unpacked ones).",
+    },
+    Rule {
         id: "overview.kind-folder",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -294,6 +301,14 @@ impl Analyzer for Overview {
         if single {
             kind_of_file(tree, first, out);
             windows_file(first, out);
+        } else if let Some(plist) = bundle_plist(tree) {
+            // The folder that was given is itself a bundle: say so, not just "a folder".
+            out.finding(
+                finding("overview.kind-bundle", Confidence::Verified)
+                    .param("name", tree.input_name())
+                    .param("files", roots.len())
+                    .evidence(Evidence::whole(plist, "Info.plist")),
+            );
         } else {
             out.finding(
                 finding("overview.kind-folder", Confidence::Verified)
@@ -305,6 +320,26 @@ impl Analyzer for Overview {
         android(tree, out);
         windows_tree(tree, first, out);
     }
+}
+
+/// The Info.plist at the top of the input, when the input is a folder named like a bundle
+/// (`Name.app`, `Name.framework`, …) that has one where a bundle keeps it.
+fn bundle_plist(tree: &dyn Tree) -> Option<&Artifact> {
+    let name = tree.input_name().trim_end_matches('/').to_ascii_lowercase();
+    const KINDS: &[&str] = &[".app", ".framework", ".appex", ".bundle", ".plugin", ".kext", ".xpc"];
+    if !KINDS.iter().any(|kind| name.ends_with(kind)) {
+        return None;
+    }
+    ["Contents/Info.plist", "Info.plist", "Resources/Info.plist"].iter().find_map(|path| tree.get(path)).or_else(|| {
+        // A framework keeps it under the version it holds: Versions/A/Resources/Info.plist.
+        tree.artifacts().iter().find(|artifact| {
+            artifact
+                .path
+                .strip_prefix("Versions/")
+                .and_then(|rest| rest.split_once('/'))
+                .is_some_and(|(_, rest)| rest == "Resources/Info.plist")
+        })
+    })
 }
 
 fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {

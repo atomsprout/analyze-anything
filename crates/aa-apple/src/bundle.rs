@@ -81,9 +81,16 @@ impl Bundle<'_> {
         }
     }
 
-    /// The path of the main executable, as `Info.plist` names it.
+    /// The path of the main executable: as `Info.plist` names it, or, when it names none (the
+    /// key is absent, or there with nothing in it), the bundle's own name without its extension, which is what the system then goes by.
     pub fn executable_path(&self) -> Option<String> {
-        let name = self.string("CFBundleExecutable")?;
+        let own = self.name();
+        let own = own.rsplit_once('.').map_or(own, |(stem, _)| stem);
+        let name = match self.string("CFBundleExecutable") {
+            Some(name) if !name.is_empty() => name,
+            _ if !own.is_empty() && own != "." => own,
+            _ => return None,
+        };
         Some(match self.layout {
             Layout::Flat | Layout::Versioned => self.rooted(name),
             Layout::Contents => self.rooted(&format!("MacOS/{name}")),

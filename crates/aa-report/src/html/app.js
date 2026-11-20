@@ -90,6 +90,10 @@
     if (word == null) return '?' + key;
     if (n != null) word = word.replace('{n}', n);
     if (m != null) word = word.replace('{m}', m);
+    // "1 kind / 1 finding", as the other formats write it (`agree` in words.rs).
+    if (n === '1' || m === '1' || n === 1 || m === 1) {
+      word = word.replace(/(^| )1 (kind|finding|file|item)s\b/g, '$11 $2');
+    }
     return word;
   }
   function sectionName(key) { return V.words[lang].sections[key] || key; }

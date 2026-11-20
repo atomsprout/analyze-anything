@@ -148,7 +148,7 @@ impl Unpacker for AsarUnpacker {
             }
         }
         if missing > 0 {
-            sink.limitation("asar.entries-unreadable", Some(format!("{missing} entries lie outside the archive")));
+            sink.limitation("asar.entries-unreadable", Some(aa_core::counted(missing as u64, "entries lie outside the archive")));
         }
         Unpack::Done { kind: "asar" }
     }

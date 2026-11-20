@@ -126,8 +126,17 @@ pub fn find_volumes(disk: &dyn Disk) -> Vec<(u64, u64, VolumeKind)> {
         if head.get(32..36) == Some(b"NXSB") {
             return Some(VolumeKind::Apfs);
         }
-        let signature = head.get(1024..1026)?;
-        (signature == b"H+" || signature == b"HX").then_some(VolumeKind::HfsPlus)
+        // Two letters are not enough to go by: any file may hold "H+" at that place (a picture
+        // did). The header's version and block size must make sense for the letters as well.
+        let header = head.get(1024..1024 + 44)?;
+        let version = u16::from_be_bytes([header[2], header[3]]);
+        let block = u32::from_be_bytes([header[40], header[41], header[42], header[43]]);
+        let looks_right = match &header[..2] {
+            b"H+" => version == 4,
+            b"HX" => version == 5,
+            _ => false,
+        };
+        (looks_right && (512..=1 << 24).contains(&block) && block.is_power_of_two()).then_some(VolumeKind::HfsPlus)
     };
     if let Some(kind) = probe(0) {
         return vec![(0, disk.len(), kind)];

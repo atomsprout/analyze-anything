@@ -275,7 +275,7 @@ fn group_blocks(doc: &mut Doc, report: &Report, lang: Lang, w: &Words, group: &G
     if let (1, Some(only)) = (group.count, group.instances().next()) {
         return finding_blocks(doc, report, lang, w, only.finding);
     }
-    let count = words::ui(lang, "group_count").replace("{n}", &group::thousands(group.count));
+    let count = words::agree(&words::ui(lang, "group_count").replace("{n}", &group::thousands(group.count)));
     doc.item(0, format!("[{}] {} — {count}", group::label(lang, group), group.title));
     let listing = group::listing(group);
     for row in listing.rows {

@@ -277,6 +277,16 @@ pub fn report(tree: &dyn Tree, file: &Artifact, bundle: Option<&Bundle<'_>>, bri
             }
         }
     }
+    // The Info.plist slot of a bundle's main program seals the bundle's Info.plist file. A
+    // copy of a plist inside the program itself is then not what the slot is about, and its
+    // not matching the slot says nothing: `codesign` accepts such a program.
+    let sealed_plist_matches = intact.iter().any(|label| label == "Info.plist")
+        // A program met outside the bundles that were gone through one by one may still sit
+        // where a bundle keeps its main program, with the bundle's Info.plist beside it.
+        || (bundle.is_none() && seals_plist_beside(tree, &file.path, directories));
+    if sealed_plist_matches {
+        broken.retain(|(label, _)| label != "embedded Info.plist");
+    }
     if brief {
         if pages_intact {
             signed.intact_pages = checked;
@@ -642,6 +652,39 @@ fn sealed_entries(plist: &plist::Dictionary) -> (BTreeMap<String, Sealed>, &'sta
     (entries, version)
 }
 
+/// True when the Info.plist slot of the code directories `directories` holds the digest of the
+/// Info.plist that sits where the bundle of the program at `path` would keep it. The slot is
+/// then about that file, and a plist copied into the program itself is beside the point.
+pub fn seals_plist_beside(tree: &dyn Tree, path: &str, directories: &[Value]) -> bool {
+    let Some(plist) = plist_beside(tree, path) else { return false };
+    directories.iter().any(|directory| {
+        let stored = text(&directory["special"], &SLOT_INFO_PLIST.to_string());
+        let digest = match (text(directory, "hash_type"), &plist.digests) {
+            (Some("sha1"), Some(digests)) => Some(digests.sha1.clone()),
+            (Some("sha256"), Some(digests)) => Some(digests.sha256.clone()),
+            (Some("sha256-truncated"), Some(digests)) => digests.sha256.get(..40).map(str::to_string),
+            _ => None,
+        };
+        stored.is_some() && digest.as_deref() == stored
+    })
+}
+
+/// The Info.plist of the bundle whose main program `path` would be, going by where bundles keep
+/// them: `X/Contents/MacOS/name` with `X/Contents/Info.plist`, a framework's
+/// `Versions/V/name` with `Versions/V/Resources/Info.plist`, or `X/name` with `X/Info.plist`.
+fn plist_beside<'t>(tree: &'t dyn Tree, path: &str) -> Option<&'t Artifact> {
+    let (folder, _) = path.rsplit_once('/')?;
+    let candidates = [
+        folder
+            .strip_suffix("/MacOS")
+            .or(if folder == "MacOS" { Some("") } else { None })
+            .map(|contents| if contents.is_empty() { "Info.plist".to_string() } else { format!("{contents}/Info.plist") }),
+        Some(format!("{folder}/Resources/Info.plist")),
+        Some(format!("{folder}/Info.plist")),
+    ];
+    candidates.into_iter().flatten().find_map(|candidate| tree.get(&candidate))
+}
+
 /// Every cdhash the code at `path` (a Mach-O file or a bundle folder) answers to.
 fn cdhashes_at(tree: &dyn Tree, bundles: &[Bundle<'_>], path: &str) -> Option<Vec<String>> {
     let file = match tree.get(path) {
@@ -651,16 +694,26 @@ fn cdhashes_at(tree: &dyn Tree, bundles: &[Bundle<'_>], path: &str) -> Option<Ve
             tree.get(&nested.executable_path()?)?
         }
     };
-    let all = slices(file);
-    if all.is_empty() {
-        return None;
+    let mut files = vec![file];
+    // A framework may hold several versions, with `Versions/Current` saying which one is in
+    // use. Links are not followed, so which one that is cannot be told here: the seal is taken
+    // to hold when it names any of them. An updater that keeps the previous version beside the
+    // new one (Chrome does) would otherwise look like replaced code.
+    let name = path.rsplit('/').next().unwrap_or(path).trim_end_matches(".framework");
+    let versions = format!("{path}/Versions/");
+    for other in tree.under(path) {
+        let inside = other.path.strip_prefix(&versions).and_then(|rest| rest.split_once('/'));
+        if inside.is_some_and(|(_, file_name)| file_name == name) && other.path != file.path {
+            files.push(other);
+        }
     }
-    Some(
-        all.iter()
-            .flat_map(|s| s["signature"]["directories"].as_array().into_iter().flatten())
-            .filter_map(|d| d["cdhash"].as_str().map(str::to_string))
-            .collect(),
-    )
+    let found: Vec<String> = files
+        .iter()
+        .flat_map(|file| slices(file))
+        .flat_map(|s| s["signature"]["directories"].as_array().cloned().unwrap_or_default())
+        .filter_map(|d| d["cdhash"].as_str().map(str::to_string))
+        .collect();
+    if found.is_empty() { None } else { Some(found) }
 }
 
 /// Whether the App Store puts this file into a bundle after the developer signed it, so that it
@@ -958,6 +1011,13 @@ pub fn compare_profile(file: &Artifact, profile_file: &Artifact, profile: &Profi
                 // profile does not list them, and the system does not look for them there.
                 // App groups are the exception: they are granted through the profile.
                 None if key.starts_with("com.apple.security.") && key != "com.apple.security.application-groups" => {}
+                // On macOS an app group named with the team's identifier in front
+                // (`TEAMID.name`) is the developer's to claim as well; only groups named
+                // `group.…` go through the profile.
+                None if key == "com.apple.security.application-groups"
+                    && wanted.as_array().is_some_and(|groups| {
+                        !groups.is_empty() && groups.iter().all(|g| g.as_str().is_some_and(|g| !g.starts_with("group.")))
+                    }) => {}
                 _ => beyond.push(key.clone()),
             }
         }

@@ -181,6 +181,26 @@ fn other_files_are_not_disk_images() {
         assert_eq!(unpack(&XarArchive, bytes).0, Unpack::NotMine);
         assert_eq!(unpack(&Payload, bytes).0, Unpack::NotMine);
     }
+    // Two letters where an HFS+ volume keeps its signature do not make a file a disk: a
+    // picture was once taken for one.
+    let mut picture = vec![0x5au8; 8192];
+    picture[1024..1026].copy_from_slice(b"H+");
+    struct Whole(Vec<u8>);
+    impl disk::Disk for Whole {
+        fn len(&self) -> u64 {
+            self.0.len() as u64
+        }
+        fn read_at(&self, offset: u64, buf: &mut [u8]) -> Result<(), String> {
+            let start = offset as usize;
+            buf.copy_from_slice(self.0.get(start..start + buf.len()).ok_or("past the end")?);
+            Ok(())
+        }
+    }
+    assert!(disk::find_volumes(&Whole(picture.clone())).is_empty());
+    // With a version and a block size that go with the letters, it is one.
+    picture[1026..1028].copy_from_slice(&4u16.to_be_bytes());
+    picture[1064..1068].copy_from_slice(&4096u32.to_be_bytes());
+    assert_eq!(disk::find_volumes(&Whole(picture)).len(), 1);
 }
 
 #[test]
@@ -877,4 +897,31 @@ fn macos_bundle_with_hardening_findings() {
     assert_eq!(finding(&out, "apple.framework").params["framework"], "Electron");
     assert_eq!(finding(&out, "apple.embedded-code").params["summary"], "1 framework");
     assert!(has(&out, "apple.debuggable"));
+}
+
+#[test]
+fn a_bundles_program_seals_the_bundles_plist_not_a_copy_inside_itself() {
+    // `codesign` accepts a main program whose Info.plist slot holds the digest of the bundle's
+    // Info.plist while a plist section of its own differs; so must this.
+    let plist = b"<plist><dict/></plist>";
+    let digest = hex::encode(sha2::Sha256::digest(plist));
+    let directories =
+        [serde_json::json!({ "hash_type": "sha256", "special": { "1": digest }, "slots": { "embedded_info_plist": "mismatch" } })];
+    let tree =
+        |paths: &[&str]| MemoryTree { artifacts: paths.iter().map(|path| artifact(path, plist, None)).collect(), data: BTreeMap::new() };
+    for (program, beside) in [
+        ("X.bundle/Contents/MacOS/X", "X.bundle/Contents/Info.plist"),
+        ("Contents/MacOS/X", "Contents/Info.plist"),
+        ("X.framework/Versions/A/X", "X.framework/Versions/A/Resources/Info.plist"),
+        ("Payload/X.app/X", "Payload/X.app/Info.plist"),
+    ] {
+        assert!(crate::signing::seals_plist_beside(&tree(&[beside]), program, &directories), "{program}");
+        assert!(
+            !crate::signing::seals_plist_beside(&tree(&["elsewhere/Info.plist"]), program, &directories),
+            "{program} with no plist beside it"
+        );
+    }
+    // A plist beside the program that the slot does not seal settles nothing.
+    let other = [serde_json::json!({ "hash_type": "sha256", "special": { "1": "00".repeat(32) } })];
+    assert!(!crate::signing::seals_plist_beside(&tree(&["Contents/Info.plist"]), "Contents/MacOS/X", &other));
 }

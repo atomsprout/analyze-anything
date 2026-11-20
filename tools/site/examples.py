@@ -61,9 +61,36 @@ WORDS = {
     "input": ("Input", "输入"), "output": ("Output", "输出"),
     "pdf": ("Open the PDF report", "打开 PDF 报告"), "from": ("official download", "官方下载"), "pages": ("pages", "页"),
 }
-SINGULAR = [(" files are ", " file is "), (" files", " file"), (" entries", " entry"), (" binaries", " binary"), (" certificates", " certificate"),
-            (" components", " component"), (" languages", " language"), (" bundles", " bundle"), (" hosts", " host"), (" bytes", " byte"),
-            (" shortcuts", " shortcut"), (" findings", " finding"), (" items", " item"), (" pages", " page")]
+
+
+def table(name):
+    """A word table of `aa_core::fill`, read from its source so that this copy cannot fall behind."""
+    source = open(os.path.join(ROOT, "crates", "aa-core", "src", "lib.rs"), encoding="utf-8").read()
+    body = source.split(f"const {name}:", 1)[1].split("];", 1)[0]
+    return re.findall(r'\("([^"]+)", "([^"]+)"\)', body) if "(" in body.split("=", 1)[1] else re.findall(r'"([^"]+)"', body.split("=", 1)[1])
+
+
+NOUNS, VERBS, NOT_DESCRIBING = dict(table("NOUNS")), dict(table("VERBS")), set(table("NOT_DESCRIBING"))
+
+
+def singular(tail):
+    """What `aa_core::fill` writes after a count of one: the noun, and the verb after it, for one."""
+    written, rest = "", tail
+    for _ in range(4):
+        found = re.match(r" ([A-Za-z0-9-]+)", rest)
+        if not found:
+            return None
+        word, after = found.group(1), rest[found.end():]
+        if word in NOUNS:
+            written += " " + NOUNS[word]
+            verb = re.match(r" ([A-Za-z]+)", after)
+            if verb and verb.group(1) in VERBS:
+                return written + " " + VERBS[verb.group(1)], after[verb.end():]
+            return written, after
+        if word in NOT_DESCRIBING:
+            return None
+        written, rest = written + " " + word, after
+    return None
 
 
 def analyzer():
@@ -110,11 +137,10 @@ def fill(template, params):
             continue
         value = params[name]
         out += value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
-        if value == 1 or value == "1":
-            for plural, single in SINGULAR:
-                if tail.startswith(plural) and (plural.endswith(" ") or not tail[len(plural):len(plural) + 1].isalnum()):
-                    out, tail = out + single, tail[len(plural):]
-                    break
+        if value == 1 and not isinstance(value, bool):
+            agreed = singular(tail)
+            if agreed:
+                out, tail = out + agreed[0], agreed[1]
         rest = tail
     return out + rest
 

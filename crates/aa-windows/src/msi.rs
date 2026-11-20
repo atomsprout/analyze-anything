@@ -220,7 +220,7 @@ fn unpack(package: &mut Package, sink: &mut dyn UnpackSink) {
     let missing = paths.keys().filter(|key| !extracted.contains(*key)).count();
     if !external.is_empty() || (missing > 0 && cabinets.is_empty()) {
         let detail = if external.is_empty() {
-            format!("{missing} files are stored outside the package")
+            aa_core::counted(missing as u64, "files are stored outside the package")
         } else {
             format!("external cabinets: {}", external.join(", "))
         };

@@ -300,7 +300,7 @@ fn group_view(lang: Lang, group: &Group) -> Value {
         "severity": words::severity_key(group.severity),
         "label": group::label(lang, group),
         "title": line(&cut(&group.title, TITLE_LENGTH)),
-        "count": ui(lang, "group_count").replace("{n}", &group::thousands(group.count)),
+        "count": words::agree(&ui(lang, "group_count").replace("{n}", &group::thousands(group.count))),
         "rows": rows,
         "not_shown": (listing.not_shown > 0).then(|| group::not_shown_note(lang, listing.not_shown)),
     })
