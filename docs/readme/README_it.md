@@ -152,7 +152,7 @@ Scegli tu chi lo fa: un servizio di modelli per cui hai una chiave API (Claude, 
 
 «Anything» è una promessa sul pavimento e una direzione per il soffitto: nulla viene rifiutato, e la profondità si aggiunge un formato alla volta, ciascuno come un piccolo crate. I prossimi passi, in ordine:
 
-1. **La stessa cosa su ogni sistema**: build rilasciate per Linux, Windows e Mac Intel; l'app desktop oltre macOS.
+1. **La stessa cosa su ogni sistema**: build rilasciate per Linux e Windows; l'app desktop oltre macOS.
 2. **Più tipi di input**: pacchetti Linux, immagini di container, pacchetti degli ecosistemi dei linguaggi, altre piattaforme di app, documenti che contengono codice, immagini firmware.
 3. **Più profondità dove conta**: vulnerabilità note da un database offline, fatti a livello di funzione, regole e policy come dati.
 4. **Più facile costruirci sopra**: una GitHub Action, la lettura IA dentro il report, un'interfaccia più completa per gli agenti, uno schema del report stabile.

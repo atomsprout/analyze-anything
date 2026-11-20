@@ -152,7 +152,7 @@ To ty wybierasz, kto to robi: usługa modeli, do której masz klucz API (Claude 
 
 „Anything” to obietnica co do dolnej granicy i kierunek dla górnej: nic nie jest odrzucane, a głębia jest dodawana po jednym formacie naraz, każdy jako mały crate. Dalej, po kolei:
 
-1. **To samo na każdym systemie**: wydane kompilacje dla Linuksa, Windows i komputerów Mac z procesorami Intel; aplikacja desktopowa nie tylko dla macOS.
+1. **To samo na każdym systemie**: wydane kompilacje dla Linuksa i Windows; aplikacja desktopowa nie tylko dla macOS.
 2. **Więcej rodzajów danych wejściowych**: pakiety Linuksa, obrazy kontenerów, pakiety ekosystemów językowych, kolejne platformy aplikacji, dokumenty zawierające kod, obrazy firmware'u.
 3. **Głębiej tam, gdzie to ważne**: znane podatności z bazy offline, fakty na poziomie funkcji, reguły i polityki jako dane.
 4. **Łatwiej na tym budować**: GitHub Action, interpretacja AI wewnątrz raportu, pełniejszy interfejs dla agentów, stabilny schemat raportu.

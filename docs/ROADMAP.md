@@ -41,7 +41,7 @@ So the work toward "anything" has four directions, and the order below is the or
 
 What exists should work where people are before it grows.
 
-- Released builds of the command line for Linux, Windows and Intel Macs. They build and pass their tests in CI; nobody has used them by hand.
+- Released builds of the command line for Linux and Windows. They build and pass their tests in CI; nobody has used them by hand. Intel Macs are not supported: on a Mac the program is for Apple silicon.
 - A first real run on a Windows machine, with the signature findings compared against `signtool`.
 - The desktop app for Windows and Linux.
 - The signed release built in CI instead of on a developer's Mac; automatic updates for the desktop app.

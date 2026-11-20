@@ -152,7 +152,7 @@ Du entscheidest, wer das übernimmt: ein Modelldienst, für den du einen API-Sch
 
 „Anything“ ist ein Versprechen für die Untergrenze und eine Richtung für die Obergrenze: Nichts wird abgewiesen, und die Tiefe kommt Format für Format hinzu, jedes als kleines Crate. Als Nächstes, in dieser Reihenfolge:
 
-1. **Dasselbe auf jedem System**: veröffentlichte Builds für Linux, Windows und Intel-Macs; die Desktop-App über macOS hinaus.
+1. **Dasselbe auf jedem System**: veröffentlichte Builds für Linux und Windows; die Desktop-App über macOS hinaus.
 2. **Mehr Arten von Eingaben**: Linux-Pakete, Container-Images, Pakete aus Sprachökosystemen, weitere App-Plattformen, Dokumente, die Code enthalten, Firmware-Images.
 3. **Mehr Tiefe, wo es darauf ankommt**: bekannte Schwachstellen aus einer Offline-Datenbank, Fakten auf Funktionsebene, Regeln und Richtlinien als Daten.
 4. **Leichter darauf aufzubauen**: eine GitHub Action, die KI-Lesart im Bericht selbst, eine umfassendere Schnittstelle für Agenten, ein stabiles Berichtsschema.

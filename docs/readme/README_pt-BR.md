@@ -152,7 +152,7 @@ Você escolhe quem faz isso: um serviço de modelos para o qual você tem uma ch
 
 "Anything" é uma promessa sobre o piso e uma direção para o teto: nada é recusado, e a profundidade é acrescentada um formato por vez, cada um como um crate pequeno. A seguir, em ordem:
 
-1. **A mesma coisa em todos os sistemas**: builds publicados para Linux, Windows e Macs com Intel; o aplicativo para desktop além do macOS.
+1. **A mesma coisa em todos os sistemas**: builds publicados para Linux e Windows; o aplicativo para desktop além do macOS.
 2. **Mais tipos de entrada**: pacotes de Linux, imagens de contêiner, pacotes de ecossistemas de linguagens, mais plataformas de aplicativos, documentos que carregam código, imagens de firmware.
 3. **Mais profundidade onde importa**: vulnerabilidades conhecidas a partir de um banco de dados offline, fatos no nível de função, regras e políticas como dados.
 4. **Mais fácil de usar como base**: uma GitHub Action, a leitura por IA dentro do relatório, uma interface mais completa para agentes, um esquema de relatório estável.

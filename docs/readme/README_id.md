@@ -152,7 +152,7 @@ Anda yang memilih siapa yang mengerjakannya: layanan model yang API key-nya Anda
 
 "Anything" adalah janji tentang batas bawah dan arah untuk batas atas: tidak ada yang ditolak, dan kedalaman ditambahkan satu format demi satu format, masing-masing sebagai crate kecil. Berikutnya, secara berurutan:
 
-1. **Hal yang sama di setiap sistem**: build rilis untuk Linux, Windows, dan Mac Intel; aplikasi desktop di luar macOS.
+1. **Hal yang sama di setiap sistem**: build rilis untuk Linux dan Windows; aplikasi desktop di luar macOS.
 2. **Lebih banyak jenis masukan**: paket Linux, image kontainer, paket dari ekosistem bahasa pemrograman, lebih banyak platform aplikasi, dokumen yang memuat kode, image firmware.
 3. **Lebih dalam di tempat yang penting**: kerentanan yang sudah diketahui dari basis data luring, fakta di tingkat fungsi, aturan dan kebijakan sebagai data.
 4. **Lebih mudah dijadikan dasar**: sebuah GitHub Action, pembacaan AI di dalam laporan, antarmuka yang lebih lengkap untuk agen, skema laporan yang stabil.

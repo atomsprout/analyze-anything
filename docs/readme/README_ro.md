@@ -152,7 +152,7 @@ Tu alegi cine o face: un serviciu de modele pentru care ai o cheie API (Claude s
 
 „Anything” este o promisiune despre podea și o direcție pentru tavan: nimic nu este refuzat, iar profunzimea se adaugă format cu format, fiecare ca un crate mic. Urmează, în ordine:
 
-1. **Același lucru pe orice sistem**: build-uri publicate pentru Linux, Windows și Mac-uri cu Intel; aplicația desktop dincolo de macOS.
+1. **Același lucru pe orice sistem**: build-uri publicate pentru Linux și Windows; aplicația desktop dincolo de macOS.
 2. **Mai multe tipuri de intrare**: pachete Linux, imagini de container, pachete ale ecosistemelor de limbaje, mai multe platforme de aplicații, documente care conțin cod, imagini de firmware.
 3. **Mai multă profunzime acolo unde contează**: vulnerabilități cunoscute dintr-o bază de date offline, fapte la nivel de funcție, reguli și politici ca date.
 4. **Mai ușor de construit pe el**: un GitHub Action, lectura făcută de IA în interiorul raportului, o interfață mai completă pentru agenți, o schemă stabilă a raportului.

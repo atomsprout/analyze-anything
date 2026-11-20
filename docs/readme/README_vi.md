@@ -152,7 +152,7 @@ Bạn chọn bên thực hiện: một dịch vụ mô hình mà bạn có API k
 
 "Anything" là một lời hứa về mức sàn và một định hướng cho mức trần: không từ chối thứ gì, còn độ sâu được bổ sung từng định dạng một, mỗi định dạng là một crate nhỏ. Tiếp theo, theo thứ tự:
 
-1. **Giống nhau trên mọi hệ thống**: bản build phát hành cho Linux, Windows và máy Mac Intel; ứng dụng desktop ngoài macOS.
+1. **Giống nhau trên mọi hệ thống**: bản build phát hành cho Linux và Windows; ứng dụng desktop ngoài macOS.
 2. **Thêm nhiều loại đầu vào**: gói Linux, container image, gói của các hệ sinh thái ngôn ngữ, thêm các nền tảng ứng dụng, tài liệu có chứa mã, firmware image.
 3. **Sâu hơn ở những chỗ quan trọng**: lỗ hổng đã biết từ một cơ sở dữ liệu ngoại tuyến, thông tin ở mức hàm, quy tắc và chính sách dưới dạng dữ liệu.
 4. **Dễ xây dựng dựa trên nó hơn**: một GitHub Action, phần diễn giải của AI nằm ngay trong báo cáo, giao diện đầy đủ hơn cho các agent, một schema báo cáo ổn định.

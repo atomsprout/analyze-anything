@@ -161,7 +161,7 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 "Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
 
-1. **The same thing on every system**: released builds for Linux, Windows and Intel Macs; the desktop app beyond macOS.
+1. **The same thing on every system**: released builds for Linux and Windows; the desktop app beyond macOS.
 2. **More kinds of input**: Linux packages, container images, packages of language ecosystems, more app platforms, documents that carry code, firmware images.
 3. **Deeper where it matters**: known vulnerabilities from an offline database, function-level facts, rules and policies as data.
 4. **Easier to build on**: a GitHub Action, the AI reading inside the report, a fuller interface for agents, a stable report schema.

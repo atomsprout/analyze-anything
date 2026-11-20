@@ -10,7 +10,7 @@ The order in which the open items below are taken up. It follows the first direc
    - the command line runs the analysis in a child process, as the desktop app does, so that `--analyzer-timeout` really stops a stuck analyzer;
    - a comparison no longer counts a finding as changed because its text holds the input's name;
    - the CMS signature of the Apple pkg inside Xcode is read (the tag the parser does not expect).
-2. The command line for Linux and Intel Macs: try the builds CI makes by hand, then release them.
+2. The command line for Linux: try the builds CI makes by hand, then release them. Intel Macs are not supported, and no build is made for them.
 3. A first run on a Windows machine, with the signature findings compared against `signtool`. It waits for a machine; the Windows build of the command line is released after it.
 4. Real samples for the formats that were only tried on constructed data (see "Needs real samples").
 
@@ -99,7 +99,7 @@ These formats were tested with constructed data only:
 ## After phase two
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
-- [ ] Released builds of the command line for Linux, Windows and Intel Macs. They are built in CI on a version tag but have not been tried by hand.
+- [ ] Released builds of the command line for Linux and Windows. They are built in CI on a version tag but have not been tried by hand.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 

@@ -152,7 +152,7 @@ Yeh kaam kaun karega, aap chunte hain: koi model service jis ki API key aap ke p
 
 "Anything" farsh ke bare mein ek wada hai aur chhat ke liye ek simt: kisi cheez ko radd nahin kiya jata, aur gehrai ek ek format kar ke barhayi jati hai, har ek chhote se crate ki shakal mein. Aage, tarteeb se:
 
-1. **Har system par yahi cheez**: Linux, Windows aur Intel Macs ke liye release shuda builds; macOS se aage desktop app.
+1. **Har system par yahi cheez**: Linux aur Windows ke liye release shuda builds; macOS se aage desktop app.
 2. **Input ki mazeed qismein**: Linux packages, container images, language ecosystems ke packages, mazeed app platforms, aise documents jin mein code ho, firmware images.
 3. **Jahan zaroori ho wahan zyada gehrai**: ek offline database se maloom vulnerabilities, function ki satah ke haqaiq, rules aur policies data ki shakal mein.
 4. **Is par kuch banana aasan**: ek GitHub Action, report ke andar AI tashreeh, agents ke liye zyada mukammal interface, ek stable report schema.

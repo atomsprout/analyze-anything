@@ -152,7 +152,7 @@ Bunu kimin yapacağını siz seçersiniz: API anahtarınız olan bir model hizme
 
 "Anything", taban için bir söz, tavan için bir yöndür: hiçbir şey reddedilmez ve derinlik, her biri küçük bir crate olarak, biçim biçim eklenir. Sırada, sırasıyla:
 
-1. **Her sistemde aynı şey**: Linux, Windows ve Intel Mac'ler için yayımlanmış derlemeler; macOS dışında da masaüstü uygulaması.
+1. **Her sistemde aynı şey**: Linux ve Windows için yayımlanmış derlemeler; macOS dışında da masaüstü uygulaması.
 2. **Daha fazla girdi türü**: Linux paketleri, konteyner imajları, dil ekosistemlerinin paketleri, daha fazla uygulama platformu, kod taşıyan belgeler, firmware imajları.
 3. **Önemli olan yerde daha derin**: çevrimdışı bir veritabanından bilinen güvenlik açıkları, işlev düzeyinde bilgiler, veri olarak kurallar ve politikalar.
 4. **Üzerine inşa etmesi daha kolay**: bir GitHub Action, raporun içinde yapay zekâ yorumu, ajanlar için daha kapsamlı bir arayüz, kararlı bir rapor şeması.
