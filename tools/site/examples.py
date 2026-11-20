@@ -158,10 +158,10 @@ def card(sample, path, report, pdf, pages):
     file_name = os.path.basename(path)
     return f"""      <article class="ex c-{colour}">
         <div class="tags"><span class="tag sec">{both(esc(kind[0]), esc(kind[1]))}</span></div>
-        <h3><a href="{esc(page)}">{esc(product)}</a></h3>
+        <h3><a href="{esc(page)}" target="_blank" rel="noopener">{esc(product)}</a></h3>
         <div class="ex-io"><b>{both(*WORDS['input'])}</b>
           <span class="mono">$ analyze-anything {esc(file_name)}</span>
-          <span class="mono dim">{size_text(os.path.getsize(path))} · sha256 {digest[:12]}… · <a href="{esc(url)}">{both(*WORDS['from'])}</a></span>
+          <span class="mono dim">{size_text(os.path.getsize(path))} · sha256 {digest[:12]}… · <a href="{esc(url)}" target="_blank" rel="noopener">{both(*WORDS['from'])}</a></span>
         </div>
         <div class="ex-out"><b>{both(*WORDS['output'])}</b>
           <ul>
@@ -169,7 +169,7 @@ def card(sample, path, report, pdf, pages):
           </ul>
           <p class="ex-count">{both(esc(numbers_en), esc(numbers_zh))}</p>
         </div>
-        <div class="ex-links"><a class="btn" href="examples/{name}.pdf">{both(*WORDS['pdf'])}</a><span class="dim">PDF · {pages} {both(*WORDS['pages'])} · {size_text(os.path.getsize(pdf))}</span></div>
+        <div class="ex-links"><a class="btn" href="examples/{name}.pdf" target="_blank" rel="noopener">{both(*WORDS['pdf'])}</a><span class="dim">PDF · {pages} {both(*WORDS['pages'])} · {size_text(os.path.getsize(pdf))}</span></div>
       </article>"""
 
 
