@@ -290,12 +290,14 @@
 
 // ---- Where the report came from ---------------------------------------------------------------
 
-#v(1fr)
-#block(width: 100%, breakable: false, above: 18pt, {
-  line(length: 100%, stroke: 0.4pt + faint)
-  set align(center)
-  set text(size: 8.5pt, fill: muted)
-  [#w.generated_by #anywhere(d.tool)]
-  linebreak()
-  link(d.project, text(font: mono, d.project))
-})
+#if d.project != none {
+  v(1fr)
+  block(width: 100%, breakable: false, above: 18pt, {
+    line(length: 100%, stroke: 0.4pt + faint)
+    set align(center)
+    set text(size: 8.5pt, fill: muted)
+    [#w.generated_by #anywhere(d.tool)]
+    linebreak()
+    link(d.project, text(font: mono, d.project))
+  })
+}

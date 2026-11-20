@@ -1231,7 +1231,11 @@
             })),
           filesSection(),
           coverageSection(),
-          el('footer', { class: 'foot' }, R.tool.name + ' ' + R.tool.version + ' · report.json schema ' + R.schema_version))),
+          el('footer', { class: 'foot' },
+            el('div', null, R.tool.name + ' ' + R.tool.version + ' · report.json schema ' + R.schema_version),
+            // In a host's frame a link could go nowhere, so the address is shown as text there.
+            V.credit ? el('div', { class: 'credit' }, V.credit[lang] + ' ' + R.tool.name + ' ' + R.tool.version + ' · ',
+              hosted ? V.credit.url : el('a', { href: V.credit.url, target: '_blank', rel: 'noopener noreferrer' }, V.credit.url)) : null))),
       el('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' })
     ]);
     renderFindings();

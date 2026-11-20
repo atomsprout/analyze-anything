@@ -6,7 +6,7 @@ use aa_core::Report;
 use aa_export::manifest::{self, Manifest};
 use aa_export::sarif;
 use aa_report::Format;
-pub use aa_report::Lang;
+pub use aa_report::{Lang, set_credit};
 
 /// An output file a report can be written as.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

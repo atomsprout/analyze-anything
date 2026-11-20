@@ -24,6 +24,10 @@ mod selftest;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    /// Leave out the closing line that names this tool and its address in the reports written
+    /// for people. Not listed in the help: the line is there unless someone minds it.
+    #[arg(long, global = true, hide = true)]
+    no_credit: bool,
 }
 
 #[derive(Subcommand)]
@@ -709,6 +713,9 @@ mod ai {
 }
 
 fn run(cli: Cli) -> Result<u8, String> {
+    if cli.no_credit {
+        aa_app::export::set_credit(false);
+    }
     let (report, mut output, wants_ai) = match cli.command {
         Command::Analyze {
             path,

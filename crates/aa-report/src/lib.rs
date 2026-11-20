@@ -19,6 +19,22 @@ pub mod words;
 
 use aa_core::Report;
 
+/// Where the tool lives; written at the end of a report with the tool's name.
+pub const PROJECT_URL: &str = env!("CARGO_PKG_REPOSITORY");
+
+static CREDIT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+/// Says whether the reports this process writes for people (HTML, PDF, Markdown, text) end with
+/// a line naming the tool and its address. They do unless this is called with `false`.
+pub fn set_credit(shown: bool) {
+    CREDIT.store(shown, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// The closing line's address, or `None` when the line was turned off.
+pub(crate) fn credit() -> Option<&'static str> {
+    CREDIT.load(std::sync::atomic::Ordering::Relaxed).then_some(PROJECT_URL)
+}
+
 /// Output formats.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {

@@ -268,6 +268,8 @@ fn view(report: &Report, lang: Lang) -> Result<Value, RenderError> {
         "values": values,
         "exact": exact,
         "inventory_rows": doc::INVENTORY_ROWS,
+        // The closing line: its words in both languages and the tool's address, or nothing.
+        "credit": crate::credit().map(|url| json!({ "zh": words::words(Lang::Zh).generated_by, "en": words::words(Lang::En).generated_by, "url": url })),
     }))
 }
 

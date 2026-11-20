@@ -24,9 +24,6 @@ use typst::{Library, LibraryExt, World};
 use crate::group::{self, Group, Row};
 use crate::sanitize::{visible, visible_line};
 use crate::words::{self, ui};
-
-/// Where the tool that wrote the report lives; printed at the end of the report.
-const PROJECT: &str = env!("CARGO_PKG_REPOSITORY");
 use crate::{Lang, RenderError, doc};
 
 /// Entries (a rule's findings as one group, or a single finding) typeset per chapter before the
@@ -377,7 +374,7 @@ fn view(report: &Report, lang: Lang) -> Value {
         "input_name": line(&cut(&report.input.name, TITLE_LENGTH)),
         "header_name": line(&cut(&report.input.name, HEADER_NAME_LENGTH)),
         "tool": line(&format!("{} {}", report.tool.name, report.tool.version)),
-        "project": PROJECT,
+        "project": crate::credit(),
         "header": pairs(doc::header_items(report, lang)),
         "summary": pairs(doc::summary_items(report, lang)),
         "severities": severities,

@@ -264,6 +264,9 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
             doc.item(0, more);
         }
     }
+    if let Some(project) = crate::credit() {
+        doc.paragraph(format!("{} {} {} · {project}", w.generated_by, report.tool.name, report.tool.version));
+    }
     doc
 }
 
