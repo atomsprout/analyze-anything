@@ -114,6 +114,8 @@ struct Builder<'a> {
     artifacts: Vec<Artifact>,
     stores: BTreeMap<String, Store>,
     taken: BTreeSet<String>,
+    /// ASCII case aliases of logical archive paths, independent of the host filesystem.
+    archive_names: BTreeMap<String, String>,
     limitations: Vec<Limitation>,
     coverage: Coverage,
     temp: Option<Spill>,
@@ -146,6 +148,7 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
         artifacts: Vec::new(),
         stores: BTreeMap::new(),
         taken: BTreeSet::new(),
+        archive_names: BTreeMap::new(),
         limitations: Vec::new(),
         coverage: Coverage::default(),
         temp: None,
@@ -409,6 +412,17 @@ impl UnpackSink for Sink<'_, '_> {
             full = format!("{}/{relative} ({copy})", self.container);
             copy += 1;
         }
+        let requested = format!("{}/{relative}", self.container);
+        let alias = requested.to_ascii_lowercase();
+        let collision = self.builder.archive_names.get(&alias).cloned().or_else(|| (full != requested).then(|| requested.clone()));
+        if let Some(previous) = collision {
+            // Both byte streams are kept. This is ambiguity, not lost content.
+            let code = "engine.entry-name-collision";
+            let detail = serde_json::json!({ "requested": requested, "stored": full, "collides_with": previous }).to_string();
+            self.builder.limitations.push(Limitation::new(code, Some(self.container), Some(detail)));
+            self.builder.sink.event(Event::Warning { code: code.into(), path: Some(self.container.to_string()) });
+        }
+        self.builder.archive_names.entry(alias).or_insert_with(|| full.clone());
         self.builder.unpacked_bytes += bytes.len() as u64;
         match self.builder.keep(bytes) {
             Ok(store) => {

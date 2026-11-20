@@ -496,6 +496,13 @@ const ENGINE_RULES: &[Rule] = &[
         text_en: "The file could not be read, so it was not analyzed.",
     },
     Rule {
+        id: "engine.entry-name-collision",
+        title_zh: "归档条目名称有歧义",
+        title_en: "Archive entry names are ambiguous",
+        text_zh: "归档条目的逻辑名称重复、规范化后重复或仅 ASCII 大小写不同。内容分别保留；不能假定目标系统会选择哪一个条目。",
+        text_en: "Logical archive entry names repeat, normalize to the same name, or differ only in ASCII case. Their contents are kept separately; which entry a target system would choose is not assumed.",
+    },
+    Rule {
         id: "engine.local-content-skipped",
         title_zh: "跳过非普通本地内容",
         title_en: "Nonlocal or indirect content skipped",

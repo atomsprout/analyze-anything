@@ -249,6 +249,49 @@ fn duplicate_entry_names_are_both_kept() {
     assert_eq!(report.artifacts[2].size, 5);
     assert_eq!(report.artifacts[3].size, 6);
     assert!(!report.summary.contains_key("structure.duplicates"), "same name, different content");
+    assert!(codes(&report).contains(&"engine.entry-name-collision"));
+    assert_eq!(report.coverage.content_lost, 0, "ambiguity does not mean either byte stream was lost");
+}
+
+#[test]
+fn windows_archive_names_are_logical_even_when_spilled_to_disk() {
+    let names = ["CON", "case.txt", "CASE.txt", "name.", "name:stream", "C:\\absolute", "same", "same"];
+    let mut writer = tar::Builder::new(flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default()));
+    for (index, name) in names.iter().enumerate() {
+        let content = vec![b'A' + index as u8; 300 * 1024];
+        let mut header = tar::Header::new_gnu();
+        header.set_path("placeholder").expect("ordinary header name");
+        // Construct names directly in the format, without asking the host to interpret them.
+        header.as_mut_bytes()[..100].fill(0);
+        header.as_mut_bytes()[..name.len()].copy_from_slice(name.as_bytes());
+        header.set_size(content.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        writer.append(&header, content.as_slice()).expect("archive entry");
+    }
+    let compressed = writer.into_inner().expect("tar finish").finish().expect("gzip finish");
+    let (dir, path) = write_input("names.tar.gz", &compressed);
+    let scratch = dir.path().join("scratch");
+    std::fs::create_dir(&scratch).expect("scratch root");
+    let options = Options { temp_root: Some(scratch.clone()), ..Options::default() };
+    let session = analyze_session(&Registry::standard(), &path, &options, &mut NoProgress).expect("archive session");
+    let expected = ["CON", "case.txt", "CASE.txt", "name.", "name:stream", "C:/absolute", "same", "same (2)"];
+    for (index, name) in expected.iter().enumerate() {
+        let logical = format!("names.tar.gz/names.tar/{name}");
+        assert_eq!(session.read(&logical, 100, 3).expect("logical bytes"), [b'A' + index as u8; 3]);
+    }
+    let report = session.report();
+    assert_eq!(report.coverage.content_lost, 0);
+    assert_eq!(report.limitations.iter().filter(|l| l.code == "engine.entry-name-collision").count(), 2);
+    let repeat = analyze(&path, &options, &mut NoProgress).expect("repeat analysis");
+    assert_eq!(aa_core::canonical_json(report), aa_core::canonical_json(&repeat));
+    for folder in std::fs::read_dir(&scratch).expect("scratch listing") {
+        for file in std::fs::read_dir(folder.expect("scratch entry").path()).expect("spill listing") {
+            let name = file.expect("spill file").file_name();
+            let name = name.to_str().expect("internal ASCII names");
+            assert!(name == ".lock" || name.bytes().all(|b| b.is_ascii_digit()), "{name}");
+        }
+    }
 }
 
 #[test]

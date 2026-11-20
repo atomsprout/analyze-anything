@@ -27,9 +27,17 @@ refused as a descendant, root and ancestor of a requested file. Attribute-policy
 constructed bit flags: they do not prove behavior on actual EFS or cloud-provider files.
 Engine Clippy with warnings denied passed.
 
+The next archive-name increment passed all 29 engine integration tests. A generated tar.gz
+contains CON, colon and trailing-dot names, a drive-like path, ASCII case aliases and duplicate
+names, with entries large enough to force disk spilling. Every logical child remained readable
+with its own expected bytes, internal spill files used numeric names, and repeated reports were
+byte-identical. Name collisions now produce engine.entry-name-collision while preserving both
+streams; this ambiguity notice does not increment content_lost. Matching beyond ASCII case is
+not established by this check.
+
 The implementation is not a filesystem sandbox. A parent directory can still be replaced
 between metadata checks and access; checking the final handle only closes the final-component
 case. A drive-letter mapping to a network share is not identified by lexical namespace checks.
 Actual EFS/cloud-provider cases, mapped drives, handle-based ancestor containment, portable ADS
-capture and the remaining archive naming/collision cases need further work. Large files retain
+capture and wider Unicode filename equivalence need further work. Large files retain
 the existing read-only mapping behavior, including its documented concurrent-truncation risk.
