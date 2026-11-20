@@ -5,6 +5,7 @@
 //! executes anything from the input. Progress is reported as [`Event`]s through a
 //! [`ProgressSink`]; a run is stopped by setting [`Options::cancel`].
 
+mod disk;
 mod passes;
 mod scan;
 mod store;
@@ -197,7 +198,7 @@ fn build(
     sink: &mut dyn ProgressSink,
 ) -> Result<(tree::Built, String, InputKind), EngineError> {
     let unreadable = |source| EngineError::InputUnreadable { path: input.to_path_buf(), source };
-    let metadata = std::fs::metadata(input).map_err(unreadable)?;
+    let metadata = disk::metadata(input).map_err(unreadable)?;
     let kind = if metadata.is_dir() {
         InputKind::Directory
     } else if metadata.is_file() {
@@ -493,6 +494,13 @@ const ENGINE_RULES: &[Rule] = &[
         title_en: "Could not be read",
         text_zh: "文件无法读取，因此没有分析。",
         text_en: "The file could not be read, so it was not analyzed.",
+    },
+    Rule {
+        id: "engine.local-content-skipped",
+        title_zh: "跳过非普通本地内容",
+        title_en: "Nonlocal or indirect content skipped",
+        text_zh: "此路径无法在本地文件读取边界内访问，已跳过；没有读取内容或跟随重解析点。详情说明未读取的原因。",
+        text_en: "This path was skipped by the local file access policy. Its content was not read and reparse points were not followed. The detail records why it was not read.",
     },
     Rule {
         id: "symlink_skipped",

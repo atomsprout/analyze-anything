@@ -47,6 +47,8 @@ These comparisons do not cover: certificate revocation, root certificate trust, 
 
 ## Other
 
+- Windows file access refuses explicit UNC/device/ADS paths, ambiguous DOS names, reparse points and file attributes indicating remote recall or EFS encryption. Ordinary directory scans cover unnamed data streams only. Attribute checks and final-handle checks do not eliminate ancestor-replacement races or detect drive-letter mappings to network shares. Actual cloud-provider/EFS cases remain unverified; [the Windows file-access record](spikes/windows-file-access.md) lists the tested filesystem cases and remaining work.
+
 - The fonts embedded for PDF only cover Chinese and Latin characters. Other scripts (Korean, Arabic, emoji and so on) appear as boxes in the PDF unless a font is added with `--font`; HTML and JSON are not affected.
 - When an analyzer times out (300 seconds per file by default), it is abandoned and recorded as a limitation, and the run ends as usual; but on the command line the thread it runs on cannot be forcibly terminated and stays occupied until the process exits. The desktop app runs analysis in a child process and force-ends it if it has not exited within 5 seconds of cancellation. The unpack timeout (900 seconds per container by default) is only checked when the unpacker hands over the next file; an unpacker that never hands over a file is not interrupted.
 - The executable with PDF is about 49 MB, of which the Chinese font is 8.6 MB.

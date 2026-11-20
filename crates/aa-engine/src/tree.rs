@@ -165,6 +165,7 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
             for limitation in &listing.limitations {
                 builder.sink.event(Event::Warning { code: limitation.code.clone(), path: limitation.artifact.clone() });
             }
+            builder.coverage.content_lost += listing.limitations.len() as u64;
             builder.limitations.extend(listing.limitations);
             builder.coverage.truncated |= listing.truncated;
             listing.entries.into_iter().map(|entry| (entry.path, Store::Disk(entry.on_disk))).collect()
