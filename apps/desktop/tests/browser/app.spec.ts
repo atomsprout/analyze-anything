@@ -211,6 +211,10 @@ test("AI interpretation: the statements are shown as the model's, and a cited fi
   await expect(panel).toContainText("left out because they cited no finding of the report: 1.");
   await expect(panel.locator(".ai-section h3")).toHaveText(["Summary", "Worth attention"]);
 
+  // Long words from a report (digests, identifiers) wrap inside the panel instead of widening it.
+  expect(await panel.locator(".ai-body").evaluate((body) => body.scrollWidth <= body.clientWidth)).toBe(true);
+  expect(await panel.locator(".ai-statement").evaluateAll((items) => items.every((item) => item.getBoundingClientRect().right <= window.innerWidth))).toBe(true);
+
   await panel.locator(".cite").first().click();
   await expect(report.locator(".flash")).toBeVisible();
 

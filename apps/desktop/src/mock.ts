@@ -197,7 +197,7 @@ export function mockBackend(): Backend {
         lookups: 2,
         statements_dropped: 1,
         summary: [{ text: lang === "zh" ? "这是一个磁盘映像。" : "This is a disk image.", findings: [first] }],
-        notable: [{ text: lang === "zh" ? "它没有签名。" : "It is not signed.", findings: ["fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210", first] }],
+        notable: [{ text: lang === "zh" ? "它没有签名。" : "It is not signed. Its fingerprint is 43238d512c1e5eb2d6569f4a3afbf5523418b82e0a3ed1552770abb9a9c9ccab43238d512c1e5eb2d6569f4a3afbf552.", findings: ["fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210", first] }],
         next_steps: [],
       };
       interpretations.set(`${id}:${lang}`, made);

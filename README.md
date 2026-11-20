@@ -20,6 +20,23 @@ There are two ways to use it, on the same engine, giving the same report for the
 - the **command line**, `analyze-anything` (short name `aaaa`);
 - the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history and compare two versions, and, if you set it up, have a model explain the report beside it.
 
+## What it looks like
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/desktop-report.png" alt="The desktop app: the report's summary"><br><sub>The desktop app: the report's summary</sub></td>
+    <td width="50%"><img src="docs/images/desktop-findings.png" alt="Findings, each with its evidence"><br><sub>Findings, each with its evidence</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/desktop-ai.png" alt="The optional AI interpretation beside the report; every statement cites findings"><br><sub>The optional AI interpretation beside the report; every statement cites findings</sub></td>
+    <td><img src="docs/images/desktop-home.png" alt="Drop a file or folder to start"><br><sub>Drop a file or folder to start</sub></td>
+  </tr>
+</table>
+
+<p align="center"><img src="docs/images/report-pdf.png" alt="The same report as a PDF" width="520"><br><sub>The same report as a PDF</sub></p>
+
+The screenshots show the report about F-Droid 2.0.3, one of the [examples](https://atomsprout.com/analyze-anything/#examples).
+
 ## Install
 
 macOS on Apple silicon, with Homebrew:

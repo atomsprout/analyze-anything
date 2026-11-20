@@ -22,6 +22,23 @@ analyze-anything App.ipa
 
 报告默认是英文，加 `--lang zh` 写中文。
 
+## 长什么样
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/desktop-report.png" alt="桌面版：报告的概要"><br><sub>桌面版：报告的概要</sub></td>
+    <td width="50%"><img src="docs/images/desktop-findings.png" alt="结论，每条都带证据"><br><sub>结论，每条都带证据</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/desktop-ai.png" alt="报告旁边可选的 AI 解读，每句话都引用结论"><br><sub>报告旁边可选的 AI 解读，每句话都引用结论</sub></td>
+    <td><img src="docs/images/desktop-home.png" alt="拖入文件或文件夹即可开始"><br><sub>拖入文件或文件夹即可开始</sub></td>
+  </tr>
+</table>
+
+<p align="center"><img src="docs/images/report-pdf.png" alt="同一份报告的 PDF" width="520"><br><sub>同一份报告的 PDF</sub></p>
+
+截图里是对 F-Droid 2.0.3 的分析报告，它是[例子](https://atomsprout.com/analyze-anything/#examples)之一。
+
 ## 安装
 
 Apple 芯片的 Mac，用 Homebrew：
