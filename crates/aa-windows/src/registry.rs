@@ -365,8 +365,8 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
             "windows.registry-partial",
             Some(file),
             Some(format!(
-                "{} unread or opaque declarations; entry limit reached: {}; first issues: {}",
-                registry.issue_count,
+                "{}; entry limit reached: {}; first issues: {}",
+                aa_core::counted(registry.issue_count as u64, "declarations were unread or opaque"),
                 registry.truncated,
                 registry.issues.iter().map(|(line, reason)| format!("line {line}: {reason}")).collect::<Vec<_>>().join("; ")
             )),

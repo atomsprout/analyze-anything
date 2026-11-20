@@ -35,7 +35,9 @@ and byte-identical repeated reports.
 Reference: [Microsoft Internet Shortcuts](https://learn.microsoft.com/en-us/windows/win32/lwef/internet-shortcuts).
 The property documentation supports the declarations; it does not establish complete INI
 resolution semantics. Registry and task readers have separate [registry](windows-registry.md)
-and [task](windows-tasks.md) records; supplied-target relationships remain W3 work.
+and [task](windows-tasks.md) records. The bounded [input-reference pass](windows-input-references.md)
+now associates supported relative declarations with supplied artifacts; Windows runtime
+target resolution remains outside that pass.
 
 Windows verification for this initial URL implementation: the core/content/Windows/engine
 test suites passed, including the full fixture-mutation robustness test; targeted Clippy with

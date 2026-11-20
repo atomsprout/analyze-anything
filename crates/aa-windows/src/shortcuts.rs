@@ -97,7 +97,11 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
         out.limitation(
             "windows.shortcut-partial",
             Some(file),
-            Some(format!("{} fields or lines not interpreted; duplicate supported keys: {}", shortcut.ignored, shortcut.duplicate_keys)),
+            Some(format!(
+                "{}; duplicate supported keys: {}",
+                aa_core::counted(shortcut.ignored as u64, "items were not interpreted"),
+                shortcut.duplicate_keys
+            )),
         );
     }
 }

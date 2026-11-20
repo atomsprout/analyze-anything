@@ -72,6 +72,101 @@ fn write_input(name: &str, bytes: &[u8]) -> (tempfile::TempDir, std::path::PathB
     (dir, path)
 }
 
+fn relative_shortcut(path: &str) -> Vec<u8> {
+    let mut bytes = vec![0; 76];
+    bytes[..20].copy_from_slice(&[0x4c, 0, 0, 0, 1, 0x14, 2, 0, 0, 0, 0, 0, 0xc0, 0, 0, 0, 0, 0, 0, 0x46]);
+    bytes[20..24].copy_from_slice(&0x88u32.to_le_bytes());
+    let units: Vec<_> = path.encode_utf16().collect();
+    bytes.extend((units.len() as u16).to_le_bytes());
+    bytes.extend(units.into_iter().flat_map(u16::to_le_bytes));
+    bytes.extend([0; 4]);
+    bytes
+}
+
+#[test]
+fn supplied_shortcut_references_are_scoped_deterministic_and_do_not_add_host_files() {
+    let link = relative_shortcut(r"..\bin\TOOL.exe");
+    let pack = zip_of(&[("shortcuts/launch.lnk", &link), ("bin/tool.exe", b"supplied payload")]);
+    let (_dir, path) = write_input("package.zip", &pack);
+    let report = run(&path, &Options::default());
+    let source = report.artifacts.iter().find(|a| a.path == "package.zip/shortcuts/launch.lnk").expect("shortcut");
+    let reference = &source.facts["windows.input-references"]["references"][0];
+    assert_eq!(reference["target"], "package.zip/bin/tool.exe");
+    assert_eq!(reference["target_sha256"], aa_core::sha256_hex(b"supplied payload"));
+    assert_eq!(report.artifacts.len(), 3);
+    let finding = report.findings.iter().find(|f| f.rule == "windows.input-reference").expect("relationship finding");
+    assert_eq!(finding.evidence.len(), 2);
+    assert_eq!(finding.evidence[1].artifact, "package.zip/bin/tool.exe");
+    assert!(report.limitations.iter().any(|l| l.code == "windows.shortcut-target-unresolved"));
+    for id in report.findings.iter().map(|f| &f.rule).chain(report.limitations.iter().map(|l| &l.code)) {
+        let rule = report.rules.get(id).expect("rule wording");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(
+        serde_json::to_vec(&report).expect("first report"),
+        serde_json::to_vec(&run(&path, &Options::default())).expect("second report")
+    );
+    assert_eq!(std::fs::read(&path).expect("unchanged archive"), pack);
+}
+
+#[test]
+fn archive_collisions_and_normalized_names_cannot_create_false_unique_shortcut_targets() {
+    let link = relative_shortcut("same.txt");
+    let copied = relative_shortcut("same.txt (2)");
+    let bytes = tar_gz_of(&[("launch.lnk", &link), ("copied.lnk", &copied), ("same.txt", b"one"), ("same.txt", b"two")]);
+    let (_dir, path) = write_input("collision.tar.gz", &bytes);
+    let report = run(&path, &Options::default());
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let targets: Vec<_> = report.artifacts.iter().filter(|a| a.name().starts_with("same.txt")).collect();
+    assert_eq!(targets.len(), 2);
+    assert!(targets.iter().all(|a| a.facts["engine.entry-name"]["colliding"] == true));
+    let source = report.artifacts.iter().find(|a| a.name() == "launch.lnk").expect("shortcut");
+    assert_eq!(source.facts["windows.input-references"]["references"][0]["status"], "unresolved");
+
+    let pack = zip_of(&[("launch.lnk", &link), ("./same.txt", b"one")]);
+    let (_dir, path) = write_input("normalized.zip", &pack);
+    let report = run(&path, &Options::default());
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let target = report.artifacts.iter().find(|a| a.name() == "same.txt").expect("normalized entry preserved");
+    assert_eq!(target.facts["engine.entry-name"]["normalized"], true);
+}
+
+#[test]
+fn partial_input_or_container_listings_do_not_establish_unique_targets() {
+    let dir = tempfile::tempdir().expect("listing fixture");
+    let link = relative_shortcut("target.exe");
+    std::fs::write(dir.path().join("a.lnk"), &link).expect("shortcut");
+    std::fs::write(dir.path().join("target.exe"), b"payload").expect("target");
+    std::fs::write(dir.path().join("zz-extra"), b"not listed").expect("additional input");
+    let report = run(dir.path(), &limits(|limits| limits.max_files = 2));
+    assert_eq!(report.artifacts.len(), 2);
+    assert_eq!(report.summary["engine.input-listing"]["complete"], false);
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let source = report.artifacts.iter().find(|a| a.name() == "a.lnk").expect("listed shortcut");
+    assert_eq!(source.facts["windows.input-references"]["references"][0]["reason"], "input-listing-completeness-not-established");
+
+    let bytes = zip_of(&[("a.lnk", &link), ("target.exe", b"payload"), ("zz-extra", b"not unpacked")]);
+    let (_dir, path) = write_input("partial.zip", &bytes);
+    let report = run(&path, &limits(|limits| limits.max_files = 3));
+    assert_eq!(report.artifacts.len(), 3);
+    assert_eq!(report.artifacts[0].facts["engine.container-listing"]["complete"], false);
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let source = report.artifacts.iter().find(|a| a.name() == "a.lnk").expect("unpacked shortcut");
+    assert_eq!(source.facts["windows.input-references"]["references"][0]["reason"], "container-listing-completeness-not-established");
+}
+
+#[test]
+fn an_unrelated_broken_container_does_not_hide_a_complete_input_namespace() {
+    let dir = tempfile::tempdir().expect("complete folder fixture");
+    std::fs::write(dir.path().join("a.lnk"), relative_shortcut("target.exe")).expect("shortcut");
+    std::fs::write(dir.path().join("target.exe"), b"payload").expect("target");
+    std::fs::write(dir.path().join("broken.zip"), b"PK\x03\x04broken").expect("damaged container");
+    let report = run(dir.path(), &Options::default());
+    assert!(report.limitations.iter().any(|l| l.code == "unpack_failed"));
+    assert_eq!(report.summary["engine.input-listing"]["complete"], true);
+    assert!(report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+}
+
 fn paths(report: &Report) -> Vec<&str> {
     report.artifacts.iter().map(|a| a.path.as_str()).collect()
 }

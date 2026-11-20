@@ -50,7 +50,8 @@ orders, opaque COM Data, mail-header credentials, namespaces, duplicates, malfor
 DTDs, oversized fields and declaration/XML-node budgets. The engine regression checks all
 report rules have English/Chinese text, secrets do not leak through generic content facts,
 the input remains unchanged, referenced files are not added and repeated reports match byte
-for byte. Supplied-artifact target relationships remain separate W3 work.
+for byte. The [input-reference pass](windows-input-references.md) records command-reference
+limitations without treating the XML folder as a host executable search base.
 
 Reference: [Microsoft Task Scheduler schema](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema).
 This supports field structure and names; it is not a claim that this reader validates the

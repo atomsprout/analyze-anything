@@ -14,6 +14,22 @@ fn data(name: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+#[test]
+fn independent_shell_link_relative_path_can_name_a_supplied_sibling() {
+    let run = analyze(&[("upstream-test.lnk", data("upstream-test.lnk")), ("a.txt", b"supplied text".to_vec())]);
+    let refs = run.fact("upstream-test.lnk", "windows.input-references")["references"].as_array().expect("reference declarations");
+    let relative = refs.iter().find(|r| r["field"] == "RelativePath").expect("relative path declaration");
+    assert_eq!(relative["target"], "a.txt");
+    assert_eq!(relative["status"], "matched-supplied-declaration");
+    assert_eq!(relative["target_sha256"], sha256_hex(b"supplied text"));
+    assert_eq!(run.findings("windows.input-reference").len(), 1);
+    assert_eq!(
+        run.fact("upstream-test.lnk", "windows.shell-link")["target_resolved"],
+        false,
+        "a declaration link does not resolve the Windows launch target"
+    );
+}
+
 fn task_declaration<'a>(root: &'a Value, path: &[&str]) -> &'a Value {
     path.iter().fold(root, |node, name| {
         node["children"].as_array().expect("declaration children").iter().find(|n| n["element"] == *name).expect("native declaration")
@@ -182,6 +198,11 @@ struct MemoryTree {
 }
 
 impl Tree for MemoryTree {
+    fn summary(&self) -> &BTreeMap<String, Value> {
+        static COMPLETE: std::sync::LazyLock<BTreeMap<String, Value>> =
+            std::sync::LazyLock::new(|| BTreeMap::from([("engine.input-listing".into(), serde_json::json!({"complete": true}))]));
+        &COMPLETE
+    }
     fn artifacts(&self) -> &[Artifact] {
         &self.artifacts
     }

@@ -36,6 +36,7 @@ mod msisig;
 mod nsis;
 mod pe;
 mod pefile;
+mod references;
 mod registry;
 mod resources;
 mod rules;

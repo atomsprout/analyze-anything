@@ -447,8 +447,8 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
             "windows.task-partial",
             Some(file),
             Some(format!(
-                "{} unsupported or ambiguous declarations; first issues: {}",
-                state.issue_count,
+                "{}; first issues: {}",
+                aa_core::counted(state.issue_count as u64, "declarations were unsupported or ambiguous"),
                 state.issues.iter().map(|(path, reason)| format!("{path}: {reason}")).collect::<Vec<_>>().join("; ")
             )),
         );

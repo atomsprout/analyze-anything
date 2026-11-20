@@ -28,6 +28,27 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.input-reference",
+        title_en: "Declaration links to supplied artifacts",
+        title_zh: "声明关联到输入中的文件",
+        text_en: "{count} declarations are linked to supplied artifacts by a unique relative path within the same container, using the documented ASCII path profile. The evidence identifies both the declaration and the target digest. This does not establish which file Windows would launch; no target was opened by this relationship check.",
+        text_zh: "按已说明的 ASCII 路径规则，通过同一容器内唯一的相对路径，将 {count} 条声明关联到输入中的文件。证据包含声明位置和目标摘要。这不表示已确定 Windows 最终启动哪个文件；关联检查没有打开目标。",
+    },
+    Rule {
+        id: "windows.input-reference-unresolved",
+        title_en: "Input reference not associated",
+        title_zh: "输入引用未关联",
+        text_en: "Some references could not be associated unambiguously with supplied artifacts. The detail counts the reasons, including external paths, unknown host bases, variable expansion, ambiguous names and unsupported path profiles. No host file or network location was searched.",
+        text_zh: "部分引用无法明确关联到输入中的文件。详情按原因统计，包括外部路径、未知的主机基准、变量展开、名称歧义及不支持的路径规则。没有搜索主机文件或网络位置。",
+    },
+    Rule {
+        id: "windows.input-reference-limit",
+        title_en: "Input reference checking limit",
+        title_zh: "输入引用检查达到上限",
+        text_en: "The supplied-file index, declaration-source count or reference count exceeded its budget. Unchecked references remain unresolved; a partial index is never used to claim a unique match.",
+        text_zh: "输入文件索引、声明来源数或引用数超过预算。未检查的引用保持未解析状态；不会用不完整的索引声称匹配唯一。",
+    },
+    Rule {
         id: "windows.scheduled-task",
         title_en: "Scheduled task declarations",
         title_zh: "任务计划声明",

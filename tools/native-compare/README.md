@@ -23,3 +23,12 @@ membership. The default run still checks tampering and both generated CAB compre
 Run the reference-tool helper tests without an SDK:
 
     python -m unittest discover -s tools/native-compare -p test_windows_tools.py
+
+Check supplied Windows shortcut relationships through the CLI, without activating shortcuts
+or invoking a native resolver (also usable on other systems):
+
+    python tools/native-compare/windows-reference-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/references
+
+This uses the pinned MIT LNK fixture and an explicitly supplied text sibling. It verifies
+target/digest evidence, repeated reports, renamed-input comparison and English/Chinese/HTML
+output. Optional AI interpretation is explicitly disabled when supported by the binary.
