@@ -32,6 +32,10 @@ pub struct AppState {
     pub selftest: Option<crate::selftest::Plan>,
     /// True when the menus and dialogs are in English (the default), false for Chinese.
     pub english: std::sync::atomic::AtomicBool,
+    /// Where AI interpretations of kept reports are kept.
+    pub ai_folder: PathBuf,
+    /// True while an interpretation is being written; one at a time.
+    pub interpreting: std::sync::atomic::AtomicBool,
 }
 
 /// A lock that keeps working after a thread panicked while holding it.
@@ -40,7 +44,13 @@ pub fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 }
 
 impl AppState {
-    pub fn new(history: History, program: Program, initial: Option<PathBuf>, selftest: Option<crate::selftest::Plan>) -> AppState {
+    pub fn new(
+        history: History,
+        program: Program,
+        ai_folder: PathBuf,
+        initial: Option<PathBuf>,
+        selftest: Option<crate::selftest::Plan>,
+    ) -> AppState {
         let state = AppState {
             history,
             program,
@@ -52,6 +62,8 @@ impl AppState {
             initial: Mutex::new(None),
             selftest,
             english: std::sync::atomic::AtomicBool::new(true),
+            ai_folder,
+            interpreting: std::sync::atomic::AtomicBool::new(false),
         };
         if let Some(path) = initial {
             state.allow(&path);

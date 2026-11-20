@@ -5,7 +5,7 @@
 // from tests/fixtures, and makes up bytes for the hex view. `window.__mock` lets a test drive
 // what the real app would: dropping a file, choosing a menu item, the dialogs' answers.
 
-import type { Backend, Chunk, Diff, Entry, Handlers, Lang, Step } from "./types";
+import type { Backend, Chunk, Diff, Entry, Handlers, Interpretation, Lang, Step } from "./types";
 
 export interface MockControl {
   /** What the next "open" or "save" dialog answers; `null` is the user cancelling. */
@@ -14,6 +14,12 @@ export interface MockControl {
   stepDelay: number;
   /** Makes the next analysis fail with this message. */
   failWith: string | null;
+  /** Whether AI interpretation is set up. */
+  aiReady: boolean;
+  /** Makes the next interpretation fail with this message. */
+  aiFailWith: string | null;
+  /** The finding the sample interpretation cites, when a test wants a real one of the report. */
+  aiCite: string | null;
   /** Every call made, in order, as `name(arguments)`. */
   calls: string[];
   offer(path: string): void;
@@ -60,10 +66,14 @@ export function mockBackend(): Backend {
   let handlers: Handlers | null = null;
   let live: string | null = null;
   let timers: number[] = [];
+  const interpretations = new Map<string, Interpretation>();
   const control: MockControl = {
     dialogAnswer: "/Users/me/Downloads/Sample.dmg",
     stepDelay: 30,
     failWith: null,
+    aiReady: true,
+    aiFailWith: null,
+    aiCite: null,
     calls: [],
     offer: (path) => handlers?.offered(path),
     drag: (over) => handlers?.drag(over),
@@ -158,6 +168,40 @@ export function mockBackend(): Backend {
     },
     async setMenuLanguage(lang) {
       called("setMenuLanguage", lang);
+    },
+    async aiStatus() {
+      const config = "/Users/me/.analyze-anything/config.toml";
+      return control.aiReady
+        ? { ready: true, configured: true, who: "sample-model at https://example.test/v1", engine: "api", problem: null, config }
+        : { ready: false, configured: false, who: null, engine: null, problem: "AI interpretation is not set up.", config };
+    },
+    async aiGet(id, lang) {
+      return interpretations.get(`${id}:${lang}`) ?? null;
+    },
+    async aiInterpret(id, lang) {
+      called("aiInterpret", id, lang);
+      await new Promise((resolve) => window.setTimeout(resolve, control.stepDelay));
+      handlers?.aiStep("looking up list_findings");
+      await new Promise((resolve) => window.setTimeout(resolve, control.stepDelay * 3));
+      if (control.aiFailWith !== null) {
+        const message = control.aiFailWith;
+        control.aiFailWith = null;
+        throw new Error(message);
+      }
+      const first = control.aiCite ?? "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+      const made: Interpretation = {
+        engine: "api",
+        model: "sample-model",
+        language: lang,
+        findings_total: 12,
+        lookups: 2,
+        statements_dropped: 1,
+        summary: [{ text: lang === "zh" ? "这是一个磁盘映像。" : "This is a disk image.", findings: [first] }],
+        notable: [{ text: lang === "zh" ? "它没有签名。" : "It is not signed.", findings: ["fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210", first] }],
+        next_steps: [],
+      };
+      interpretations.set(`${id}:${lang}`, made);
+      return made;
     },
     reportUrl: (_id: string, lang: Lang) => `/sample-report?lang=${lang}&host=1`,
     async on(given) {

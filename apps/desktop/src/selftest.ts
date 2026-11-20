@@ -192,6 +192,43 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
     notes.exports = saved;
   });
 
+  await part("AI interpretation", async () => {
+    // The check is given settings of its own (a stand-in program on this machine), or none.
+    const status = await app.backend.aiStatus();
+    check("ai: nothing is kept before it is asked for", (await app.backend.aiGet(firstId, app.lang)) === null);
+    await selftest.menu("ai");
+    await waitFor("the AI panel", () => one(".ai-panel")?.hidden === false, 5000);
+    check("ai: the menu opens the panel", one(".ai-toggle")?.getAttribute("aria-pressed") === "true");
+    if (!status.ready) {
+      await waitFor("the explanation", () => one(".ai-commands"), 5000);
+      check("ai: without settings the panel says how to set it up and offers nothing to send", one(".ai-panel .btn.primary") === null, text(".ai-body").slice(0, 120));
+    } else {
+      await waitFor("the offer", () => one(".ai-panel .btn.primary"), 5000);
+      check("ai: the panel says who is asked before anything is sent", text(".ai-sends").includes(status.who ?? "?"), text(".ai-sends"));
+      click("Interpret", one(".ai-panel .btn.primary"));
+      await waitFor("the interpretation", () => one(".ai-statement") || one(".ai-problem"), 120_000);
+      check("ai: the statements of the model are shown", all(".ai-statement").length > 0 && one(".ai-problem") === null, text(".ai-body").slice(0, 300));
+      const kept = await app.backend.aiGet(firstId, app.lang);
+      const cited = kept?.summary[0]?.findings[0] ?? "";
+      check("ai: the interpretation is kept, marked as a model's, and cites a finding", kept !== null && /^[0-9a-f]{64}$/.test(cited) && text(".ai-banner") !== "", cited);
+      check("ai: each statement shows the findings it rests on", all(".ai-statement .cite").length > 0 && text(".cite") === cited.slice(0, 10), text(".cite"));
+      notes.ai = { engine: kept?.engine, model: kept?.model, cited };
+      // A folder exported now holds the interpretation too.
+      click("Export", one(".menu-anchor > .btn"));
+      await waitFor("the export menu", () => one(".menu")?.hidden === false, 3000);
+      click("the folder item", all(".menu button").at(-1));
+      const toast = await waitFor("the export", () => {
+        const shown = one(".toast span")?.textContent ?? "";
+        return one(".toast.error") ? shown : shown.includes("/") ? shown : null;
+      }, 120_000);
+      check("ai: a folder exported afterwards is written", !one(".toast.error"), toast);
+      notes.ai_folder = toast;
+      click("dismiss the message", one(".toast .plain"));
+    }
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    check("ai: Escape closes the panel", one(".ai-panel")?.hidden === true);
+  });
+
   await part("language and colours", async () => {
     const before = framesReady;
     const other = app.lang === "zh" ? "en" : "zh";

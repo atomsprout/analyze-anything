@@ -17,6 +17,7 @@ tauri-build = { version = "2", features = [] }
 aa-app = { workspace = true, features = ["pdf"] }
 aa-core.workspace = true
 aa-export.workspace = true
+aa-interpret.workspace = true
 aa-report = { path = "../../../crates/aa-report", default-features = false }
 aa-worker.workspace = true
 serde.workspace = true

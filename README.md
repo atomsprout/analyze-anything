@@ -18,7 +18,7 @@ That writes `App.ipa.report/` with the report as HTML, PDF, Markdown, plain text
 There are two ways to use it, on the same engine, giving the same report for the same input:
 
 - the **command line**, `analyze-anything` (short name `aaaa`);
-- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history and compare two versions.
+- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history and compare two versions, and, if you set it up, have a model explain the report beside it.
 
 ## Install
 

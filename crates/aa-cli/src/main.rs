@@ -598,20 +598,10 @@ mod ai {
         }
         let result = result?;
         let text = aa_interpret::markdown(&result);
-        std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+        // In a folder an analysis wrote, the new files are listed so that `verify` still accepts it.
         let files = [(aa_interpret::JSON_NAME, aa_interpret::json(&result)), (aa_interpret::MARKDOWN_NAME, text.into_bytes())];
-        for (name, bytes) in &files {
-            let path = dir.join(name);
-            std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+        for path in aa_app::export::add_files(dir, &files)? {
             println!("{}", path.display());
-        }
-        // In a folder an analysis wrote, list the new files so that `verify` still accepts it.
-        if let Ok(mut listed) = manifest::Manifest::load(dir) {
-            for (name, _) in &files {
-                listed.add(dir, name).map_err(|e| e.to_string())?;
-            }
-            let path = dir.join(manifest::MANIFEST_NAME);
-            std::fs::write(&path, listed.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
         }
         Ok(())
     }

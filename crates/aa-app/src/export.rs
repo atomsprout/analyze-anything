@@ -129,6 +129,29 @@ pub fn write_folder(report: &Report, dir: &Path, kinds: &[Kind], lang: Lang, fon
     Ok(written)
 }
 
+/// Writes further files into the folder `dir` and, when the folder has a manifest, lists them in
+/// it, so that `analyze-anything verify` still accepts the folder.
+pub fn add_files(dir: &Path, files: &[(&str, Vec<u8>)]) -> Result<Vec<PathBuf>, String> {
+    if files.is_empty() {
+        return Ok(Vec::new());
+    }
+    std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    let mut written = Vec::new();
+    for (name, bytes) in files {
+        let path = dir.join(name);
+        std::fs::write(&path, bytes).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+        written.push(path);
+    }
+    if let Ok(mut listed) = Manifest::load(dir) {
+        for (name, _) in files {
+            listed.add(dir, name).map_err(|e| e.to_string())?;
+        }
+        let path = dir.join(manifest::MANIFEST_NAME);
+        std::fs::write(&path, listed.to_bytes()).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+    }
+    Ok(written)
+}
+
 /// Reads a `report.json`, refusing one written in a layout this program does not read.
 pub fn load(path: &Path) -> Result<Report, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;

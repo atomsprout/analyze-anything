@@ -122,6 +122,7 @@ dependencies = [
  "aa-app",
  "aa-core",
  "aa-export",
+ "aa-interpret",
  "aa-report",
  "aa-worker",
  "serde",

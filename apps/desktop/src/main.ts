@@ -155,6 +155,10 @@ async function start(): Promise<void> {
       } else if (id === "lang:zh" || id === "lang:en") void setLang(id === "lang:zh" ? "zh" : "en");
       else if (id === "theme:system" || id === "theme:light" || id === "theme:dark") setTheme(id.slice(6) as Theme);
       else if (id.startsWith("export:") && screen?.name === "report") screen.view.export(id.slice(7));
+      else if (id === "ai" && screen?.name === "report") screen.view.toggleAi();
+    },
+    aiStep: (text) => {
+      if (screen?.name === "report") screen.view.aiStep(text);
     },
   });
 

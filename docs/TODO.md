@@ -27,7 +27,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 - [x] Run the `ollama` engine against a real Ollama: done with `qwen3:4b` on a 456-finding IPA report (no lookups made by this small model, no statement dropped). A larger model that uses the tools has not been tried.
 - [x] Run the Anthropic protocol of the `api` engine with a real key: done with `claude-opus-5-5` on a 456-finding IPA report (9 lookups, no statement dropped).
 - [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
-- [ ] Offer it in the desktop app.
+- [x] Offer it in the desktop app: a panel beside the report, with the same settings file. Setting it up from inside the app, and stopping an interpretation that is under way, are not there yet.
 - [ ] Follow-up questions about a report: `analyze-anything ask out/ "which hosts does it mention?"`.
 - [ ] A SKILL.md, and a tool-server mode in which an agent can also ask for an analysis.
 

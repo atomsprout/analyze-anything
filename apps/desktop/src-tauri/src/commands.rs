@@ -15,7 +15,7 @@ use tauri::{AppHandle, DragDropEvent, Emitter, Manager, RunEvent, State, WindowE
 use tauri_plugin_dialog::DialogExt;
 
 use crate::state::{AppState, lock};
-use crate::{WORKER_FLAG, menu, report_page, selftest};
+use crate::{WORKER_FLAG, ai, menu, report_page, selftest};
 
 /// Largest piece of a file the page may ask for at once.
 const MAX_READ: u64 = 256 * 1024;
@@ -126,6 +126,7 @@ fn history_list(state: State<'_, AppState>) -> Vec<Entry> {
 fn history_remove(state: State<'_, AppState>, id: String) -> CommandResult<()> {
     close_if_live(&state, Some(&id));
     state.forget(&id);
+    ai::forget(&state.ai_folder, Some(&id));
     state.history.remove(&id).map_err(|e| e.to_string())
 }
 
@@ -133,6 +134,7 @@ fn history_remove(state: State<'_, AppState>, id: String) -> CommandResult<()> {
 fn history_clear(state: State<'_, AppState>) -> CommandResult<usize> {
     close_if_live(&state, None);
     state.forget_all();
+    ai::forget(&state.ai_folder, None);
     state.history.clear().map_err(|e| e.to_string())
 }
 
@@ -269,6 +271,8 @@ async fn export_folder(app: AppHandle, state: State<'_, AppState>, id: String, l
         .ok_or("no free name for the report folder")?;
     let kinds: Vec<Kind> = Kind::ALL.into_iter().filter(|kind| kind.available()).collect();
     export::write_folder(&report, &folder, &kinds, language(&lang), &[])?;
+    // An AI interpretation the user had made of this report, in this language, goes along.
+    export::add_files(&folder, &ai::export_files(&state.ai_folder, &id, language(&lang)))?;
     Ok(Some(folder.to_string_lossy().into_owned()))
 }
 
@@ -296,13 +300,14 @@ fn offer(app: &AppHandle, paths: &[PathBuf]) {
     let _ = app.emit("input-offered", first.to_string_lossy().into_owned());
 }
 
-/// Where the app keeps its reports and scratch files. `AA_DESKTOP_DATA_DIR` overrides it, for
-/// trying the app without touching the real history.
-fn data_folders(app: &tauri::App) -> Result<(PathBuf, PathBuf), Box<dyn std::error::Error>> {
+/// Where the app keeps its reports, its scratch files and the AI interpretations.
+/// `AA_DESKTOP_DATA_DIR` overrides it, for trying the app without touching the real history.
+fn data_folders(app: &tauri::App) -> Result<(PathBuf, PathBuf, PathBuf), Box<dyn std::error::Error>> {
     if let Some(root) = std::env::var_os("AA_DESKTOP_DATA_DIR").map(PathBuf::from) {
-        return Ok((root.join("history"), root.join("scratch")));
+        return Ok((root.join("history"), root.join("scratch"), root.join("ai")));
     }
-    Ok((app.path().app_data_dir()?.join("history"), app.path().app_cache_dir()?.join("scratch")))
+    let data = app.path().app_data_dir()?;
+    Ok((data.join("history"), app.path().app_cache_dir()?.join("scratch"), data.join("ai")))
 }
 
 /// Opens the window and runs until the app quits.
@@ -315,10 +320,11 @@ pub fn run(initial: Option<PathBuf>) {
             std::thread::spawn(move || responder.respond(report_page::serve(&app, &request)));
         })
         .setup(move |app| {
-            let (history, scratch) = data_folders(app)?;
+            let (history, scratch, ai_folder) = data_folders(app)?;
+            std::fs::create_dir_all(&ai_folder)?;
             run::clean_scratch(&scratch);
             let program = Program { path: std::env::current_exe()?, arguments: vec![WORKER_FLAG.to_string()], scratch_root: scratch };
-            app.manage(AppState::new(History::open(&history)?, program, initial, selftest::Plan::from_environment()));
+            app.manage(AppState::new(History::open(&history)?, program, ai_folder, initial, selftest::Plan::from_environment()));
             app.set_menu(menu::build(app.handle(), true)?)?;
             Ok(())
         })
@@ -355,6 +361,9 @@ pub fn run(initial: Option<PathBuf>) {
             export_folder,
             compare_reports,
             set_menu_language,
+            ai::ai_status,
+            ai::ai_get,
+            ai::ai_interpret,
             selftest::selftest_plan,
             selftest::selftest_menu,
             selftest::selftest_finish,

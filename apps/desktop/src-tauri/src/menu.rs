@@ -60,6 +60,8 @@ pub fn build(app: &AppHandle, english: bool) -> tauri::Result<Menu<Wry>> {
         .build()?;
 
     let view = SubmenuBuilder::new(app, word("显示", "View"))
+        .item(&item("ai", word("AI 解读", "AI Interpretation"), Some("CmdOrCtrl+I"))?)
+        .separator()
         .item(&item("lang:zh", "中文", None)?)
         .item(&item("lang:en", "English", None)?)
         .separator()

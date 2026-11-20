@@ -1262,13 +1262,19 @@
     }, { passive: true });
     window.addEventListener('resize', function () { drawRows(true); measure(); });
     if (hosted) {
-      // The host may set the language and the colours. Nothing else is listened to, and only
-      // the two known values of each are acted on.
+      // The host may set the language and the colours, and may ask for one of the report's own
+      // findings to be shown. Nothing else is listened to: only the two known values of each
+      // setting are acted on, and a finding is looked up by its id among those of this report.
       window.addEventListener('message', function (event) {
         var data = event.data;
         if (event.source !== window.parent || !data || data.source !== 'analyze-anything-host') return;
         if (data.theme === 'dark' || data.theme === 'light') setTheme(data.theme);
         if ((data.lang === 'zh' || data.lang === 'en') && data.lang !== lang) { lang = data.lang; render(); }
+        if (typeof data.finding === 'string' && data.finding.length >= 8 && data.finding.length <= 64) {
+          for (var i = 0; i < R.findings.length; i++) {
+            if (R.findings[i].id.indexOf(data.finding) === 0) { revealFinding(i); break; }
+          }
+        }
       });
       tellHost('ready');
     }

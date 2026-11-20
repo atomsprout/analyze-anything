@@ -42,6 +42,35 @@ export interface Chunk {
   size: number;
 }
 
+/** Whether an AI interpretation can be asked for, and of whom. Mirrors `ai::Status`. */
+export interface AiStatus {
+  ready: boolean;
+  configured: boolean;
+  who: string | null;
+  engine: string | null;
+  problem: string | null;
+  config: string;
+}
+
+export interface AiStatement {
+  text: string;
+  /** Ids of the report's findings the statement rests on. */
+  findings: string[];
+}
+
+/** A model's reading of a report. Mirrors `aa_interpret::Interpretation`. */
+export interface Interpretation {
+  engine: string;
+  model: string;
+  language: Lang;
+  findings_total: number;
+  lookups: number | null;
+  statements_dropped: number;
+  summary: AiStatement[];
+  notable: AiStatement[];
+  next_steps: AiStatement[];
+}
+
 export interface AppInfo {
   version: string;
   formats: string[];
@@ -121,6 +150,11 @@ export interface Backend {
   exportFolder(id: string, lang: Lang): Promise<string | null>;
   compareReports(before: string, after: string): Promise<Diff>;
   setMenuLanguage(lang: Lang): Promise<void>;
+  aiStatus(): Promise<AiStatus>;
+  /** The interpretation kept for report `id` in `lang`, if one was made. */
+  aiGet(id: string, lang: Lang): Promise<Interpretation | null>;
+  /** Has the model explain report `id`; what goes on meanwhile arrives through `aiStep`. */
+  aiInterpret(id: string, lang: Lang): Promise<Interpretation>;
   /** Where the frame showing report `id` loads it from. */
   reportUrl(id: string, lang: Lang): string;
   on(handlers: Handlers): Promise<void>;
@@ -136,4 +170,6 @@ export interface Handlers {
   /** Something is being dragged over the window, or no longer. */
   drag(over: boolean): void;
   menu(id: string): void;
+  /** What an interpretation that is being written is doing right now. */
+  aiStep(text: string): void;
 }

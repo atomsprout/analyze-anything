@@ -20,6 +20,9 @@
     "allow-export-folder",
     "allow-compare-reports",
     "allow-set-menu-language",
+    "allow-ai-status",
+    "allow-ai-get",
+    "allow-ai-interpret",
     "allow-selftest-plan",
     "allow-selftest-menu",
     "allow-selftest-finish"

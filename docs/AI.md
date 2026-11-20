@@ -90,6 +90,14 @@ Flags on `interpret` override the file for one run: `--engine`, `--provider`, `-
 
 The `command` engine starts your program in an empty folder. It receives the instructions and the brief on standard input, and must print its answer on standard output: the JSON object the instructions describe. In the command, `{prompt_file}` becomes a file holding the same text as standard input, `{report}` the report's path, and `{mcp_config}` a JSON file in the usual `mcpServers` form that says how to start the report's tool server.
 
+## In the desktop app
+
+A report in the desktop app has an **AI interpretation** button (View ▸ AI Interpretation, ⌘I) that opens a panel beside the report. The settings are the same file as the command line's; the app has no settings of its own, and where nothing is set up the panel says so and shows the commands above. Before anything is asked, the panel says who would be asked and that findings of the report, never the analyzed files, are handed over; nothing happens until you press **Interpret**.
+
+The statements are shown as a model's, each followed by the findings it rests on; clicking one shows that finding in the report. The interpretation is kept with the report in the history, one per language, goes when the report is deleted, and is written as `ai.json` and `ai.md` into a folder exported afterwards.
+
+Two things differ from a terminal. An app started from the Dock or the Finder is not given the shell's environment, so an API key has to be in the file (`--api-key-stdin` puts it there), not in an environment variable. And `claude`, `codex` or a command of your own is looked for in `~/.local/bin`, `~/.cargo/bin`, `~/bin`, `/opt/homebrew/bin` and `/usr/local/bin` besides the search path the app was given.
+
 ## What the model can see
 
 The report, and only the report. The analyzed files are not sent and cannot be asked for.
@@ -120,6 +128,7 @@ The check makes sure every statement **points at** a real finding. It cannot mak
 | `codex` | Run for real with a signed-in Codex CLI 0.170 on the same report: a full answer in under a minute, every statement citing existing findings. Lookups are not counted for this engine either |
 | `ollama` | Run against a real Ollama (0.40) with `qwen3:4b`, on the same 456-finding IPA report: the request with the tools was accepted, the model answered from the brief without looking anything up, and every statement it returned cited existing findings. It took under four minutes on an Apple silicon Mac. Whether a model uses the tools depends on the model; one that cannot take them is asked with the brief alone |
 | `command` | Run for real with a stand-in agent that speaks to the tool server |
+| desktop app | The panel was run in the real window with a stand-in program and, with a bare search path as when started from the Dock, with a signed-in Claude Code on the 456-finding IPA report: 19 statements, none dropped, kept, shown and exported |
 
 A model or service that does not support tools is noticed on the first request, and is then asked once with the brief alone.
 

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-interpret"
+description = "Enables the ai_interpret command without any pre-configured scope."
+commands.allow = ["ai_interpret"]
+
+[[permission]]
+identifier = "deny-ai-interpret"
+description = "Denies the ai_interpret command without any pre-configured scope."
+commands.deny = ["ai_interpret"]

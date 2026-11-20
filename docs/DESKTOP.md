@@ -30,6 +30,8 @@ The report view is the `report.html` that the command line writes, placed in a s
 
 Every command the page can call is listed in `src-tauri/build.rs` and allowed one by one in `capabilities/default.json`; no file system, program execution or network capability is opened. The page can only request analysis of paths the user selected through a dialog, drag and drop, or "Open With".
 
+The optional AI interpretation ([AI.md](AI.md)) is the one thing that reaches outside: the shell, never the page, asks the model the user set up in `~/.analyze-anything/config.toml`, and only when the user presses the button on a report. The page still has no network capability. The host tells the report frame which finding to show when a citation is clicked; the frame looks the id up among its own findings and is told nothing else. Started as `mcp <report.json>`, the desktop program is the read-only tool server for an engine that hands the work to another program, as `analyze-anything mcp` is.
+
 ## Development
 
 ```
@@ -67,7 +69,9 @@ python3 tools/desktop-check/check.py \
 
 The self-check uses a separate data folder and does not touch the real history; the interface language is recorded in the WebView's storage, which is shared with the normally installed application, and the self-check changes it back to the original language when it ends (the 0.1.0 release package does not have this step yet; after running the self-check against it the interface stays in English, and you can change it back in the "View" menu).
 
-It checks: the page's content security policy is in effect (an injected script does not run, text cannot be executed as code, the network cannot be reached), analysis and progress, the report loads in the frame, the bytes shown in the hex view match the file and the evidence range is marked, jumping to an offset, refusing paths that are not in the report, export in 7 formats and "all formats to a folder", switching language and appearance, opening and deleting history, a history report explaining why the bytes cannot be viewed, the diff numbers, returning to the home page after cancellation without leaving a record; after exit no worker process or temporary file is left behind; every exported file is byte-for-byte identical to the file `analyze-anything` writes for the same input, and `analyze-anything verify` accepts the exported folder.
+It checks: the page's content security policy is in effect (an injected script does not run, text cannot be executed as code, the network cannot be reached), analysis and progress, the report loads in the frame, the bytes shown in the hex view match the file and the evidence range is marked, jumping to an offset, refusing paths that are not in the report, export in 7 formats and "all formats to a folder", switching language and appearance, opening and deleting history, a history report explaining why the bytes cannot be viewed, the diff numbers, returning to the home page after cancellation without leaving a record, the AI interpretation (with a stand-in program for the model, so nothing leaves the machine: the panel says who is asked, the statements and their findings are shown and kept, a folder exported afterwards holds `ai.json` and `ai.md`, and they go when the report is deleted); after exit no worker process or temporary file is left behind; every exported file is byte-for-byte identical to the file `analyze-anything` writes for the same input, and `analyze-anything verify` accepts the exported folder.
+
+`--ai-config <file>` uses the settings in that file in place of the stand-in, which really asks the model they name.
 
 ### Three places checked by hand
 

@@ -93,6 +93,33 @@ const WORDS = {
     "Findings are paired by rule and by the file's place inside the input: the same statement is unchanged, a different one is a change, and one found on a single side was added or removed.",
   ],
   version: ["版本 {version}", "Version {version}"],
+  ai: ["AI 解读", "AI interpretation"],
+  ai_intro: [
+    "让语言模型用平白的话解释这份报告。它只能依据报告里已有的结论；没有引用结论的说法会被去掉。",
+    "Have a language model explain this report in plain words. It can only rest on findings the report already holds; a statement that cites none is left out.",
+  ],
+  ai_sends: ["这份报告的结论（不是被分析的文件）会交给：{who}", "Findings of this report, never the analyzed files, are handed to: {who}"],
+  ai_start: ["开始解读", "Interpret"],
+  ai_again: ["重新解读", "Interpret again"],
+  ai_running: ["正在解读… 可以继续看报告。", "Interpreting… You can keep reading the report."],
+  ai_off: ["AI 解读还没有设置，所以什么都不会发送。", "AI interpretation is not set up, so nothing is sent anywhere."],
+  ai_setup: ["在终端里选一次由谁来解读，下面任选其一：", "Choose once, in a terminal, who does it. Any one of these:"],
+  ai_setup_note: [
+    "设置保存在 {path}。从程序坞或访达启动的应用读不到终端里的环境变量，API 密钥要写进这个文件（--api-key-stdin 会这样做）。",
+    "The settings are kept in {path}. An app started from the Dock or the Finder does not see a terminal's environment variables, so an API key has to be in that file (--api-key-stdin puts it there).",
+  ],
+  ai_recheck: ["重新检查", "Check again"],
+  ai_problem: ["已经设置，但现在不能运行：{problem}", "It is set up but cannot run now: {problem}"],
+  ai_failed: ["解读没有完成：{message}", "The interpretation did not finish: {message}"],
+  ai_generated: [
+    "由语言模型 {model} 生成，不是分析器写的。每句话后面是它依据的结论，点一下就在报告里显示；与报告不一致时以报告为准。",
+    "Written by the language model {model}, not by the analyzer. Each statement is followed by the findings it rests on; click one to see it in the report. Where this text and the report differ, the report is right.",
+  ],
+  ai_summary: ["概要", "Summary"],
+  ai_notable: ["值得注意", "Worth attention"],
+  ai_next: ["建议的下一步", "Suggested next steps"],
+  ai_dropped: ["因为没有引用报告里的结论而去掉的模型说法：{n} 句。", "Statements of the model left out because they cited no finding of the report: {n}."],
+  ai_show_finding: ["在报告中显示这条结论", "Show this finding in the report"],
 } as const;
 
 export type Word = keyof typeof WORDS;

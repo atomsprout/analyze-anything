@@ -6,6 +6,9 @@ interface Mock {
   dialogAnswer: string | null;
   stepDelay: number;
   failWith: string | null;
+  aiReady: boolean;
+  aiFailWith: string | null;
+  aiCite: string | null;
   calls: string[];
   offer(path: string): void;
   drag(over: boolean): void;
@@ -160,4 +163,74 @@ test("a dropped file is analyzed, a failure is said, and cancelling returns home
   await expect(page.locator(".toast")).toContainText("cancelled");
   await expect(page.locator(".home")).toBeVisible();
   await expect(page.locator(".entry")).toHaveCount(2);
+});
+
+test("AI interpretation: nothing is asked until the user says so, and what is not set up says how", async ({ page }) => {
+  await openSample(page);
+  await mock(page, (m) => {
+    m.aiReady = false;
+  });
+  const panel = page.locator(".ai-panel");
+  await expect(panel).toBeHidden();
+  await page.getByRole("button", { name: "AI interpretation" }).click();
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("not set up, so nothing is sent anywhere");
+  await expect(panel.locator(".ai-commands")).toContainText("analyze-anything ai claude");
+  await expect(panel).toContainText("/Users/me/.analyze-anything/config.toml");
+  await expect(panel.getByRole("button", { name: "Interpret", exact: true })).toHaveCount(0);
+
+  // Once it is set up, "Check again" offers it, and says who would be asked before anything is.
+  await mock(page, (m) => {
+    m.aiReady = true;
+  });
+  await panel.getByRole("button", { name: "Check again" }).click();
+  await expect(panel.locator(".ai-sends")).toContainText("sample-model at https://example.test/v1");
+  expect(await mock(page, (m) => m.calls.filter((call) => call.startsWith("aiInterpret")).length)).toBe(0);
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+});
+
+test("AI interpretation: the statements are shown as the model's, and a cited finding opens in the report", async ({ page }) => {
+  await openSample(page);
+  const report = page.frameLocator("iframe.report-frame");
+  await expect(report.locator("#app")).toBeVisible();
+  // Cite a finding the sample report really has.
+  const id = await report.locator("#report-data").evaluate((node) => (JSON.parse(node.textContent ?? "{}") as { findings: { id: string }[] }).findings[0]?.id ?? "");
+  expect(id).toMatch(/^[0-9a-f]{64}$/);
+  await page.evaluate(`window.__mock.aiCite = ${JSON.stringify(id)}; window.__mock.stepDelay = 150;`);
+
+  await mock(page, (m) => m.menu("ai"));
+  const panel = page.locator(".ai-panel");
+  await expect(panel).toBeVisible();
+  await expect(page.getByRole("button", { name: "AI interpretation" })).toHaveAttribute("aria-pressed", "true");
+  await panel.getByRole("button", { name: "Interpret", exact: true }).click();
+  await expect(panel.locator(".ai-running")).toBeVisible();
+  await expect(panel.locator(".ai-step")).toHaveText("looking up list_findings");
+  await expect(panel.locator(".ai-statement")).toHaveCount(2);
+  await expect(panel.locator(".ai-banner")).toContainText("Written by the language model sample-model, not by the analyzer");
+  await expect(panel).toContainText("left out because they cited no finding of the report: 1.");
+  await expect(panel.locator(".ai-section h3")).toHaveText(["Summary", "Worth attention"]);
+
+  await panel.locator(".cite").first().click();
+  await expect(report.locator(".flash")).toBeVisible();
+
+  // It is kept: closing and opening the report again shows it without asking the model again.
+  await page.getByRole("button", { name: "‹ Home" }).click();
+  await page.locator(".entry-main").first().click();
+  await page.getByRole("button", { name: "AI interpretation" }).click();
+  await expect(page.locator(".ai-statement")).toHaveCount(2);
+  expect(await mock(page, (m) => m.calls.filter((call) => call.startsWith("aiInterpret")).length)).toBe(1);
+});
+
+test("AI interpretation: a failure is said in the panel and can be tried again", async ({ page }) => {
+  await openSample(page);
+  await mock(page, (m) => {
+    m.aiFailWith = "the service answered 401 (is the API key right?)";
+  });
+  await page.getByRole("button", { name: "AI interpretation" }).click();
+  const panel = page.locator(".ai-panel");
+  await panel.getByRole("button", { name: "Interpret", exact: true }).click();
+  await expect(panel.locator(".ai-problem")).toContainText("did not finish: the service answered 401");
+  await panel.getByRole("button", { name: "Interpret", exact: true }).click();
+  await expect(panel.locator(".ai-statement")).toHaveCount(2);
 });

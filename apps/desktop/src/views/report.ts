@@ -3,6 +3,7 @@ import { clear, el } from "../dom";
 import { bytes as sizeText, fromHex, group, parseOffset, visible } from "../format";
 import { hexView, type HexView, type Range } from "../hexview";
 import type { Opened } from "../types";
+import { aiPanel } from "./ai";
 
 export interface ReportActions {
   home(): void;
@@ -18,6 +19,10 @@ export interface ReportView {
   dismiss(): boolean;
   /** Shows the bytes of one of the report's files, as the report page asks for them. */
   showBytes(path: string, marked: Range | null): Promise<void>;
+  /** Opens or closes the AI interpretation beside the report. */
+  toggleAi(): void;
+  /** What the interpretation being written is doing right now. */
+  aiStep(text: string): void;
 }
 
 /** What the report page may ask for. Anything else it sends is ignored. */
@@ -176,6 +181,14 @@ export function reportView(app: App, opened: Opened, actions: ReportActions): Re
   }
   menu.append(el("hr", null), el("button", { type: "button", role: "menuitem", onclick: () => void doExport("folder") }, t("export_folder")));
 
+  /* ---------- AI interpretation ---------- */
+
+  const aiButton = el("button", { type: "button", class: "btn ai-toggle", "aria-pressed": "false" }, t("ai"));
+  // The report page looks the finding up among its own; it is told nothing else.
+  const showFinding = (id: string) => frame.contentWindow?.postMessage({ source: "analyze-anything-host", finding: id }, "*");
+  const ai = aiPanel(app, entry, showFinding, (open) => aiButton.setAttribute("aria-pressed", String(open)));
+  aiButton.addEventListener("click", () => ai.toggle());
+
   const counts = (["high", "medium", "low"] as const).filter((level) => entry[level] > 0).map((level) => el("span", { class: `sev ${level}` }, `${t(`sev_${level}`)} ${group(entry[level])}`));
   const toolbar = el(
     "header",
@@ -183,10 +196,11 @@ export function reportView(app: App, opened: Opened, actions: ReportActions): Re
     el("button", { type: "button", class: "btn", onclick: actions.home }, `‹ ${t("home")}`),
     el("span", { class: "toolbar-name grow", title: entry.name }, visible(entry.name)),
     el("span", { class: "entry-counts" }, counts),
+    aiButton,
     el("div", { class: "menu-anchor" }, exportButton, menu),
   );
 
-  const element = el("main", { class: "report" }, toolbar, el("div", { class: "report-body" }, frame, drawer));
+  const element = el("main", { class: "report" }, toolbar, el("div", { class: "report-body" }, el("div", { class: "report-main" }, frame, drawer), ai.element));
   // When the view leaves the page its listeners go with it.
   const observer = new MutationObserver(() => {
     if (element.isConnected) return;
@@ -202,6 +216,8 @@ export function reportView(app: App, opened: Opened, actions: ReportActions): Re
     sync,
     export: (kind) => void doExport(kind),
     showBytes,
+    toggleAi: () => ai.toggle(),
+    aiStep: (text) => ai.step(text),
     dismiss() {
       if (!menu.hidden) {
         toggleMenu(false);
@@ -211,7 +227,7 @@ export function reportView(app: App, opened: Opened, actions: ReportActions): Re
         closeDrawer();
         return true;
       }
-      return false;
+      return ai.close();
     },
   };
 }
