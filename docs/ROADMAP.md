@@ -42,9 +42,11 @@ So the work toward "anything" has four directions, and the order below is the or
 What exists should work where people are before it grows.
 
 - Released builds of the command line for Linux and Windows. They build and pass their tests in CI; nobody has used them by hand. Intel Macs are not supported: on a Mac the program is for Apple silicon.
-- A first real run on a Windows machine, with the signature findings compared against `signtool`.
+- A first real run on a Windows machine, with the signature findings compared against `signtool`. A Windows x64 development environment and SDK tools are available as of 2026-11-20; native validation is pending.
 - The desktop app for Windows and Linux.
 - The signed release built in CI instead of on a developer's Mac; automatic updates for the desktop app.
+
+[PLAN-WINDOWS.md](PLAN-WINDOWS.md) develops this direction into a proposed feature sequence: establish the native baseline and file/process boundaries, add Windows entry-point readers, deepen driver/catalog and MSIX integrity, and deliver the Windows desktop app. It separates existing features from extensions and gives each increment its own real-sample and reference-tool gate.
 
 ### 2. More kinds of input
 
@@ -56,6 +58,8 @@ Chosen by how often people meet them and how much a reader gains from depth.
 - **More app platforms**: HarmonyOS HAP, browser extensions (crx, xpi), VS Code extensions.
 - **Documents that carry code**: Office files with macros, PDFs with scripts and attachments.
 - **Firmware and disk images**: more file systems (ext4, squashfs, FAT), so that an image is a container like any other.
+
+The Windows plan also scopes shortcuts, scripts, REG and task exports, INF driver packages, NuGet/VSIX/WinGet metadata, .NET single-file bundles and PyInstaller contents. Office and ISO/WIM/virtual-disk work follow as separate projects. These readers should remain portable; Windows supplies native comparisons rather than becoming a runtime requirement for analysis.
 
 Formats that already exist but were only tried on constructed data (packed APKs, XAPK, encrypted DMGs, Inno Setup 6.4) get real samples first.
 

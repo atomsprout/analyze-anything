@@ -4,17 +4,33 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Next (planned 2026-11-20, after 0.1.1)
 
-The order in which the open items below are taken up. It follows the first direction of the roadmap, "the same thing on every system", and starts with what needs nothing but this repository.
+A Windows x64 development machine is now available, including SDK SignTool executables. Native validation is still pending. [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the feature research, priorities W0–W12, dependencies and acceptance gates; these are planned capabilities, not completed checks.
 
-1. Work in the code alone, needing no other machine and no sample:
-   - the command line runs the analysis in a child process, as the desktop app does, so that `--analyzer-timeout` really stops a stuck analyzer;
-   - a comparison no longer counts a finding as changed because its text holds the input's name;
-   - the CMS signature of the Apple pkg inside Xcode is read (the tag the parser does not expect).
-2. The command line for Linux: try the builds CI makes by hand, then release them. Intel Macs are not supported, and no build is made for them.
-3. A first run on a Windows machine, with the signature findings compared against `signtool`. It waits for a machine; the Windows build of the command line is released after it.
-4. Real samples for the formats that were only tried on constructed data (see "Needs real samples").
+1. Establish a Windows CLI baseline on real installers and application folders, comparing embedded and MSI signatures with the system's tools (W0).
+2. Finish the shared foundation: fix comparisons affected by the input's name; verify Windows file and extraction boundaries (W1); design worker supervision and precise timeout semantics (W2). A child process for the whole run does not by itself make an individual analyzer killable.
+3. Add the first Windows entry-point readers: LNK, URL, REG and exported scheduled tasks (W3).
+4. Add driver-package/catalog relationships and MSIX integrity as independently releasable features (W5, W6), then bounded script analysis and package relationships (W4, W7). Modern executable bundles and installer extensions follow their own feasibility checks (W8, W9).
+5. Deliver the Windows part of D6 after the foundation and native checks; it need not wait for every new parser (W10).
 
-After these: the desktop app for Windows and Linux (D6), and the signed release built in CI.
+Alongside this work: fix the Xcode pkg CMS parsing limitation, try and release the Linux CLI builds, and obtain real samples for the formats below. Intel Macs are not supported, and no build is made for them. The Linux desktop app and signed release build in CI retain their separate work. Documents and disk images are later, separately scoped projects (W11, W12).
+
+## Windows expansion
+
+The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md). All items below remain unverified until their implementation and recorded comparisons are complete.
+
+- [ ] **W0 — Windows CLI baseline**: run real installers and installed program folders on the available x64 machine; compare embedded and MSI signatures with `signtool` and the Windows signature view. Record tool versions, sample digests and the differences in cryptographic checks versus system trust policy.
+- [ ] **W1 — Local file boundaries**: test Unicode and long paths, reparse points, locked files, extraction-name collisions and remote/cloud content; define named-stream coverage without making ordinary reports depend on machine metadata.
+- [ ] **W3 — Entry points**: read LNK, URL, REG and exported Task Scheduler XML, with evidence and unresolved-target limitations.
+- [ ] **W4 — Scripts**: bounded static reading of PowerShell and batch syntax; no evaluation or host command resolution.
+- [ ] **W5 — Driver packages**: INF declarations, catalog signature and membership checks, and links to supplied payloads.
+- [ ] **W6 — MSIX integrity**: block-map checks, package signatures, bundle coverage and declared dependencies.
+- [ ] **W7 — Package semantics**: NuGet, VSIX and WinGet metadata and supported dependency relationships in the existing component inventory.
+- [ ] **W8 — Modern bundles**: supported .NET single-file and PyInstaller contents, beyond the existing metadata and marker recognition.
+- [ ] **W9 — Installer relationships**: MSI action conditions and ordering, explicitly supplied external payloads, and a separate Burn feasibility check.
+- [ ] **W11 — Documents**: staged Office container, macro-source and embedded-object analysis, with explicit limits for unread content.
+- [ ] **W12 — Images**: separate feasibility and implementation gates for ISO, WIM and virtual disks, without mounting them.
+
+W2 is tracked under "Loose ends of phase one"; W10 is the Windows part of D6 under "After phase two".
 
 ## Done (2026-11-19, on one Apple silicon Mac)
 
@@ -77,7 +93,6 @@ Done: `--deep` with Ghidra and Hopper, tried on a real IPA with both ([DEEP.md](
 - [ ] The website is published by hand with `tools/site/publish.sh`; a workflow could take that over.
 - [x] **Three manual checks of the desktop app**: native menus and shortcuts, drag and drop, the system's open and save dialogs. Done on 2026-11-19 with the released 0.1.0 (see [DESKTOP.md](DESKTOP.md)); to be repeated when the shell changes.
 - [ ] **Read a real report through**: where `report.html` and `report.pdf` are wordy or lack something takes a person to judge. How much each chapter says, and how many findings of a kind are listed before they are merged (10 now), wait for that.
-- [ ] **Try it on a Windows machine** (postponed): run a real installer and an installed program folder; compare the signature findings, the MSI ones included, with `sigcheck` or `signtool verify /pa /v`.
 - [ ] Wire the two new scripts of [tools/native-compare/](../tools/native-compare/) into the "Native comparison" workflow. They need real apps on the machine; samples must be chosen for GitHub's runners first.
 
 ## Needs real samples
@@ -93,7 +108,7 @@ These formats were tested with constructed data only:
 ## Loose ends of phase one
 
 - [ ] English fragments left in Chinese rule text: file types follow the language now; the technical reason a signature failed (an error text from the parsing library) does not.
-- [ ] The command line could use the child process too, so that `--analyzer-timeout` really stops a stuck analysis.
+- [ ] **W2 — CLI worker supervision**: make whole-run cancellation and cleanup reliable, and establish the isolation and partial-report contract needed for hard per-analyzer timeouts. Reusing the desktop worker alone does not stop an individual timed-out thread at its deadline; see [PLAN-WINDOWS.md](PLAN-WINDOWS.md).
 - [ ] In a comparison, findings whose text holds the input's name count as changed; the name could be taken out of the parameters before comparing.
 
 ## After phase two
