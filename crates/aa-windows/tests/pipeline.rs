@@ -14,6 +14,60 @@ fn data(name: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+fn compare_inf_reference(name: &str, expected_fields: usize) -> Run {
+    let reference: Value = serde_json::from_slice(&data(&format!("{name}.ref.json"))).expect("SetupAPI reference");
+    assert_eq!(sha256_hex(&data(name)), reference["sha256"]);
+    let run = analyze(&[(name, data(name))]);
+    let fact = run.fact(name, "windows.inf");
+    assert_eq!(fact["issue_count"], 0);
+    assert_eq!(fact["installed"], false);
+    assert_eq!(fact["platform_selected"], false);
+    assert_eq!(fact["catalog_verified"], false);
+    let sections = fact["sections"].as_array().expect("INF sections");
+    let native = reference["sections"].as_array().expect("native sections");
+    assert_eq!(sections.len(), native.len());
+    let mut compared = 0;
+    for section in sections {
+        let expected = native
+            .iter()
+            .find(|s| s["name"].as_str().expect("native name").eq_ignore_ascii_case(section["name"].as_str().expect("name")))
+            .expect("native section");
+        let entries = section["entries"].as_array().expect("entries");
+        let native_entries = expected["entries"].as_array().expect("native entries");
+        assert_eq!(entries.len(), native_entries.len());
+        for (entry, expected) in entries.iter().zip(native_entries) {
+            if let Some(fields) = entry["neutral_fields"].as_array() {
+                assert_eq!(entry["neutral_fields"], expected["fields"], "{} line {}", section["name"], entry["line"]);
+                compared += fields.len();
+            }
+        }
+    }
+    assert_eq!(compared, expected_fields);
+    assert_eq!(run.findings("windows.inf").len(), 1);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.inf-semantics-unresolved"));
+    run
+}
+
+#[test]
+fn independent_inf_source_matches_read_only_setupapi_fields_without_platform_selection() {
+    let run = compare_inf_reference("upstream-nullFilter.inf", 91);
+    let sections = run.fact("upstream-nullFilter.inf", "windows.inf")["sections"].as_array().expect("INF sections");
+    let service = sections.iter().find(|s| s["name"] == "NullFilter.Service").expect("service declaration section");
+    let binary = service["entries"]
+        .as_array()
+        .expect("service entries")
+        .iter()
+        .find(|e| e["key"] == "ServiceBinary")
+        .expect("literal service binary");
+    assert_eq!(binary["fields"][0], r"%13%\%DriverName%.sys");
+    assert!(binary["neutral_fields"].is_null(), "directory IDs remain unresolved");
+}
+
+#[test]
+fn controlled_inf_quotes_and_continuations_match_setupapi_snapshot() {
+    compare_inf_reference("native-inf-syntax.inf", 25);
+}
+
 #[test]
 fn independent_shell_link_relative_path_can_name_a_supplied_sibling() {
     let run = analyze(&[("upstream-test.lnk", data("upstream-test.lnk")), ("a.txt", b"supplied text".to_vec())]);

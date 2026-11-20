@@ -1,2 +1,4 @@
 # Keep the pinned upstream sample byte-for-byte identical on Windows and Unix checkouts.
 crates/aa-windows/tests/data/upstream-task.xml -text
+crates/aa-windows/tests/data/upstream-nullFilter.inf -text
+crates/aa-windows/tests/data/native-inf-syntax.inf -text

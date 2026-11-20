@@ -27,6 +27,7 @@ The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md
   Initial URL and LNK readers preserve supported declarations without opening targets/icons or expanding variables. The REG reader preserves writes/deletions and typed values. Task XML records literal triggers, actions, principals and settings. Native comparisons and independent licensed fixtures are recorded. A bounded tree pass now links unambiguous LNK relative declarations to supplied artifacts and records unresolved reasons for host-dependent references. Unicode alias profiles and broader coverage checks remain open; see [shortcuts](spikes/windows-shortcuts.md), [registry exports](spikes/windows-registry.md), [tasks](spikes/windows-tasks.md) and [input references](spikes/windows-input-references.md).
 - [ ] **W4 — Scripts**: bounded static reading of PowerShell and batch syntax; no evaluation or host command resolution.
 - [ ] **W5 — Driver packages**: INF declarations, catalog signature and membership checks, and links to supplied payloads.
+  The initial bounded INF syntax reader retains ordered section occurrences, decorations, fields and source lines, with a separate conservative neutral-string projection. A pinned Microsoft NullFilter source fixture matches 91 projected fields against read-only SetupAPI. Installation semantics, device/service/file relationships and catalog integrity remain open; see [the INF record](spikes/windows-inf.md).
 - [ ] **W6 — MSIX integrity**: block-map checks, package signatures, bundle coverage and declared dependencies.
 - [ ] **W7 — Package semantics**: NuGet, VSIX and WinGet metadata and supported dependency relationships in the existing component inventory.
 - [ ] **W8 — Modern bundles**: supported .NET single-file and PyInstaller contents, beyond the existing metadata and marker recognition.
@@ -121,6 +122,7 @@ These formats were tested with constructed data only:
 ## After phase two
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
+  Windows x64 page build, 10 unit tests, portable fixture generation and 22 WebKit/Chromium tests with the stand-in backend passed on 2026-11-20. Native WebView2, real-window parity, system interactions and packaging remain open; see [DESKTOP.md](DESKTOP.md).
 - [ ] Released builds of the command line for Linux and Windows. They are built in CI on a version tag but have not been tried by hand.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.

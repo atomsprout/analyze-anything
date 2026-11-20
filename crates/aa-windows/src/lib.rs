@@ -12,7 +12,8 @@
 //! imports grouped into capabilities (`behaviour`) and kernel-driver facts; it also reads
 //! what an installer does (`installer`), verifies the signature an MSI package carries for
 //! itself (`msisig`, over the compound-file reader `compound`) and reads `AppxManifest.xml`
-//! (`appx`). The tree pass
+//! (`appx`), Windows entry-point declarations (`lnk`, `shortcuts`, `registry`, `tasks`)
+//! and INF syntax (`inf`). The tree pass
 //! (`tree`) reports what needs several files: who signed what, vendors, capabilities across
 //! files, Electron applications and other frameworks recognised from the folder layout.
 //!
@@ -28,6 +29,7 @@ mod cab;
 mod compound;
 mod der;
 mod dotnet;
+mod inf;
 mod inno;
 mod installer;
 mod lnk;
@@ -105,7 +107,7 @@ impl Analyzer for Windows {
 
     fn analyze_file(&self, tree: &dyn Tree, file: &Artifact, out: &mut Output) {
         nsis::script_note(tree, file, out);
-        if file.size < 64 && !matches!(file.extension().as_deref(), Some("url" | "lnk" | "reg")) {
+        if file.size < 64 && !matches!(file.extension().as_deref(), Some("url" | "lnk" | "reg" | "inf")) {
             return;
         }
         let Ok(bytes) = tree.read(&file.path) else { return };
@@ -113,6 +115,7 @@ impl Analyzer for Windows {
         lnk::analyze(file, &bytes, out);
         registry::analyze(file, &bytes, out);
         tasks::analyze(file, &bytes, out);
+        inf::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
         asar_fact(file, &bytes, out);

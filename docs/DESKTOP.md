@@ -57,6 +57,14 @@ The workspace's default members do not include the desktop app, so `cargo build`
 | The page working with a real report page (sandboxed frame, clicking evidence sends a message, language sync, export, history, diff) | `apps/desktop/tests/browser/app.spec.ts` |
 | The whole flow in a real window, and exports being byte-for-byte identical to the command line | `tools/desktop-check/check.py` |
 
+On 2026-11-20 the Windows x64 development host passed `npm ci`, the 10 page unit tests,
+`npm run build`, sample generation with `npm run fixture`, and all 22 WebKit/Chromium
+browser tests. Fixture generation now uses Node's file-copy API instead of a POSIX `cp`
+command and explicitly disables optional AI interpretation. These browser tests use the
+stand-in backend. They do not establish native Windows WebView2 behavior, real-window
+CLI parity, menus, dialogs, Explorer drop/open integration, packaging or signed delivery;
+those remain W10/D6 acceptance work.
+
 ### Self-check mode
 
 The macOS system WebView has no usable automation driver, so the application can check itself: when started with the environment variable `AA_DESKTOP_SELFTEST=<plan file>`, the page clicks through its own interface like a user and runs the whole flow, records what it sees, and the application writes the results to a file and exits. No dialogs appear in this mode: "Open" returns the inputs in the plan in turn, and "Save" writes into the folder the plan specifies. Without this variable, the three related commands always refuse.

@@ -1,0 +1,494 @@
+{
+  "sample": "upstream-nullFilter.inf",
+  "sha256": "04351440bf6ee49fd39f2d36d76ced97af06941d3faadc1865862c0bff35891d",
+  "reference": "SetupOpenInfFileW/SetupEnumInfSectionsW/SetupGetStringFieldW",
+  "sections": [
+    {
+      "name": "strings",
+      "entries": [
+        {
+          "key": "ProviderString",
+          "fields": [
+            "TODO-Set-Provider"
+          ]
+        },
+        {
+          "key": "ServiceDescription",
+          "fields": [
+            "NullFilter mini-filter driver"
+          ]
+        },
+        {
+          "key": "ServiceName",
+          "fields": [
+            "NullFilter"
+          ]
+        },
+        {
+          "key": "DriverName",
+          "fields": [
+            "NullFilter"
+          ]
+        },
+        {
+          "key": "DiskId1",
+          "fields": [
+            "NullFilter Device Installation Disk"
+          ]
+        },
+        {
+          "key": "DefaultInstance",
+          "fields": [
+            "Null Instance"
+          ]
+        },
+        {
+          "key": "Instance1.Name",
+          "fields": [
+            "Null Instance"
+          ]
+        },
+        {
+          "key": "Instance1.Altitude",
+          "fields": [
+            "370020"
+          ]
+        },
+        {
+          "key": "Instance1.Flags",
+          "fields": [
+            "0x1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "entries": [
+        {
+          "key": "Signature",
+          "fields": [
+            "$Windows NT$"
+          ]
+        },
+        {
+          "key": "Class",
+          "fields": [
+            "ActivityMonitor"
+          ]
+        },
+        {
+          "key": "ClassGuid",
+          "fields": [
+            "{b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}"
+          ]
+        },
+        {
+          "key": "Provider",
+          "fields": [
+            "TODO-Set-Provider"
+          ]
+        },
+        {
+          "key": "DriverVer",
+          "fields": [
+            "06/16/2007",
+            "1.0.0.0"
+          ]
+        },
+        {
+          "key": "CatalogFile",
+          "fields": [
+            "nullfilter.cat"
+          ]
+        },
+        {
+          "key": "PnpLockdown",
+          "fields": [
+            "1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksfiles",
+      "entries": [
+        {
+          "key": "nullfilter.sys",
+          "fields": [
+            "1",
+            "",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksnames",
+      "entries": [
+        {
+          "key": "1",
+          "fields": [
+            "NullFilter Device Installation Disk",
+            "",
+            "",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "name": "destinationdirs",
+      "entries": [
+        {
+          "key": "NullFilterDownlevel.CopyDriverFiles",
+          "fields": [
+            "12"
+          ]
+        },
+        {
+          "key": "NullFilterDownlevel.DelDriverFiles",
+          "fields": [
+            "12"
+          ]
+        },
+        {
+          "key": "NullFilter.DriverFiles",
+          "fields": [
+            "13"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultinstall.nt$arch$.10.0...25952",
+      "entries": [
+        {
+          "key": "OptionDesc",
+          "fields": [
+            "NullFilter mini-filter driver"
+          ]
+        },
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "NullFilter.DriverFiles"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultinstall.nt$arch$.10.0...25952.services",
+      "entries": [
+        {
+          "key": "AddService",
+          "fields": [
+            "NullFilter",
+            "",
+            "NullFilter.Service"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilter.service",
+      "entries": [
+        {
+          "key": "DisplayName",
+          "fields": [
+            "NullFilter"
+          ]
+        },
+        {
+          "key": "Description",
+          "fields": [
+            "NullFilter mini-filter driver"
+          ]
+        },
+        {
+          "key": "ServiceBinary",
+          "fields": [
+            ".\\NullFilter.sys"
+          ]
+        },
+        {
+          "key": "Dependencies",
+          "fields": [
+            "FltMgr"
+          ]
+        },
+        {
+          "key": "ServiceType",
+          "fields": [
+            "2"
+          ]
+        },
+        {
+          "key": "StartType",
+          "fields": [
+            "3"
+          ]
+        },
+        {
+          "key": "ErrorControl",
+          "fields": [
+            "1"
+          ]
+        },
+        {
+          "key": "LoadOrderGroup",
+          "fields": [
+            "FSFilter Activity Monitor"
+          ]
+        },
+        {
+          "key": "AddReg",
+          "fields": [
+            "NullFilter.AddRegistry"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilter.addregistry",
+      "entries": [
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Parameters",
+            "SupportedFeatures",
+            "0x00010001",
+            "0x3"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Parameters\\Instances",
+            "DefaultInstance",
+            "0x00000000",
+            "Null Instance"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Parameters\\Instances\\Null Instance",
+            "Altitude",
+            "0x00000000",
+            "370020"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Parameters\\Instances\\Null Instance",
+            "Flags",
+            "0x00010001",
+            "0x1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilter.driverfiles",
+      "entries": [
+        {
+          "key": "NullFilter.sys",
+          "fields": [
+            "NullFilter.sys"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultinstall.nt$arch$",
+      "entries": [
+        {
+          "key": "OptionDesc",
+          "fields": [
+            "NullFilter mini-filter driver"
+          ]
+        },
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "NullFilterDownlevel.CopyDriverFiles"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultinstall.nt$arch$.services",
+      "entries": [
+        {
+          "key": "AddService",
+          "fields": [
+            "NullFilter",
+            "",
+            "NullFilterDownlevel.Service"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultuninstall.nt$arch$",
+      "entries": [
+        {
+          "key": "LegacyUninstall",
+          "fields": [
+            "1"
+          ]
+        },
+        {
+          "key": "DelFiles",
+          "fields": [
+            "NullFilterDownlevel.DelDriverFiles"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultuninstall.nt$arch$.services",
+      "entries": [
+        {
+          "key": "DelService",
+          "fields": [
+            "NullFilter",
+            "0x200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilterdownlevel.service",
+      "entries": [
+        {
+          "key": "DisplayName",
+          "fields": [
+            "NullFilter"
+          ]
+        },
+        {
+          "key": "Description",
+          "fields": [
+            "NullFilter mini-filter driver"
+          ]
+        },
+        {
+          "key": "ServiceBinary",
+          "fields": [
+            "C:\\WINDOWS\\system32\\DRIVERS\\NullFilter.sys"
+          ]
+        },
+        {
+          "key": "Dependencies",
+          "fields": [
+            "FltMgr"
+          ]
+        },
+        {
+          "key": "ServiceType",
+          "fields": [
+            "2"
+          ]
+        },
+        {
+          "key": "StartType",
+          "fields": [
+            "3"
+          ]
+        },
+        {
+          "key": "ErrorControl",
+          "fields": [
+            "1"
+          ]
+        },
+        {
+          "key": "LoadOrderGroup",
+          "fields": [
+            "FSFilter Activity Monitor"
+          ]
+        },
+        {
+          "key": "AddReg",
+          "fields": [
+            "NullFilterDownlevel.AddRegistry"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilterdownlevel.addregistry",
+      "entries": [
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "",
+            "SupportedFeatures",
+            "0x00010001",
+            "0x3"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Instances",
+            "DefaultInstance",
+            "0x00000000",
+            "Null Instance"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Instances\\Null Instance",
+            "Altitude",
+            "0x00000000",
+            "370020"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Instances\\Null Instance",
+            "Flags",
+            "0x00010001",
+            "0x1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilterdownlevel.copydriverfiles",
+      "entries": [
+        {
+          "key": "NullFilter.sys",
+          "fields": [
+            "NullFilter.sys"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nullfilterdownlevel.deldriverfiles",
+      "entries": [
+        {
+          "key": "NullFilter.sys",
+          "fields": [
+            "NullFilter.sys"
+          ]
+        }
+      ]
+    }
+  ]
+}

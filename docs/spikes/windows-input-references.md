@@ -95,4 +95,9 @@ Windows verification passed: `cargo fmt --all --check`, workspace Clippy with wa
 denied, `cargo test --workspace` (including fixture mutations), and the CLI build without
 default features. Seven end-to-end CLI checks passed again with completeness guards in
 place. The final local test log is `out/windows-baseline/workspace-input-references-final.log`.
-Cross-platform CI for the development branch is the next validation step.
+Cross-platform CI passed for implementation commit `413e05e7e4f87c931b8a50b9c2dca32d11bfc662`:
+[run 44806581603](https://github.com/atomsprout/analyze-anything/actions/runs/44806581603).
+Core format, Clippy, tests and no-default-feature CLI builds passed on Linux, macOS and
+Windows; the separate macOS desktop job passed its frontend, browser and Tauri checks,
+and the license job passed. This is automated portable-reader evidence, not additional
+native Shell/registry/task comparisons or a Windows desktop release qualification.

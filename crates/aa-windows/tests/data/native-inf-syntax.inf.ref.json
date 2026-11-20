@@ -1,0 +1,156 @@
+{
+  "sample": "native-inf-syntax.inf",
+  "sha256": "378a85bc4fb3ace082bb3fc3555f44d3b16d84c08eac247fbab39773d60f0a04",
+  "reference": "SetupOpenInfFileW/SetupEnumInfSectionsW/SetupGetStringFieldW",
+  "sections": [
+    {
+      "name": "strings",
+      "entries": [
+        {
+          "key": "Provider",
+          "fields": [
+            "Example Provider"
+          ]
+        },
+        {
+          "key": "DoubleOuter",
+          "fields": [
+            "quoted value"
+          ]
+        },
+        {
+          "key": "TripleOuter",
+          "fields": [
+            "\"quoted value\""
+          ]
+        },
+        {
+          "key": "Comma",
+          "fields": [
+            "text, with comma"
+          ]
+        },
+        {
+          "key": "Semicolon",
+          "fields": [
+            "text; with semicolon"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "entries": [
+        {
+          "key": "Signature",
+          "fields": [
+            "$Windows NT$"
+          ]
+        },
+        {
+          "key": "Class",
+          "fields": [
+            "Sample"
+          ]
+        },
+        {
+          "key": "Provider",
+          "fields": [
+            "Example Provider"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "defaultinstall.ntamd64",
+      "entries": [
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "dir\\",
+            "payload.sys"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "registry",
+      "entries": [
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "",
+            "Message",
+            "",
+            "A;B, \"quoted\" value"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "",
+            "Path",
+            "",
+            "%SystemRoot%\\payload.sys"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "probe",
+      "entries": [
+        {
+          "key": "A",
+          "fields": [
+            "quoted value"
+          ]
+        },
+        {
+          "key": "B",
+          "fields": [
+            "\"quoted value\""
+          ]
+        },
+        {
+          "key": "C",
+          "fields": [
+            "text, with comma"
+          ]
+        },
+        {
+          "key": "D",
+          "fields": [
+            "text; with semicolon"
+          ]
+        },
+        {
+          "key": "E",
+          "fields": [
+            "  preserved spaces  "
+          ]
+        },
+        {
+          "key": "F",
+          "fields": [
+            "first",
+            "",
+            "third",
+            ""
+          ]
+        },
+        {
+          "key": "G",
+          "fields": [
+            "Example Provider"
+          ]
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "projected_fields_equal": 25,
+    "repeated_json_identical": true
+  }
+}

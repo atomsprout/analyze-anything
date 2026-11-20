@@ -1,0 +1,29 @@
+; Project-authored read-only SetupAPI syntax fixture. Apache-2.0.
+[Version]
+Signature="$Windows NT$"
+Class=Sample
+Provider=%Provider%
+
+[DefaultInstall.NTamd64]
+CopyFiles="dir\"\ ; continuation after a quoted backslash
+    ,payload.sys
+
+[Registry]
+HKR,,Message,,"A;B, ""quoted"" value"
+HKR,,Path,,"%%SystemRoot%%\payload.sys"
+
+[Probe]
+A=%DoubleOuter%
+B=%TripleOuter%
+C=%Comma%
+D=%Semicolon%
+E="  preserved spaces  "
+F=first,,third,
+G=%Provider%
+
+[Strings]
+Provider="Example Provider"
+DoubleOuter=""quoted value""
+TripleOuter="""quoted value"""
+Comma="text, with comma"
+Semicolon="text; with semicolon"

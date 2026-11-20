@@ -32,3 +32,15 @@ or invoking a native resolver (also usable on other systems):
 This uses the pinned MIT LNK fixture and an explicitly supplied text sibling. It verifies
 target/digest evidence, repeated reports, renamed-input comparison and English/Chinese/HTML
 output. Optional AI interpretation is explicitly disabled when supported by the binary.
+
+Compare a controlled INF fixture with read-only Windows SetupAPI and the CLI:
+
+    python tools/native-compare/windows-inf-check.py --sample crates/aa-windows/tests/data/upstream-nullFilter.inf --reference out/windows-baseline/inf/checks.json --cli target/debug/analyze-anything.exe --output out/windows-baseline/inf/report
+
+Omit `--cli` and `--output` to capture only the native reference. The helper opens the
+explicit full path with SetupOpenInfFileW and reads sections/fields, without installing,
+loading a driver or following Include/Needs. Native expanded fields are compared only
+where the analyzer's conservative neutral projection is present. It checks repeated JSON
+and unchanged input too. Source section names must be unique for this comparison; the
+analyzer preserves repeated occurrences while SetupAPI merges them. See
+[the scope and provenance record](../../docs/spikes/windows-inf.md).

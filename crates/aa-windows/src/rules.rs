@@ -28,6 +28,34 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.inf",
+        title_en: "Windows INF declarations",
+        title_zh: "Windows INF 声明",
+        text_en: "The INF contains {sections} sections and {entries} readable entries, retaining repeated section occurrences. Literal fields, section decorations and source lines are retained. No target platform was selected and no installation was performed.",
+        text_zh: "INF 包含 {sections} 处节声明和 {entries} 条可读取的条目。保留了字面字段、节名称装饰和来源行号。没有选择目标平台，也没有执行安装。",
+    },
+    Rule {
+        id: "windows.inf-unreadable",
+        title_en: "INF declarations could not be read",
+        title_zh: "无法读取 INF 声明",
+        text_en: "The INF text encoding, size or section structure is unsupported. No driver-package or installation semantics were inferred.",
+        text_zh: "不支持此 INF 文本的编码、大小或节结构。没有据此推断驱动包或安装语义。",
+    },
+    Rule {
+        id: "windows.inf-partial",
+        title_en: "INF declarations read in part",
+        title_zh: "仅部分读取 INF 声明",
+        text_en: "Some INF declarations were unread or exceeded the reader's budgets. Source lines and bounded reason details are recorded; incomplete input is not used for string projections.",
+        text_zh: "部分 INF 声明无法读取或超过读取预算。记录了来源行号和有上限的原因详情；不会用不完整的输入生成字符串投影。",
+    },
+    Rule {
+        id: "windows.inf-semantics-unresolved",
+        title_en: "INF installation and integrity remain unresolved",
+        title_zh: "INF 安装及完整性语义未解析",
+        text_en: "This reader records syntax and an optional neutral string projection. It does not choose architecture, OS or language decorations, resolve directory IDs, follow Include/Needs or payload references, interpret installation actions, verify catalogs or establish Windows installation eligibility. The host Driver Store and registry were not consulted.",
+        text_zh: "此读取器记录语法及可选的中性字符串投影。不选择体系结构、系统或语言装饰，不解析目录 ID，不跟踪 Include/Needs 或载荷引用，不解释安装动作，不验证目录签名，也不判断 Windows 安装资格。没有查询主机驱动程序存储或注册表。",
+    },
+    Rule {
         id: "windows.input-reference",
         title_en: "Declaration links to supplied artifacts",
         title_zh: "声明关联到输入中的文件",

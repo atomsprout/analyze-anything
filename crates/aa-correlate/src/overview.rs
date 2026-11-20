@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-windows-inf",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 Windows INF 声明文档。保留了文件中的节和条目，没有执行安装或验证驱动包。",
+        text_en: "This is a Windows INF declaration document. Its sections and entries were retained; no installation was performed or driver package verified.",
+    },
+    Rule {
         id: "overview.kind-scheduled-task",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -381,6 +388,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("shell-link", _) => finding("overview.kind-shell-link", Confidence::Verified),
         ("registry-export", _) => finding("overview.kind-registry-export", Confidence::Verified),
         ("scheduled-task", _) => finding("overview.kind-scheduled-task", Confidence::Verified),
+        ("windows-inf", _) => finding("overview.kind-windows-inf", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),
