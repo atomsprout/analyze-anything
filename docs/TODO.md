@@ -2,6 +2,20 @@
 
 Phase one (the command line) and the macOS desktop app of phase two (D0–D5) are done, and so is the optional AI interpretation of phase three. This file lists what is not finished, item by item; the direction and the order of the larger work are in [ROADMAP.md](ROADMAP.md). Known limits of what the program does are in [LIMITATIONS.md](LIMITATIONS.md); the desktop app is described in [DESKTOP.md](DESKTOP.md).
 
+## Next (planned 2026-11-20, after 0.1.1)
+
+The order in which the open items below are taken up. It follows the first direction of the roadmap, "the same thing on every system", and starts with what needs nothing but this repository.
+
+1. Work in the code alone, needing no other machine and no sample:
+   - the command line runs the analysis in a child process, as the desktop app does, so that `--analyzer-timeout` really stops a stuck analyzer;
+   - a comparison no longer counts a finding as changed because its text holds the input's name;
+   - the CMS signature of the Apple pkg inside Xcode is read (the tag the parser does not expect).
+2. The command line for Linux and Intel Macs: try the builds CI makes by hand, then release them.
+3. A first run on a Windows machine, with the signature findings compared against `signtool`. It waits for a machine; the Windows build of the command line is released after it.
+4. Real samples for the formats that were only tried on constructed data (see "Needs real samples").
+
+After these: the desktop app for Windows and Linux (D6), and the signed release built in CI.
+
 ## Done (2026-11-19, on one Apple silicon Mac)
 
 - [x] **The command line tried on a Mac**: 8 installed apps, 5 real IPAs and DMGs. 332 points agree with `codesign`. Five problems were found and fixed: files added by the App Store reported as "added after signing"; wildcard profiles and sandbox entitlements reported as exceeding the profile; a private-key marker with no key material reported as "embedded private key (high)"; an empty name when the input folder is itself an app; English file types inside Chinese reports.
@@ -92,4 +106,4 @@ These formats were tested with constructed data only:
 ## Phase three: the ecosystem
 
 - [ ] More inputs: Linux packages (deb, rpm, AppImage), HarmonyOS HAP, PyInstaller and similar bundles.
-- [ ] A `deep` level: function-level analysis, optionally through Ghidra or Kuna.
+- [x] A `deep` level: done with Ghidra and Hopper; what is left of it is under "The deep level" above.
