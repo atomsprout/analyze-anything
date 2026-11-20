@@ -71,40 +71,47 @@ One pass, read only: the input is opened layer by layer, each file is read by th
 
 ```mermaid
 flowchart LR
-  input["Any file or folder<br/>IPA · APK · DMG · pkg<br/>MSI · exe · archive"] --> unpack["Unpack<br/>layer by layer<br/>read only, never run"]
-  unpack --> analyze["Analyzers<br/>content · binary<br/>Apple · Android · Windows"]
-  analyze --> relate["Correlate<br/>across files"]
-  relate --> report[("Report<br/>findings + evidence + confidence<br/>coverage and limitations")]
-  report --> formats["HTML · PDF · Markdown · text<br/>JSON · SARIF · CycloneDX"]
-  report -. "optional, off by default" .-> ai["AI interpretation<br/>may only cite findings"]
+  input["Any file or folder<br/>IPA · APK · DMG · pkg<br/>MSI · exe · archive"]:::sun --> unpack["Unpack<br/>layer by layer<br/>read only, never run"]:::coral
+  unpack --> analyze["Analyzers<br/>content · binary<br/>Apple · Android · Windows"]:::sky
+  analyze --> relate["Correlate<br/>across files"]:::lime
+  relate --> report[("Report<br/>findings + evidence + confidence<br/>coverage and limitations")]:::pink
+  report --> formats["HTML · PDF · Markdown · text<br/>JSON · SARIF · CycloneDX"]:::orange
+  report -. "optional, off by default" .-> ai["AI interpretation<br/>may only cite findings"]:::sun
+  classDef sun fill:#ffc93c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef coral fill:#ff6b5e,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef sky fill:#5ccbf2,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef lime fill:#a6e05a,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef pink fill:#ff8fb1,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef orange fill:#ff9f1c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
 ```
 
 The command line and the desktop app are two faces of the same engine, so one input gives the same report in both. The desktop app never analyzes in its own process: a worker does, and can be stopped for certain.
 
 ```mermaid
-flowchart TB
-  subgraph faces["What you use"]
-    cli["analyze-anything<br/>command line"]
-    subgraph desktop["Desktop app"]
-      page["Window<br/>report in a sandboxed frame"] <--> shell["Shell<br/>menus, dialogs, history"]
-      shell <-->|"one JSON per line"| worker["Worker process"]
-    end
-    mcp["mcp<br/>read-only tool server<br/>for AI agents"]
-  end
+flowchart LR
+  cli["Command line<br/>analyze-anything"]:::sun
+  app["Desktop app<br/>window ⇄ shell ⇄ worker process"]:::coral
   subgraph engine["Engine (Rust crates)"]
     direction LR
-    unpack2["aa-unpack"] --> analyzers["aa-content · aa-binary<br/>aa-apple · aa-android · aa-windows"] --> correlate["aa-correlate"] --> core[("aa-core<br/>Report")]
+    unpack["aa-unpack"]:::sky --> analyzers["aa-content · aa-binary<br/>aa-apple · aa-android · aa-windows"]:::sky --> correlate["aa-correlate"]:::sky
   end
-  subgraph outputs["Outputs"]
-    direction LR
-    exports["aa-report · aa-export<br/>HTML, PDF, Markdown, text,<br/>JSON, SARIF, CycloneDX"]
-    interpret["aa-interpret<br/>optional AI interpretation"]
-  end
-  cli --> unpack2
-  worker --> unpack2
-  core --> exports
-  core -.-> interpret
-  mcp --> core
+  report[("Report<br/>aa-core")]:::lime
+  exports["aa-report · aa-export<br/>HTML · PDF · Markdown · text<br/>JSON · SARIF · CycloneDX"]:::orange
+  ai["aa-interpret<br/>optional AI interpretation"]:::pink
+  mcp["mcp<br/>read-only tool server<br/>for AI agents"]:::pink
+  cli --> unpack
+  app --> unpack
+  correlate --> report
+  report --> exports
+  report -.-> ai
+  report -.-> mcp
+  classDef sun fill:#ffc93c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef coral fill:#ff6b5e,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef sky fill:#5ccbf2,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef lime fill:#a6e05a,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef pink fill:#ff8fb1,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef orange fill:#ff9f1c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  style engine fill:#5ccbf222,stroke:#5ccbf2,stroke-width:2px;
 ```
 
 ## Optional: an AI reading of the report

@@ -73,40 +73,47 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 
 ```mermaid
 flowchart LR
-  input["任意文件或文件夹<br/>IPA · APK · DMG · pkg<br/>MSI · exe · 压缩包"] --> unpack["解包<br/>逐层打开<br/>只读，从不运行"]
-  unpack --> analyze["分析器<br/>内容 · 二进制<br/>Apple · Android · Windows"]
-  analyze --> relate["关联<br/>跨文件"]
-  relate --> report[("报告<br/>结论 + 证据 + 置信度<br/>覆盖度与局限")]
-  report --> formats["HTML · PDF · Markdown · 纯文本<br/>JSON · SARIF · CycloneDX"]
-  report -. "可选，默认关闭" .-> ai["AI 解读<br/>只能引用已有结论"]
+  input["任意文件或文件夹<br/>IPA · APK · DMG · pkg<br/>MSI · exe · 压缩包"]:::sun --> unpack["解包<br/>逐层打开<br/>只读，从不运行"]:::coral
+  unpack --> analyze["分析器<br/>内容 · 二进制<br/>Apple · Android · Windows"]:::sky
+  analyze --> relate["关联<br/>跨文件"]:::lime
+  relate --> report[("报告<br/>结论 + 证据 + 置信度<br/>覆盖度与局限")]:::pink
+  report --> formats["HTML · PDF · Markdown · 纯文本<br/>JSON · SARIF · CycloneDX"]:::orange
+  report -. "可选，默认关闭" .-> ai["AI 解读<br/>只能引用已有结论"]:::sun
+  classDef sun fill:#ffc93c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef coral fill:#ff6b5e,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef sky fill:#5ccbf2,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef lime fill:#a6e05a,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef pink fill:#ff8fb1,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef orange fill:#ff9f1c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
 ```
 
 命令行和桌面版是同一套引擎的两个入口，所以同一个输入在两边得到相同的报告。桌面版从不在自己的进程里分析：由工作进程来做，并且一定停得下来。
 
 ```mermaid
-flowchart TB
-  subgraph faces["你用到的"]
-    cli["analyze-anything<br/>命令行"]
-    subgraph desktop["桌面版"]
-      page["窗口<br/>报告放在沙盒框架里"] <--> shell["外壳<br/>菜单、对话框、历史"]
-      shell <-->|"每行一条 JSON"| worker["工作进程"]
-    end
-    mcp["mcp<br/>只读工具服务<br/>给 AI agent"]
-  end
+flowchart LR
+  cli["命令行<br/>analyze-anything"]:::sun
+  app["桌面版<br/>窗口 ⇄ 外壳 ⇄ 工作进程"]:::coral
   subgraph engine["引擎（Rust crate）"]
     direction LR
-    unpack2["aa-unpack"] --> analyzers["aa-content · aa-binary<br/>aa-apple · aa-android · aa-windows"] --> correlate["aa-correlate"] --> core[("aa-core<br/>报告")]
+    unpack["aa-unpack"]:::sky --> analyzers["aa-content · aa-binary<br/>aa-apple · aa-android · aa-windows"]:::sky --> correlate["aa-correlate"]:::sky
   end
-  subgraph outputs["输出"]
-    direction LR
-    exports["aa-report · aa-export<br/>HTML、PDF、Markdown、纯文本、<br/>JSON、SARIF、CycloneDX"]
-    interpret["aa-interpret<br/>可选的 AI 解读"]
-  end
-  cli --> unpack2
-  worker --> unpack2
-  core --> exports
-  core -.-> interpret
-  mcp --> core
+  report[("报告<br/>aa-core")]:::lime
+  exports["aa-report · aa-export<br/>HTML · PDF · Markdown · 纯文本<br/>JSON · SARIF · CycloneDX"]:::orange
+  ai["aa-interpret<br/>可选的 AI 解读"]:::pink
+  mcp["mcp<br/>只读工具服务<br/>给 AI agent"]:::pink
+  cli --> unpack
+  app --> unpack
+  correlate --> report
+  report --> exports
+  report -.-> ai
+  report -.-> mcp
+  classDef sun fill:#ffc93c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef coral fill:#ff6b5e,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef sky fill:#5ccbf2,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef lime fill:#a6e05a,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef pink fill:#ff8fb1,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  classDef orange fill:#ff9f1c,stroke:#2b2118,stroke-width:2px,color:#2b2118;
+  style engine fill:#5ccbf222,stroke:#5ccbf2,stroke-width:2px;
 ```
 
 ## 可选：让 AI 解读报告
