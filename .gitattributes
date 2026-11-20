@@ -1,0 +1,2 @@
+# Keep the pinned upstream sample byte-for-byte identical on Windows and Unix checkouts.
+crates/aa-windows/tests/data/upstream-task.xml -text

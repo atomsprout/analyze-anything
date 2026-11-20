@@ -414,6 +414,7 @@ pub fn counted(count: u64, rest: &str) -> String {
 
 /// The nouns rule texts count, plural and singular.
 const NOUNS: &[(&str, &str)] = &[
+    ("actions", "action"),
     ("activities", "activity"),
     ("anomalies", "anomaly"),
     ("APKs", "APK"),
@@ -432,6 +433,7 @@ const NOUNS: &[(&str, &str)] = &[
     ("commands", "command"),
     ("components", "component"),
     ("containers", "container"),
+    ("declarations", "declaration"),
     ("dependencies", "dependency"),
     ("devices", "device"),
     ("domains", "domain"),
@@ -461,9 +463,11 @@ const NOUNS: &[(&str, &str)] = &[
     ("permissions", "permission"),
     ("places", "place"),
     ("points", "point"),
+    ("principals", "principal"),
     ("providers", "provider"),
     ("receivers", "receiver"),
     ("records", "record"),
+    ("representations", "representation"),
     ("resources", "resource"),
     ("schemes", "scheme"),
     ("sections", "section"),
@@ -475,6 +479,7 @@ const NOUNS: &[(&str, &str)] = &[
     ("symbols", "symbol"),
     ("times", "time"),
     ("tools", "tool"),
+    ("triggers", "trigger"),
     ("types", "type"),
     ("URLs", "URL"),
     ("values", "value"),
@@ -489,6 +494,7 @@ const VERBS: &[(&str, &str)] = &[
     ("are", "is"),
     ("carry", "carries"),
     ("continue", "continues"),
+    ("contain", "contains"),
     ("define", "defines"),
     ("differ", "differs"),
     ("disagree", "disagrees"),

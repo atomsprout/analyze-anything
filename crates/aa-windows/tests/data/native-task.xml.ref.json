@@ -1,0 +1,15 @@
+{
+  "producer": "Windows Task Scheduler new unregistered ITaskDefinition",
+  "command": "%SystemRoot%\\System32\\cmd.exe",
+  "arguments": "--fixture \"two words\"",
+  "working_directory": "%SystemRoot%",
+  "principal": "S-1-5-18",
+  "native_principal_name": "SYSTEM",
+  "run_level": "HighestAvailable",
+  "native_logon_type": "ServiceAccount",
+  "action_context": "fixture-principal",
+  "time_start": "2030-01-01T00:00:00",
+  "time_enabled": true,
+  "logon_enabled": false,
+  "task_enabled": false
+}

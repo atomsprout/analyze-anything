@@ -13,6 +13,8 @@ use crate::installer::{self, RegistryWrite, Tag};
 const MAX_BYTES: usize = 4 * 1024 * 1024;
 const MAX_ENTRIES: usize = 4096;
 const MAX_LINE: usize = 128 * 1024;
+// A selected key is repeated in every value record; bound that output amplification as well.
+const MAX_KEY: usize = 4096;
 const MAX_ISSUES: usize = 64;
 type Result<T> = std::result::Result<T, &'static str>;
 
@@ -166,6 +168,9 @@ fn sanitize(name: &str, value: Value) -> Result<Value> {
 }
 
 fn key_parts(key: &str) -> Result<(&str, &str)> {
+    if key.len() > MAX_KEY {
+        return Err("registry key path exceeds the 4 KiB reader limit");
+    }
     let (root, path) = key.split_once('\\').unwrap_or((key, ""));
     if !["HKEY_LOCAL_MACHINE", "HKEY_CURRENT_USER", "HKEY_CLASSES_ROOT", "HKEY_USERS", "HKEY_CURRENT_CONFIG"]
         .iter()
@@ -443,6 +448,12 @@ mod tests {
         }
         assert!(parse(b"REGEDIT4\n\xff").is_err());
         assert!(parse(&vec![b'a'; MAX_BYTES + 1]).is_err());
+        let long_key =
+            parse(&document(&format!("[HKEY_CURRENT_USER\\{}]\n{}", "x".repeat(MAX_KEY), "\"value\"=\"x\"\n".repeat(MAX_ENTRIES))))
+                .expect("oversized key is a limitation");
+        assert!(long_key.entries.is_empty(), "an oversized key must not amplify every following value record");
+        assert_eq!(long_key.issue_count, MAX_ENTRIES + 1);
+        assert_eq!(long_key.issues.len(), MAX_ISSUES);
         let oversized =
             parse(&document(&format!("[HKEY_CURRENT_USER\\Software\\Fixture]\n\"x\"=\"{}\"", "x".repeat(MAX_LINE)))).expect("line limit");
         assert_eq!(oversized.entries.len(), 1);

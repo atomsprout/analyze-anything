@@ -4,7 +4,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Next (planned 2026-11-20, after 0.1.1)
 
-A Windows x64 development machine is now available, including SDK SignTool executables. Native validation is still pending. [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the feature research, priorities W0–W12, dependencies and acceptance gates; these are planned capabilities, not completed checks.
+A Windows x64 development machine is now available, including SDK SignTool executables. Initial native comparisons and foundation/entry-point implementations are recorded below; the full validation matrix remains open. [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the feature research, priorities W0–W12, dependencies and acceptance gates. An initial implementation does not close its milestone.
 
 1. Establish a Windows CLI baseline on real installers and application folders, comparing embedded and MSI signatures with the system's tools (W0).
 2. Finish the shared foundation: verify Windows file and extraction boundaries (W1); design worker supervision and precise timeout semantics (W2). Input-name comparison normalization is done. A child process for the whole run does not by itself make an individual analyzer killable.
@@ -16,7 +16,7 @@ Alongside this work: fix the Xcode pkg CMS parsing limitation, try and release t
 
 ## Windows expansion
 
-The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md). All items below remain unverified until their implementation and recorded comparisons are complete.
+The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md). Items remain open until their full implementation and recorded comparisons are complete; partial checks are listed explicitly.
 
 - [ ] **W0 — Windows CLI baseline**: run real installers and installed program folders on the available x64 machine; compare embedded and MSI signatures with `signtool` and the Windows signature view. Record tool versions, sample digests and the differences in cryptographic checks versus system trust policy.
   Initial x64 no-AI build and 12 native checks passed; [the baseline record](spikes/windows-baseline.md) states the exact samples and remaining coverage.
@@ -24,7 +24,7 @@ The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md
   Initial checks refuse explicit UNC/device/stream paths, reparse points and recall/encrypted file attributes; real junction, hardlink, named-stream, long Unicode path and locked-file tests pass. Ancestor replacement races, mapped network drives and real cloud/EFS samples remain open; see [the file-access record](spikes/windows-file-access.md).
   Generated archive tests also verify safe disk spilling of Windows-special logical names and preservation/reporting of duplicate and ASCII-case aliases.
 - [ ] **W3 — Entry points**: read LNK, URL, REG and exported Task Scheduler XML, with evidence and unresolved-target limitations.
-  Initial URL and LNK readers preserve supported declarations without opening targets/icons or expanding variables. Native fixtures match the producer's properties; an independent MIT-licensed LNK fixture is also read. The REG reader preserves writes/deletions and typed values, with a real native metadata export compared to read-only registry enumeration. Unsupported content remains explicit. Task XML and supplied-target relationships remain open; see [shortcuts](spikes/windows-shortcuts.md) and [registry exports](spikes/windows-registry.md).
+  Initial URL and LNK readers preserve supported declarations without opening targets/icons or expanding variables. The REG reader preserves writes/deletions and typed values. Task XML now records literal triggers, actions, principals and settings. Native comparisons and independent licensed fixtures are recorded, including explicit unsupported-content and encoding limits. Supplied-target relationships and broader coverage checks remain open; see [shortcuts](spikes/windows-shortcuts.md), [registry exports](spikes/windows-registry.md) and [tasks](spikes/windows-tasks.md).
 - [ ] **W4 — Scripts**: bounded static reading of PowerShell and batch syntax; no evaluation or host command resolution.
 - [ ] **W5 — Driver packages**: INF declarations, catalog signature and membership checks, and links to supplied payloads.
 - [ ] **W6 — MSIX integrity**: block-map checks, package signatures, bundle coverage and declared dependencies.

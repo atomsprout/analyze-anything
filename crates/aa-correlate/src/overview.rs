@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-scheduled-task",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 Windows 任务计划 XML 文档。仅分析文件中的声明，没有注册或运行任务。",
+        text_en: "This is a Windows Task Scheduler XML document. Only its declarations were analyzed; no task was registered or run.",
+    },
+    Rule {
         id: "overview.kind-registry-export",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -373,6 +380,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("internet-shortcut", _) => finding("overview.kind-internet-shortcut", Confidence::Verified),
         ("shell-link", _) => finding("overview.kind-shell-link", Confidence::Verified),
         ("registry-export", _) => finding("overview.kind-registry-export", Confidence::Verified),
+        ("scheduled-task", _) => finding("overview.kind-scheduled-task", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

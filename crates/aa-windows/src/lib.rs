@@ -41,6 +41,7 @@ mod resources;
 mod rules;
 mod sfx;
 mod shortcuts;
+mod tasks;
 mod text;
 mod tree;
 
@@ -110,6 +111,7 @@ impl Analyzer for Windows {
         shortcuts::analyze(file, &bytes, out);
         lnk::analyze(file, &bytes, out);
         registry::analyze(file, &bytes, out);
+        tasks::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
         asar_fact(file, &bytes, out);

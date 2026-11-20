@@ -14,6 +14,73 @@ fn data(name: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+fn task_declaration<'a>(root: &'a Value, path: &[&str]) -> &'a Value {
+    path.iter().fold(root, |node, name| {
+        node["children"].as_array().expect("declaration children").iter().find(|n| n["element"] == *name).expect("native declaration")
+    })
+}
+
+#[test]
+fn unregistered_native_task_matches_literal_fields_without_guessing_omitted_values() {
+    let reference: Value = serde_json::from_slice(&data("native-task.xml.ref.json")).expect("task reference");
+    let run = analyze(&[("native-task.xml", data("native-task.xml"))]);
+    let fact = run.fact("native-task.xml", "windows.scheduled-task");
+    assert_eq!(fact["actions"], 1);
+    assert_eq!(fact["triggers"], 2);
+    assert_eq!(fact["principals"], 1);
+    assert_eq!(fact["registered"], false);
+    assert_eq!(fact["issue_count"], 0);
+    let root = &fact["declarations"];
+    for (path, key) in [
+        (vec!["Actions", "Exec", "Command"], "command"),
+        (vec!["Actions", "Exec", "Arguments"], "arguments"),
+        (vec!["Actions", "Exec", "WorkingDirectory"], "working_directory"),
+        (vec!["Principals", "Principal", "UserId"], "principal"),
+        (vec!["Principals", "Principal", "RunLevel"], "run_level"),
+        (vec!["Triggers", "TimeTrigger", "StartBoundary"], "time_start"),
+    ] {
+        assert_eq!(task_declaration(root, &path)["text"], reference[key], "{path:?}");
+    }
+    for (path, key) in [
+        (vec!["Triggers", "TimeTrigger", "Enabled"], "time_enabled"),
+        (vec!["Triggers", "LogonTrigger", "Enabled"], "logon_enabled"),
+        (vec!["Settings", "Enabled"], "task_enabled"),
+    ] {
+        assert_eq!(task_declaration(root, &path)["text"], reference[key].to_string());
+    }
+    assert_eq!(task_declaration(root, &["Actions"])["attributes"]["Context"], reference["action_context"]);
+    let principal = task_declaration(root, &["Principals", "Principal"]);
+    assert!(
+        !principal["children"].as_array().expect("principal fields").iter().any(|n| n["element"] == "LogonType"),
+        "native serializer omits this field; the reader must not invent it"
+    );
+    assert_eq!(run.findings("windows.task-highest-available").len(), 1);
+    let summary = run.findings("windows.scheduled-task");
+    let summary_rule = aa_windows::analyzers()
+        .into_iter()
+        .flat_map(|a| a.rules().to_vec())
+        .find(|r| r.id == "windows.scheduled-task")
+        .expect("summary wording");
+    let rendered = fill(summary_rule.text_en, &summary[0].params);
+    assert!(rendered.contains("1 supported action, 2 supported triggers and 1 supported principal"), "{rendered}");
+    assert_eq!(run.findings("windows.task-startup-trigger").len(), 1, "disabled trigger is a declaration, not an active task");
+}
+
+#[test]
+fn independent_task_deployment_sample_is_read_as_data_with_encoding_mismatch_noted() {
+    assert_eq!(sha256_hex(&data("upstream-task.xml")), "a426a793001633d0f4eab87ffd5fa82e157d15d5ad924ba95617136bc557fe59");
+    let run = analyze(&[("upstream-task.xml", data("upstream-task.xml"))]);
+    let fact = run.fact("upstream-task.xml", "windows.scheduled-task");
+    let root = &fact["declarations"];
+    assert_eq!(task_declaration(root, &["Actions", "Exec", "Command"])["text"], "powershell.exe");
+    assert_eq!(task_declaration(root, &["Triggers", "TimeTrigger", "Repetition", "Interval"])["text"], "PT1M");
+    assert_eq!(task_declaration(root, &["Principals", "Principal", "UserId"])["text"], "system");
+    assert_eq!(fact["registered"], false);
+    assert!(
+        run.out.limitations.iter().any(|l| l.code == "windows.task-partial" && l.detail.as_deref().is_some_and(|d| d.contains("encoding")))
+    );
+}
+
 #[test]
 fn native_registry_export_matches_read_only_registry_reference() {
     let reference: Value = serde_json::from_slice(&data("native-codepages.reg.ref.json")).expect("registry reference");

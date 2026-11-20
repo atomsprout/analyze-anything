@@ -9,7 +9,8 @@ Key sections, key deletions, named/default values and value deletions stay in so
 Duplicate writes are preserved; effective registry state is not calculated. Supported
 values include quoted strings, DWORD, typed hex strings (including unexpanded strings and
 symbolic-link text), multi-strings, little/big-endian DWORD and little-endian QWORD. Hex
-continuations are joined under a 128 KiB logical-line limit. Binary and unknown typed
+continuations are joined under a 128 KiB logical-line limit. Key paths are capped at 4 KiB
+to bound amplification when the selected key is repeated in many value records. Binary and unknown typed
 payloads retain only type, byte length and digest, with an explicit limitation. Malformed
 entries are skipped with line-numbered issues; an invalid key section clears the previous
 key context so following values cannot be misattributed. At most 4,096 entries and the first
@@ -39,3 +40,14 @@ current REG text grammar is claimed from that page. The supported textual forms 
 against the native export and explicit constructed cases. Other importer dialects, binary
 hive files, permissions, registry virtualization and final import effects are outside this
 reader's scope.
+
+The fact's `applied: false` records that this reader did not apply the declarations; it
+does not say whether equivalent settings are present on the host. No host registry state
+is queried during analysis.
+
+Windows targeted tests and the full workspace regression after REG/task integration passed,
+alongside workspace Clippy, format checking and the CLI build without default features. The
+final suite includes the 4 KiB key-path amplification regression. The no-AI CLI native export
+run produced one registry declaration summary with no registry-reading limitation. See the
+[task record](windows-tasks.md) for the final combined test-log location. Other operating
+systems have not yet been run for these new readers.

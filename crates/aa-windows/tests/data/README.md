@@ -1,12 +1,14 @@
 # Test fixtures
 
-The executable/package fixtures are built by `make-fixtures.sh` from the sources in `src/`. Native shortcut fixtures are produced on Windows by `tools/native-compare/windows-shortcut-fixture.ps1`. The independent `upstream-test.lnk` is from lnk-rs under MIT; its source and license are recorded below.
+The executable/package fixtures are built by `make-fixtures.sh` from the sources in `src/`. Native Windows shortcut, registry and task fixtures have separate producer scripts under `tools/native-compare/`. Independent LNK and task XML fixtures are redistributed under MIT; their pinned sources and license notices are recorded below.
 Keys and certificates are generated on the spot and thrown away, so the signed files differ on
 every run; the reference tools' output is regenerated with them and stored next to each fixture.
 The tests in `../pipeline.rs` compare the analyzer's results with those reference files.
 
 | File | Made with | Reference file (tool) |
 |---|---|---|
+| `native-task.xml` | Windows ITaskDefinition serialized as UTF-16 from this project's fixed unregistered definition; Apache-2.0 | `native-task.xml.ref.json` (producer properties and supplied SID; no task registered or run) |
+| `upstream-task.xml` | [ms-azure-demos task.xml at b6a430f5f6a5dd74b376f00e1b6e15127874c517](https://github.com/ms-azure-demos/aks-windows-container-task-scheduler-powershell/blob/b6a430f5f6a5dd74b376f00e1b6e15127874c517/task.xml); MIT, copyright 2022 ms-azure-demos; `LICENSE-azure-task.txt` | Independent deployment definition, unchanged; SHA-256 `a426a793001633d0f4eab87ffd5fa82e157d15d5ad924ba95617136bc557fe59`. Its UTF-16 declaration disagrees with the actual UTF-8 bytes; the reader records that limitation. |
 | `native-codepages.reg` | `reg.exe export` of the existing Windows Nls/CodePage subtree; no key changed and no REG imported | `native-codepages.reg.ref.json` (all keys, value types and values read independently through Microsoft.Win32.Registry); metadata fixture and producer record under Apache-2.0 |
 | `native.url` | Windows WScript.Shell saving this project's fixed example.invalid URL; project-authored fixture under Apache-2.0 | `native.url.ref.json` (TargetPath read from the producer object, without activating the shortcut) |
 | `native.lnk` | Windows WScript.Shell referencing cmd.exe with project-authored launch declarations; Apache-2.0 fixture | `native.lnk.ref.json` (properties read from the producer object; target not run) |

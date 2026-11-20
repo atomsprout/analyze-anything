@@ -38,7 +38,15 @@ by the tests only, not part of the program):
     installer package (https://nodejs.org), MIT licence: its table of contents
     and signatures, with no program code or file data.
 
-Test sample in crates/aa-windows/tests/data (not part of the program):
+Test samples in crates/aa-windows/tests/data (not part of the program):
+
+  - upstream-task.xml: task.xml from ms-azure-demos/
+    aks-windows-container-task-scheduler-powershell at commit
+    b6a430f5f6a5dd74b376f00e1b6e15127874c517, MIT licence, copyright 2022
+    ms-azure-demos. Source:
+    https://github.com/ms-azure-demos/aks-windows-container-task-scheduler-powershell
+    LICENSE-azure-task.txt preserves its licence. Only the XML definition is
+    redistributed; no script or command from the sample is run.
 
   - upstream-test.lnk: tests/data/test.lnk from lilopkins/lnk-rs at commit
     f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4, MIT licence, copyright 2023
@@ -53,3 +61,7 @@ read-only export of Windows code-page metadata, made by this project's
 tools/native-compare/windows-registry-fixture.ps1. They contain code-page names,
 file-name references and integer settings, no program code or certificate.
 The fixture record and producer script are distributed under Apache-2.0.
+
+native-task.xml and its reference JSON are project-authored fixtures under
+Apache-2.0, serialized by tools/native-compare/windows-task-fixture.ps1 through
+a new Windows Task Scheduler definition that is never registered or run.

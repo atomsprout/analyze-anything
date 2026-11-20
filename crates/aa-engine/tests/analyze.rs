@@ -137,6 +137,27 @@ fn registry_reports_preserve_declarations_and_redact_named_credentials() {
 }
 
 #[test]
+fn task_xml_reports_are_deterministic_redacted_and_never_add_referenced_files() {
+    let bytes = br#"<Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Principals><Principal id="fixture"><UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel></Principal></Principals><Triggers><LogonTrigger><Enabled>false</Enabled></LogonTrigger></Triggers><Actions Context="fixture"><Exec><Command>\\server\share\outside.exe</Command><Arguments>--password 'fixture secret with spaces' https://user:fixture-password@example.invalid/?token=fixture-token</Arguments></Exec></Actions></Task>"#;
+    let (_dir, path) = write_input("fixture.xml", bytes);
+    let report = run(&path, &Options::default());
+    assert_eq!(report.artifacts.len(), 1, "references do not become new inputs");
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-scheduled-task"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.task-highest-available"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.task-startup-trigger"));
+    let serialized = serde_json::to_string(&report).expect("task report");
+    for secret in ["fixture secret", "fixture-password", "fixture-token"] {
+        assert!(!serialized.contains(secret));
+    }
+    for id in report.findings.iter().map(|f| &f.rule).chain(report.limitations.iter().map(|l| &l.code)) {
+        let rule = report.rules.get(id).expect("translated rule in report");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(serialized, serde_json::to_string(&run(&path, &Options::default())).expect("second report"));
+    assert_eq!(std::fs::read(&path).expect("original input bytes"), bytes);
+}
+
+#[test]
 fn shell_link_reports_are_deterministic_and_have_translated_rules() {
     let bytes = include_bytes!("../../aa-windows/tests/data/native.lnk");
     let (_dir, path) = write_input("native.lnk", bytes);
