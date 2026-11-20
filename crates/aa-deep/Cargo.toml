@@ -1,0 +1,20 @@
+[package]
+name = "aa-deep"
+description = "Analyze Anything: the optional deep level, which asks a disassembler which code does what"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aa-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml = { version = "0.9", default-features = false, features = ["parse", "serde", "display"] }
+
+[dev-dependencies]
+tempfile.workspace = true

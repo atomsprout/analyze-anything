@@ -153,6 +153,13 @@ pub trait Analyzer: Send + Sync {
 
     /// Looks at the tree as a whole: bundles, relations between files.
     fn analyze_tree(&self, _tree: &dyn Tree, _out: &mut Output) {}
+
+    /// How long [`Analyzer::analyze_tree`] may take, in seconds, when that is more than the
+    /// run's usual limit for an analyzer. Only an analyzer that waits for something slow by
+    /// design, another program for instance, says anything here.
+    fn tree_seconds(&self) -> Option<u64> {
+        None
+    }
 }
 
 /// Why an unpacker stopped adding children.

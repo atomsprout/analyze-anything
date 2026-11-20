@@ -25,6 +25,7 @@ A static analyzer for software artifacts, in Rust. It reads a file or folder and
 | `crates/aa-correlate` | Findings that need several files: the overview, structure, cross-references |
 | `crates/aa-report` | HTML, PDF, Markdown and plain text, and the words of both languages |
 | `crates/aa-export` | SARIF, CycloneDX, the manifest, the comparison of two reports |
+| `crates/aa-deep` | The optional deep level: asks Ghidra or Hopper which functions use which APIs and addresses |
 | `crates/aa-interpret` | The optional AI reading: settings, engines, the read-only tool server |
 | `crates/aa-app`, `aa-worker` | What the command line and the desktop app share; the worker process |
 | `crates/aa-cli` | The `analyze-anything` command |
@@ -90,7 +91,7 @@ A format is done when:
 
 - Commit an API key, a certificate, or a sample you have no right to redistribute. Settings with keys live in `~/.analyze-anything/config.toml`, outside the repository.
 - Send a key anywhere but the service it was given for. Settings from the file apply to the service the file names and to no other.
-- Add a network call, a subprocess or a model to the analysis itself.
+- Add a network call, a subprocess or a model to the analysis itself. The one subprocess there is, the disassembler of `aa-deep`, runs only with `--deep`, is given a copy of a file to read, and marks everything it adds.
 - Put a machine's paths, user names or the time into a report.
 
 ## Releasing

@@ -31,6 +31,37 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+enum DeepChoice {
+    /// Ask Ghidra
+    Ghidra {
+        /// Ghidra's folder, the one that holds `support/analyzeHeadless`; found through
+        /// GHIDRA_INSTALL_DIR or the search path when not given
+        #[arg(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        limits: DeepLimits,
+    },
+    /// Ask Hopper
+    Hopper {
+        /// The Hopper app; the one in the Applications folder when not given
+        #[arg(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        limits: DeepLimits,
+    },
+}
+
+#[derive(clap::Args)]
+struct DeepLimits {
+    /// Most program files of one input handed to the disassembler [default: 4]
+    #[arg(long)]
+    max_files: Option<usize>,
+    /// Longest the disassembler may spend on one program file, in seconds [default: 900]
+    #[arg(long)]
+    seconds: Option<u64>,
+}
+
+#[derive(Subcommand)]
 enum Command {
     /// Analyze a file or folder and write the report
     Analyze {
@@ -43,6 +74,13 @@ enum Command {
         /// A file of YARA rules to match against every file, in addition to the built-in checks
         #[arg(long)]
         rules: Vec<PathBuf>,
+        /// Also ask a disassembler on this machine (Ghidra or Hopper) which code does what; see
+        /// `analyze-anything deep`. Slower, and it starts that program.
+        #[arg(long)]
+        deep: bool,
+        /// The disassembler to ask with --deep, when it is not the one `analyze-anything deep` chose
+        #[arg(long, value_name = "ghidra|hopper")]
+        deep_tool: Option<String>,
         /// Also have the AI you set up explain the report (see `analyze-anything ai`)
         #[cfg(feature = "ai")]
         #[arg(long)]
@@ -98,6 +136,11 @@ enum Command {
         /// Exit with code 3 when the reports differ
         #[arg(long)]
         fail_on_difference: bool,
+    },
+    /// Choose the disassembler of the deep level (`--deep`), or show which would be asked
+    Deep {
+        #[command(subcommand)]
+        choice: Option<DeepChoice>,
     },
     /// Have a language model explain a report in plain words (optional; off until set up)
     ///
@@ -517,6 +560,70 @@ fn verify(dir: &Path) -> Result<u8, String> {
     Ok(if check.intact() { 0 } else { EXIT_FAILED })
 }
 
+mod deep {
+    //! The commands of the optional deep level.
+
+    use super::*;
+    use aa_deep::settings::{self as file, Chosen};
+
+    fn path() -> Result<PathBuf, String> {
+        file::default_path().ok_or_else(|| "cannot tell where the home folder is".to_string())
+    }
+
+    fn find(chosen: &Chosen, wanted: Option<&str>) -> Result<aa_deep::Tool, String> {
+        file::find(chosen, wanted, &|name| std::env::var(name).ok(), &aa_deep::is_file)
+    }
+
+    /// How the deep level runs now: the tool `wanted`, or the one that was chosen or is found.
+    pub fn settings(wanted: Option<&str>) -> Result<aa_deep::Settings, String> {
+        let chosen = file::read_file(&path()?)?;
+        let mut settings = aa_deep::Settings::new(find(&chosen, wanted)?);
+        if let Some(most) = chosen.max_files {
+            settings.max_files = most.max(1);
+        }
+        if let Some(seconds) = chosen.seconds {
+            settings.seconds = seconds.max(1);
+        }
+        Ok(settings)
+    }
+
+    /// Shows or changes which disassembler the deep level asks.
+    pub fn choose(choice: Option<DeepChoice>) -> Result<u8, String> {
+        let path = path()?;
+        let mut chosen = file::read_file(&path)?;
+        let Some(choice) = choice else {
+            match find(&chosen, None) {
+                Ok(tool) => println!("deep level (--deep): {} at {}", tool.name(), tool.path().display()),
+                Err(problem) => println!("deep level (--deep): cannot run. {problem}"),
+            }
+            println!("it runs only when asked for with --deep; settings file: {}", path.display());
+            return Ok(0);
+        };
+        let (name, given, limits) = match choice {
+            DeepChoice::Ghidra { path, limits } => ("ghidra", path, limits),
+            DeepChoice::Hopper { path, limits } => ("hopper", path, limits),
+        };
+        // A folder is kept in full, so that the file still means the same from elsewhere.
+        let given = match given {
+            Some(given) => Some(std::fs::canonicalize(&given).map_err(|e| format!("cannot find {}: {e}", given.display()))?),
+            None => None,
+        };
+        chosen.tool = Some(name.to_string());
+        match (name, given) {
+            ("ghidra", Some(given)) => chosen.ghidra = Some(given),
+            ("hopper", Some(given)) => chosen.hopper = Some(given),
+            _ => {}
+        }
+        chosen.max_files = limits.max_files.or(chosen.max_files);
+        chosen.seconds = limits.seconds.or(chosen.seconds);
+        // Say so now when it cannot be found, before anything is written.
+        let tool = find(&chosen, None)?;
+        file::write_file(&path, &chosen)?;
+        println!("The deep level asks {} ({}). Use it with: analyze-anything <file or folder> --deep", tool.name(), tool.path().display());
+        Ok(0)
+    }
+}
+
 #[cfg(feature = "ai")]
 mod ai {
     //! The commands of the optional AI interpretation.
@@ -722,6 +829,8 @@ fn run(cli: Cli) -> Result<u8, String> {
             output,
             limits: limit_args,
             rules,
+            deep,
+            deep_tool,
             #[cfg(feature = "ai")]
             ai,
             #[cfg(feature = "ai")]
@@ -737,6 +846,13 @@ fn run(cli: Cli) -> Result<u8, String> {
                 let analyzer = aa_content::yara::analyzer(&source).map_err(|e| format!("{}: {e}", file.display()))?;
                 // After the built-in content checks, before the analyzers that summarise.
                 registry.analyzers.insert(1, analyzer.into());
+            }
+            if deep || deep_tool.is_some() {
+                let settings = deep::settings(deep_tool.as_deref())?;
+                eprintln!("deep level: asking {} ({})", settings.tool.name(), settings.tool.path().display());
+                // Before the analyzers that summarise, so that their counts include it.
+                let before_last = registry.analyzers.len().saturating_sub(1);
+                registry.analyzers.insert(before_last, aa_deep::analyzer(settings));
             }
             let report = aa_engine::analyze_with(&registry, &path, &options, &mut progress).map_err(|e| e.to_string())?;
             #[cfg(feature = "ai")]
@@ -756,6 +872,7 @@ fn run(cli: Cli) -> Result<u8, String> {
         Command::Render { report, output } => (load(&report)?, output, None),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
         Command::Verify { dir } => return verify(&dir),
+        Command::Deep { choice } => return deep::choose(choice),
         #[cfg(feature = "ai")]
         Command::Interpret(args) => return ai::interpret(args),
         #[cfg(feature = "ai")]

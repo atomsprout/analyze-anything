@@ -339,6 +339,7 @@ fn run_keeping(
             total: registry.analyzers.len() as u64,
             analyzer: analyzer.id().to_string(),
         });
+        let timeout = analyzer.tree_seconds().map_or(timeout, |seconds| timeout.max(Duration::from_secs(seconds)));
         match passes::tree_pass(&tree, analyzer, timeout) {
             Some(out) => merge(&mut tree, out, &mut findings, &mut limitations),
             None => limitations.push(Limitation::new("analyzer_timeout", None, Some(passes::timeout_detail(analyzer.id(), timeout)))),

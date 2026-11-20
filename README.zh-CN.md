@@ -135,6 +135,17 @@ flowchart LR
   style engine fill:#5ccbf222,stroke:#5ccbf2,stroke-width:2px;
 ```
 
+## 可选：用 Ghidra 或 Hopper 看得更深
+
+默认关闭。常规分析能说出一个程序导入了 `dlopen`、或者里面写着某个地址；加上 `--deep`，它还会去问你电脑上装的反汇编器：**是哪些函数**在用它们。
+
+```
+analyze-anything deep ghidra --path <Ghidra 所在文件夹>   # 设置一次；或者：analyze-anything deep hopper
+analyze-anything App.ipa --deep
+```
+
+报告里会多出这样的结论：“地址 `https://…` 被 `-[AboutViewController tableView:didSelectRowAtIndexPath:]` 引用”，并给出它在文件里的位置。这些结论都注明出自哪个工具、哪个版本，和其余结论分开。输入不会被运行。详见 [docs/DEEP.md](docs/DEEP.md)（英文）。
+
 ## 可选：让 AI 解读报告
 
 默认关闭，开启才有。报告写好之后，可以让语言模型用通俗的话解释它：
@@ -174,6 +185,7 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 除本文件和使用说明外，文档都是英文。
 
 - [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md) — 命令行的完整说明
+- [docs/DEEP.md](docs/DEEP.md) — 可选的深入分析：让 Ghidra 或 Hopper 指出哪段代码做了什么
 - [docs/AI.md](docs/AI.md) — 可选的 AI 解读
 - [docs/DESKTOP.md](docs/DESKTOP.md) — 桌面版：结构、开发、测试、发布
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限

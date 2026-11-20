@@ -31,6 +31,16 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 - [ ] Follow-up questions about a report: `analyze-anything ask out/ "which hosts does it mention?"`.
 - [ ] A SKILL.md, and a tool-server mode in which an agent can also ask for an analysis.
 
+## The deep level
+
+Done: `--deep` with Ghidra and Hopper, tried on a real IPA with both ([DEEP.md](DEEP.md)).
+
+- [ ] IDA as a third tool. The interface is there; it has to be written where IDA can be run.
+- [ ] Try it on Windows programs (PE), and Ghidra on Linux and Windows.
+- [ ] Confirm that Hopper closes the documents the level opens: the script asks it to, and the windows are no longer on screen, but this was not looked at in the app itself.
+- [ ] A longer list of APIs, and one a user can add to.
+- [ ] Offer the level in the desktop app (the worker has to be told to use it).
+
 ## Waiting for a person
 
 - [ ] GitHub Actions refused to start jobs for this organization while the repository was private ("recent account payments have failed or your spending limit needs to be increased"). Public repositories are not affected, so CI runs now; the billing notice still stands for anything private.

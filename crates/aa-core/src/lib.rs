@@ -412,6 +412,8 @@ pub fn fill(template: &str, params: &BTreeMap<String, Value>) -> String {
 fn singular(tail: &str) -> Option<(&'static str, &str)> {
     const WORDS: &[(&str, &str)] = &[
         (" files are ", " file is "),
+        (" functions use ", " function uses "),
+        (" functions", " function"),
         (" files", " file"),
         (" entries", " entry"),
         (" binaries", " binary"),
@@ -492,6 +494,8 @@ mod tests {
         assert_eq!(fill("it holds {files} files.", &params(11)), "it holds 11 files.");
         assert_eq!(fill("{files} files are stored outside", &params(1)), "1 file is stored outside");
         assert_eq!(fill("{files} filesystems", &params(1)), "1 filesystems");
+        assert_eq!(fill("{files} functions use it", &params(1)), "1 function uses it");
+        assert_eq!(fill("by {files} functions: a", &params(1)), "by 1 function: a");
         assert_eq!(fill("里面有 {files} 个文件。", &params(1)), "里面有 1 个文件。");
     }
 

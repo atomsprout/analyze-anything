@@ -133,6 +133,17 @@ flowchart LR
   style engine fill:#5ccbf222,stroke:#5ccbf2,stroke-width:2px;
 ```
 
+## Optional: a deeper look with Ghidra or Hopper
+
+Off unless you ask for it. The analysis can say that a program imports `dlopen` or holds an address; with `--deep` it also asks a disassembler you have installed **which functions** use them:
+
+```
+analyze-anything deep ghidra --path <Ghidra's folder>   # once; or: analyze-anything deep hopper
+analyze-anything App.ipa --deep
+```
+
+The report gains findings such as "the address `https://…` is referred to by `-[AboutViewController tableView:didSelectRowAtIndexPath:]`", each with the place in the file. They name the tool and its version and are kept apart from the rest. Nothing of the input is run. See [docs/DEEP.md](docs/DEEP.md).
+
 ## Optional: an AI reading of the report
 
 Off unless you turn it on. Once a report is written, a language model can explain it in plain words:
@@ -170,6 +181,7 @@ More in [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 ## Documentation
 
 - [docs/USAGE.md](docs/USAGE.md) — the command line in full ([中文](docs/USAGE.zh-CN.md))
+- [docs/DEEP.md](docs/DEEP.md) — the optional deep level: asking Ghidra or Hopper which code does what
 - [docs/AI.md](docs/AI.md) — the optional AI interpretation
 - [docs/DESKTOP.md](docs/DESKTOP.md) — the desktop app: structure, development, testing, release
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — known limitations

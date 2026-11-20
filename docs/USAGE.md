@@ -44,6 +44,8 @@ Limits keep a hostile or huge input from exhausting the machine. When one is rea
 
 `--font <font file>` adds a fallback font to the PDF (repeatable) for text the built-in fonts cannot show, such as Korean, Arabic or emoji. The PDF then depends on those font files too.
 
+`--deep` also asks Ghidra or Hopper, whichever you have, which functions use the APIs and addresses that were found; see [DEEP.md](DEEP.md). It is off by default and much slower.
+
 `--ai` also has the AI you set up explain the report; see [AI.md](AI.md). It is off by default.
 
 ## Other commands

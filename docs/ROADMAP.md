@@ -21,6 +21,8 @@ Version 0.1.0 is the first release. This page says what it can do today, what "a
 
 **Three ways in.** The command line; a desktop app for macOS (drop a file, read the report, click evidence to see the bytes, keep a history, compare two versions); and a read-only MCP server through which an AI agent looks things up in a report.
 
+**An optional deeper look.** Off unless asked for. With `--deep`, the program files are handed to Ghidra or Hopper, which say which functions call the APIs that matter and which use the addresses found in the file. See [DEEP.md](DEEP.md).
+
 **An optional AI reading.** Off unless set up. A model explains a finished report in plain words: through an API key, Claude Code, Codex, a model in Ollama, or a program of your own. It sees the report, never the files, and a statement that cites no finding of the report is dropped.
 
 **How far it has been checked.** 400 and more automated tests on Linux, macOS and Windows. Signature results agree with `codesign` on 332 points across real apps, and with Windows' own tools on 132. The desktop app checks itself in its real window (67 checks). Used by hand on one Apple silicon Mac only; released for Apple silicon Macs only. [LIMITATIONS.md](LIMITATIONS.md) has the exact list.
@@ -60,7 +62,7 @@ Formats that already exist but were only tried on constructed data (packed APKs,
 ### 3. Deeper where it matters
 
 - **Known vulnerabilities**: match the components of the bill of materials against an advisory database kept on disk, so the analysis stays offline and repeatable.
-- **A `deep` level**: function-level facts (which code reaches which API), optionally through Ghidra, always with the evidence a reader can follow.
+- **More from the deep level.** It exists now, with Ghidra and Hopper ([DEEP.md](DEEP.md)): which functions call which APIs, and which use which addresses. Next: IDA as a third tool, a longer and configurable list of APIs, strings other than addresses, what a function reaches through the functions it calls, and the level in the desktop app.
 - **Rules as data**: let a team add its own checks without writing Rust.
 - **Policies**: a file that says what a release must or must not have, turned into an exit code for CI.
 

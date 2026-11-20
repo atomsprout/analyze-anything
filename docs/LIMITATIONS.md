@@ -5,6 +5,7 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 ## Not done by design
 
 - It does not execute, install or dynamically debug the object being analyzed.
+- It starts no other program, with one exception that is off unless asked for: `--deep` hands program files to Ghidra or Hopper to be disassembled (see [DEEP.md](DEEP.md)). What that level was tried on, and what it misses, is said there.
 - It does not decompile to pseudocode.
 - It does not decrypt, unpack protected code, or bypass any protection. The main executable of an IPA downloaded from the App Store is encrypted with FairPlay, and its code segment cannot be read; the real code of a packed APK is not visible. These cases are identified and written into the report.
 - Analysis does not use the network. It therefore does not check certificate revocation, whether a root certificate is trusted, or Apple notarization status. The only thing that uses the network is the optional AI interpretation, which does nothing until you set it up (see [AI.md](AI.md)).

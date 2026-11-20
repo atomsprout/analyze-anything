@@ -25,6 +25,7 @@ aa-report = { path = "../aa-report", default-features = false }
 aa-export.workspace = true
 aa-interpret = { workspace = true, optional = true }
 aa-content.workspace = true
+aa-deep.workspace = true
 serde_json.workspace = true
 clap.workspace = true
 
