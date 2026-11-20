@@ -1,6 +1,6 @@
 # Analyze Anything
 
-[English](README.md) · [网站](https://atomsprout.github.io/analyze-anything/)
+[English](README.md) · [网站](https://atomsprout.com/analyze-anything/) · [例子](https://atomsprout.com/analyze-anything/#examples) · [路线图](docs/ROADMAP.md)
 
 把电脑上的任意产物交给它——IPA、APK、macOS 应用、DMG 或 pkg、Windows 安装包或程序目录、压缩包、文件夹、任意文件——得到一份可靠、可溯源的报告：每条结论都带证据（来自哪个文件、哪个位置、读到了什么）和置信度，没能分析的部分如实列在“覆盖度与局限”里。
 
@@ -144,6 +144,19 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 由谁来做由你选：你有 API key 的模型服务（Claude，或任何使用 OpenAI 协议的服务）、Claude Code、Codex，或者 Ollama 在你本机运行的模型。也可以是你自己的程序。模型看到的是报告，不是被分析的文件；它通过只读工具在报告里查东西。它说的每句话都必须引用报告里的结论，引用不成立的整句丢掉。见 [docs/AI.md](docs/AI.md)（英文）。
 
+## 现状与规划
+
+0.1.0 是第一个版本。今天任何文件或文件夹都能得到一份报告；Apple、Android、Windows 的格式能深入理解。目前只发布了 Apple 芯片 Mac 的版本，也只在一台这样的 Mac 上手工用过；在 Linux 和 Windows 上，代码能构建并通过 CI 里的测试。
+
+“Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
+
+1. **各个系统上都一样可用**：发布 Linux、Windows、Intel Mac 的版本；桌面版走出 macOS。
+2. **更多种输入**：Linux 软件包、容器镜像、各语言生态的包、更多应用平台、带代码的文档、固件镜像。
+3. **在要紧的地方更深入**：用离线数据库匹配已知漏洞、函数级的事实、把规则和策略做成数据。
+4. **更容易在它之上构建**：GitHub Action、把 AI 解读放进报告、更完整的 agent 接口、稳定的报告结构。
+
+不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
+
 ## 请知悉
 
 - 严重度是每条规则固定的设定，用来排列阅读顺序。报告不对“输入是否安全”下结论。
@@ -163,7 +176,9 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 - [docs/DESKTOP.md](docs/DESKTOP.md) — 桌面版：结构、开发、测试、发布
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — 已知局限
 - [docs/ANALYZERS.md](docs/ANALYZERS.md) — 如何添加一种格式
-- [docs/TODO.md](docs/TODO.md) — 剩余待办
+- [docs/ROADMAP.md](docs/ROADMAP.md) — 现状与规划
+- [docs/TODO.md](docs/TODO.md) — 逐条的剩余待办
+- [AGENTS.md](AGENTS.md) — 如何在这个仓库里工作，写给贡献者和编码 agent
 
 ## 开发
 
@@ -173,7 +188,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-桌面版在 `apps/desktop`，见 [docs/DESKTOP.md](docs/DESKTOP.md)。欢迎提 issue 和 pull request。请不要附上你无权公开的文件：通常 `report.json` 里相关的那一条结论就足以说明问题。
+[AGENTS.md](AGENTS.md) 说明了仓库的结构，以及任何改动都必须保持的东西。桌面版在 `apps/desktop`，见 [docs/DESKTOP.md](docs/DESKTOP.md)。欢迎提 issue 和 pull request。请不要附上你无权公开的文件：通常 `report.json` 里相关的那一条结论就足以说明问题。
 
 ## 许可证
 

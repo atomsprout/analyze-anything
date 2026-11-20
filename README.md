@@ -1,6 +1,6 @@
 # Analyze Anything
 
-[中文](README.zh-CN.md) · [Website](https://atomsprout.github.io/analyze-anything/)
+[中文](README.zh-CN.md) · [Website](https://atomsprout.com/analyze-anything/) · [Examples](https://atomsprout.com/analyze-anything/#examples) · [Roadmap](docs/ROADMAP.md)
 
 Give it any artifact on your computer — an IPA, an APK, a macOS app, a DMG or pkg, a Windows installer or program folder, an archive, a folder, any file — and get a report you can trust and trace: every finding carries its evidence (which file, where in it, what was read there) and a confidence, and whatever could not be analyzed is listed under coverage and limitations.
 
@@ -142,6 +142,19 @@ analyze-anything App.ipa --ai       # analyze, then write ai.md next to the repo
 
 You choose who does it: a model service you have an API key for (Claude, or anything that speaks OpenAI's protocol), Claude Code, Codex, or a model that Ollama runs on your own machine. A program of your own works too. The model sees the report, never the analyzed files, and looks things up in it through read-only tools. Every statement it makes must cite findings of the report; those that do not are dropped. See [docs/AI.md](docs/AI.md).
 
+## Status and roadmap
+
+0.1.0 is the first release. Any file or folder gets a report today; Apple, Android and Windows formats are understood in depth. It is released for Apple silicon Macs and has been used by hand on one; on Linux and Windows the code builds and passes its tests in CI.
+
+"Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
+
+1. **The same thing on every system**: released builds for Linux, Windows and Intel Macs; the desktop app beyond macOS.
+2. **More kinds of input**: Linux packages, container images, packages of language ecosystems, more app platforms, documents that carry code, firmware images.
+3. **Deeper where it matters**: known vulnerabilities from an offline database, function-level facts, rules and policies as data.
+4. **Easier to build on**: a GitHub Action, the AI reading inside the report, a fuller interface for agents, a stable report schema.
+
+What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
+
 ## Good to know
 
 - Severity is a fixed property of each rule, there to order your reading. The report does not say whether an input is safe.
@@ -159,7 +172,9 @@ More in [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 - [docs/DESKTOP.md](docs/DESKTOP.md) — the desktop app: structure, development, testing, release
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — known limitations
 - [docs/ANALYZERS.md](docs/ANALYZERS.md) — how to add a format
-- [docs/TODO.md](docs/TODO.md) — what is left to do
+- [docs/ROADMAP.md](docs/ROADMAP.md) — where it stands and where it is going
+- [docs/TODO.md](docs/TODO.md) — what is left to do, item by item
+- [AGENTS.md](AGENTS.md) — how to work in this repository, for contributors and coding agents
 - [docs/PLAN.md](docs/PLAN.md), [docs/PLAN-DESKTOP.md](docs/PLAN-DESKTOP.md), [docs/RESEARCH.md](docs/RESEARCH.md), [docs/spikes/](docs/spikes/) — how it was planned and what was tried
 
 ## Development
@@ -170,7 +185,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-The desktop app lives in `apps/desktop`; see [docs/DESKTOP.md](docs/DESKTOP.md). Issues and pull requests are welcome. Please do not attach files you have no right to share: the one finding from `report.json` that shows the problem is usually enough.
+[AGENTS.md](AGENTS.md) says how the repository is laid out and what a change must keep. The desktop app lives in `apps/desktop`; see [docs/DESKTOP.md](docs/DESKTOP.md). Issues and pull requests are welcome. Please do not attach files you have no right to share: the one finding from `report.json` that shows the problem is usually enough.
 
 ## License
 

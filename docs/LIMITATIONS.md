@@ -8,7 +8,7 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 - It does not decompile to pseudocode.
 - It does not decrypt, unpack protected code, or bypass any protection. The main executable of an IPA downloaded from the App Store is encrypted with FairPlay, and its code segment cannot be read; the real code of a packed APK is not visible. These cases are identified and written into the report.
 - Analysis does not use the network. It therefore does not check certificate revocation, whether a root certificate is trusted, or Apple notarization status. The only thing that uses the network is the optional AI interpretation, which does nothing until you set it up (see [AI.md](AI.md)).
-- The AI interpretation checks only that the findings each statement cites exist in the report. It does not check that the model understood them, or that it drew no conclusion of its own from several of them. Of its four engines, one has produced full answers against a real service (the `api` engine with an OpenAI-compatible service, DeepSeek); the others are tested against stand-ins. [AI.md](AI.md) says exactly what was tried.
+- The AI interpretation checks only that the findings each statement cites exist in the report. It does not check that the model understood them, or that it drew no conclusion of its own from several of them. Each of its engines has produced a full answer for real at least once; [AI.md](AI.md) says exactly what was tried and with which model.
 - It gives no "safe / unsafe" verdict and no single score; it only lists findings and their severity.
 
 ## Parts not verified on real samples
