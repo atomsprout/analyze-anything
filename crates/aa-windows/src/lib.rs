@@ -30,6 +30,7 @@ mod der;
 mod dotnet;
 mod inno;
 mod installer;
+mod lnk;
 mod msi;
 mod msisig;
 mod nsis;
@@ -100,11 +101,12 @@ impl Analyzer for Windows {
 
     fn analyze_file(&self, tree: &dyn Tree, file: &Artifact, out: &mut Output) {
         nsis::script_note(tree, file, out);
-        if file.size < 64 && file.extension().as_deref() != Some("url") {
+        if file.size < 64 && !matches!(file.extension().as_deref(), Some("url" | "lnk")) {
             return;
         }
         let Ok(bytes) = tree.read(&file.path) else { return };
         shortcuts::analyze(file, &bytes, out);
+        lnk::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
         asar_fact(file, &bytes, out);

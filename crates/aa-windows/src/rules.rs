@@ -16,6 +16,20 @@ macro_rules! scope_en {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.shell-link",
+        title_zh: "Shell 快捷方式声明",
+        title_en: "Shell Link declarations",
+        text_zh: "快捷方式中读取的路径、参数和标志见证据。它们是声明，不是已解析的系统目标。没有运行目标、打开图标或展开环境变量。可识别的凭据已遮蔽。",
+        text_en: "Path, argument and flag declarations read from the shortcut are recorded in the evidence. These are declarations, not a resolved system target. Targets were not run, icons were not opened and variables were not expanded. Recognizable credentials are redacted.",
+    },
+    Rule {
+        id: "windows.shortcut-target-unresolved",
+        title_zh: "快捷方式目标未解析",
+        title_en: "Shortcut target not resolved",
+        text_zh: "仅读取文件内声明，未通过 Shell、环境变量、搜索路径或网络确定最终目标。多个目标来源的优先级没有求值。",
+        text_en: "Only declarations inside the file were read. The final target was not resolved through the shell, environment variables, search paths or network. Precedence between target sources was not evaluated.",
+    },
+    Rule {
         id: "windows.internet-shortcut",
         title_zh: "Internet 快捷方式声明",
         title_en: "Internet shortcut declarations",

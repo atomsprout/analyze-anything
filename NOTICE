@@ -5,10 +5,10 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This product bundles the following, each under its own licence.
 
-The project-authored native.url test fixture in crates/aa-windows/tests/data is generated
+The project-authored native.url and native.lnk fixtures in crates/aa-windows/tests/data are generated
 with Windows WScript.Shell by tools/native-compare/windows-shortcut-fixture.ps1, without
-opening the URL. It and its producer reference are distributed under this project's
-Apache-2.0 licence. It contains no third-party program or certificate.
+opening the URL or running a target. They and their producer references are distributed under this project's
+Apache-2.0 licence. They contain no third-party program or certificate.
 
 Fonts, embedded in the program and used in the PDF and HTML reports
 (crates/aa-report/fonts):
@@ -37,5 +37,13 @@ by the tests only, not part of the program):
   - node-pkg-head.xar: the first 14,849 bytes of the Node.js 22.11.0
     installer package (https://nodejs.org), MIT licence: its table of contents
     and signatures, with no program code or file data.
+
+Test sample in crates/aa-windows/tests/data (not part of the program):
+
+  - upstream-test.lnk: tests/data/test.lnk from lilopkins/lnk-rs at commit
+    f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4, MIT licence, copyright 2023
+    Lily Hopkins. Source: https://github.com/lilopkins/lnk-rs
+    The accompanying LICENSE-lnk-rs.txt preserves the licence notice.
+    Only the sample is used; no parser code is copied.
 
 Every other test sample is built by scripts in this repository.

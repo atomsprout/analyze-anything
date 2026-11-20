@@ -118,6 +118,22 @@ fn shortcut_credentials_do_not_leak_through_generic_content_facts() {
 }
 
 #[test]
+fn shell_link_reports_are_deterministic_and_have_translated_rules() {
+    let bytes = include_bytes!("../../aa-windows/tests/data/native.lnk");
+    let (_dir, path) = write_input("native.lnk", bytes);
+    let report = run(&path, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-shell-link"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.shell-link" && !f.evidence.is_empty()));
+    assert!(report.limitations.iter().any(|l| l.code == "windows.shortcut-target-unresolved"));
+    for code in report.findings.iter().map(|f| f.rule.as_str()).chain(report.limitations.iter().map(|l| l.code.as_str())) {
+        let rule = report.rules.get(code).expect("report includes rule wording");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(serde_json::to_vec(&report).expect("report"), serde_json::to_vec(&run(&path, &Options::default())).expect("second report"));
+    assert_eq!(std::fs::read(&path).expect("unchanged input"), bytes);
+}
+
+#[test]
 fn folder_is_listed_in_sorted_order_with_findings() {
     let dir = folder();
     let report = run(dir.path(), &Options::default());

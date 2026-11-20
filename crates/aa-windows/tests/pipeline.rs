@@ -15,6 +15,48 @@ fn data(name: &str) -> Vec<u8> {
 }
 
 #[test]
+fn shell_links_match_native_producer_and_independent_fixture_declarations() {
+    assert_eq!(sha256_hex(&data("upstream-test.lnk")), "09ac337f52c4c9dc49772e97060145a316cb4af076cfb122fb4a219ecbfbfdd7");
+    let reference: Value = serde_json::from_slice(&data("native.lnk.ref.json")).expect("native reference");
+    let run = analyze(&[("native.lnk", data("native.lnk"))]);
+    let fact = run.fact("native.lnk", "windows.shell-link");
+    let declarations = fact["declarations"].as_array().expect("declarations");
+    for (field, key) in [
+        ("LinkInfo/LocalBasePath", "target"),
+        ("Name", "description"),
+        ("Arguments", "arguments"),
+        ("WorkingDirectory", "working_directory"),
+    ] {
+        assert!(declarations.iter().any(|d| d["field"] == field && d["value"] == reference[key]), "{field}: {fact}");
+    }
+    let icon = format!(
+        "{},{}",
+        declarations.iter().find(|d| d["field"] == "IconLocation").expect("icon")["value"].as_str().expect("path"),
+        fact["icon_index"]
+    );
+    assert_eq!(icon, reference["icon"].as_str().expect("reference icon"));
+    assert_eq!(fact["show_command"], reference["show_command"]);
+    assert_eq!(fact["target_resolved"], false);
+    assert_eq!(run.findings("windows.shell-link").len(), 1);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.shortcut-target-unresolved"));
+
+    let upstream = analyze(&[("upstream-test.lnk", data("upstream-test.lnk"))]);
+    let fact = upstream.fact("upstream-test.lnk", "windows.shell-link");
+    assert!(
+        fact["declarations"]
+            .as_array()
+            .expect("upstream declarations")
+            .iter()
+            .any(|d| d["field"] == "LinkInfo/LocalBasePath" && d["value"] == r"C:\test\a.txt")
+    );
+    assert!(upstream.out.limitations.iter().any(|l| l.code == "windows.shortcut-partial"));
+    let disguised = analyze(&[("disguised.bin", data("upstream-test.lnk"))]);
+    assert_eq!(disguised.findings("windows.shell-link").len(), 1, "magic recognition does not depend on extension");
+    let damaged = analyze(&[("damaged.lnk", vec![0; 8])]);
+    assert!(damaged.out.limitations.iter().any(|l| l.code == "windows.shortcut-unreadable"));
+}
+
+#[test]
 fn windows_generated_url_matches_the_native_producer_and_small_urls_are_read() {
     let reference: Value = serde_json::from_slice(&data("native.url.ref.json")).expect("native producer reference");
     let run = analyze(&[("native.url", data("native.url"))]);

@@ -1,6 +1,6 @@
 # Test fixtures
 
-The executable/package fixtures are built by `make-fixtures.sh` from the sources in `src/`. The URL fixture is produced on Windows by `tools/native-compare/windows-shortcut-fixture.ps1`. Nothing was downloaded.
+The executable/package fixtures are built by `make-fixtures.sh` from the sources in `src/`. Native shortcut fixtures are produced on Windows by `tools/native-compare/windows-shortcut-fixture.ps1`. The independent `upstream-test.lnk` is from lnk-rs under MIT; its source and license are recorded below.
 Keys and certificates are generated on the spot and thrown away, so the signed files differ on
 every run; the reference tools' output is regenerated with them and stored next to each fixture.
 The tests in `../pipeline.rs` compare the analyzer's results with those reference files.
@@ -8,6 +8,8 @@ The tests in `../pipeline.rs` compare the analyzer's results with those referenc
 | File | Made with | Reference file (tool) |
 |---|---|---|
 | `native.url` | Windows WScript.Shell saving this project's fixed example.invalid URL; project-authored fixture under Apache-2.0 | `native.url.ref.json` (TargetPath read from the producer object, without activating the shortcut) |
+| `native.lnk` | Windows WScript.Shell referencing cmd.exe with project-authored launch declarations; Apache-2.0 fixture | `native.lnk.ref.json` (properties read from the producer object; target not run) |
+| `upstream-test.lnk` | [lnk-rs tests/data/test.lnk at f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4](https://github.com/lilopkins/lnk-rs/blob/f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4/tests/data/test.lnk); MIT, copyright 2023 Lily Hopkins, see `LICENSE-lnk-rs.txt` | Independent 459-byte fixture with a `C:\test\a.txt` path declaration; SHA-256 `09ac337f52c4c9dc49772e97060145a316cb4af076cfb122fb4a219ecbfbfdd7` |
 | `hello.exe` | mingw-w64 gcc + windres from `src/hello.c`, `hello.rc`, `hello.manifest` | `hello.version.ref.txt` (exiftool) |
 | `hello-signed.exe` | osslsigncode: RSA-2048 leaf under a test root, SHA-256, RFC 3161 timestamp from osslsigncode's built-in TSA | `hello-signed.ref.txt` (`osslsigncode verify`) |
 | `hello-sha1.exe` | same leaf, SHA-1, no timestamp | `hello-sha1.ref.txt` |

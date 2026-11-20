@@ -92,6 +92,7 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
         finding = finding.evidence(Evidence::field(file, format!("InternetShortcut/{key}"), value.as_str()));
     }
     out.finding(finding);
+    out.limitation("windows.shortcut-target-unresolved", Some(file), None);
     if shortcut.ignored > 0 || shortcut.duplicate_keys {
         out.limitation(
             "windows.shortcut-partial",

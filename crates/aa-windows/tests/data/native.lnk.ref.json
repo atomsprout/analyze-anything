@@ -1,0 +1,9 @@
+{
+  "producer": "Windows WScript.Shell",
+  "target": "C:\\Windows\\System32\\cmd.exe",
+  "arguments": "--fixture \"two words\"",
+  "working_directory": "C:\\aa-fixture-missing",
+  "description": "Analyze Anything shortcut fixture",
+  "icon": "C:\\aa-fixture-missing\\icon.ico,3",
+  "show_command": 7
+}

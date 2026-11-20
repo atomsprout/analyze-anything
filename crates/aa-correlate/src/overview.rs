@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-shell-link",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 Windows Shell 快捷方式，保存了目标和启动属性的声明。目标没有运行或解析。",
+        text_en: "This is a Windows Shell Link containing target and launch-property declarations. The target was not run or resolved.",
+    },
+    Rule {
         id: "overview.kind-internet-shortcut",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -357,6 +364,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let made = match (kind, unpacker) {
         ("ipa", _) => finding("overview.kind-ipa", Confidence::Derived),
         ("internet-shortcut", _) => finding("overview.kind-internet-shortcut", Confidence::Verified),
+        ("shell-link", _) => finding("overview.kind-shell-link", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),
