@@ -26,6 +26,9 @@ exclusively locked file and a nested Unicode path longer than 260 characters. A 
 refused as a descendant, root and ancestor of a requested file. Attribute-policy tests use
 constructed bit flags: they do not prove behavior on actual EFS or cloud-provider files.
 Engine Clippy with warnings denied passed.
+The complete workspace test run after the initial disk-access change also passed, including
+the damaged-fixture sweep. The subsequent archive-name changes were checked with the targeted
+engine integration suite and Clippy as described below.
 
 The next archive-name increment passed all 29 engine integration tests. A generated tar.gz
 contains CON, colon and trailing-dot names, a drive-like path, ASCII case aliases and duplicate

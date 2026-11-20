@@ -112,6 +112,7 @@ These formats were tested with constructed data only:
 
 - [ ] English fragments left in Chinese rule text: file types follow the language now; the technical reason a signature failed (an error text from the parsing library) does not.
 - [ ] **W2 — CLI worker supervision**: make whole-run cancellation and cleanup reliable, and establish the isolation and partial-report contract needed for hard per-analyzer timeouts. Reusing the desktop worker alone does not stop an individual timed-out thread at its deadline; see [PLAN-WINDOWS.md](PLAN-WINDOWS.md).
+  Windows worker startup now requests no console window; five real-process/protocol tests and worker Clippy pass. Manual window behavior, CLI supervision and hard timeout semantics remain open.
 - [x] In a comparison, known artifact display parameters are compared relative to the input. Input labels and the largest-file path no longer cause changes solely because the input was renamed; product names and embedded paths remain literal. Verified with export regressions and two generated ZIP reports on Windows.
 
 ## After phase two

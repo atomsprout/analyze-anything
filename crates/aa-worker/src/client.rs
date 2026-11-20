@@ -37,17 +37,23 @@ impl Worker {
     pub fn start(program: &Path, arguments: &[&str], scratch_root: &Path) -> Result<Worker, WorkerError> {
         std::fs::create_dir_all(scratch_root).map_err(WorkerError::Scratch)?;
         let scratch = unique_folder(scratch_root).map_err(WorkerError::Scratch)?;
-        let mut child = Command::new(program)
+        let mut command = Command::new(program);
+        command
             .args(arguments)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             // What a worker writes to its error output is for whoever debugs it, not for us.
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|error| {
-                let _ = std::fs::remove_dir_all(&scratch);
-                WorkerError::Start(error)
-            })?;
+            .stderr(Stdio::inherit());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            // A desktop worker communicates through pipes and needs no console window.
+            command.creation_flags(0x0800_0000);
+        }
+        let mut child = command.spawn().map_err(|error| {
+            let _ = std::fs::remove_dir_all(&scratch);
+            WorkerError::Start(error)
+        })?;
         let stdin = child.stdin.take();
         let (sender, responses) = std::sync::mpsc::channel();
         if let Some(stdout) = child.stdout.take() {
