@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyze Anything</title>
+<meta name="description" content="Give it any app package, installer or file and get a report where every finding shows its evidence. Static, offline, open source.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root {
+  --paper: #fff8ea; --card: #ffffff; --ink: #2b2118; --soft: #6b5a4c; --line: #f0e2c8;
+  --sun: #ffc93c; --orange: #ff9f1c; --coral: #ff6b5e; --pink: #ff8fb1; --sky: #5ccbf2; --lime: #a6e05a;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+code, pre, .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+
+header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; position: relative; z-index: 2; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; text-decoration: none; }
+.brand img { width: 34px; height: 34px; }
+nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+nav a { text-decoration: none; padding: 7px 13px; border-radius: 999px; font-weight: 700; font-size: 15px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-family: inherit; }
+nav a:hover { background: #ffe9b0; }
+
+.hero { position: relative; padding: 46px 0 110px; }
+.sun { position: absolute; right: -90px; top: 10px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #ffe27a, var(--sun) 60%, var(--orange)); z-index: 0; }
+.blob { position: absolute; border-radius: 50%; z-index: 0; }
+.b1 { width: 120px; height: 120px; background: var(--pink); right: 250px; top: 310px; }
+.b2 { width: 70px; height: 70px; background: var(--sky); right: 80px; top: 410px; }
+.b3 { width: 44px; height: 44px; background: var(--lime); right: 180px; top: 440px; }
+.hero > :not(.sun):not(.blob) { position: relative; z-index: 1; }
+h1 { font-size: clamp(38px, 6.4vw, 68px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em; max-width: 720px; font-weight: 900; }
+h1 .hl { background: linear-gradient(transparent 62%, var(--sun) 62%); }
+.lead { font-size: clamp(18px, 2.2vw, 22px); max-width: 640px; color: var(--soft); margin: 0 0 28px; }
+.cmd { display: inline-flex; align-items: center; gap: 14px; background: var(--ink); color: #fff8ea; padding: 15px 16px 15px 22px; border-radius: 18px; font-size: clamp(14px, 2vw, 18px); box-shadow: 6px 6px 0 var(--coral); max-width: 100%; }
+.cmd code { white-space: nowrap; overflow-x: auto; }
+.cmd .p { color: var(--sun); }
+.copy { border: 0; border-radius: 11px; background: var(--sun); color: var(--ink); font: inherit; font-weight: 800; font-size: 14px; padding: 7px 12px; cursor: pointer; flex: none; }
+.copy:hover { background: #ffd966; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.chip { padding: 7px 15px; border-radius: 999px; font-weight: 800; font-size: 15px; border: 2px solid var(--ink); background: var(--card); }
+.chip:nth-child(1) { background: #ffe9a8; } .chip:nth-child(2) { background: #ffd0c9; } .chip:nth-child(3) { background: #c9eefc; } .chip:nth-child(4) { background: #dcf5b8; } .chip:nth-child(5) { background: #ffd6e3; }
+
+section { padding: 44px 0; }
+h2 { font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 8px; letter-spacing: -0.01em; font-weight: 900; }
+.sub { color: var(--soft); margin: 0 0 26px; max-width: 680px; }
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.card { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; padding: 22px; box-shadow: 5px 5px 0 var(--shadow, var(--sun)); }
+.card h3 { margin: 0 0 6px; font-size: 20px; font-weight: 900; }
+.card p { margin: 0; color: var(--soft); font-size: 16px; }
+.dot { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; font-weight: 900; margin-bottom: 14px; border: 2px solid var(--ink); background: var(--shadow, var(--sun)); }
+.c-sun { --shadow: var(--sun); } .c-coral { --shadow: var(--coral); } .c-sky { --shadow: var(--sky); } .c-lime { --shadow: var(--lime); } .c-pink { --shadow: var(--pink); } .c-orange { --shadow: var(--orange); }
+
+.examples { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+.ex { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; padding: 20px; box-shadow: 5px 5px 0 var(--shadow, var(--sun)); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ex h3 { margin: 0; font-size: 22px; font-weight: 900; }
+.ex h3 a { text-decoration: none; } .ex h3 a:hover { text-decoration: underline; }
+.ex .tags { margin: 0; }
+.ex b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 5px; }
+.ex-io { background: var(--ink); color: #fff8ea; border-radius: 14px; padding: 12px 14px; font-size: 13px; }
+.ex-io b { color: var(--sun); }
+.ex-io .mono { display: block; overflow-x: auto; white-space: nowrap; }
+.ex-io .dim { color: #c9b8a4; font-size: 12px; margin-top: 3px; }
+.ex-out { font-size: 14.5px; flex: 1 1 auto; }
+.ex-out ul { margin: 0 0 10px; padding: 0 0 0 18px; display: grid; gap: 5px; color: var(--soft); overflow-wrap: anywhere; }
+.ex-links .dim { color: var(--soft); font-weight: 400; font-size: 13px; }
+.ex-count { margin: 0; font-size: 13px; font-weight: 700; }
+.tag.medium { background: var(--orange); } .tag.low { background: #ffe9a8; }
+.ex .tag { font-size: 11.5px; padding: 1px 8px; }
+.ex-links { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; font-weight: 700; }
+.ex-links .btn { padding: 8px 14px; border-radius: 12px; font-size: 14.5px; box-shadow: 3px 3px 0 var(--ink); }
+.flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+.step { flex: 1 1 150px; background: var(--card); border: 2px solid var(--ink); border-radius: 18px; padding: 14px 14px 16px; box-shadow: 4px 4px 0 var(--shadow, var(--sun)); min-width: 0; }
+.step h3 { margin: 0 0 4px; font-size: 17px; font-weight: 900; }
+.step p { margin: 0; color: var(--soft); font-size: 14px; }
+.step .n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); background: var(--shadow, var(--sun)); font-weight: 900; font-size: 13px; margin-bottom: 8px; }
+.arrow { flex: none; align-self: center; font-weight: 900; font-size: 22px; padding: 0 8px; }
+.faces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 6px; }
+.face { border: 2px dashed var(--ink); border-radius: 16px; padding: 10px 14px; font-size: 14px; color: var(--soft); background: #fffdf6; }
+.face b { display: block; color: var(--ink); font-size: 15px; }
+.rail { text-align: center; font-weight: 900; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin: 18px 0 10px; color: var(--soft); }
+@media (max-width: 800px) { .flow { flex-direction: column; } .arrow { transform: rotate(90deg); padding: 4px 0; } .faces { grid-template-columns: 1fr; } }
+.two { display: grid; gap: 26px; grid-template-columns: 1fr 1fr; align-items: start; }
+@media (max-width: 800px) { .two { grid-template-columns: 1fr; } .sun { width: 250px; height: 250px; right: -110px; opacity: .85; } .b1, .b2, .b3 { display: none; } }
+.finding { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; overflow: hidden; box-shadow: 6px 6px 0 var(--sky); }
+.finding .top { padding: 18px 20px 14px; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tag { font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; border: 2px solid var(--ink); }
+.tag.high { background: var(--coral); color: #fff; } .tag.ver { background: #dcf5b8; } .tag.sec { background: #ffe9a8; }
+.finding h3 { margin: 0 0 6px; font-size: 19px; font-weight: 900; }
+.finding p { margin: 0; color: var(--soft); font-size: 15.5px; }
+.ev { background: #fff3d6; border-top: 2px solid var(--ink); padding: 14px 20px; font-size: 13.5px; }
+.ev b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+.ev .mono { display: block; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+.note { font-size: 13.5px; color: var(--soft); margin-top: 12px; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+ul.plain li { display: flex; gap: 12px; align-items: flex-start; }
+ul.plain li::before { content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%; margin-top: 7px; border: 2px solid var(--ink); background: var(--sun); }
+ul.plain li:nth-child(2)::before { background: var(--coral); } ul.plain li:nth-child(3)::before { background: var(--sky); } ul.plain li:nth-child(4)::before { background: var(--lime); } ul.plain li:nth-child(5)::before { background: var(--pink); }
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border: 2px solid var(--ink); border-radius: 22px; overflow: hidden; }
+th, td { text-align: left; padding: 14px 18px; vertical-align: top; border-bottom: 2px solid var(--line); font-size: 16px; }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+th { width: 130px; font-weight: 900; white-space: nowrap; }
+tr:nth-child(1) th { background: #ffe9a8; } tr:nth-child(2) th { background: #dcf5b8; } tr:nth-child(3) th { background: #c9eefc; } tr:nth-child(4) th { background: #ffd6e3; }
+td { color: var(--soft); }
+
+pre { margin: 0; background: var(--ink); color: #fff8ea; padding: 18px 20px; border-radius: 18px; overflow-x: auto; font-size: 14.5px; line-height: 1.7; }
+pre .c { color: #c9b8a4; } pre .p { color: var(--sun); }
+.install { display: grid; gap: 18px; }
+.ai { background: #ffe9f0; border: 2px solid var(--ink); border-radius: 26px; padding: 30px; box-shadow: 6px 6px 0 var(--pink); }
+.ai .badge { display: inline-block; background: var(--card); border: 2px solid var(--ink); border-radius: 999px; font-weight: 800; font-size: 13px; padding: 3px 12px; margin-bottom: 12px; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.btn { display: inline-block; text-decoration: none; font-weight: 900; padding: 13px 22px; border-radius: 16px; border: 2px solid var(--ink); background: var(--sun); box-shadow: 4px 4px 0 var(--ink); }
+.btn.alt { background: var(--card); }
+.btn:hover { transform: translate(1px, 1px); box-shadow: 3px 3px 0 var(--ink); }
+footer { padding: 34px 0 50px; color: var(--soft); font-size: 15px; border-top: 2px dashed #e6d3ad; margin-top: 30px; }
+:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="#"><img src="icon.svg" alt=""><span>Analyze Anything</span></a>
+    <nav>
+      <a href="#examples">Examples</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/atomsprout/analyze-anything/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener">Roadmap</a>
+      <a href="https://github.com/atomsprout/analyze-anything" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div class="sun" aria-hidden="true"></div><div class="blob b1" aria-hidden="true"></div><div class="blob b2" aria-hidden="true"></div><div class="blob b3" aria-hidden="true"></div>
+    <h1>Know what is <span class="hl">inside</span> any app, installer or file.</h1>
+    <p class="lead">One command gives you a report where every finding shows its evidence: which file, where in it, and what was read there.</p>
+    <div class="cmd"><code><span class="p">$</span> analyze-anything App.ipa</code><button class="copy" type="button" data-copy="analyze-anything App.ipa">Copy</button></div>
+    <div class="chips">
+      <span class="chip">Static only</span>
+      <span class="chip">Works offline</span>
+      <span class="chip">Same input, same report</span>
+      <span class="chip">Written in Rust</span>
+      <span class="chip">Open source</span>
+    </div>
+  </div>
+
+  <section id="examples">
+    <h2>See it on real software</h2>
+    <p class="sub">Seven public releases of open-source projects, each downloaded from the project's own address and given to one command. Each card shows what went in and what came out; the full report is a PDF one click away.</p>
+    <div class="examples">
+      <!-- examples:begin (written by tools/site/examples.py) -->
+      <article class="ex c-sky">
+        <div class="tags"><span class="tag sec">iOS app · IPA</span></div>
+        <h3><a href="https://ish.app" target="_blank" rel="noopener">iSH 1.3.2</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything iSH.ipa</span>
+          <span class="mono dim">4.0 MB · sha256 74b22a209340… · <a href="https://github.com/ish-app/ish/releases/download/builds/494/iSH.ipa" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is an iOS app package (IPA).</li>
+            <li>The main program is signed with an Apple distribution certificate (team CK5SXRTBR7).</li>
+          </ul>
+          <p class="ex-count">190 files read · 235 findings: 15 low, 220 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/ipa.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 20 pages · 556.6 KB</span></div>
+      </article>
+      <article class="ex c-lime">
+        <div class="tags"><span class="tag sec">Android app · APK</span></div>
+        <h3><a href="https://f-droid.org" target="_blank" rel="noopener">F-Droid 2.0.3</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything F-Droid.apk</span>
+          <span class="mono dim">12.2 MB · sha256 dac55a0d17b1… · <a href="https://f-droid.org/F-Droid.apk" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is an Android app package (APK).</li>
+            <li>The signing certificate&#x27;s SHA-256 fingerprint is 43238d512c1e5eb2d6569f4a3afbf5523418b82e0a3ed1552770abb9a9c9ccab.</li>
+          </ul>
+          <p class="ex-count">977 files read · 110 findings: 2 medium, 21 low, 87 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/apk.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 26 pages · 755.8 KB</span></div>
+      </article>
+      <article class="ex c-sun">
+        <div class="tags"><span class="tag sec">macOS disk image · DMG</span></div>
+        <h3><a href="https://rectangleapp.com" target="_blank" rel="noopener">Rectangle 2.0.4</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything Rectangle2.0.4.dmg</span>
+          <span class="mono dim">4.7 MB · sha256 9f820a2e56bd… · <a href="https://github.com/rxhanson/Rectangle/releases/download/v2.0.4/Rectangle2.0.4.dmg" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is a macOS disk image (DMG); the file system inside it was read.</li>
+            <li>The main program is signed with a Developer ID certificate (team XSYZ3E4B7D), the way macOS software is distributed outside the App Store.</li>
+          </ul>
+          <p class="ex-count">160 files read · 141 findings: 141 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/dmg.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 18 pages · 475.1 KB</span></div>
+      </article>
+      <article class="ex c-orange">
+        <div class="tags"><span class="tag sec">macOS installer · pkg</span></div>
+        <h3><a href="https://nodejs.org" target="_blank" rel="noopener">Node.js 22.11.0</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything node-v22.11.0.pkg</span>
+          <span class="mono dim">81.9 MB · sha256 8d658eda7699… · <a href="https://nodejs.org/dist/v22.11.0/node-v22.11.0.pkg" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is a macOS installer package (pkg).</li>
+          </ul>
+          <p class="ex-count">4,894 files read · 47 findings: 2 medium, 4 low, 41 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/pkg.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 22 pages · 743.7 KB</span></div>
+      </article>
+      <article class="ex c-coral">
+        <div class="tags"><span class="tag sec">Windows installer · NSIS</span></div>
+        <h3><a href="https://notepad-plus-plus.org" target="_blank" rel="noopener">Notepad++ 8.9.9.1</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything npp.8.9.9.1.Installer.x64.exe</span>
+          <span class="mono dim">6.7 MB · sha256 ce3267f5c4e7… · <a href="https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.9.1/npp.8.9.9.1.Installer.x64.exe" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is a Windows installer in NSIS V3, Unicode strings, Lzma compression (Solid) format.</li>
+            <li>The input file carries an Authenticode signature by NOTEPAD++; the file matches the signature, and the signature and the embedded certificate chain verify.</li>
+          </ul>
+          <p class="ex-count">270 files read · 215 findings: 2 medium, 28 low, 185 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/nsis.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 20 pages · 663.3 KB</span></div>
+      </article>
+      <article class="ex c-pink">
+        <div class="tags"><span class="tag sec">Windows installer · MSI</span></div>
+        <h3><a href="https://www.7-zip.org" target="_blank" rel="noopener">7-Zip 24.08</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything 7z2408-x64.msi</span>
+          <span class="mono dim">1.9 MB · sha256 98330e7e6db3… · <a href="https://www.7-zip.org/a/7z2408-x64.msi" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is a Windows installer in Windows Installer database, platform x64, built with Windows Installer XML v2.0.3719.0 (candle/light) format.</li>
+            <li>There are 8 Windows executables; 8 are unsigned and the rest are signed by 0 distinct signers.</li>
+          </ul>
+          <p class="ex-count">111 files read · 103 findings: 2 medium, 19 low, 82 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/msi.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 11 pages · 311.9 KB</span></div>
+      </article>
+      <article class="ex c-sky">
+        <div class="tags"><span class="tag sec">Linux program · tar.gz</span></div>
+        <h3><a href="https://github.com/BurntSushi/ripgrep" target="_blank" rel="noopener">ripgrep 15.2.0</a></h3>
+        <div class="ex-io"><b>Input</b>
+          <span class="mono">$ analyze-anything ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz</span>
+          <span class="mono dim">2.2 MB · sha256 33e15bcf1624… · <a href="https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz" target="_blank" rel="noopener">official download</a></span>
+        </div>
+        <div class="ex-out"><b>Output</b>
+          <ul>
+            <li>This is a gzip archive; it was opened and holds 14 files.</li>
+          </ul>
+          <p class="ex-count">15 files read · 16 findings: 16 neutral facts</p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/linux.pdf" target="_blank" rel="noopener">Open the PDF report</a><span class="dim">PDF · 5 pages · 146.2 KB</span></div>
+      </article>
+      <!-- examples:end -->
+    </div>
+    <p class="note">A finding describes that one file and says how sure it is. It is not a verdict on the project: “low” and “medium” order the reading, and many such findings are ordinary choices of a build. The files were only read, never run.</p>
+  </section>
+
+  <section>
+    <h2>A report you can check</h2>
+    <p class="sub">It does not ask you to trust it. Each finding says how sure it is and points at the bytes it came from.</p>
+    <div class="two">
+      <div>
+        <div class="finding">
+          <div class="top">
+            <div class="tags"><span class="tag high">High</span><span class="tag ver">Verified</span><span class="tag sec">Provenance</span></div>
+            <h3>Code was changed after signing</h3>
+            <p>Example has 4 code pages whose hash does not match the signature: the file was changed after it was signed.</p>
+          </div>
+          <div class="ev"><b>Evidence</b><span class="mono">Example.ipa/Payload/Example.app/Example</span><span class="mono">bytes 16384..32768 · sha256 9f2c…e41a</span></div>
+        </div>
+        <p class="note">An illustration of how a finding reads. The names and numbers are made up.</p>
+      </div>
+      <ul class="plain">
+        <li><span><b>Evidence for everything.</b> File, position and the value that was read. In the desktop app, one click shows the bytes.</span></li>
+        <li><span><b>Honest about confidence.</b> Verified, derived or heuristic. A heuristic says it may be wrong.</span></li>
+        <li><span><b>Says what it could not do.</b> Encrypted, unreadable or over a limit: it is listed, never passed over in silence.</span></li>
+        <li><span><b>No verdict.</b> It does not call anything safe or unsafe. It shows you what is there.</span></li>
+        <li><span><b>Seven formats.</b> HTML, PDF, Markdown, plain text, JSON, SARIF and CycloneDX.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <p class="sub">One pass, read only. Every output format is written from the same report, so they always agree.</p>
+    <div class="flow" role="img" aria-label="Input, unpack, analyze, correlate, report">
+      <div class="step c-sun"><span class="n">1</span><h3>Input</h3><p>Any file or folder. It is only read, never run or installed.</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-coral"><span class="n">2</span><h3>Unpack</h3><p>Containers are opened layer by layer, within fixed limits.</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-sky"><span class="n">3</span><h3>Analyze</h3><p>Each file goes to the analyzers that understand it: content, binary, Apple, Android, Windows.</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-lime"><span class="n">4</span><h3>Correlate</h3><p>Files are related to one another: what signs what, what contains what.</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-pink"><span class="n">5</span><h3>Report</h3><p>Findings with evidence and confidence, plus what could not be read. Seven formats.</p></div>
+    </div>
+    <div class="rail">↑ the same engine, reached three ways ↑</div>
+    <div class="faces">
+      <div class="face"><b>Command line</b>Runs the engine directly.</div>
+      <div class="face"><b>Desktop app</b>A window, and a separate worker process that does the analysis and can always be stopped.</div>
+      <div class="face"><b>AI, optional</b>Reads the finished report through read-only tools; never the files.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it reads</h2>
+    <p class="sub">Containers are opened layer by layer, so an app inside a disk image inside a zip is still found.</p>
+    <table>
+      <tr><th>Apple</th><td>.app, IPA, DMG, pkg · code signatures and certificate chains, entitlements, provisioning profiles, privacy manifests, FairPlay encryption</td></tr>
+      <tr><th>Android</th><td>APK, AAB, XAPK / APKS · manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers</td></tr>
+      <tr><th>Windows</th><td>PE, MSI, NSIS, Inno Setup, CAB, MSIX, Electron, .NET · Authenticode, installed program folders</td></tr>
+      <tr><th>Anything</th><td>Mach-O, ELF and PE hardening · zip, tar, 7z and more, nested · URLs, likely credentials, entropy, duplicate files</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Two ways to use it</h2>
+    <p class="sub">The same engine underneath: one input gives the same report in both.</p>
+    <div class="grid">
+      <div class="card c-sun"><div class="dot">&gt;_</div><h3>Command line</h3><p>For scripts and CI. Compare two versions with <code>diff</code>, fail a build with <code>--fail-on high</code>.</p></div>
+      <div class="card c-coral"><div class="dot">▣</div><h3>Desktop app</h3><p>For macOS. Drop a file, read the report, click evidence to see its bytes, keep a history.</p></div>
+      <div class="card c-sky"><div class="dot">◎</div><h3>For AI agents</h3><p>A read-only MCP server lets an agent look things up in a report.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="ai">
+      <span class="badge">Optional · off by default</span>
+      <h2>Let an AI walk you through the report</h2>
+      <p class="sub">Add <code>--ai</code> and a model explains the report in plain words. It sees the report, never your files. Every statement must cite findings of the report; those that do not are dropped.</p>
+      <div class="grid">
+        <div class="card c-sky"><h3>An API key</h3><p>Claude, or anything that speaks OpenAI's protocol.</p></div>
+        <div class="card c-pink"><h3>Claude Code</h3><p>Uses the <code>claude</code> you are signed in to. No API key.</p></div>
+        <div class="card c-orange"><h3>Codex</h3><p>Uses the <code>codex</code> you are signed in to. No API key.</p></div>
+        <div class="card c-lime"><h3>Ollama</h3><p>A model on your own machine. Nothing leaves it.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <p class="sub">Released for Macs with Apple silicon. On other systems, build the command line from source.</p>
+    <div class="install">
+<pre><span class="c"># the command line</span>
+<span class="p">$</span> brew install atomsprout/tap/analyze-anything
+
+<span class="c"># the desktop app</span>
+<span class="p">$</span> brew install --cask atomsprout/tap/analyze-anything-desktop
+
+<span class="c"># then</span>
+<span class="p">$</span> analyze-anything &lt;file or folder&gt;</pre>
+<pre><span class="c"># from source, with Rust 1.90 or newer</span>
+<span class="p">$</span> git clone https://github.com/atomsprout/analyze-anything
+<span class="p">$</span> cd analyze-anything &amp;&amp; cargo build --release</pre>
+    </div>
+    <div class="cta">
+      <a class="btn" href="https://github.com/atomsprout/analyze-anything" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="btn alt" href="https://github.com/atomsprout/analyze-anything/blob/main/docs/USAGE.md" target="_blank" rel="noopener">Read the guide</a>
+    </div>
+  </section>
+
+  <footer>
+    Apache-2.0. The input is only read, never run. Use it on things you have the right to analyze.
+  </footer>
+</div>
+<script>
+(function () {
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var done = function () { var old = b.innerHTML; b.textContent = '✓'; setTimeout(function () { b.innerHTML = old; }, 1200); };
+      if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done, function () {});
+    });
+  });
+})();
+</script>
+</body>
+</html>
