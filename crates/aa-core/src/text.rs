@@ -24,6 +24,17 @@ pub fn redact_sensitive_text(text: &str) -> Result<String, &'static str> {
     Ok(text)
 }
 
+/// A conservative name match for structured fields whose values must be hidden in full.
+pub fn is_sensitive_field_name(name: &str) -> bool {
+    let normalized: String = name.chars().filter(char::is_ascii_alphanumeric).map(|c| c.to_ascii_lowercase()).collect();
+    ["password", "passwd", "pwd", "token", "secret", "apikey", "authorization"].iter().any(|suffix| normalized.ends_with(suffix))
+}
+
+/// Hides the whole value of a recognizable credential field, including spaces and newlines.
+pub fn redact_named_value(name: &str, value: &str) -> Result<String, &'static str> {
+    if is_sensitive_field_name(name) { Ok("[redacted]".into()) } else { redact_sensitive_text(value) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -46,5 +57,13 @@ mod tests {
             redact_sensitive_text("-----BEGIN PRIVATE KEY-----\nfixture material\nrest").expect("key marker"),
             "[redacted private key material]"
         );
+    }
+
+    #[test]
+    fn named_credentials_hide_the_entire_value() {
+        for name in ["Password", "service-password", "ACCESS_TOKEN", "ClientSecret", "api.key", "Authorization"] {
+            assert_eq!(redact_named_value(name, "fixture secret with spaces\nand a second line").expect("named redaction"), "[redacted]");
+        }
+        assert_eq!(redact_named_value("TokensEnabled", "true").expect("ordinary value"), "true");
     }
 }

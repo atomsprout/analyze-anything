@@ -15,6 +15,30 @@ fn data(name: &str) -> Vec<u8> {
 }
 
 #[test]
+fn native_registry_export_matches_read_only_registry_reference() {
+    let reference: Value = serde_json::from_slice(&data("native-codepages.reg.ref.json")).expect("registry reference");
+    let run = analyze(&[("native-codepages.reg", data("native-codepages.reg"))]);
+    let fact = run.fact("native-codepages.reg", "windows.registry");
+    assert_eq!(fact["applied"], false);
+    assert_eq!(fact["issue_count"], 0);
+    let entries = fact["entries"].as_array().expect("registry entries");
+    let keys = reference["keys"].as_array().expect("reference keys");
+    assert_eq!(entries.len(), keys.iter().map(|key| key["values"].as_array().expect("values").len() + 1).sum::<usize>());
+    for key in keys {
+        assert!(entries.iter().any(|e| e["operation"] == "create_key" && e["key"] == key["key"]));
+        for value in key["values"].as_array().expect("reference values") {
+            let entry = entries
+                .iter()
+                .find(|e| e["operation"] == "set_value" && e["key"] == key["key"] && e["name"] == value["name"])
+                .expect("native value declaration");
+            assert_eq!(entry["value"], value["value"]);
+            assert_eq!(entry["value_type"], if value["kind"] == "DWord" { 4 } else { 1 });
+        }
+    }
+    assert_eq!(run.findings("windows.registry").len(), 1);
+}
+
+#[test]
 fn shell_links_match_native_producer_and_independent_fixture_declarations() {
     assert_eq!(sha256_hex(&data("upstream-test.lnk")), "09ac337f52c4c9dc49772e97060145a316cb4af076cfb122fb4a219ecbfbfdd7");
     let reference: Value = serde_json::from_slice(&data("native.lnk.ref.json")).expect("native reference");

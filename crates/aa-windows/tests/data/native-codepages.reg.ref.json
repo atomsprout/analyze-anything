@@ -1,0 +1,750 @@
+{
+  "producer": "Windows reg.exe export and Microsoft.Win32.Registry read-only",
+  "keys": [
+    {
+      "key": "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage",
+      "values": [
+        {
+          "name": "10000",
+          "kind": "String",
+          "value": "c_10000.nls"
+        },
+        {
+          "name": "10001",
+          "kind": "String",
+          "value": "c_10001.nls"
+        },
+        {
+          "name": "10002",
+          "kind": "String",
+          "value": "c_10002.nls"
+        },
+        {
+          "name": "10003",
+          "kind": "String",
+          "value": "c_10003.nls"
+        },
+        {
+          "name": "10004",
+          "kind": "String",
+          "value": "c_10004.nls"
+        },
+        {
+          "name": "10005",
+          "kind": "String",
+          "value": "c_10005.nls"
+        },
+        {
+          "name": "10006",
+          "kind": "String",
+          "value": "c_10006.nls"
+        },
+        {
+          "name": "10007",
+          "kind": "String",
+          "value": "c_10007.nls"
+        },
+        {
+          "name": "10008",
+          "kind": "String",
+          "value": "c_10008.nls"
+        },
+        {
+          "name": "10010",
+          "kind": "String",
+          "value": "c_10010.nls"
+        },
+        {
+          "name": "10017",
+          "kind": "String",
+          "value": "c_10017.nls"
+        },
+        {
+          "name": "10021",
+          "kind": "String",
+          "value": "c_10021.nls"
+        },
+        {
+          "name": "10029",
+          "kind": "String",
+          "value": "c_10029.nls"
+        },
+        {
+          "name": "10079",
+          "kind": "String",
+          "value": "c_10079.nls"
+        },
+        {
+          "name": "10081",
+          "kind": "String",
+          "value": "c_10081.nls"
+        },
+        {
+          "name": "10082",
+          "kind": "String",
+          "value": "c_10082.nls"
+        },
+        {
+          "name": "1026",
+          "kind": "String",
+          "value": "c_1026.nls"
+        },
+        {
+          "name": "1047",
+          "kind": "String",
+          "value": "c_1047.nls"
+        },
+        {
+          "name": "1140",
+          "kind": "String",
+          "value": "c_1140.nls"
+        },
+        {
+          "name": "1141",
+          "kind": "String",
+          "value": "c_1141.nls"
+        },
+        {
+          "name": "1142",
+          "kind": "String",
+          "value": "c_1142.nls"
+        },
+        {
+          "name": "1143",
+          "kind": "String",
+          "value": "c_1143.nls"
+        },
+        {
+          "name": "1144",
+          "kind": "String",
+          "value": "c_1144.nls"
+        },
+        {
+          "name": "1145",
+          "kind": "String",
+          "value": "c_1145.nls"
+        },
+        {
+          "name": "1146",
+          "kind": "String",
+          "value": "c_1146.nls"
+        },
+        {
+          "name": "1147",
+          "kind": "String",
+          "value": "c_1147.nls"
+        },
+        {
+          "name": "1148",
+          "kind": "String",
+          "value": "c_1148.nls"
+        },
+        {
+          "name": "1149",
+          "kind": "String",
+          "value": "c_1149.nls"
+        },
+        {
+          "name": "1250",
+          "kind": "String",
+          "value": "c_1250.nls"
+        },
+        {
+          "name": "1251",
+          "kind": "String",
+          "value": "c_1251.nls"
+        },
+        {
+          "name": "1252",
+          "kind": "String",
+          "value": "c_1252.nls"
+        },
+        {
+          "name": "1253",
+          "kind": "String",
+          "value": "c_1253.nls"
+        },
+        {
+          "name": "1254",
+          "kind": "String",
+          "value": "c_1254.nls"
+        },
+        {
+          "name": "1255",
+          "kind": "String",
+          "value": "c_1255.nls"
+        },
+        {
+          "name": "1256",
+          "kind": "String",
+          "value": "c_1256.nls"
+        },
+        {
+          "name": "1257",
+          "kind": "String",
+          "value": "c_1257.nls"
+        },
+        {
+          "name": "1258",
+          "kind": "String",
+          "value": "c_1258.nls"
+        },
+        {
+          "name": "1361",
+          "kind": "String",
+          "value": "c_1361.nls"
+        },
+        {
+          "name": "20000",
+          "kind": "String",
+          "value": "c_20000.nls"
+        },
+        {
+          "name": "20001",
+          "kind": "String",
+          "value": "c_20001.nls"
+        },
+        {
+          "name": "20002",
+          "kind": "String",
+          "value": "c_20002.nls"
+        },
+        {
+          "name": "20003",
+          "kind": "String",
+          "value": "c_20003.nls"
+        },
+        {
+          "name": "20004",
+          "kind": "String",
+          "value": "c_20004.nls"
+        },
+        {
+          "name": "20005",
+          "kind": "String",
+          "value": "c_20005.nls"
+        },
+        {
+          "name": "20105",
+          "kind": "String",
+          "value": "c_20105.nls"
+        },
+        {
+          "name": "20106",
+          "kind": "String",
+          "value": "c_20106.nls"
+        },
+        {
+          "name": "20107",
+          "kind": "String",
+          "value": "c_20107.nls"
+        },
+        {
+          "name": "20108",
+          "kind": "String",
+          "value": "c_20108.nls"
+        },
+        {
+          "name": "20127",
+          "kind": "String",
+          "value": "c_20127.nls"
+        },
+        {
+          "name": "20261",
+          "kind": "String",
+          "value": "c_20261.nls"
+        },
+        {
+          "name": "20269",
+          "kind": "String",
+          "value": "c_20269.nls"
+        },
+        {
+          "name": "20273",
+          "kind": "String",
+          "value": "c_20273.nls"
+        },
+        {
+          "name": "20277",
+          "kind": "String",
+          "value": "c_20277.nls"
+        },
+        {
+          "name": "20278",
+          "kind": "String",
+          "value": "c_20278.nls"
+        },
+        {
+          "name": "20280",
+          "kind": "String",
+          "value": "c_20280.nls"
+        },
+        {
+          "name": "20284",
+          "kind": "String",
+          "value": "c_20284.nls"
+        },
+        {
+          "name": "20285",
+          "kind": "String",
+          "value": "c_20285.nls"
+        },
+        {
+          "name": "20290",
+          "kind": "String",
+          "value": "c_20290.nls"
+        },
+        {
+          "name": "20297",
+          "kind": "String",
+          "value": "c_20297.nls"
+        },
+        {
+          "name": "20420",
+          "kind": "String",
+          "value": "c_20420.nls"
+        },
+        {
+          "name": "20423",
+          "kind": "String",
+          "value": "c_20423.nls"
+        },
+        {
+          "name": "20424",
+          "kind": "String",
+          "value": "c_20424.nls"
+        },
+        {
+          "name": "20833",
+          "kind": "String",
+          "value": "c_20833.nls"
+        },
+        {
+          "name": "20838",
+          "kind": "String",
+          "value": "c_20838.nls"
+        },
+        {
+          "name": "20866",
+          "kind": "String",
+          "value": "c_20866.nls"
+        },
+        {
+          "name": "20871",
+          "kind": "String",
+          "value": "c_20871.nls"
+        },
+        {
+          "name": "20880",
+          "kind": "String",
+          "value": "c_20880.nls"
+        },
+        {
+          "name": "20905",
+          "kind": "String",
+          "value": "c_20905.nls"
+        },
+        {
+          "name": "20924",
+          "kind": "String",
+          "value": "c_20924.nls"
+        },
+        {
+          "name": "20932",
+          "kind": "String",
+          "value": "c_20932.nls"
+        },
+        {
+          "name": "20936",
+          "kind": "String",
+          "value": "c_20936.nls"
+        },
+        {
+          "name": "20949",
+          "kind": "String",
+          "value": "c_20949.nls"
+        },
+        {
+          "name": "21025",
+          "kind": "String",
+          "value": "c_21025.nls"
+        },
+        {
+          "name": "21027",
+          "kind": "String",
+          "value": "c_21027.nls"
+        },
+        {
+          "name": "21866",
+          "kind": "String",
+          "value": "c_21866.nls"
+        },
+        {
+          "name": "28591",
+          "kind": "String",
+          "value": "C_28591.NLS"
+        },
+        {
+          "name": "28592",
+          "kind": "String",
+          "value": "C_28592.NLS"
+        },
+        {
+          "name": "28593",
+          "kind": "String",
+          "value": "c_28593.nls"
+        },
+        {
+          "name": "28594",
+          "kind": "String",
+          "value": "C_28594.NLS"
+        },
+        {
+          "name": "28595",
+          "kind": "String",
+          "value": "C_28595.NLS"
+        },
+        {
+          "name": "28596",
+          "kind": "String",
+          "value": "C_28596.NLS"
+        },
+        {
+          "name": "28597",
+          "kind": "String",
+          "value": "C_28597.NLS"
+        },
+        {
+          "name": "28598",
+          "kind": "String",
+          "value": "c_28598.nls"
+        },
+        {
+          "name": "28599",
+          "kind": "String",
+          "value": "c_28599.nls"
+        },
+        {
+          "name": "28603",
+          "kind": "String",
+          "value": "c_28603.nls"
+        },
+        {
+          "name": "28605",
+          "kind": "String",
+          "value": "c_28605.nls"
+        },
+        {
+          "name": "37",
+          "kind": "String",
+          "value": "c_037.nls"
+        },
+        {
+          "name": "38598",
+          "kind": "String",
+          "value": "c_28598.nls"
+        },
+        {
+          "name": "437",
+          "kind": "String",
+          "value": "c_437.nls"
+        },
+        {
+          "name": "500",
+          "kind": "String",
+          "value": "c_500.nls"
+        },
+        {
+          "name": "50220",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "50221",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "50222",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "50225",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "50227",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "50229",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "51949",
+          "kind": "String",
+          "value": "c_20949.nls"
+        },
+        {
+          "name": "52936",
+          "kind": "String",
+          "value": "c_is2022.dll"
+        },
+        {
+          "name": "54936",
+          "kind": "String",
+          "value": "c_g18030.dll"
+        },
+        {
+          "name": "55000",
+          "kind": "String",
+          "value": "c_gsm7.dll"
+        },
+        {
+          "name": "55001",
+          "kind": "String",
+          "value": "c_gsm7.dll"
+        },
+        {
+          "name": "55002",
+          "kind": "String",
+          "value": "c_gsm7.dll"
+        },
+        {
+          "name": "55003",
+          "kind": "String",
+          "value": "c_gsm7.dll"
+        },
+        {
+          "name": "55004",
+          "kind": "String",
+          "value": "c_gsm7.dll"
+        },
+        {
+          "name": "57002",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57003",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57004",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57005",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57006",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57007",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57008",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57009",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57010",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "57011",
+          "kind": "String",
+          "value": "c_iscii.dll"
+        },
+        {
+          "name": "708",
+          "kind": "String",
+          "value": "c_708.nls"
+        },
+        {
+          "name": "720",
+          "kind": "String",
+          "value": "c_720.nls"
+        },
+        {
+          "name": "737",
+          "kind": "String",
+          "value": "c_737.nls"
+        },
+        {
+          "name": "775",
+          "kind": "String",
+          "value": "c_775.nls"
+        },
+        {
+          "name": "850",
+          "kind": "String",
+          "value": "c_850.nls"
+        },
+        {
+          "name": "852",
+          "kind": "String",
+          "value": "c_852.nls"
+        },
+        {
+          "name": "855",
+          "kind": "String",
+          "value": "c_855.nls"
+        },
+        {
+          "name": "857",
+          "kind": "String",
+          "value": "c_857.nls"
+        },
+        {
+          "name": "858",
+          "kind": "String",
+          "value": "c_858.nls"
+        },
+        {
+          "name": "860",
+          "kind": "String",
+          "value": "c_860.nls"
+        },
+        {
+          "name": "861",
+          "kind": "String",
+          "value": "c_861.nls"
+        },
+        {
+          "name": "862",
+          "kind": "String",
+          "value": "c_862.nls"
+        },
+        {
+          "name": "863",
+          "kind": "String",
+          "value": "c_863.nls"
+        },
+        {
+          "name": "864",
+          "kind": "String",
+          "value": "c_864.nls"
+        },
+        {
+          "name": "865",
+          "kind": "String",
+          "value": "c_865.nls"
+        },
+        {
+          "name": "866",
+          "kind": "String",
+          "value": "c_866.nls"
+        },
+        {
+          "name": "869",
+          "kind": "String",
+          "value": "c_869.nls"
+        },
+        {
+          "name": "870",
+          "kind": "String",
+          "value": "c_870.nls"
+        },
+        {
+          "name": "874",
+          "kind": "String",
+          "value": "c_874.nls"
+        },
+        {
+          "name": "875",
+          "kind": "String",
+          "value": "c_875.nls"
+        },
+        {
+          "name": "932",
+          "kind": "String",
+          "value": "c_932.nls"
+        },
+        {
+          "name": "936",
+          "kind": "String",
+          "value": "c_936.nls"
+        },
+        {
+          "name": "949",
+          "kind": "String",
+          "value": "c_949.nls"
+        },
+        {
+          "name": "950",
+          "kind": "String",
+          "value": "c_950.nls"
+        },
+        {
+          "name": "ACP",
+          "kind": "String",
+          "value": "1252"
+        },
+        {
+          "name": "AllowDeprecatedCP",
+          "kind": "DWord",
+          "value": 1111573537
+        },
+        {
+          "name": "MACCP",
+          "kind": "String",
+          "value": "10000"
+        },
+        {
+          "name": "OEMCP",
+          "kind": "String",
+          "value": "437"
+        },
+        {
+          "name": "OEMHAL",
+          "kind": "String",
+          "value": "vgaoem.fon"
+        }
+      ]
+    },
+    {
+      "key": "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage\\EUDCCodeRange",
+      "values": [
+        {
+          "name": "932",
+          "kind": "String",
+          "value": "F040-F9FC"
+        },
+        {
+          "name": "936",
+          "kind": "String",
+          "value": "AAA1-AFFE,F8A1-FEFE,A140-A7A0"
+        },
+        {
+          "name": "949",
+          "kind": "String",
+          "value": "C9A1-C9FE,FEA1-FEFE"
+        },
+        {
+          "name": "950",
+          "kind": "String",
+          "value": "FA40-FEFE,8E40-A0FE,8140-8DFE,C6A1-C8FE"
+        }
+      ]
+    }
+  ]
+}

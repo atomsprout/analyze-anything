@@ -14,7 +14,51 @@ macro_rules! scope_en {
     };
 }
 
+macro_rules! registry_pattern_rule {
+    ($id:literal, $en:literal, $zh:literal) => {
+        Rule {
+            id: $id,
+            title_en: concat!("Registry declarations: ", $en),
+            title_zh: concat!("注册表声明：", $zh),
+            text_en: concat!("{count} registry declarations match path or value-name patterns associated with ", $en, ". This is a classification of the document's declared writes, not an observed installation or proof that the settings take effect."),
+            text_zh: concat!("{count} 条注册表声明的路径或值名称匹配与", $zh, "相关的模式。这是对文档中写入声明的分类，不是已安装的事实，也不表示设置一定生效。"),
+        }
+    };
+}
+
 pub const RULES: &[Rule] = &[
+    Rule {
+        id: "windows.registry",
+        title_en: "Registry export declarations",
+        title_zh: "注册表导出声明",
+        text_en: "{count} key or value declarations were read in source order, including writes and deletions. No registry data was imported, no environment variable was expanded and no effective system state was inferred. Recognizable credentials are redacted.",
+        text_zh: "按源文件顺序读取了 {count} 条键或值声明，包括写入和删除。没有导入注册表、展开环境变量或推断系统最终状态。可识别的凭据已遮蔽。",
+    },
+    Rule {
+        id: "windows.registry-unreadable",
+        title_en: "Registry export could not be read",
+        title_zh: "无法读取注册表导出",
+        text_en: "The registry document's encoding, version header or size was outside the supported range. The reason is recorded in the detail; no registry data was imported.",
+        text_zh: "注册表文档的编码、版本头或大小超出支持范围。详情记录原因；没有导入注册表。",
+    },
+    Rule {
+        id: "windows.registry-partial",
+        title_en: "Registry declarations only partly read",
+        title_zh: "注册表声明仅部分读取",
+        text_en: "Some declarations or binary payload meanings could not be read, or a reading limit was reached. Supported declarations remain in source order. Unread entries do not establish an absent or empty value.",
+        text_zh: "部分声明或二进制载荷的含义无法读取，或已达到读取上限。已支持的声明按源文件顺序保留；未读条目不能视为不存在或空值。",
+    },
+    registry_pattern_rule!("windows.registry-autostart", "automatic startup", "自动启动"),
+    registry_pattern_rule!("windows.registry-service", "services", "服务"),
+    registry_pattern_rule!("windows.registry-driver", "drivers", "驱动程序"),
+    registry_pattern_rule!("windows.registry-firewall", "firewall settings", "防火墙设置"),
+    registry_pattern_rule!("windows.registry-file-association", "file associations", "文件关联"),
+    registry_pattern_rule!("windows.registry-protocol-handler", "protocol handlers", "协议处理程序"),
+    registry_pattern_rule!("windows.registry-shell-extension", "shell extensions", "Shell 扩展"),
+    registry_pattern_rule!("windows.registry-uninstall-entry", "uninstall entries", "卸载条目"),
+    registry_pattern_rule!("windows.registry-environment", "environment variables", "环境变量"),
+    registry_pattern_rule!("windows.registry-security-setting", "security settings", "安全设置"),
+    registry_pattern_rule!("windows.registry-root-certificate", "root certificate stores", "根证书存储"),
     Rule {
         id: "windows.shell-link",
         title_zh: "Shell 快捷方式声明",

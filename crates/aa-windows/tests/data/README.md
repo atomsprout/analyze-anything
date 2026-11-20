@@ -7,6 +7,7 @@ The tests in `../pipeline.rs` compare the analyzer's results with those referenc
 
 | File | Made with | Reference file (tool) |
 |---|---|---|
+| `native-codepages.reg` | `reg.exe export` of the existing Windows Nls/CodePage subtree; no key changed and no REG imported | `native-codepages.reg.ref.json` (all keys, value types and values read independently through Microsoft.Win32.Registry); metadata fixture and producer record under Apache-2.0 |
 | `native.url` | Windows WScript.Shell saving this project's fixed example.invalid URL; project-authored fixture under Apache-2.0 | `native.url.ref.json` (TargetPath read from the producer object, without activating the shortcut) |
 | `native.lnk` | Windows WScript.Shell referencing cmd.exe with project-authored launch declarations; Apache-2.0 fixture | `native.lnk.ref.json` (properties read from the producer object; target not run) |
 | `upstream-test.lnk` | [lnk-rs tests/data/test.lnk at f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4](https://github.com/lilopkins/lnk-rs/blob/f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4/tests/data/test.lnk); MIT, copyright 2023 Lily Hopkins, see `LICENSE-lnk-rs.txt` | Independent 459-byte fixture with a `C:\test\a.txt` path declaration; SHA-256 `09ac337f52c4c9dc49772e97060145a316cb4af076cfb122fb4a219ecbfbfdd7` |

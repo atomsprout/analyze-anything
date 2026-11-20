@@ -118,6 +118,25 @@ fn shortcut_credentials_do_not_leak_through_generic_content_facts() {
 }
 
 #[test]
+fn registry_reports_preserve_declarations_and_redact_named_credentials() {
+    let bytes = b"Windows Registry Editor Version 5.00\n[HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run]\n\"Fixture\"=\"%SystemRoot%\\\\fixture.exe\"\n\"Password\"=\"fixture secret with spaces\"\n\"Old\"=-\n";
+    let (_dir, path) = write_input("fixture.reg", bytes);
+    let report = run(&path, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-registry-export"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.registry-autostart"));
+    let json = serde_json::to_string(&report).expect("registry report");
+    assert!(!json.contains("fixture secret"));
+    assert!(json.contains("%SystemRoot%"));
+    assert!(json.contains("delete_value"));
+    for code in report.findings.iter().map(|f| &f.rule).chain(report.limitations.iter().map(|l| &l.code)) {
+        let rule = report.rules.get(code).expect("rule included in report");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(json, serde_json::to_string(&run(&path, &Options::default())).expect("repeat report"));
+    assert_eq!(std::fs::read(&path).expect("input bytes"), bytes);
+}
+
+#[test]
 fn shell_link_reports_are_deterministic_and_have_translated_rules() {
     let bytes = include_bytes!("../../aa-windows/tests/data/native.lnk");
     let (_dir, path) = write_input("native.lnk", bytes);

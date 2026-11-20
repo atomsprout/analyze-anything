@@ -47,3 +47,9 @@ Test sample in crates/aa-windows/tests/data (not part of the program):
     Only the sample is used; no parser code is copied.
 
 Every other test sample is built by scripts in this repository.
+
+native-codepages.reg and its reference JSON in crates/aa-windows/tests/data are a
+read-only export of Windows code-page metadata, made by this project's
+tools/native-compare/windows-registry-fixture.ps1. They contain code-page names,
+file-name references and integer settings, no program code or certificate.
+The fixture record and producer script are distributed under Apache-2.0.
