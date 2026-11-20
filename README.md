@@ -52,6 +52,10 @@ analyze-anything verify out/                      # are the files still what was
 
 The full guide is [docs/USAGE.md](docs/USAGE.md).
 
+## Examples
+
+Reports about public releases of open-source software, as PDFs, are on the [website](https://atomsprout.com/analyze-anything/#examples): an IPA, an APK, a DMG, a macOS pkg, an NSIS and an MSI installer, and a Linux program. `tools/site/examples.py` makes them again from the same files.
+
 ## What it reads
 
 | | |
@@ -60,6 +64,48 @@ The full guide is [docs/USAGE.md](docs/USAGE.md).
 | Android | APK, AAB, XAPK / APKS / APKM; manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers |
 | Windows | PE, Authenticode, .NET assemblies, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
 | General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested to any depth; URLs, likely credentials, entropy, duplicate files |
+
+## How it works
+
+One pass, read only: the input is opened layer by layer, each file is read by the analyzers that understand it, a last step relates the files to one another, and everything that was found is written down with its evidence. The report is the single source of every output format.
+
+```mermaid
+flowchart LR
+  input["Any file or folder<br/>IPA · APK · DMG · pkg<br/>MSI · exe · archive"] --> unpack["Unpack<br/>layer by layer<br/>read only, never run"]
+  unpack --> analyze["Analyzers<br/>content · binary<br/>Apple · Android · Windows"]
+  analyze --> relate["Correlate<br/>across files"]
+  relate --> report[("Report<br/>findings + evidence + confidence<br/>coverage and limitations")]
+  report --> formats["HTML · PDF · Markdown · text<br/>JSON · SARIF · CycloneDX"]
+  report -. "optional, off by default" .-> ai["AI interpretation<br/>may only cite findings"]
+```
+
+The command line and the desktop app are two faces of the same engine, so one input gives the same report in both. The desktop app never analyzes in its own process: a worker does, and can be stopped for certain.
+
+```mermaid
+flowchart TB
+  subgraph faces["What you use"]
+    cli["analyze-anything<br/>command line"]
+    subgraph desktop["Desktop app"]
+      page["Window<br/>report in a sandboxed frame"] <--> shell["Shell<br/>menus, dialogs, history"]
+      shell <-->|"one JSON per line"| worker["Worker process"]
+    end
+    mcp["mcp<br/>read-only tool server<br/>for AI agents"]
+  end
+  subgraph engine["Engine (Rust crates)"]
+    direction LR
+    unpack2["aa-unpack"] --> analyzers["aa-content · aa-binary<br/>aa-apple · aa-android · aa-windows"] --> correlate["aa-correlate"] --> core[("aa-core<br/>Report")]
+  end
+  subgraph outputs["Outputs"]
+    direction LR
+    exports["aa-report · aa-export<br/>HTML, PDF, Markdown, text,<br/>JSON, SARIF, CycloneDX"]
+    interpret["aa-interpret<br/>optional AI interpretation"]
+  end
+  cli --> unpack2
+  worker --> unpack2
+  core --> exports
+  core -.-> interpret
+  mcp --> core
+```
 
 ## Optional: an AI reading of the report
 

@@ -55,6 +55,35 @@ h2 { font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 8px; letter-spacing: -0.01
 .dot { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; font-weight: 900; margin-bottom: 14px; border: 2px solid var(--ink); background: var(--shadow, var(--sun)); }
 .c-sun { --shadow: var(--sun); } .c-coral { --shadow: var(--coral); } .c-sky { --shadow: var(--sky); } .c-lime { --shadow: var(--lime); } .c-pink { --shadow: var(--pink); } .c-orange { --shadow: var(--orange); }
 
+.examples { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+.ex { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; padding: 20px; box-shadow: 5px 5px 0 var(--shadow, var(--sun)); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ex h3 { margin: 0; font-size: 22px; font-weight: 900; }
+.ex h3 a { text-decoration: none; } .ex h3 a:hover { text-decoration: underline; }
+.ex .tags { margin: 0; }
+.ex b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 5px; }
+.ex-io { background: var(--ink); color: #fff8ea; border-radius: 14px; padding: 12px 14px; font-size: 13px; }
+.ex-io b { color: var(--sun); }
+.ex-io .mono { display: block; overflow-x: auto; white-space: nowrap; }
+.ex-io .dim { color: #c9b8a4; font-size: 12px; margin-top: 3px; }
+.ex-out { font-size: 14.5px; flex: 1 1 auto; }
+.ex-out ul { margin: 0 0 10px; padding: 0 0 0 18px; display: grid; gap: 5px; color: var(--soft); overflow-wrap: anywhere; }
+.ex-links .dim { color: var(--soft); font-weight: 400; font-size: 13px; }
+.ex-count { margin: 0; font-size: 13px; font-weight: 700; }
+.tag.medium { background: var(--orange); } .tag.low { background: #ffe9a8; }
+.ex .tag { font-size: 11.5px; padding: 1px 8px; }
+.ex-links { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; font-weight: 700; }
+.ex-links .btn { padding: 8px 14px; border-radius: 12px; font-size: 14.5px; box-shadow: 3px 3px 0 var(--ink); }
+.flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+.step { flex: 1 1 150px; background: var(--card); border: 2px solid var(--ink); border-radius: 18px; padding: 14px 14px 16px; box-shadow: 4px 4px 0 var(--shadow, var(--sun)); min-width: 0; }
+.step h3 { margin: 0 0 4px; font-size: 17px; font-weight: 900; }
+.step p { margin: 0; color: var(--soft); font-size: 14px; }
+.step .n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); background: var(--shadow, var(--sun)); font-weight: 900; font-size: 13px; margin-bottom: 8px; }
+.arrow { flex: none; align-self: center; font-weight: 900; font-size: 22px; padding: 0 8px; }
+.faces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 6px; }
+.face { border: 2px dashed var(--ink); border-radius: 16px; padding: 10px 14px; font-size: 14px; color: var(--soft); background: #fffdf6; }
+.face b { display: block; color: var(--ink); font-size: 15px; }
+.rail { text-align: center; font-weight: 900; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin: 18px 0 10px; color: var(--soft); }
+@media (max-width: 800px) { .flow { flex-direction: column; } .arrow { transform: rotate(90deg); padding: 4px 0; } .faces { grid-template-columns: 1fr; } }
 .two { display: grid; gap: 26px; grid-template-columns: 1fr 1fr; align-items: start; }
 @media (max-width: 800px) { .two { grid-template-columns: 1fr; } .sun { width: 250px; height: 250px; right: -110px; opacity: .85; } .b1, .b2, .b3 { display: none; } }
 .finding { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; overflow: hidden; box-shadow: 6px 6px 0 var(--sky); }
@@ -102,6 +131,7 @@ html[lang="zh"] [data-zh] { display: revert; }
   <header>
     <a class="brand" href="#"><img src="icon.svg" alt=""><span>Analyze Anything</span></a>
     <nav>
+      <a href="#examples"><span data-en>Examples</span><span data-zh>例子</span></a>
       <a href="#install"><span data-en>Install</span><span data-zh>安装</span></a>
       <a href="https://github.com/atomsprout/analyze-anything">GitHub</a>
       <button class="lang" id="lang" type="button" aria-label="Switch language">中文</button>
@@ -121,6 +151,126 @@ html[lang="zh"] [data-zh] { display: revert; }
       <span class="chip"><span data-en>Open source</span><span data-zh>开源</span></span>
     </div>
   </div>
+
+  <section id="examples">
+    <h2><span data-en>See it on real software</span><span data-zh>拿真实软件看一看</span></h2>
+    <p class="sub"><span data-en>Seven public releases of open-source projects, each downloaded from the project's own address and given to one command. Each card shows what went in and what came out; the full report is a PDF one click away.</span><span data-zh>七个开源项目的公开发布版本，都从项目自己的地址下载，各用一条命令分析。每张卡片写明输入是什么、输出是什么，点一下就能打开完整的 PDF 报告。</span></p>
+    <div class="examples">
+      <!-- examples:begin (written by tools/site/examples.py) -->
+      <article class="ex c-sky">
+        <div class="tags"><span class="tag sec"><span data-en>iOS app · IPA</span><span data-zh>iOS 应用 · IPA</span></span></div>
+        <h3><a href="https://ish.app">iSH 1.3.2</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything iSH.ipa</span>
+          <span class="mono dim">4.0 MB · sha256 74b22a209340… · <a href="https://github.com/ish-app/ish/releases/download/builds/494/iSH.ipa"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is an iOS app package (IPA).</span><span data-zh>这是一个 iOS 应用包（IPA）。</span></li>
+            <li><span data-en>The main program is signed with an Apple distribution certificate (team CK5SXRTBR7).</span><span data-zh>主程序使用 Apple 分发证书签名（团队 CK5SXRTBR7）。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>190 files read · 235 findings: 15 low, 220 neutral facts</span><span data-zh>读了 190 个文件 · 235 条结论：低 15，中性事实 220</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/ipa.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 20 <span data-en>pages</span><span data-zh>页</span> · 556.6 KB</span></div>
+      </article>
+      <article class="ex c-lime">
+        <div class="tags"><span class="tag sec"><span data-en>Android app · APK</span><span data-zh>Android 应用 · APK</span></span></div>
+        <h3><a href="https://f-droid.org">F-Droid 2.0.3</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything F-Droid.apk</span>
+          <span class="mono dim">12.2 MB · sha256 dac55a0d17b1… · <a href="https://f-droid.org/F-Droid.apk"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is an Android app package (APK).</span><span data-zh>这是一个 Android 应用包（APK）。</span></li>
+            <li><span data-en>The signing certificate&#x27;s SHA-256 fingerprint is 43238d512c1e5eb2d6569f4a3afbf5523418b82e0a3ed1552770abb9a9c9ccab.</span><span data-zh>签名证书的 SHA-256 指纹为 43238d512c1e5eb2d6569f4a3afbf5523418b82e0a3ed1552770abb9a9c9ccab。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>977 files read · 110 findings: 2 medium, 21 low, 87 neutral facts</span><span data-zh>读了 977 个文件 · 110 条结论：中 2，低 21，中性事实 87</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/apk.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 26 <span data-en>pages</span><span data-zh>页</span> · 755.8 KB</span></div>
+      </article>
+      <article class="ex c-sun">
+        <div class="tags"><span class="tag sec"><span data-en>macOS disk image · DMG</span><span data-zh>macOS 磁盘映像 · DMG</span></span></div>
+        <h3><a href="https://rectangleapp.com">Rectangle 2.0.4</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything Rectangle2.0.4.dmg</span>
+          <span class="mono dim">4.7 MB · sha256 9f820a2e56bd… · <a href="https://github.com/rxhanson/Rectangle/releases/download/v2.0.4/Rectangle2.0.4.dmg"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is a macOS disk image (DMG); the file system inside it was read.</span><span data-zh>这是一个 macOS 磁盘镜像（DMG），已读出其中的文件系统。</span></li>
+            <li><span data-en>The main program is signed with a Developer ID certificate (team XSYZ3E4B7D), the way macOS software is distributed outside the App Store.</span><span data-zh>主程序使用 Developer ID 证书签名（团队 XSYZ3E4B7D），这是在 App Store 之外分发 macOS 软件的方式。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>160 files read · 141 findings: 141 neutral facts</span><span data-zh>读了 160 个文件 · 141 条结论：中性事实 141</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/dmg.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 18 <span data-en>pages</span><span data-zh>页</span> · 475.1 KB</span></div>
+      </article>
+      <article class="ex c-orange">
+        <div class="tags"><span class="tag sec"><span data-en>macOS installer · pkg</span><span data-zh>macOS 安装包 · pkg</span></span></div>
+        <h3><a href="https://nodejs.org">Node.js 22.11.0</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything node-v22.11.0.pkg</span>
+          <span class="mono dim">81.9 MB · sha256 8d658eda7699… · <a href="https://nodejs.org/dist/v22.11.0/node-v22.11.0.pkg"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is a macOS installer package (pkg).</span><span data-zh>这是一个 macOS 安装包（pkg）。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>4,894 files read · 47 findings: 2 medium, 4 low, 41 neutral facts</span><span data-zh>读了 4,894 个文件 · 47 条结论：中 2，低 4，中性事实 41</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/pkg.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 22 <span data-en>pages</span><span data-zh>页</span> · 743.7 KB</span></div>
+      </article>
+      <article class="ex c-coral">
+        <div class="tags"><span class="tag sec"><span data-en>Windows installer · NSIS</span><span data-zh>Windows 安装程序 · NSIS</span></span></div>
+        <h3><a href="https://notepad-plus-plus.org">Notepad++ 8.9.9.1</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything npp.8.9.9.1.Installer.x64.exe</span>
+          <span class="mono dim">6.7 MB · sha256 ce3267f5c4e7… · <a href="https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.9.1/npp.8.9.9.1.Installer.x64.exe"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is a Windows installer in NSIS V3, Unicode strings, Lzma compression (Solid) format.</span><span data-zh>这是一个 Windows 安装程序，格式为 NSIS V3, Unicode strings, Lzma compression (Solid)。</span></li>
+            <li><span data-en>The input file carries an Authenticode signature by NOTEPAD++; the file matches the signature, and the signature and the embedded certificate chain verify.</span><span data-zh>输入文件带有 Authenticode 签名，签名者是 NOTEPAD++；文件内容与签名一致，签名本身和内嵌证书链均校验通过。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>270 files read · 215 findings: 2 medium, 28 low, 185 neutral facts</span><span data-zh>读了 270 个文件 · 215 条结论：中 2，低 28，中性事实 185</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/nsis.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 20 <span data-en>pages</span><span data-zh>页</span> · 663.4 KB</span></div>
+      </article>
+      <article class="ex c-pink">
+        <div class="tags"><span class="tag sec"><span data-en>Windows installer · MSI</span><span data-zh>Windows 安装程序 · MSI</span></span></div>
+        <h3><a href="https://www.7-zip.org">7-Zip 24.08</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything 7z2408-x64.msi</span>
+          <span class="mono dim">1.9 MB · sha256 98330e7e6db3… · <a href="https://www.7-zip.org/a/7z2408-x64.msi"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is a Windows installer in Windows Installer database, platform x64, built with Windows Installer XML v2.0.3719.0 (candle/light) format.</span><span data-zh>这是一个 Windows 安装程序，格式为 Windows Installer database, platform x64, built with Windows Installer XML v2.0.3719.0 (candle/light)。</span></li>
+            <li><span data-en>There are 8 Windows executables; 8 are unsigned and the rest are signed by 0 distinct signers.</span><span data-zh>共有 8 个 Windows 可执行文件，其中 8 个没有签名，其余由 0 个不同的签名者签名。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>111 files read · 103 findings: 2 medium, 19 low, 82 neutral facts</span><span data-zh>读了 111 个文件 · 103 条结论：中 2，低 19，中性事实 82</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/msi.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 11 <span data-en>pages</span><span data-zh>页</span> · 311.9 KB</span></div>
+      </article>
+      <article class="ex c-sky">
+        <div class="tags"><span class="tag sec"><span data-en>Linux program · tar.gz</span><span data-zh>Linux 程序 · tar.gz</span></span></div>
+        <h3><a href="https://github.com/BurntSushi/ripgrep">ripgrep 15.2.0</a></h3>
+        <div class="ex-io"><b><span data-en>Input</span><span data-zh>输入</span></b>
+          <span class="mono">$ analyze-anything ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz</span>
+          <span class="mono dim">2.2 MB · sha256 33e15bcf1624… · <a href="https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz"><span data-en>official download</span><span data-zh>官方下载</span></a></span>
+        </div>
+        <div class="ex-out"><b><span data-en>Output</span><span data-zh>输出</span></b>
+          <ul>
+            <li><span data-en>This is a gzip archive; it was opened and holds 14 files.</span><span data-zh>这是一个 gzip 格式的归档，已解开，里面有 14 个文件。</span></li>
+          </ul>
+          <p class="ex-count"><span data-en>15 files read · 16 findings: 16 neutral facts</span><span data-zh>读了 15 个文件 · 16 条结论：中性事实 16</span></p>
+        </div>
+        <div class="ex-links"><a class="btn" href="examples/linux.pdf"><span data-en>Open the PDF report</span><span data-zh>打开 PDF 报告</span></a><span class="dim">PDF · 5 <span data-en>pages</span><span data-zh>页</span> · 146.3 KB</span></div>
+      </article>
+      <!-- examples:end -->
+    </div>
+    <p class="note"><span data-en>A finding describes that one file and says how sure it is. It is not a verdict on the project: “low” and “medium” order the reading, and many such findings are ordinary choices of a build. The files were only read, never run.</span><span data-zh>每条结论说的是那一个文件，并注明有多确定。它不是对项目的评判：“低”“中”只是阅读的先后，其中很多是构建时的普通选择。这些文件只被读取，没有被运行。</span></p>
+  </section>
 
   <section>
     <h2><span data-en>A report you can check</span><span data-zh>一份可以核对的报告</span></h2>
@@ -144,6 +294,28 @@ html[lang="zh"] [data-zh] { display: revert; }
         <li><span><span data-en><b>No verdict.</b> It does not call anything safe or unsafe. It shows you what is there.</span><span data-zh><b>不下判决。</b>它不说“安全”或“不安全”，只告诉你里面有什么。</span></span></li>
         <li><span><span data-en><b>Seven formats.</b> HTML, PDF, Markdown, plain text, JSON, SARIF and CycloneDX.</span><span data-zh><b>七种格式。</b>HTML、PDF、Markdown、纯文本、JSON、SARIF、CycloneDX。</span></span></li>
       </ul>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2><span data-en>How it works</span><span data-zh>工作原理</span></h2>
+    <p class="sub"><span data-en>One pass, read only. Every output format is written from the same report, so they always agree.</span><span data-zh>只读地走一遍。各种输出格式都出自同一份报告，所以它们永远一致。</span></p>
+    <div class="flow" role="img" aria-label="Input, unpack, analyze, correlate, report">
+      <div class="step c-sun"><span class="n">1</span><h3><span data-en>Input</span><span data-zh>输入</span></h3><p><span data-en>Any file or folder. It is only read, never run or installed.</span><span data-zh>任意文件或文件夹。只读取，不运行，不安装。</span></p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-coral"><span class="n">2</span><h3><span data-en>Unpack</span><span data-zh>解包</span></h3><p><span data-en>Containers are opened layer by layer, within fixed limits.</span><span data-zh>容器一层层打开，受固定的限额约束。</span></p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-sky"><span class="n">3</span><h3><span data-en>Analyze</span><span data-zh>分析</span></h3><p><span data-en>Each file goes to the analyzers that understand it: content, binary, Apple, Android, Windows.</span><span data-zh>每个文件交给认识它的分析器：内容、二进制、Apple、Android、Windows。</span></p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-lime"><span class="n">4</span><h3><span data-en>Correlate</span><span data-zh>关联</span></h3><p><span data-en>Files are related to one another: what signs what, what contains what.</span><span data-zh>把文件之间的关系对起来：谁签了谁，谁包含谁。</span></p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step c-pink"><span class="n">5</span><h3><span data-en>Report</span><span data-zh>报告</span></h3><p><span data-en>Findings with evidence and confidence, plus what could not be read. Seven formats.</span><span data-zh>带证据和置信度的结论，以及没能读到的部分。七种格式。</span></p></div>
+    </div>
+    <div class="rail"><span data-en>↑ the same engine, reached three ways ↑</span><span data-zh>↑ 同一套引擎，三个入口 ↑</span></div>
+    <div class="faces">
+      <div class="face"><b><span data-en>Command line</span><span data-zh>命令行</span></b><span data-en>Runs the engine directly.</span><span data-zh>直接运行引擎。</span></div>
+      <div class="face"><b><span data-en>Desktop app</span><span data-zh>桌面版</span></b><span data-en>A window, and a separate worker process that does the analysis and can always be stopped.</span><span data-zh>一个窗口，加一个单独的工作进程负责分析，随时停得下来。</span></div>
+      <div class="face"><b><span data-en>AI, optional</span><span data-zh>AI，可选</span></b><span data-en>Reads the finished report through read-only tools; never the files.</span><span data-zh>通过只读工具读已经写好的报告，不接触文件。</span></div>
     </div>
   </section>
 

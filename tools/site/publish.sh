@@ -6,6 +6,8 @@
 # The branch holds one commit, replaced each time; its history is the history of site/ on main.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+# The example reports are made from the public samples, not kept in git.
+python3 tools/site/examples.py
 REMOTE=$(git remote get-url origin)
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

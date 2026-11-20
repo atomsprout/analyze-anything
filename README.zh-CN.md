@@ -54,6 +54,10 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 
 完整说明见 [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md)。
 
+## 例子
+
+[官网](https://atomsprout.com/analyze-anything/#examples)上有对开源软件公开发布版本的分析报告（PDF）：IPA、APK、DMG、macOS pkg、NSIS 和 MSI 安装程序，以及一个 Linux 程序。`tools/site/examples.py` 可以用同样的文件重新生成它们。
+
 ## 能读什么
 
 | | |
@@ -62,6 +66,48 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 | Android | APK、AAB、XAPK / APKS / APKM；清单、资源、签名方案 v1–v3.1、DEX、SDK 与加固壳 |
 | Windows | PE、Authenticode、.NET 程序集、MSI（含它自身的签名）、NSIS、Inno Setup、CAB、自解压程序、Electron（asar）、MSIX、已安装程序目录 |
 | 通用 | Mach-O、ELF、PE 的结构与加固选项；zip、tar、7z、gzip、bzip2、xz、zstd，任意嵌套；URL、疑似凭据、熵、相同文件 |
+
+## 工作原理
+
+只读地走一遍：输入被一层层打开，每个文件交给认识它的分析器去读，最后一步把文件之间的关系对起来，所有结论连同证据一起写下来。各种输出格式都出自同一份报告。
+
+```mermaid
+flowchart LR
+  input["任意文件或文件夹<br/>IPA · APK · DMG · pkg<br/>MSI · exe · 压缩包"] --> unpack["解包<br/>逐层打开<br/>只读，从不运行"]
+  unpack --> analyze["分析器<br/>内容 · 二进制<br/>Apple · Android · Windows"]
+  analyze --> relate["关联<br/>跨文件"]
+  relate --> report[("报告<br/>结论 + 证据 + 置信度<br/>覆盖度与局限")]
+  report --> formats["HTML · PDF · Markdown · 纯文本<br/>JSON · SARIF · CycloneDX"]
+  report -. "可选，默认关闭" .-> ai["AI 解读<br/>只能引用已有结论"]
+```
+
+命令行和桌面版是同一套引擎的两个入口，所以同一个输入在两边得到相同的报告。桌面版从不在自己的进程里分析：由工作进程来做，并且一定停得下来。
+
+```mermaid
+flowchart TB
+  subgraph faces["你用到的"]
+    cli["analyze-anything<br/>命令行"]
+    subgraph desktop["桌面版"]
+      page["窗口<br/>报告放在沙盒框架里"] <--> shell["外壳<br/>菜单、对话框、历史"]
+      shell <-->|"每行一条 JSON"| worker["工作进程"]
+    end
+    mcp["mcp<br/>只读工具服务<br/>给 AI agent"]
+  end
+  subgraph engine["引擎（Rust crate）"]
+    direction LR
+    unpack2["aa-unpack"] --> analyzers["aa-content · aa-binary<br/>aa-apple · aa-android · aa-windows"] --> correlate["aa-correlate"] --> core[("aa-core<br/>报告")]
+  end
+  subgraph outputs["输出"]
+    direction LR
+    exports["aa-report · aa-export<br/>HTML、PDF、Markdown、纯文本、<br/>JSON、SARIF、CycloneDX"]
+    interpret["aa-interpret<br/>可选的 AI 解读"]
+  end
+  cli --> unpack2
+  worker --> unpack2
+  core --> exports
+  core -.-> interpret
+  mcp --> core
+```
 
 ## 可选：让 AI 解读报告
 

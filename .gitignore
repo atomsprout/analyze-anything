@@ -1,3 +1,7 @@
 /target
 /out
 /dist
+
+# The website's example reports: made by tools/site/examples.py
+site/examples/
+__pycache__/
