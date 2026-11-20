@@ -26,8 +26,13 @@ aa-export.workspace = true
 aa-interpret = { workspace = true, optional = true }
 aa-content.workspace = true
 aa-deep.workspace = true
+aa-worker.workspace = true
+ctrlc = { version = "3.5", features = ["termination"] }
 serde_json.workspace = true
 clap.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [[bin]]
 name = "analyze-anything"

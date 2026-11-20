@@ -9,6 +9,55 @@ use aa_worker::WorkerError;
 use aa_worker::protocol::{LimitOverrides, MAX_CHUNK, Request, Response};
 use aa_worker::{Worker, serve};
 
+#[test]
+#[ignore = "helper run only as a child process by an_unresponsive_worker_is_forcibly_ended"]
+fn unresponsive_worker_fixture() {
+    struct Stuck;
+    impl aa_core::plugin::Analyzer for Stuck {
+        fn id(&self) -> &'static str {
+            "stuck-test"
+        }
+        fn rules(&self) -> &'static [aa_core::plugin::Rule] {
+            &[]
+        }
+        fn analyze_file(&self, _: &dyn aa_core::plugin::Tree, _: &aa_core::Artifact, _: &mut aa_core::plugin::Output) {
+            loop {
+                std::thread::park();
+            }
+        }
+    }
+    let registry = Registry { analyzers: vec![Arc::new(Stuck)], unpackers: Vec::new() };
+    aa_worker::serve_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
+}
+
+#[test]
+fn an_unresponsive_worker_is_forcibly_ended() {
+    let dir = tempfile::tempdir().expect("private test root");
+    let input = dir.path().join("input.txt");
+    std::fs::write(&input, "plain input data").expect("fixture data");
+    let args = ["--ignored", "--exact", "unresponsive_worker_fixture", "--nocapture"].map(std::ffi::OsString::from);
+    let mut worker = Worker::start_os(&std::env::current_exe().expect("test program"), &args, dir.path()).expect("helper process");
+    let scratch = worker.scratch().to_path_buf();
+    worker.analyze(&input, LimitOverrides::default()).expect("analysis request");
+    let deadline = std::time::Instant::now() + WAIT;
+    loop {
+        assert!(std::time::Instant::now() < deadline, "helper did not start analysis");
+        match worker.receive(Duration::from_secs(1)) {
+            Ok(Response::Progress { step: Event::Analyzing { .. } }) => break,
+            Ok(Response::Progress { .. }) | Err(aa_worker::WorkerError::Timeout) => {}
+            other => panic!("unexpected helper result: {other:?}"),
+        }
+    }
+    // Let the analyzer enter its noncooperative call before requesting cancellation.
+    std::thread::sleep(Duration::from_millis(100));
+    let started = std::time::Instant::now();
+    assert!(!worker.stop(Duration::from_millis(100)), "hung worker needs force termination");
+    assert!(!worker.is_running());
+    assert!(started.elapsed() < Duration::from_secs(5));
+    drop(worker);
+    assert!(!scratch.exists(), "force termination must clean its scratch folder");
+}
+
 const WAIT: Duration = Duration::from_secs(60);
 
 fn worker_program() -> &'static Path {

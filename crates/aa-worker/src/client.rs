@@ -35,6 +35,12 @@ impl Worker {
     /// Starts `program` with `arguments` as a worker. `scratch_root` is where its private
     /// scratch folder is made; the folder is removed when the worker is dropped.
     pub fn start(program: &Path, arguments: &[&str], scratch_root: &Path) -> Result<Worker, WorkerError> {
+        let arguments: Vec<std::ffi::OsString> = arguments.iter().map(std::ffi::OsString::from).collect();
+        Self::start_os(program, &arguments, scratch_root)
+    }
+
+    /// Like start, preserving native argument encoding for paths passed by the CLI.
+    pub fn start_os(program: &Path, arguments: &[std::ffi::OsString], scratch_root: &Path) -> Result<Worker, WorkerError> {
         std::fs::create_dir_all(scratch_root).map_err(WorkerError::Scratch)?;
         let scratch = unique_folder(scratch_root).map_err(WorkerError::Scratch)?;
         let mut command = Command::new(program);
@@ -49,6 +55,12 @@ impl Worker {
             use std::os::windows::process::CommandExt;
             // A desktop worker communicates through pipes and needs no console window.
             command.creation_flags(0x0800_0000);
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            // The supervisor handles terminal cancellation before asking the worker to stop.
+            command.process_group(0);
         }
         let mut child = command.spawn().map_err(|error| {
             let _ = std::fs::remove_dir_all(&scratch);

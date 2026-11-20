@@ -12,6 +12,7 @@ use aa_export::manifest::{self, Status};
 use clap::{Parser, Subcommand, ValueEnum};
 
 mod selftest;
+mod supervisor;
 
 #[derive(Parser)]
 #[command(
@@ -28,6 +29,9 @@ struct Cli {
     /// for people. Not listed in the help: the line is there unless someone minds it.
     #[arg(long, global = true, hide = true)]
     no_credit: bool,
+    /// Internal pipe server used by the supervising command line.
+    #[arg(long, global = true, hide = true)]
+    analysis_worker: bool,
 }
 
 #[derive(Subcommand)]
@@ -81,6 +85,9 @@ enum Command {
         /// The disassembler to ask with --deep, when it is not the one `analyze-anything deep` chose
         #[arg(long, value_name = "ghidra|hopper")]
         deep_tool: Option<String>,
+        /// Stop the whole analysis after this many seconds, allowing five seconds for a partial report
+        #[arg(long)]
+        run_timeout: Option<u64>,
         /// Also have the AI you set up explain the report (see `analyze-anything ai`)
         #[cfg(feature = "ai")]
         #[arg(long)]
@@ -831,6 +838,7 @@ fn run(cli: Cli) -> Result<u8, String> {
             rules,
             deep,
             deep_tool,
+            run_timeout,
             #[cfg(feature = "ai")]
             ai,
             #[cfg(feature = "ai")]
@@ -840,21 +848,26 @@ fn run(cli: Cli) -> Result<u8, String> {
             let options = Options { limits: limits(&limit_args), ..Options::default() };
             // A run that was killed could not remove what it had unpacked; do it now.
             aa_engine::sweep_stale(None);
-            let mut registry = Registry::standard();
-            for file in &rules {
-                let source = std::fs::read_to_string(file).map_err(|e| format!("cannot read {}: {e}", file.display()))?;
-                let analyzer = aa_content::yara::analyzer(&source).map_err(|e| format!("{}: {e}", file.display()))?;
-                // After the built-in content checks, before the analyzers that summarise.
-                registry.analyzers.insert(1, analyzer.into());
-            }
-            if deep || deep_tool.is_some() {
-                let settings = deep::settings(deep_tool.as_deref())?;
-                eprintln!("deep level: asking {} ({})", settings.tool.name(), settings.tool.path().display());
-                // Before the analyzers that summarise, so that their counts include it.
-                let before_last = registry.analyzers.len().saturating_sub(1);
-                registry.analyzers.insert(before_last, aa_deep::analyzer(settings));
-            }
-            let report = aa_engine::analyze_with(&registry, &path, &options, &mut progress).map_err(|e| e.to_string())?;
+            let report = if cli.analysis_worker {
+                let mut registry = Registry::standard();
+                for file in &rules {
+                    let source = std::fs::read_to_string(file).map_err(|e| format!("cannot read {}: {e}", file.display()))?;
+                    let analyzer = aa_content::yara::analyzer(&source).map_err(|e| format!("{}: {e}", file.display()))?;
+                    // After the built-in content checks, before the analyzers that summarise.
+                    registry.analyzers.insert(1, analyzer.into());
+                }
+                if deep || deep_tool.is_some() {
+                    let settings = deep::settings(deep_tool.as_deref())?;
+                    eprintln!("deep level: asking {} ({})", settings.tool.name(), settings.tool.path().display());
+                    // Before the analyzers that summarise, so that their counts include it.
+                    let before_last = registry.analyzers.len().saturating_sub(1);
+                    registry.analyzers.insert(before_last, aa_deep::analyzer(settings));
+                }
+                aa_worker::serve_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
+                return Ok(0);
+            } else {
+                supervisor::analyze(&path, &options.limits, run_timeout, &mut progress)?
+            };
             #[cfg(feature = "ai")]
             let wants_ai = if ai {
                 Some(true)

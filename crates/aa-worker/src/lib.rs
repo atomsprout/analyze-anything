@@ -17,4 +17,4 @@ pub mod protocol;
 mod server;
 
 pub use client::{Worker, WorkerError};
-pub use server::serve;
+pub use server::{serve, serve_with_registry};

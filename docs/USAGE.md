@@ -36,7 +36,14 @@ Limits keep a hostile or huge input from exhausting the machine. When one is rea
 --max-entry-bytes <N>      largest single entry to unpack; default 2 GiB
 --analyzer-timeout <s>     seconds one analyzer may spend on one file; default 300
 --unpack-timeout <s>       seconds unpacking one container may take; default 900
+--run-timeout <s>          optional whole-analysis deadline, followed by up to 5 seconds to obtain a partial report
 ```
+
+`analyze` runs the static analysis in a supervised child process. Ctrl+C or `--run-timeout`
+requests cancellation; the worker has up to five seconds to return a valid partial report.
+If it cannot, it is terminated and the command fails without writing a new report. Export and
+optional AI interpretation run after analysis and are outside this deadline. Individual analyzer
+timeouts still abandon threads inside the worker; they do not immediately terminate one parser.
 
 `--fail-on low|medium|high` ends with exit code 3 when a finding of that severity or higher exists, for CI.
 

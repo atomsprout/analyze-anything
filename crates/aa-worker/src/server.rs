@@ -53,11 +53,17 @@ impl ProgressSink for Forward {
 /// Returns when the conversation is over. An analysis still running at that point is told to
 /// stop and is waited for, so nothing of it outlives this call.
 pub fn serve(input: impl BufRead, output: impl Write + Send + 'static) {
+    serve_with_registry(input, output, Registry::standard());
+}
+
+/// Serves one analysis using a caller-configured registry, including optional rule/deep readers.
+pub fn serve_with_registry(input: impl BufRead, output: impl Write + Send + 'static, registry: Registry) {
     let out: Out = Arc::new(Mutex::new(Box::new(output)));
     let cancel = Arc::new(AtomicBool::new(false));
     let session: Arc<Mutex<Option<Session>>> = Arc::new(Mutex::new(None));
     let mut running: Option<std::thread::JoinHandle<()>> = None;
     let mut started = false;
+    let mut registry = Some(registry);
 
     for line in lines(input) {
         let request = match line.and_then(|line| serde_json::from_str::<Request>(&line).map_err(|e| e.to_string())) {
@@ -72,12 +78,16 @@ pub fn serve(input: impl BufRead, output: impl Write + Send + 'static) {
                 send(&out, &Response::Error { id: None, message: "this worker already has its analysis".into() });
             }
             Request::Analyze { path, scratch, limits } => {
+                let Some(registry) = registry.take() else {
+                    send(&out, &Response::Error { id: None, message: "the worker registry was already used".into() });
+                    continue;
+                };
                 started = true;
                 let (out, cancel, session) = (out.clone(), cancel.clone(), session.clone());
                 running = Some(std::thread::spawn(move || {
                     let options = Options { limits: limits.apply(), cancel: Some(cancel), temp_root: Some(scratch) };
                     let mut progress = Forward { out: out.clone(), last: None };
-                    match aa_engine::analyze_session(&Registry::standard(), &path, &options, &mut progress) {
+                    match aa_engine::analyze_session(&registry, &path, &options, &mut progress) {
                         Ok(done) => {
                             let report = Box::new(done.report().clone());
                             *lock(&session) = Some(done);
