@@ -7,7 +7,7 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 A Windows x64 development machine is now available, including SDK SignTool executables. Native validation is still pending. [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the feature research, priorities W0–W12, dependencies and acceptance gates; these are planned capabilities, not completed checks.
 
 1. Establish a Windows CLI baseline on real installers and application folders, comparing embedded and MSI signatures with the system's tools (W0).
-2. Finish the shared foundation: fix comparisons affected by the input's name; verify Windows file and extraction boundaries (W1); design worker supervision and precise timeout semantics (W2). A child process for the whole run does not by itself make an individual analyzer killable.
+2. Finish the shared foundation: verify Windows file and extraction boundaries (W1); design worker supervision and precise timeout semantics (W2). Input-name comparison normalization is done. A child process for the whole run does not by itself make an individual analyzer killable.
 3. Add the first Windows entry-point readers: LNK, URL, REG and exported scheduled tasks (W3).
 4. Add driver-package/catalog relationships and MSIX integrity as independently releasable features (W5, W6), then bounded script analysis and package relationships (W4, W7). Modern executable bundles and installer extensions follow their own feasibility checks (W8, W9).
 5. Deliver the Windows part of D6 after the foundation and native checks; it need not wait for every new parser (W10).
@@ -110,7 +110,7 @@ These formats were tested with constructed data only:
 
 - [ ] English fragments left in Chinese rule text: file types follow the language now; the technical reason a signature failed (an error text from the parsing library) does not.
 - [ ] **W2 — CLI worker supervision**: make whole-run cancellation and cleanup reliable, and establish the isolation and partial-report contract needed for hard per-analyzer timeouts. Reusing the desktop worker alone does not stop an individual timed-out thread at its deadline; see [PLAN-WINDOWS.md](PLAN-WINDOWS.md).
-- [ ] In a comparison, findings whose text holds the input's name count as changed; the name could be taken out of the parameters before comparing.
+- [x] In a comparison, known artifact display parameters are compared relative to the input. Input labels and the largest-file path no longer cause changes solely because the input was renamed; product names and embedded paths remain literal. Verified with export regressions and two generated ZIP reports on Windows.
 
 ## After phase two
 

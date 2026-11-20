@@ -10,6 +10,11 @@ The CLI built successfully with `cargo build -p aa-cli --no-default-features`.
 `cargo fmt --all --check` passed. Two helper tests passed for SDK discovery and passing
 quoted/non-ASCII paths to the native signature reader as data.
 `cargo clippy --workspace --all-targets -- -D warnings` also passed on this host.
+The initial `cargo test --workspace` run completed successfully, including the whole-engine
+damaged-fixture test (205 seconds). After the comparison normalization change, all 14 export
+tests, export Clippy and the no-AI CLI rebuild passed. An end-to-end comparison of two ZIPs with
+the same generated contents and different input names produced four unchanged findings and no
+added, removed or changed findings.
 
 The development harness discovered x64 SignTool in Windows SDK 10.0.26100.0 without a PATH
 entry. The following explicit sample run passed 12 checks, including signer thumbprints,

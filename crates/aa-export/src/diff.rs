@@ -6,7 +6,8 @@
 //! hashes. So the comparison looks at what a finding *says* instead:
 //!
 //! * two findings are **the same statement** when they come from the same rule, about the file at
-//!   the same place inside the input, with the same params, severity and confidence;
+//!   the same place inside the input, with the same params, severity and confidence. Known
+//!   artifact display paths are compared relative to the input; values read from it stay literal;
 //! * findings of the same rule about the same place whose params differ are one statement that
 //!   **changed**;
 //! * what is left on one side only was **added** or **removed**.
@@ -116,6 +117,28 @@ fn place_of(report: &Report, finding: &Finding) -> String {
     finding.evidence.first().map(|evidence| place(report, &evidence.artifact)).unwrap_or_default()
 }
 
+/// Only presentation parameters known to name input artifacts are relative to the input.
+/// Product names, versions and paths embedded in the analyzed bytes retain their meaning.
+fn parameter_place(report: &Report, finding: &Finding, key: &str, value: &serde_json::Value) -> Option<String> {
+    let value = value.as_str()?;
+    if finding.rule == "overview.kind-bundle" && key == "name" && value == report.input.name {
+        return Some(String::new());
+    }
+    let artifact_name = key == "file" && finding.evidence.iter().any(|e| e.artifact == value);
+    let displayed_path = key == "path" && matches!(finding.rule.as_str(), "structure.largest" | "overview.apple-bundles");
+    (artifact_name || displayed_path)
+        .then(|| if finding.rule == "overview.apple-bundles" && value == report.input.name { String::new() } else { place(report, value) })
+}
+
+fn same_parameters(a: &Report, x: &Finding, b: &Report, y: &Finding) -> bool {
+    x.params.len() == y.params.len()
+        && x.params.iter().all(|(key, before)| {
+            let Some(after) = y.params.get(key) else { return false };
+            before == after
+                || parameter_place(a, x, key, before).zip(parameter_place(b, y, key, after)).is_some_and(|(left, right)| left == right)
+        })
+}
+
 fn side(report: &Report) -> Side {
     Side {
         name: report.input.name.clone(),
@@ -173,8 +196,9 @@ fn findings(a: &Report, b: &Report) -> FindingDiff {
         groups
     };
     let (mut before, mut after) = (group(a), group(b));
-    let says_the_same =
-        |x: &Finding, y: &Finding| x.id == y.id || (x.params == y.params && x.severity == y.severity && x.confidence == y.confidence);
+    let says_the_same = |x: &Finding, y: &Finding| {
+        x.id == y.id || (same_parameters(a, x, b, y) && x.severity == y.severity && x.confidence == y.confidence)
+    };
 
     let mut result = FindingDiff::default();
     let keys: Vec<Key> = before.keys().chain(after.keys()).cloned().collect::<std::collections::BTreeSet<_>>().into_iter().collect();
@@ -500,6 +524,42 @@ mod tests {
         assert_eq!(result.findings.unchanged, a.findings.len() as u64);
         assert_eq!(result.files.unchanged, a.artifacts.len() as u64);
         assert!(result.rules.is_empty());
+    }
+
+    #[test]
+    fn renamed_inputs_keep_artifact_parameters_but_preserve_real_changes() {
+        let make = |input: &str, member: &str, product: &str| {
+            let file = artifact(&format!("{input}/{member}"), "same content");
+            let statements = vec![
+                finding("structure.largest", Severity::Info, &file, &[("path", &file.path)]),
+                finding("test.file", Severity::Info, &file, &[("file", &file.path)]),
+                finding("overview.product", Severity::Info, &file, &[("name", product)]),
+                finding("binary.pe-pdb", Severity::Info, &file, &[("path", input)]),
+            ];
+            report(input, vec![file], statements)
+        };
+        let a = make("old.zip", "main", "old.zip");
+        let b = make("new.zip", "main", "new.zip");
+        let result = diff(&a, &b);
+        assert_eq!(result.findings.unchanged, 2);
+        assert_eq!(result.findings.changed.len(), 2, "product and embedded PDB paths are actual data");
+        assert_eq!(a.findings[0].params["path"], "old.zip/main", "normalization must not rewrite the report");
+        let c = make("new.zip", "other", "old.zip");
+        let result = diff(&a, &c);
+        assert_eq!(result.findings.added.len(), 4, "a changed member path remains significant");
+        assert_eq!(result.findings.removed.len(), 4);
+    }
+
+    #[test]
+    fn renamed_bundle_folders_only_normalize_the_input_label() {
+        let file = artifact("Info.plist", "same bytes");
+        let mut a =
+            report("Old.app", vec![file.clone()], vec![finding("overview.kind-bundle", Severity::Info, &file, &[("name", "Old.app")])]);
+        let mut b =
+            report("New.app", vec![file.clone()], vec![finding("overview.kind-bundle", Severity::Info, &file, &[("name", "New.app")])]);
+        a.input.kind = InputKind::Directory;
+        b.input.kind = InputKind::Directory;
+        assert!(diff(&a, &b).is_empty());
     }
 
     #[test]
