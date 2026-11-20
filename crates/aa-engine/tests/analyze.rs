@@ -102,6 +102,22 @@ fn single_file_has_known_digests() {
 }
 
 #[test]
+fn shortcut_credentials_do_not_leak_through_generic_content_facts() {
+    let bytes = b"[InternetShortcut]\nURL=https://user:fixture-password@example.invalid/?token=fixture-token&ok=1\n";
+    let (_dir, path) = write_input("private.url", bytes);
+    let report = run(&path, &Options::default());
+    let serialized = serde_json::to_string(&report).expect("complete report JSON");
+    for secret in ["fixture-password", "fixture-token"] {
+        assert!(!serialized.contains(secret), "credential leaked into report");
+    }
+    assert!(serialized.contains("example.invalid"));
+    assert!(report.artifacts[0].facts.contains_key("windows.internet-shortcut"));
+    assert!(report.artifacts[0].facts.contains_key("content.urls"));
+    assert_eq!(std::fs::read(&path).expect("input remains readable"), bytes);
+    assert_eq!(serialized, serde_json::to_string(&run(&path, &Options::default())).expect("second report"));
+}
+
+#[test]
 fn folder_is_listed_in_sorted_order_with_findings() {
     let dir = folder();
     let report = run(dir.path(), &Options::default());

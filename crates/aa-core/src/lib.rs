@@ -15,6 +15,7 @@
 //! artifacts, an [`plugin::Analyzer`] turns artifacts into findings and facts.
 
 pub mod plugin;
+pub mod text;
 
 use std::collections::BTreeMap;
 

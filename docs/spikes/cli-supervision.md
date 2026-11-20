@@ -65,3 +65,7 @@ external temporary location. Engine tests cover existing/missing nested paths an
 components without writing into the input. Per-parser process isolation, disassembler descendant
 termination and actual parent-kill scenarios beyond the tested pipe-disconnect behavior remain
 open. No claim of complete W2 coverage is made by these checks.
+
+The full Windows workspace test run after these recovery changes completed successfully
+(`cargo test --workspace`, recorded locally in `out/windows-baseline/workspace-after-recovery.log`).
+That run covers the committed recovery changes, before the subsequent W3 shortcut work.

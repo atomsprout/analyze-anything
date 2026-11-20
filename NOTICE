@@ -5,6 +5,11 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This product bundles the following, each under its own licence.
 
+The project-authored native.url test fixture in crates/aa-windows/tests/data is generated
+with Windows WScript.Shell by tools/native-compare/windows-shortcut-fixture.ps1, without
+opening the URL. It and its producer reference are distributed under this project's
+Apache-2.0 licence. It contains no third-party program or certificate.
+
 Fonts, embedded in the program and used in the PDF and HTML reports
 (crates/aa-report/fonts):
 

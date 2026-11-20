@@ -1,12 +1,13 @@
 # Test fixtures
 
-Everything here is built by `make-fixtures.sh` from the sources in `src/`. Nothing was downloaded.
+The executable/package fixtures are built by `make-fixtures.sh` from the sources in `src/`. The URL fixture is produced on Windows by `tools/native-compare/windows-shortcut-fixture.ps1`. Nothing was downloaded.
 Keys and certificates are generated on the spot and thrown away, so the signed files differ on
 every run; the reference tools' output is regenerated with them and stored next to each fixture.
 The tests in `../pipeline.rs` compare the analyzer's results with those reference files.
 
 | File | Made with | Reference file (tool) |
 |---|---|---|
+| `native.url` | Windows WScript.Shell saving this project's fixed example.invalid URL; project-authored fixture under Apache-2.0 | `native.url.ref.json` (TargetPath read from the producer object, without activating the shortcut) |
 | `hello.exe` | mingw-w64 gcc + windres from `src/hello.c`, `hello.rc`, `hello.manifest` | `hello.version.ref.txt` (exiftool) |
 | `hello-signed.exe` | osslsigncode: RSA-2048 leaf under a test root, SHA-256, RFC 3161 timestamp from osslsigncode's built-in TSA | `hello-signed.ref.txt` (`osslsigncode verify`) |
 | `hello-sha1.exe` | same leaf, SHA-1, no timestamp | `hello-sha1.ref.txt` |

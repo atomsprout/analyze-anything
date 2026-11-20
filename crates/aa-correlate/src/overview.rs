@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-internet-shortcut",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 Internet 快捷方式，保存了网址及相关属性的声明。目标没有打开。",
+        text_en: "This is an Internet shortcut containing a URL declaration and related properties. Its target was not opened.",
+    },
+    Rule {
         id: "overview.kind-ipa",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -349,6 +356,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let installer_format = root.facts.get("windows.installer").and_then(|f| text(f, "format").or_else(|| text(f, "kind")));
     let made = match (kind, unpacker) {
         ("ipa", _) => finding("overview.kind-ipa", Confidence::Derived),
+        ("internet-shortcut", _) => finding("overview.kind-internet-shortcut", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

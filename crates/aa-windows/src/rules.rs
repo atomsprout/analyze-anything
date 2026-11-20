@@ -16,6 +16,27 @@ macro_rules! scope_en {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.internet-shortcut",
+        title_zh: "Internet 快捷方式声明",
+        title_en: "Internet shortcut declarations",
+        text_zh: "快捷方式声明的网址及相关属性见证据。没有打开目标或图标，也没有展开环境变量。已识别的凭据形式被遮蔽。",
+        text_en: "The shortcut's URL and related property declarations are recorded in the evidence. Targets and icons were not opened, and environment variables were not expanded. Recognized credential forms are redacted.",
+    },
+    Rule {
+        id: "windows.shortcut-unreadable",
+        title_zh: "无法读取快捷方式声明",
+        title_en: "Shortcut declarations could not be read",
+        text_zh: "快捷方式的格式、编码或大小超出了支持范围，未建立其声明。详情说明原因。",
+        text_en: "The shortcut's structure, encoding or size was outside the supported range; its declarations could not be established. The detail records the reason.",
+    },
+    Rule {
+        id: "windows.shortcut-partial",
+        title_zh: "快捷方式仅部分读取",
+        title_en: "Shortcut only partly read",
+        text_zh: "快捷方式包含未解释的属性或重复定义。已读取的声明分别保留，不推断系统最终会选择的目标。",
+        text_en: "The shortcut contains uninterpreted properties or duplicate definitions. Read declarations are kept separately; which target the system would select is not inferred.",
+    },
+    Rule {
         id: "windows.nsis-script-synthetic",
         title_zh: "NSIS 脚本是还原出来的",
         title_en: "The NSIS script is a reconstruction",

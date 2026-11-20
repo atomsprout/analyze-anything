@@ -14,6 +14,29 @@ fn data(name: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+#[test]
+fn windows_generated_url_matches_the_native_producer_and_small_urls_are_read() {
+    let reference: Value = serde_json::from_slice(&data("native.url.ref.json")).expect("native producer reference");
+    let run = analyze(&[("native.url", data("native.url"))]);
+    let fact = run.fact("native.url", "windows.internet-shortcut");
+    assert!(fact["fields"].as_array().expect("field declarations").contains(&serde_json::json!(["url", reference["target"]])));
+    assert_eq!(fact["target_resolved"], false);
+    assert_eq!(run.findings("windows.internet-shortcut").len(), 1);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.shortcut-partial"), "native extra properties are acknowledged");
+    let small = analyze(&[("small.url", b"[InternetShortcut]\nURL=https://example.invalid/\n".to_vec())]);
+    assert_eq!(small.findings("windows.internet-shortcut").len(), 1, "text shortcuts may be shorter than a PE header");
+    let sensitive = analyze(&[(
+        "private.url",
+        b"[InternetShortcut]\nURL=https://user:fixture-password@example.invalid/?token=fixture-token\n".to_vec(),
+    )]);
+    let fact = serde_json::to_string(sensitive.fact("private.url", "windows.internet-shortcut")).expect("facts JSON");
+    let evidence = serde_json::to_string(&sensitive.out.findings).expect("findings JSON");
+    for secret in ["fixture-password", "fixture-token"] {
+        assert!(!fact.contains(secret));
+        assert!(!evidence.contains(secret));
+    }
+}
+
 fn reference(name: &str) -> String {
     String::from_utf8_lossy(&data(name)).into_owned()
 }
