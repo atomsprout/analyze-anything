@@ -1,8 +1,65 @@
-# INF declaration relationships: implementation boundary
+# INF source declaration graph
 
-Research for the remaining W5 work, following the initial syntax, catalog and supplied
-digest implementations. This document specifies the next increment; the relationships
-below are not yet implemented. [TODO.md](../TODO.md) remains the completion tracker.
+The initial graph implements bounded source relationships after the syntax, catalog
+and supplied-digest increments. W5 is still open. This record describes its implemented
+profile, design boundaries and remaining acceptance work; [TODO.md](../TODO.md) remains
+the completion tracker.
+
+## Implemented profile
+
+`windows.inf-declarations` contains source-indexed records and references, separate from
+the original `windows.inf` syntax. Records cover supported Version fields, Manufacturer
+and Models entries, AddService, service properties, CopyFiles lists/direct sources,
+source media/files, DestinationDirs and AddReg rows. Every record names its section and
+entry occurrence, physical line span and literal/neutral-projection basis. A Derived/Info
+finding cites retained literal field evidence. Existing catalog comparisons stay separate.
+
+Known local section references retain up to 16 candidate occurrences, an independent
+observed count and explicit status. Model install alternatives exclude companion suffixes.
+Duplicate sections are retained without selection. An incomplete parse, redacted section
+name or non-ASCII section namespace prevents positive local reference resolution. Common unbuilt WDK
+`NT$ARCH$` section shapes can contribute source records but never platform selection;
+placeholder-bearing references remain explicitly unresolved. External Include/Needs are
+recorded without following them. Unknown contexts/directives remain in the syntax fact,
+with the always-present installation-scope limitation.
+
+AddService retains optional event-log references and distinguishes the supported
+`AddService=,2` NULL-driver form. Unsigned 32-bit decimal/hex values are decoded separately
+from literals; StartType 0 through 4 gets a declaration label. Numeric decoding is not
+validation of every allowed flag or service-property combination. Invalid numeric values
+and supported-shape failures are explicit. Copy source/destination names are separate;
+direct `@filename` cannot be mixed with a named list. Registry-list edges retain their
+referencing role, so a shared HKR row is not assigned one absolute registry root.
+
+At most 4,096 records, 8,192 references and 4 MiB of serialized record/reference content
+are retained. Target-detail omission is counted separately from observed candidates.
+Physical sections are not copied per edge; each section/role pair is processed once via
+a deterministic work queue, bounding cycles. Source rows come only from the parser's
+already bounded and redacted data. Five new unit tests cover alternatives, roles, NULL
+services, missing/duplicate/unsupported namespaces, cycles, numeric overflow, copy-source
+renames, bare Manufacturer syntax, media-ID duplication, deceptive contexts, redaction
+and record/reference/candidate/byte budgets. Two pipeline tests add independent source
+graphs and a portable native-field snapshot.
+
+Read-only native/CLI comparisons passed for ECHO (43 fields, 20 projected graph rows),
+NullFilter (91 fields, 38 graph rows) and the project-authored relationship fixture
+(51 fields, 18 graph rows). Directory-ID-dependent rows are retained literally rather
+than populated from SetupAPI's host expansion. The helper also checks source spans,
+typed values, unchanged input, repeated JSON and English/Chinese Markdown plus HTML.
+The controlled fixture and its snapshot are Apache-2.0, recorded in NOTICE. These are
+field/source comparisons, not Windows installation or directive-policy validation.
+Format, workspace Clippy and the no-default-feature CLI build passed. Full workspace
+tests passed before the final redacted-namespace and early-budget guards; their log is
+`out/windows-baseline/workspace-inf-graph.log`. After those guards, aa-windows passed
+70 unit tests (one helper ignored) and all 49 pipeline tests, followed by the no-default
+build and repeated native/CLI comparisons on all three sources. The focused final log
+is `out/windows-baseline/inf/graph-final-tests.log`. Cross-platform CI for the final graph
+implementation is the next gate. No report templates or desktop code changed here.
+
+The controlled fixture SHA-256 is
+`a83e67591c2b491fb928f2e724f3cfa1fffb9010a2cfc40068ba7be4dcad890a`;
+its checked-in SetupAPI reference binds that exact source. Native graph observations
+are under `out/windows-baseline/inf/{echo,nullfilter,relationships}-graph`.
 
 ## Representation
 
@@ -95,15 +152,15 @@ cycles and exhausted graph/output budgets. Every positive finding needs retained
 Compare controlled and licensed source fixtures with read-only SetupAPI field inspection.
 That reference can validate decoding and source fields, but cannot prove install-time
 selection or execution semantics. Existing NullFilter covers a DefaultInstall service
-graph but contains an unresolved `$ARCH$` build placeholder; add a controlled Models
-fixture. An independent Models source fixture is now captured as `upstream-echo.inf`,
+graph but contains an unresolved `$ARCH$` build placeholder; the controlled Models
+fixture now supplies an explicit architecture case. An independent Models source fixture is captured as `upstream-echo.inf`,
 the unchanged bytes of Microsoft's `general/echo/kmdf/driver/AutoSync/echo.inx` at the
 same pinned revision as NullFilter, renamed only for the reader's extension gate.
 SHA-256: `3565c645713180cc91ebada8d78008482b214be3b881262e5938f3f88ebbd548`.
 Its MS-PL license and notices are retained in NOTICE and tests/data. Read-only SetupAPI
 and the CLI agree on 43 projected fields, with repeated JSON and bilingual/HTML output
 checked. `$ARCH$` and `$KMDFVERSION$` remain source build placeholders. This validates
-source parsing, not the proposed graph or a built driver package. No driver installation,
+source parsing, not a built driver package. No driver installation,
 loading or registry changes were performed.
 
 The new portable regression preserves the model's `root\ECHO` hardware ID, the
@@ -112,6 +169,11 @@ unexpanded architecture decoration and the neutral AddService flag projection. A
 passed after adding it. Native CLI output is recorded under
 `out/windows-baseline/inf/echo-report`; the portable test log is
 `out/windows-baseline/inf/echo-pipeline.log`.
+Cross-platform CI for that source-fixture increment passed at
+`5fdaa313a5461a032adb7d6ce6a764e60f9f4cc9`:
+[run 44849942411](https://github.com/atomsprout/analyze-anything/actions/runs/44849942411).
+Linux/macOS/Windows core checks, macOS desktop and licenses all passed. This precedes
+the graph implementation described above; the graph needs its own CI run.
 
 For package relationships, extend the existing six-layout catalog check with source
 declarations and explicit supplied paths. Only a proven filename/source association

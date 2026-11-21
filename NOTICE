@@ -23,6 +23,9 @@ no additional binary, private key or host certificate-store data is distributed.
 The project-authored native-inf-syntax.inf fixture in crates/aa-windows/tests/data and
 its read-only SetupAPI reference snapshot are distributed under Apache-2.0. It declares
 syntax examples only; no driver, installation or registry modification was performed.
+native-inf-relationships.inf and its reference snapshot use the same project license.
+They declare controlled device, service, source-file and registry relationships only;
+no referenced driver or external INF is bundled, installed or executed.
 
 The project-authored native.url and native.lnk fixtures in crates/aa-windows/tests/data are generated
 with Windows WScript.Shell by tools/native-compare/windows-shortcut-fixture.ps1, without

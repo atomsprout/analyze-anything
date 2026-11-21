@@ -115,7 +115,8 @@ def main():
         run(command)
         raw = (args.output / "report.json").read_bytes()
         report = json.loads(raw)
-        fact = next(a["facts"]["windows.inf"] for a in report["artifacts"] if "windows.inf" in a["facts"])
+        artifact = next(a for a in report["artifacts"] if "windows.inf" in a["facts"])
+        fact = artifact["facts"]["windows.inf"]
         assert fact["issue_count"] == 0
         assert not fact["platform_selected"] and not fact["installed"] and not fact["catalog_verified"]
         # This reference compares files with unique section names. Repeated INF sections
@@ -137,6 +138,45 @@ def main():
                 else:
                     assert len(actual_row["fields"]) == len(native_row["fields"])
         assert checked > 0
+        graph = artifact["facts"].get("windows.inf-declarations")
+        graph_checked = 0
+        if graph is not None:
+            assert not graph["installed"] and not graph["platform_selected"]
+            assert not graph["host_registry_consulted"] and not graph["external_infs_followed"]
+            for declaration in graph["records"]:
+                section = fact["sections"][declaration["section"]]
+                row = section["entries"][declaration["entry"]]
+                assert (declaration["line"], declaration["end_line"]) == (row["line"], row["end_line"])
+                projected = row["neutral_fields"]
+                values = projected if projected is not None else row["fields"]
+                assert declaration["field_basis"] == ("neutral-projection" if projected is not None else "literal")
+                details = declaration["details"]
+                if "values" in details:
+                    assert details["values"] == values
+                if declaration["kind"] == "device-model":
+                    assert details["install_base"] == values[0]
+                    assert details["hardware_id"] == (values[1] if len(values) > 1 else "")
+                    assert details["compatible_ids"] == values[2:]
+                if declaration["kind"] == "service-addition":
+                    assert details["service_name"] == values[0]
+                    assert details["flags_literal"] == (values[1] if len(values) > 1 else "")
+                    assert isinstance(details["null_associated_service"], bool)
+                if declaration["kind"] == "copy-file":
+                    assert details["destination_filename"] == values[0]
+                    assert details["source_filename"] == (values[1] if len(values) > 1 and values[1] else values[0])
+                    assert not details["copy_performed"] and not details["supplied_path_resolved"]
+                if declaration["kind"] == "registry-row":
+                    assert details["root"] == values[0]
+                    assert details["data_fields"] == values[4:]
+                    assert not details["operation_performed"] and not details["root_context_resolved"]
+                # Directory-ID expansions from native SetupAPI never supply graph values.
+                if projected is not None:
+                    native_row = by_name[section["name"].lower()]["entries"][declaration["entry"]]
+                    assert values == native_row["fields"]
+                    graph_checked += 1
+            for reference in graph["references"]:
+                assert all(0 <= target < len(fact["sections"]) for target in reference["target_sections"])
+                assert len(reference["target_sections"]) <= reference["observed_target_count"]
         run(command)
         assert raw == (args.output / "report.json").read_bytes(), "report changed on repeat"
         assert "windows.inf" in (args.output / "report.html").read_text(encoding="utf-8")
@@ -145,8 +185,12 @@ def main():
         run([cli, str(args.sample.resolve()), "-o", str(chinese.resolve()),
              "--format", "md", "--lang", "zh", *no_ai])
         assert "Windows INF 声明" in (chinese / "report.md").read_text(encoding="utf-8")
+        if graph is not None and graph["records"]:
+            assert "windows.inf-declarations" in (args.output / "report.html").read_text(encoding="utf-8")
+            assert "INF device, service and file declarations" in (args.output / "report.md").read_text(encoding="utf-8")
+            assert "INF 设备、服务及文件声明" in (chinese / "report.md").read_text(encoding="utf-8")
         record["comparison"] = {"projected_fields_equal": checked, "repeated_json_identical": True,
-                                "english_chinese_markdown": True}
+                                "english_chinese_markdown": True, "graph_source_rows_checked": graph_checked}
         print(f"matched {checked} projected fields against SetupAPI")
     assert args.sample.read_bytes() == before, "input was modified"
     args.reference.parent.mkdir(parents=True, exist_ok=True)

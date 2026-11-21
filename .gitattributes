@@ -4,4 +4,5 @@ crates/aa-windows/tests/data/upstream-nullFilter.inf -text
 # Preserve upstream source whitespace as well as line endings for its checked digest.
 crates/aa-windows/tests/data/upstream-echo.inf -text whitespace=-blank-at-eol
 crates/aa-windows/tests/data/native-inf-syntax.inf -text
+crates/aa-windows/tests/data/native-inf-relationships.inf -text
 crates/aa-windows/tests/data/native-catalog-*.cat -text

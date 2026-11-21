@@ -41,10 +41,14 @@ and [membership/native comparison record](spikes/windows-catalog-membership.md).
 The initial INF reader records syntax, ordered section occurrences, literal fields and
 source lines under explicit input/count/field/projection budgets. Its optional neutral
 string projection does not select a platform or locale, resolve directory IDs or follow
-Include/Needs. The separate sibling-CAT association does not implement device/service/
-source-file relationships or installation semantics. Read-only SetupAPI comparisons cover a pinned Microsoft
+Include/Needs. A separate bounded source graph records supported device/service/file/
+registry declarations and section-reference candidates. It retains duplicate occurrences,
+unknown numeric values and external references explicitly. It does not select decorated
+installation alternatives, map source-media roots to supplied payloads or establish
+runtime effects. The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
 source INF (still containing build placeholders) and a controlled syntax fixture; they
-do not qualify a built driver package. See [the INF scope record](spikes/windows-inf.md).
+do not qualify a built driver package. See [the INF scope record](spikes/windows-inf.md)
+and [source graph profile and budgets](spikes/windows-inf-relationships.md).
 
 The automated tests pass on Linux, macOS and Windows (GitHub Actions). Release builds were run successfully on Linux x64 / arm64, macOS arm64 / x64 and Windows x64 and passed the self-check. The large-scale comparison using release packages of open source projects was done on Linux.
 

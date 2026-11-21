@@ -28,6 +28,27 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.inf-declarations",
+        title_en: "INF device, service and file declarations",
+        title_zh: "INF 设备、服务及文件声明",
+        text_en: "The source graph retains {count} declaration records. Section references retained: {references}. The facts distinguish device IDs, installation alternatives, service properties, copy sources, media and registry rows where supported. Evidence points back to literal source fields. No platform was selected, installation performed or host registry consulted; declared destinations are not resolved source paths.",
+        text_zh: "保留了 {count} 条来源声明记录及 {references} 条节引用。事实分别记录支持的设备 ID、安装候选、服务属性、复制源、介质和注册表行。证据指向原始来源字段。没有选择平台、执行安装或查询主机注册表；声明中的目标位置不作为已解析的源文件路径。",
+    },
+    Rule {
+        id: "windows.inf-declarations-limit",
+        title_en: "INF declaration graph reached a budget",
+        title_zh: "INF 声明图达到预算上限",
+        text_en: "Declaration records, section references, candidate details or serialized output reached a budget. Omitted relationships remain unresolved; retained candidates do not establish uniqueness or Windows installation selection.",
+        text_zh: "声明记录、节引用、候选详情或序列化输出达到预算上限。省略的关联保持未确认；保留的候选不表示唯一匹配或 Windows 安装选择。",
+    },
+    Rule {
+        id: "windows.inf-declarations-unresolved",
+        title_en: "INF source relationships remain unresolved",
+        title_zh: "INF 来源关联仍未确认",
+        text_en: "Some section names, duplicate occurrences, numeric values or external references are unresolved. Incomplete syntax and unsupported name folding cannot establish a complete section namespace. Unknown values and source occurrences remain visible; no external INF or host state supplies missing information.",
+        text_zh: "部分节名称、重复来源、数值或外部引用仍未确认。不完整语法及不支持的名称大小写规则不能确认完整节命名空间。保留未知值及来源记录；不会通过外部 INF 或主机状态补全信息。",
+    },
+    Rule {
         id: "windows.catalog-digest-agreement",
         title_en: "Catalog digests agree with supplied artifacts",
         title_zh: "目录摘要与输入中的文件一致",
@@ -115,8 +136,8 @@ pub const RULES: &[Rule] = &[
         id: "windows.inf-semantics-unresolved",
         title_en: "INF installation and integrity remain unresolved",
         title_zh: "INF 安装及完整性语义未解析",
-        text_en: "This reader records syntax and an optional neutral string projection. It does not choose architecture, OS or language decorations, resolve directory IDs, follow Include/Needs or payload references, interpret installation actions, verify catalogs or establish Windows installation eligibility. The host Driver Store and registry were not consulted.",
-        text_zh: "此读取器记录语法及可选的中性字符串投影。不选择体系结构、系统或语言装饰，不解析目录 ID，不跟踪 Include/Needs 或载荷引用，不解释安装动作，不验证目录签名，也不判断 Windows 安装资格。没有查询主机驱动程序存储或注册表。",
+        text_en: "This reader records syntax, supported source relationships and an optional neutral string projection. It does not select architecture, OS or language decorations, resolve directory IDs, follow external Include/Needs, perform installation actions or establish Windows eligibility. Source-media roots, unsupported directives and runtime effects remain unresolved. Separate catalog checks do not establish installation trust. The host Driver Store and registry were not consulted.",
+        text_zh: "此读取器记录语法、支持的来源关联及可选的中性字符串投影。不选择体系结构、系统或语言装饰，不解析目录 ID，不跟踪外部 Include/Needs，不执行安装动作，也不判断 Windows 安装资格。源介质根目录、不支持的指令及运行时效果仍未确认。单独的目录检查不表示安装信任。没有查询主机驱动程序存储或注册表。",
     },
     Rule {
         id: "windows.input-reference",

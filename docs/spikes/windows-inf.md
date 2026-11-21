@@ -42,6 +42,12 @@ driver. `installed: false` says what this reader did, not whether the host has i
 the package. `platform_selected: false` and `catalog_verified: false` explicitly prevent
 the syntax result from being read as applicability or integrity verification.
 
+The later [source declaration graph](windows-inf-relationships.md) adds bounded Models,
+install/service section candidates, service properties, copy/media declarations and
+registry rows with referencing contexts. It uses only the already redacted parsed source.
+It does not validate every directive placement, select an applicable platform or establish
+an installation action. The original syntax fact and its scope markers remain separate.
+
 ## Budgets and unread content
 
 - Input: 2 MiB; logical line: 64 KiB.
@@ -118,8 +124,10 @@ The previously recorded `413e05e` CI success covers the earlier entry-point/refe
 
 ## Still needed for W5
 
-Typed device/model, service and registry declarations; decorated-section applicability
-and reference relationships; source/destination payload mapping. The later
+Full directive/flag applicability, broader interface/WDF and other class-specific
+semantics, decorated-section selection and supplied source-media mapping remain open.
+The initial source graph covers a documented subset of device/model, service, copy and
+registry declarations; it does not implement installation effects. The later
 [catalog reader](windows-catalogs.md) and [membership increment](windows-catalog-membership.md)
 add supported signature checks, flat/default-PE digest comparisons, sibling-CAT
 declarations and six controlled layouts with explicit-catalog SignTool observations.

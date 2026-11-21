@@ -219,6 +219,11 @@ fn controlled_inf_quotes_and_continuations_match_setupapi_snapshot() {
 }
 
 #[test]
+fn controlled_inf_relationship_declarations_match_setupapi_source_fields() {
+    compare_inf_reference("native-inf-relationships.inf", 51);
+}
+
+#[test]
 fn independent_models_inf_preserves_device_ids_and_unbuilt_architecture_declarations() {
     let run = compare_inf_reference("upstream-echo.inf", 43);
     let sections = run.fact("upstream-echo.inf", "windows.inf")["sections"].as_array().expect("source sections");
@@ -227,6 +232,27 @@ fn independent_models_inf_preserves_device_ids_and_unbuilt_architecture_declarat
     let service = sections.iter().find(|s| s["name"] == "ECHO_Device.NT.Services").expect("service declaration");
     assert_eq!(service["entries"][0]["neutral_fields"], serde_json::json!(["ECHO", "0x00000002", "ECHO_Service_Inst"]));
     assert!(run.findings("windows.input-reference").is_empty(), "source declarations do not supply the absent catalog or driver");
+}
+
+#[test]
+fn independent_inf_sources_have_evidenced_declaration_graphs_without_installation_selection() {
+    for (name, expected_models, expected_services) in [("upstream-echo.inf", 1, 1), ("upstream-nullFilter.inf", 0, 2)] {
+        let run = analyze(&[(name, data(name))]);
+        let graph = run.fact(name, "windows.inf-declarations");
+        assert_eq!(graph["platform_selected"], false);
+        assert_eq!(graph["installed"], false);
+        assert_eq!(graph["external_infs_followed"], false);
+        let records = graph["records"].as_array().expect("source graph");
+        assert_eq!(records.iter().filter(|r| r["kind"] == "device-model").count(), expected_models);
+        assert_eq!(records.iter().filter(|r| r["kind"] == "service-addition").count(), expected_services);
+        assert!(records.iter().any(|r| r["kind"] == "service-property" && r["details"]["declared_start_type"] == "demand"));
+        assert!(records.iter().any(|r| r["kind"] == "registry-row"));
+        let findings = run.findings("windows.inf-declarations");
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].confidence, aa_core::Confidence::Derived);
+        assert!(!findings[0].evidence.is_empty());
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.inf-semantics-unresolved"));
+    }
 }
 
 #[test]

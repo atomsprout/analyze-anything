@@ -45,6 +45,13 @@ and unchanged input too. Source section names must be unique for this comparison
 analyzer preserves repeated occurrences while SetupAPI merges them. See
 [the scope and provenance record](../../docs/spikes/windows-inf.md).
 
+The same helper checks available `windows.inf-declarations` graph records against their
+source occurrence, line span and literal/neutral projection. Typed device IDs, service
+fields, copy source/destination names and registry rows are checked separately; native
+directory-ID expansion is never copied into the graph. `upstream-echo.inf` and
+`native-inf-relationships.inf` add Models and shared-list cases. This is read-only field
+evidence, not installation or host-platform selection. See [the graph profile](../../docs/spikes/windows-inf-relationships.md).
+
 Generate controlled v1/v2 catalogs with SDK MakeCat/SignTool (PowerShell 7):
 
     pwsh -NoProfile -File tools/native-compare/windows-catalog-fixture.ps1 -OutputDirectory D:\github\analyze-anything\out\windows-baseline\catalogs

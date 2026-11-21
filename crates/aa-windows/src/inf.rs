@@ -8,6 +8,9 @@ use aa_core::{Artifact, Confidence, Evidence, Finding, Section, Severity};
 use serde::Serialize;
 use serde_json::json;
 
+#[path = "inf_declarations.rs"]
+mod declarations;
+
 const MAX_BYTES: usize = 2 * 1024 * 1024;
 const MAX_LINE: usize = 64 * 1024;
 const MAX_SECTIONS: usize = 1024;
@@ -393,6 +396,7 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
         return;
     }
     out.kind(file, "windows-inf");
+    declarations::analyze(file, &inf, out);
     let mut finding = Finding::new(Section::Structure, "windows", "windows.inf", Confidence::Verified, Severity::Info)
         .param("sections", inf.sections.len())
         .param("entries", inf.entries);
