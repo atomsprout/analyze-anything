@@ -56,21 +56,20 @@ layer compares a unique manifest identity with a uniquely verified embedded CMS 
 under a bounded static Windows reverse-X.500 spelling profile. Unknown OID aliases,
 unsupported legacy encodings, control characters, redaction and ambiguity remain unresolved.
 Literal comparison and signed manifest coverage are separate; neither establishes Windows
-trust. See [the publisher scope](spikes/windows-msix-publisher.md). The 2010 manifest
-namespace has constructed coverage only; four Windows 10 manifests match native readers.
+trust. See [the publisher scope](spikes/windows-msix-publisher.md). Native comparisons now
+include 2010 manifests inside the signed bundle fixture as well as Windows 10 manifests.
 See [the manifest scope record](spikes/windows-msix-manifest.md).
 
 The bundle layer reads the 2013 base namespace, keeps bounded identity/package/resource
 declarations, and compares supported stored OPC packages with original ZIP extents and
 captured inner manifests. Separate APPX-bundle SIP and outer CMS/package-digest coverage
-have one pinned signed Microsoft reference. Resource qualifiers are preserved without
-full cross-package matching; optional/flat bundles, modern extension semantics, external
-packages/dependencies and host package selection remain unresolved. Scale/DirectX
-qualifier fields and escaped-space OPC names have constructed coverage only; native
-resource references currently exercise language qualifiers, with one internationalized
-OPC package name. Raw ZIP/name,
-capture, decompression and output budgets apply. One SDK-built application/resource
-bundle and eight upstream positive/negative fixtures are recorded in
+have one pinned signed Microsoft reference. Qualified resource declaration sets and the
+2018 bundle target-device declarations are compared with captured inner manifests.
+The native references include language, scale, DirectX and escaped-space OPC names.
+Language aliases, fallback and default ordering, optional/flat bundles, other modern
+extensions, external dependencies and host selection remain unresolved. Raw ZIP, name,
+capture, decompression and output budgets apply. Two SDK-built application/resource
+bundles and eight upstream positive/negative fixtures are recorded in
 [the bundle scope](spikes/windows-msix-bundles.md). Broader signed bundles and W6 remain open.
 
 ZIP archives whose central directory repeats names receive an explicit limitation:

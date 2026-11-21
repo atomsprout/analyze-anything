@@ -116,6 +116,7 @@ fn unresolved_package(directory: &Directory<'_>, row: &Value, reason: &str) -> V
     }
     let differs = checks.iter().any(|c| c["status"] == "differs");
     json!({"status":if differs {"differs"}else{"unresolved"},"reason":reason,"checks":checks,
+        "resource_declaration_comparison":{"status":"unresolved","reason":reason},"target_device_family_comparison":{"status":"unresolved","reason":reason},
         "inner_identity_comparison_performed":false,"bundle_signed_byte_coverage":false,"windows_trust_checked":false})
 }
 
@@ -195,7 +196,9 @@ fn check_package(tree: &dyn Tree, inputs: &BundleInputs<'_, '_>, row: &Value, wo
         json!({"status":status,"target":target.path,"target_sha256":aa_core::sha256_hex(plain),"inner_manifest_sha256":aa_core::sha256_hex(&manifest_bytes),
         "checks":checks,"bundle_signed_byte_coverage":coverage,"coverage_basis":if coverage {Some("verified-CMS/AXPC-and-package-digests/stored-original-payload")}else{None},
         "coverage_reason":if coverage {None}else{Some("verified bundle CMS and original package digest correspondence were not established")},
-        "inner_identity_comparison_performed":true,"inner_signature_required_inferred":false,"resource_qualifier_comparison":"not-performed","windows_trust_checked":false}),
+        "resource_declaration_comparison":crate::msix_declarations::compare_resources(row,identity),
+        "target_device_family_comparison":crate::msix_declarations::compare_families(row,identity),
+        "inner_identity_comparison_performed":true,"inner_signature_required_inferred":false,"windows_trust_checked":false}),
     )
 }
 
@@ -262,14 +265,27 @@ pub(crate) fn analyze(tree: &dyn Tree, out: &mut Output) {
                 records.push(json!({"declaration":index,"result":checked}));
             }
             let count = |status: &str| records.iter().filter(|r| r["result"]["status"] == status).count();
+            let facet_count = |facet: &str, status: &str| records.iter().filter(|r| r["result"][facet]["status"] == status).count();
             let undeclared: Vec<_> = actual.iter().take(128).map(|s| aa_core::text::redact_sensitive_text(s).ok()).collect();
             let unresolved_relationships = records
                 .iter()
-                .filter(|r| r["result"]["reason"].is_string() || matches!(r["result"]["status"].as_str(), Some("partial" | "unresolved")))
+                .filter(|r| {
+                    r["result"]["reason"].is_string()
+                        || matches!(r["result"]["status"].as_str(), Some("partial" | "unresolved"))
+                        || r["result"]["resource_declaration_comparison"]["status"] == "unresolved"
+                        || r["result"]["target_device_family_comparison"]["status"] == "unresolved"
+                })
                 .count();
             let fact = json!({"profile":"stored-bundle-opc-v1","source_sha256":model["source_sha256"],"original_sha256":parent.digests.as_ref().map(|d|&d.sha256),
                 "packages_corresponding":count("corresponds"),"packages_differing":count("differs"),"packages_partial":count("partial"),"packages_unresolved":count("unresolved"),
                 "packages_with_unresolved_relationships":unresolved_relationships,
+                "resource_declarations_agree":facet_count("resource_declaration_comparison","agrees"),
+                "resource_declarations_differ":facet_count("resource_declaration_comparison","differs"),
+                "resource_declarations_unresolved":facet_count("resource_declaration_comparison","unresolved"),
+                "target_device_families_agree":facet_count("target_device_family_comparison","agrees"),
+                "target_device_families_differ":facet_count("target_device_family_comparison","differs"),
+                "target_device_families_unresolved":facet_count("target_device_family_comparison","unresolved"),
+                "target_device_families_not_declared":facet_count("target_device_family_comparison","not-declared"),
                 "records":records,"undeclared_packages":undeclared,"undeclared_packages_omitted":actual.len().saturating_sub(128),
                 "schema_validated":false,"windows_trust_checked":false,"installation_eligibility_checked":false});
             let size = serde_json::to_vec(&fact).map_err(|_| "bundle comparison serialization")?.len();
@@ -303,6 +319,37 @@ pub(crate) fn analyze(tree: &dyn Tree, out: &mut Output) {
                                             .take(6)
                                             .collect::<Vec<_>>()
                                     ),
+                                ))
+                                .evidence(Evidence::field(parent, "captured original ZIP/SHA256", fact["original_sha256"].clone())),
+                        );
+                    }
+                }
+                for (facet, summary, status, rule) in [
+                    ("resource_declaration_comparison", "resource_declarations_agree", "agrees", "windows.msix-bundle-resources"),
+                    (
+                        "resource_declaration_comparison",
+                        "resource_declarations_differ",
+                        "differs",
+                        "windows.msix-bundle-resource-difference",
+                    ),
+                    ("target_device_family_comparison", "target_device_families_agree", "agrees", "windows.msix-bundle-device-families"),
+                    (
+                        "target_device_family_comparison",
+                        "target_device_families_differ",
+                        "differs",
+                        "windows.msix-bundle-device-family-difference",
+                    ),
+                ] {
+                    if fact[summary].as_u64().unwrap_or(0) > 0 {
+                        let evidence:Vec<_>=fact["records"].as_array().into_iter().flatten().filter(|r|r["result"][facet]["status"]==status)
+                            .take(6).map(|r|json!({"declaration":r["declaration"],"comparison":r["result"][facet],"inner_manifest_sha256":r["result"]["inner_manifest_sha256"]})).collect();
+                        out.finding(
+                            Finding::new(Section::Structure, "windows", rule, Confidence::Verified, Severity::Info)
+                                .param("count", fact[summary].clone())
+                                .evidence(Evidence::field(
+                                    source,
+                                    "Bundle/Packages declarations versus bound inner manifests",
+                                    json!(evidence),
                                 ))
                                 .evidence(Evidence::field(parent, "captured original ZIP/SHA256", fact["original_sha256"].clone())),
                         );

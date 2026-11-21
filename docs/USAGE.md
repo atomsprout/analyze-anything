@@ -45,8 +45,13 @@ stored inner packages: original data offsets/sizes, identities, architectures an
 application/resource types. UTF-8 OPC file-name escaping is handled as a logical archive
 identifier. Qualified outer bundle CMS/digest coverage is separate from inner-package
 correspondence and does not imply a separate inner signature is required. No package is
-selected for this host. See [bundle scope](spikes/windows-msix-bundles.md) for unsupported
-resource, optional/flat bundle and trust-policy semantics.
+selected for this host. See [bundle scope](spikes/windows-msix-bundles.md) for supported
+declarations and the remaining optional/flat bundle and trust-policy limits.
+
+Bundle and inner manifests are also compared for declared language, scale, DirectX
+level and target-device-family versions. The report keeps minimum and maximum tested
+versions distinct. Missing outer target-device declarations are recorded separately
+from differences and incomplete projections.
 
 | Format | File | For |
 |---|---|---|

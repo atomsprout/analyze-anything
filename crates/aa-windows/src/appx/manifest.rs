@@ -218,6 +218,8 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
     let mut dep_count = 0usize;
     let mut resources = Vec::new();
     let mut resource_count = 0usize;
+    let mut resources_complete = true;
+    let mut families_complete = true;
     let mut sections = BTreeMap::<&str, usize>::new();
     for section in root.children().filter(Node::is_element) {
         if is(section, ns, "Identity") {
@@ -324,10 +326,11 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
             }
             "Extensions" => reader.extensions(section, ns, &mut extensions, &mut extension_declarations, &mut ext_count),
             "Dependencies" => {
-                reader.shape(section, &[], true);
+                families_complete &= reader.shape(section, &[], true);
                 for child in section.children().filter(Node::is_element) {
                     dep_count += 1;
                     if dep_count > 128 {
+                        families_complete = false;
                         reader.issue(child, "dependency/device-family declaration count limit");
                         continue;
                     }
@@ -335,6 +338,7 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
                     if child.tag_name().namespace() != Some(ns)
                         || !(kind == "PackageDependency" || (kind == "TargetDeviceFamily" && ns == FOUNDATION))
                     {
+                        families_complete = false;
                         reader.issue(child, "unread dependency element or namespace");
                         continue;
                     }
@@ -380,22 +384,37 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
                 }
             }
             "Resources" => {
-                reader.shape(section, &[], true);
+                resources_complete &= reader.shape(section, &[], true);
                 for child in section.children().filter(Node::is_element) {
                     resource_count += 1;
                     if resource_count > 200 {
+                        resources_complete = false;
                         reader.issue(child, "resource declaration count limit");
                         continue;
                     }
                     if !is(child, ns, "Resource") {
+                        resources_complete = false;
                         reader.issue(child, "unread resource element or namespace");
                         continue;
                     }
                     let start = reader.issues.len() + reader.omitted;
-                    let shape = reader.shape(child, &["Language", "Scale", "DXFeatureLevel"], false);
+                    let qualifier_ns = if ns == FOUNDATION { UAP } else { LEGACY_EXT };
+                    let mut shape = true;
+                    for attribute in child.attributes() {
+                        if !((attribute.namespace().is_none() && attribute.name() == "Language")
+                            || (attribute.namespace() == Some(qualifier_ns) && matches!(attribute.name(), "Scale" | "DXFeatureLevel")))
+                        {
+                            reader.issue(child, "resource attribute or namespace is outside the qualified profile");
+                            shape = false;
+                        }
+                    }
+                    if child.children().any(|n| n.is_element() || (n.is_text() && n.text().is_some_and(|s| !s.trim().is_empty()))) {
+                        reader.issue(child, "resource has unread child content");
+                        shape = false;
+                    }
                     let language = reader.attr(child, "Language");
-                    let scale = reader.attr(child, "Scale");
-                    let dx_feature_level = reader.attr(child, "DXFeatureLevel");
+                    let scale = child.attribute((qualifier_ns, "Scale")).and_then(|v| reader.literal(child, v));
+                    let dx_feature_level = child.attribute((qualifier_ns, "DXFeatureLevel")).and_then(|v| reader.literal(child, v));
                     resources.push(json!({"language":language,"scale":scale,"dx_feature_level":dx_feature_level,"projection_supported":shape && start==reader.issues.len()+reader.omitted,"xml_offset":child.range().start}));
                 }
             }
@@ -476,6 +495,20 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
             Value::Null
         }
     };
+    let resource_sections = sections.get("Resources").copied().unwrap_or(0);
+    let resource_profile = crate::msix_declarations::resource_dimensions(&resources, "projection_supported");
+    let resources_known = resource_sections == 1 && resources_complete && resource_profile.is_ok();
+    if resource_sections == 1
+        && let Err(reason) = resource_profile
+    {
+        reader.issue(root, reason);
+    }
+    let family_profile = crate::msix_declarations::family_constraints(&device_families);
+    let families_known =
+        sections.get("Dependencies") == Some(&1) && families_complete && !device_families.is_empty() && family_profile.is_ok();
+    if let Err(reason) = family_profile {
+        reader.issue(root, reason);
+    }
     let fact = json!({"source_sha256":aa_core::sha256_hex(bytes),"namespace":ns,"xml_offset_basis":"decoded-UTF8-XML","identity":identity,"identity_status":identity_status,
         "identity_projection_established":identity_status=="unique","identity_declarations":identity_declarations,"identity_declarations_omitted":identities.len().saturating_sub(16),
         "display_name":property("DisplayName"),"publisher_display_name":property("PublisherDisplayName"),"property_declarations":property_declarations,
@@ -484,7 +517,10 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
         "applications":applications,"application_declarations":application_declarations,"application_declarations_omitted":app_count.saturating_sub(50),
         "extensions":extensions,"extension_declarations":extension_declarations,"extension_declarations_omitted":ext_count.saturating_sub(200),
         "dependencies":dependencies,"target_device_families":device_families,"dependency_declarations_omitted":dep_count.saturating_sub(128),
-        "resources":resources,"resource_declarations_omitted":resource_count.saturating_sub(200),"projection_issues":reader.issues,"projection_issues_omitted":reader.omitted,
+        "resources":resources,"resource_declarations_omitted":resource_count.saturating_sub(200),"resources_projection_established":resources_known,
+        "resources_state":if resource_sections==0 {"not-declared"}else if resources_known {"projected"}else{"unresolved"},
+        "target_device_families_projection_established":families_known,"target_device_families_state":if device_families.is_empty() && families_complete {"not-declared"}else if families_known {"projected"}else{"unresolved"},
+        "projection_issues":reader.issues,"projection_issues_omitted":reader.omitted,
         "schema_validated":false,"references_resolved":false,"package_signature_checked":false,"zip_structure_checked":false});
     if serde_json::to_vec(&fact).map_err(|_| "manifest publication failed")?.len() > 8 * 1024 * 1024 {
         return Err("manifest fact byte limit");
@@ -560,6 +596,29 @@ mod tests {
         ));
         assert!(fact["dependencies"].as_array().expect("dependencies").iter().all(|d| d["projection_supported"] == false));
         assert_eq!(fact["target_device_families"][0]["projection_supported"], false);
+    }
+
+    #[test]
+    fn resource_qualifier_namespaces_cardinality_and_defaults_remain_distinct() {
+        let body = format!(
+            r#"{ID}<Properties/><Dependencies/><Resources><Resource Language="en-US"/><Resource uap:Scale="200"/><Resource uap:DXFeatureLevel="dx11"/></Resources>"#
+        );
+        let model = project(&body);
+        assert_eq!(model["resources_projection_established"], true);
+        assert_eq!(model["resources"][1]["scale"], "200");
+        assert_eq!(model["resources"][2]["dx_feature_level"], "dx11");
+        for bad in [
+            body.replace("uap:Scale=", "Scale="),
+            body.replace("uap:DXFeatureLevel=", "evil:DXFeatureLevel="),
+            body.replace("<Resource Language=\"en-US\"/>", "<Resource Language=\"en-US\"/><Resource Language=\"EN-us\"/>"),
+            format!("{body}<Resources><Resource Language=\"fr-FR\"/></Resources>"),
+        ] {
+            assert_eq!(project(&bad)["resources_projection_established"], false);
+        }
+        let legacy = package(&body).replace(FOUNDATION, LEGACY).replace(UAP, LEGACY_EXT);
+        assert_eq!(read(legacy.as_bytes()).expect("legacy qualified resources")["resources_projection_established"], true);
+        assert_eq!(project(ID)["resources_state"], "not-declared");
+        assert_eq!(project(&format!("{ID}<Resources/>"))["resources_state"], "projected");
     }
 
     #[test]

@@ -18,7 +18,7 @@ import sys
 import zipfile
 
 
-def native(path, api, compare_publishers=None):
+def native(path, api, compare_publishers=None, include_resources=False):
     ole, shell = c.WinDLL("ole32", winmode=0x800), c.WinDLL("shlwapi", winmode=0x800)
     ole.CoInitializeEx.argtypes = [c.c_void_p, w.DWORD]
     ole.CoInitializeEx.restype = c.c_long
@@ -78,9 +78,20 @@ def native(path, api, compare_publishers=None):
         dependencies = enumerate_rows(reader, 5, lambda item: {"Name": text(item, 3), "Publisher": text(item, 4), "MinVersion": version(number(item, 5, c.c_uint64))})
         reader3 = c.c_void_p()
         api.checked(api.call(reader, 0, (c.POINTER(api.Guid), c.POINTER(c.c_void_p)), (c.byref(api.guid("C43825AB-69B7-400A-9709-CC37F5A72D24")), c.byref(reader3))))
-        families = enumerate_rows(reader3, 14, lambda item: {"Name": text(item, 3), "MinVersion": version(number(item, 4, c.c_uint64)), "MaxVersionTested": version(number(item, 5, c.c_uint64))})
+        families_error = None
+        try:
+            families = enumerate_rows(reader3, 14, lambda item: {"Name": text(item, 3), "MinVersion": version(number(item, 4, c.c_uint64)), "MaxVersionTested": version(number(item, 5, c.c_uint64))})
+        except OSError as error:
+            if not include_resources or "0x80070490" not in str(error):
+                raise
+            families, families_error = None, str(error)
         result = {"api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3", "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                   "identity": identity, "dependencies": dependencies, "target_device_families": families}
+        if include_resources:
+            if families_error:
+                result["target_device_families_error"] = families_error
+            result["resources"] = enumerate_rows(reader3, 12, lambda resource: {"language": text(resource, 3) or None,
+                "scale": number(resource, 4, w.DWORD) or None, "dx_feature_level": number(resource, 5, w.DWORD) or None})
         if compare_publishers is not None:
             result["publisher_comparisons"] = []
             for other in compare_publishers:

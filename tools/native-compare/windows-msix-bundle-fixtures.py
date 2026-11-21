@@ -2,6 +2,7 @@
 
 import argparse
 import glob
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -11,6 +12,7 @@ import zipfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--qualifiers", action="store_true", help="include scale/DirectX packs, multiple languages and device families")
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[2]
     output = args.output.resolve()
@@ -39,8 +41,18 @@ def main():
         done = subprocess.run([str(makeappx), *arguments], capture_output=True, timeout=120, creationflags=subprocess.CREATE_NO_WINDOW)
         if done.returncode:
             raise RuntimeError(done.stdout.decode("utf-8", errors="replace") + done.stderr.decode("utf-8", errors="replace"))
-    for name, xml, names in [("app", app_xml, ["hello.exe", "Assets/Logo150.png", "Assets/Logo44.png"]),
-                              ("resource", resource_xml, ["Assets/Logo150.png"])]:
+    if args.qualifiers:
+        app_xml, replaced = re.subn(r'<Resource Language="en-US"\s*/>', '<Resource Language="en-US"/><Resource Language="fr-FR"/><Resource uap:Scale="150"/><Resource uap:DXFeatureLevel="dx9"/>', app_xml, flags=re.IGNORECASE)
+        assert replaced == 1
+        app_xml = app_xml.replace('</Dependencies>', '<TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.22621.0"/></Dependencies>')
+    sources = [("app", app_xml, ["hello.exe", "Assets/Logo150.png", "Assets/Logo44.png"]),
+               ("resource", resource_xml, ["Assets/Logo150.png"])]
+    if args.qualifiers:
+        for name, resource_id, attributes in [("resource scale", "scale-200", 'uap:Scale="200"'), ("resource dx", "dx-11", 'uap:DXFeatureLevel="dx11"')]:
+            xml = resource_xml.replace('ResourceId="language-zh"', 'ResourceId="' + resource_id + '"')
+            xml = xml.replace('<Resource Language="zh-CN"/>', '<Resource xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" ' + attributes + '/>')
+            sources.append((name, xml, ["Assets/Logo150.png"]))
+    for name, xml, names in sources:
         source = output / (name + "-input")
         source.mkdir()
         (source / "AppxManifest.xml").write_text(xml, encoding="utf-8")
@@ -49,7 +61,8 @@ def main():
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(files[path])
         run(["pack", "/d", str(source), "/p", str(packages / (name + ".appx")), "/o"])
-    run(["bundle", "/d", str(packages), "/p", str(output / "native-msix-bundle.appxbundle"), "/bv", "2.0.0.0", "/o"])
+    name = "native-msix-qualifiers.appxbundle" if args.qualifiers else "native-msix-bundle.appxbundle"
+    run(["bundle", "/d", str(packages), "/p", str(output / name), "/bv", "2.0.0.0", "/o"])
     print("built application/resource bundle with SDK", makeappx.parent.parent.name)
 
 

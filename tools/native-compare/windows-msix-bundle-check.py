@@ -23,7 +23,7 @@ def module(name, path):
     return value
 
 
-def native(path, api):
+def native(path, api, include_families=False):
     ole = c.WinDLL("ole32", winmode=0x800)
     shell = c.WinDLL("shlwapi", winmode=0x800)
     ole.CoInitializeEx.argtypes = [c.c_void_p, w.DWORD]
@@ -77,6 +77,15 @@ def native(path, api):
                       "file_name": text(item, 5), "offset": number(item, 6, c.c_uint64), "size": number(item, 7, c.c_uint64)}
             result["resources"] = enumerate_rows(item, 8, lambda resource: {
                 "language": text(resource, 3) or None, "scale": number(resource, 4) or None, "dx_feature_level": number(resource, 5) or None})
+            if include_families:
+                info3 = c.c_void_p()
+                api.checked(api.call(item, 0, (c.POINTER(api.Guid), c.POINTER(c.c_void_p)),
+                                     (c.byref(api.guid("6ba74b98-bb74-4296-80d0-5f4256a99675")), c.byref(info3))))
+                try:
+                    result["target_device_families"] = enumerate_rows(info3, 3, lambda family: {"Name": text(family, 3),
+                        "MinVersion": version(number(family, 4, c.c_uint64)), "MaxVersionTested": version(number(family, 5, c.c_uint64))})
+                finally:
+                    api.release(info3)
             return result
         finally:
             api.release(package_id)

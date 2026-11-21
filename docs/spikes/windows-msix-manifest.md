@@ -92,8 +92,10 @@ JSON, unchanged sources, English Markdown/HTML and Chinese conflict text. Local 
 are `out/windows-baseline/msix-manifest-final/checks.json`. Constructed tests cover
 namespace/path injection, duplicates, dependency constraints, literal resources,
 UTF-8/16 and declaration conflicts, DTD refusal, CDATA, redaction, stale bytes, node/
-field/aggregate/count/output limits and ambiguity. The 2010 namespace is constructed
-coverage only; the four native samples use the Windows 10 foundation namespace.
+field/aggregate/count/output limits and ambiguity. The four original native samples
+use the Windows 10 foundation namespace. The later
+[bundle comparison](windows-msix-bundles.md#resource-and-device-declarations) also
+checks native resource declarations from two 2010 inner manifests.
 
 Local format, workspace Clippy, locked dependency resolution and the no-default-feature
 CLI build passed. The full workspace log is

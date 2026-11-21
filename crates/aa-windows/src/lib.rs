@@ -39,6 +39,7 @@ mod msi;
 mod msisig;
 mod msix_blockmap;
 mod msix_bundle;
+mod msix_declarations;
 mod msix_publisher;
 mod msix_signature;
 mod msix_xml;

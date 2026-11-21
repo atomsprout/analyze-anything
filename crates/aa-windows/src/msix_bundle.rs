@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 
 pub(super) const MANIFEST: &str = "AppxMetadata/AppxBundleManifest.xml";
 const NS: &str = "http://schemas.microsoft.com/appx/2013/bundle";
+const DEPENDENCY_NS: &str = "http://schemas.microsoft.com/appx/2018/bundle";
 const MAX_XML: usize = 8 * 1024 * 1024;
 
 struct Reader {
@@ -84,8 +85,11 @@ fn resources(reader: &mut Reader, package: Node<'_, '_>) -> (Vec<Value>, bool) {
     let mut established = true;
     let mut sections = 0;
     for section in package.children().filter(Node::is_element) {
+        if section.tag_name().name() == "Dependencies" {
+            continue;
+        }
         if !qualified(section, "Resources") {
-            reader.issue(section, "unread package child or namespace; dependency/extension semantics unresolved");
+            reader.issue(section, "unread package child or namespace; extension semantics unresolved");
             established = false;
             continue;
         }
@@ -109,7 +113,60 @@ fn resources(reader: &mut Reader, package: Node<'_, '_>) -> (Vec<Value>, bool) {
         reader.issue(package, "resources section is missing or repeated");
         established = false;
     }
+    if let Err(reason) = crate::msix_declarations::resource_dimensions(&rows, "projection_established") {
+        reader.issue(package, reason);
+        established = false;
+    }
     (rows, established)
+}
+
+fn families(reader: &mut Reader, package: Node<'_, '_>) -> Value {
+    let mut rows = Vec::new();
+    let mut sections = 0;
+    let mut complete = true;
+    let mut omitted = 0;
+    for section in package.children().filter(Node::is_element).filter(|n| n.tag_name().name() == "Dependencies") {
+        if section.tag_name().namespace() != Some(DEPENDENCY_NS) {
+            reader.issue(section, "bundle dependency namespace is unsupported");
+            complete = false;
+            continue;
+        }
+        sections += 1;
+        complete &= reader.attributes(section, &[], true).1;
+        for node in section.children().filter(Node::is_element) {
+            if node.tag_name().namespace() != Some(DEPENDENCY_NS) || node.tag_name().name() != "TargetDeviceFamily" {
+                reader.issue(node, "bundle dependency child or namespace is unread");
+                complete = false;
+                continue;
+            }
+            if rows.len() >= 128 {
+                omitted += 1;
+                complete = false;
+                reader.issue(node, "bundle target-device-family count budget");
+                continue;
+            }
+            let (attributes, known) =
+                reader.attributes(node, &[("Name", "Name"), ("MinVersion", "MinVersion"), ("MaxVersionTested", "MaxVersionTested")], false);
+            let supported = known
+                && required(&attributes, &["Name", "MinVersion", "MaxVersionTested"])
+                && version(attributes["MinVersion"].as_str())
+                && version(attributes["MaxVersionTested"].as_str());
+            if !supported {
+                reader.issue(node, "bundle target-device-family fields are missing or unsupported");
+            }
+            rows.push(json!({"attributes":attributes,"projection_supported":supported,"xml_offset":node.range().start}));
+        }
+    }
+    let profile = crate::msix_declarations::family_constraints(&rows);
+    let established = sections == 1 && complete && !rows.is_empty() && profile.is_ok();
+    if sections > 1 || (sections == 1 && rows.is_empty()) {
+        reader.issue(package, "bundle dependencies are repeated or have no readable target-device-family rows");
+    }
+    if let Err(reason) = profile {
+        reader.issue(package, reason);
+    }
+    json!({"rows":rows,"omitted":omitted,"projection_established":established,
+        "state":if sections==0 && complete {"not-declared"}else if established {"projected"}else{"unresolved"}})
 }
 
 pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
@@ -201,6 +258,11 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
                 let (resources, resources_known) = resources(&mut reader, node);
                 row["resources"] = json!(resources);
                 row["resources_projection_established"] = json!(resources_known);
+                let families = families(&mut reader, node);
+                row["target_device_families"] = families["rows"].clone();
+                row["target_device_families_omitted"] = families["omitted"].clone();
+                row["target_device_families_projection_established"] = families["projection_established"].clone();
+                row["target_device_families_state"] = families["state"].clone();
                 row["projection_established"] = json!(established);
                 row["xml_offset"] = json!(node.range().start);
                 packages.push(row);
@@ -287,6 +349,28 @@ mod tests {
     }
     fn project(body: &str) -> Value {
         read(xml(body).as_bytes()).expect("bounded bundle declarations")
+    }
+
+    #[test]
+    fn qualified_device_families_are_bounded_and_do_not_hide_resource_declarations() {
+        let family = r#"<b4:TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0"/>"#;
+        let package =
+            PACKAGE.replace("</Package>", &format!(r#"<b4:Dependencies xmlns:b4="{DEPENDENCY_NS}">{family}</b4:Dependencies></Package>"#));
+        let model = project(&format!("{ID}<Packages>{package}</Packages>"));
+        assert_eq!(model["packages"][0]["resources_projection_established"], true);
+        assert_eq!(model["packages"][0]["target_device_families_state"], "projected");
+        for bad in [
+            package.replace(family, &format!("{family}{family}")),
+            package.replace(DEPENDENCY_NS, "urn:foreign"),
+            package.replace("10.0.17763.0", "65536.0.0.0"),
+        ] {
+            assert_eq!(project(&format!("{ID}<Packages>{bad}</Packages>"))["packages"][0]["target_device_families_state"], "unresolved");
+        }
+        let limited = package.replace(family, &family.repeat(129));
+        let model = project(&format!("{ID}<Packages>{limited}</Packages>"));
+        assert_eq!(model["packages"][0]["target_device_families_omitted"], 1);
+        assert_eq!(model["packages"][0]["target_device_families_state"], "unresolved");
+        assert_eq!(project(&format!("{ID}<Packages>{PACKAGE}</Packages>"))["packages"][0]["target_device_families_state"], "not-declared");
     }
 
     #[test]

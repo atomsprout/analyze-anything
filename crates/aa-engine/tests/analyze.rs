@@ -71,6 +71,174 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
 }
 
 #[test]
+fn msix_resource_and_device_declarations_match_native_snapshots_without_selecting_for_this_host() {
+    use std::collections::{BTreeMap, BTreeSet};
+    let directory = tempfile::tempdir().expect("bundle declaration inputs");
+    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data");
+    let dimensions = |rows: &serde_json::Value| {
+        let rows = rows.as_array().expect("native resources");
+        let languages: BTreeSet<_> = rows.iter().filter_map(|r| r["language"].as_str().map(str::to_ascii_lowercase)).collect();
+        let scales: BTreeSet<_> = rows.iter().filter_map(|r| r["scale"].as_u64()).collect();
+        let levels: BTreeSet<_> = rows
+            .iter()
+            .filter_map(|r| match r["dx_feature_level"].as_u64() {
+                Some(1) => Some("dx9"),
+                Some(2) => Some("dx10"),
+                Some(3) => Some("dx11"),
+                _ => None,
+            })
+            .collect();
+        serde_json::json!({"languages":languages,"scales":scales,"dx_feature_levels":levels,"default_rows":0})
+    };
+    let families = |rows: &serde_json::Value| -> serde_json::Value {
+        let rows: BTreeMap<_, _> = rows
+            .as_array()
+            .expect("native device families")
+            .iter()
+            .map(|r| {
+                (
+                    r["Name"].as_str().expect("family name"),
+                    serde_json::json!({"minimum":r["MinVersion"],"maximum_tested":r["MaxVersionTested"]}),
+                )
+            })
+            .collect();
+        serde_json::json!(rows)
+    };
+    for name in [
+        "native-msix-bundle.appxbundle",
+        "native-msix-qualifiers.appxbundle",
+        "upstream-BundleWithIntlPackage.appxbundle",
+        "upstream-SignedUntrustedCert.appxbundle",
+    ] {
+        let original = std::fs::read(data_dir.join(name)).expect("owned or licensed bundle");
+        let native: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(data_dir.join(format!("{name}.declarations.ref.json"))).expect("native snapshot"))
+                .expect("snapshot JSON");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &original).expect("bundle input");
+        let report = run(&input, &Options::default());
+        let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+        let fact = &root.facts["windows.msix-bundle-checks"];
+        let declared = native["bundle"]["packages"].as_array().expect("native declarations");
+        let observed = native["inner"].as_array().expect("native inner packages");
+        assert_eq!(fact["resource_declarations_agree"], declared.len());
+        for ((row, declared), observed) in fact["records"].as_array().expect("records").iter().zip(declared).zip(observed) {
+            let result = &row["result"];
+            let resources = &result["resource_declaration_comparison"];
+            assert_eq!(resources["declared"], dimensions(&declared["resources"]));
+            assert_eq!(resources["observed"], dimensions(&observed["manifest"]["resources"]));
+            assert_eq!(resources["host_resource_selection_performed"], false);
+            let device = &result["target_device_family_comparison"];
+            if declared["target_device_families"].as_array().expect("native bundle families").is_empty() {
+                assert_eq!(device["status"], "not-declared");
+            } else {
+                assert_eq!(device["status"], "agrees");
+                assert_eq!(device["declared"], families(&declared["target_device_families"]));
+                assert_eq!(device["observed"], families(&observed["manifest"]["target_device_families"]));
+            }
+            assert_eq!(device["maximum_tested_is_compatibility_ceiling"], false);
+            assert_eq!(device["host_compatibility_checked"], false);
+        }
+        assert!(report.findings.iter().any(|f| f.rule == "windows.msix-bundle-resources" && !f.evidence.is_empty()));
+        assert_eq!(
+            serde_json::to_vec(&report).expect("report"),
+            serde_json::to_vec(&run(&input, &Options::default())).expect("repeated report")
+        );
+        assert_eq!(std::fs::read(&input).expect("unchanged input"), original);
+    }
+}
+
+#[test]
+fn bundle_resource_and_device_differences_remain_distinct_from_unread_and_absent_declarations() {
+    use std::io::{Cursor, Read};
+    let bytes = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/native-msix-qualifiers.appxbundle"))
+        .expect("owned bundle");
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).expect("bundle ZIP");
+    let entries: Vec<_> = (0..archive.len())
+        .map(|i| {
+            let mut entry = archive.by_index(i).expect("entry");
+            let mut content = Vec::new();
+            entry.read_to_end(&mut content).expect("content");
+            (entry.name().expect("entry name").into_owned(), content)
+        })
+        .collect();
+    let directory = tempfile::tempdir().expect("declaration variants");
+    for case in [
+        "resource-difference",
+        "resource-duplicate",
+        "resource-foreign",
+        "family-difference",
+        "family-duplicate",
+        "family-missing-version",
+        "family-absent",
+        "inner-unqualified-scale",
+    ] {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in &entries {
+            let mut bytes = bytes.clone();
+            if name == "AppxMetadata/AppxBundleManifest.xml" {
+                let mut xml = String::from_utf8(bytes).expect("owned UTF8 manifest");
+                let language = "<Resource Language=\"zh-CN\"/>";
+                let family =
+                    "<b4:TargetDeviceFamily Name=\"Windows.Universal\" MinVersion=\"10.0.19041.0\" MaxVersionTested=\"10.0.22621.0\"/>";
+                match case {
+                    "resource-difference" => xml = xml.replace("Language=\"zh-CN\"", "Language=\"ja-JP\""),
+                    "resource-duplicate" => xml = xml.replace(language, &format!("{language}{language}")),
+                    "resource-foreign" => {
+                        xml = xml.replace(language, &format!("{language}<Resource xmlns=\"urn:foreign\" Language=\"ja-JP\"/>"))
+                    }
+                    "family-difference" => xml = xml.replace("MaxVersionTested=\"10.0.22621.0\"", "MaxVersionTested=\"10.0.26100.0\""),
+                    "family-duplicate" => xml = xml.replace(family, &format!("{family}{family}")),
+                    "family-missing-version" => xml = xml.replace("MaxVersionTested=\"10.0.22621.0\"", ""),
+                    "family-absent" => {
+                        let start = xml.find("<b4:Dependencies>").expect("dependencies section");
+                        let end = start + xml[start..].find("</b4:Dependencies>").expect("section end") + "</b4:Dependencies>".len();
+                        xml.replace_range(start..end, "");
+                    }
+                    _ => {}
+                }
+                bytes = xml.into_bytes();
+            } else if name == "app.appx" && case == "inner-unqualified-scale" {
+                let mut inner = zip::ZipArchive::new(Cursor::new(&bytes)).expect("owned inner package");
+                let mut changed = zip::ZipWriter::new(Cursor::new(Vec::new()));
+                for i in 0..inner.len() {
+                    let mut entry = inner.by_index(i).expect("inner entry");
+                    let path = entry.name().expect("inner name").into_owned();
+                    let mut content = Vec::new();
+                    entry.read_to_end(&mut content).expect("inner bytes");
+                    if path == "AppxManifest.xml" {
+                        content = String::from_utf8(content).expect("inner UTF8").replace("uap:Scale=", "Scale=").into_bytes();
+                    }
+                    changed.start_file(path, zip::write::SimpleFileOptions::default()).expect("changed entry");
+                    changed.write_all(&content).expect("changed content");
+                }
+                bytes = changed.finish().expect("changed package").into_inner();
+            }
+            writer
+                .start_file(name, zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored))
+                .expect("variant entry");
+            writer.write_all(&bytes).expect("variant content");
+        }
+        let input = directory.path().join(format!("{case}.appxbundle"));
+        let bytes = writer.finish().expect("variant bundle").into_inner();
+        std::fs::write(&input, &bytes).expect("variant input");
+        let report = run(&input, &Options::default());
+        let fact = &report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root").facts["windows.msix-bundle-checks"];
+        assert_eq!(fact["resource_declarations_differ"], usize::from(case == "resource-difference"), "{case}: {fact}");
+        let resource_unknown = matches!(case, "resource-duplicate" | "resource-foreign" | "inner-unqualified-scale");
+        assert_eq!(fact["resource_declarations_unresolved"], usize::from(resource_unknown), "{case}: {fact}");
+        assert_eq!(fact["target_device_families_differ"], usize::from(case == "family-difference"), "{case}: {fact}");
+        assert_eq!(
+            fact["target_device_families_unresolved"],
+            usize::from(matches!(case, "family-duplicate" | "family-missing-version")),
+            "{case}: {fact}"
+        );
+        assert_eq!(fact["target_device_families_not_declared"], usize::from(case == "family-absent"), "{case}: {fact}");
+        assert_eq!(std::fs::read(&input).expect("unchanged variant"), bytes);
+    }
+}
+
+#[test]
 fn msix_bundles_bind_original_package_extents_and_keep_outer_signature_coverage_separate() {
     let directory = tempfile::tempdir().expect("bundle inputs");
     for (name, count, signed) in [

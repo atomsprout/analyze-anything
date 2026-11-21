@@ -17,10 +17,10 @@ unsupported or unread data produces explicit projection issues and omission coun
 The reader supports strict UTF-8/UTF-16 decoding with compatible declarations, no DTDs,
 8 MiB XML, 100,000 XML nodes, 8 KiB fields, 1 MiB selected text, sixteen identities,
 1,024 packages, 200 resource rows per package, 64 detailed issues and 8 MiB output.
-These are reading limits, not full schema validation. Modern dependencies/extensions,
-optional bundles and flat bundles remain explicit unread semantics. A producer-built
-schema-5 bundle retains its base package declarations while reporting b4 dependencies
-unread; it is not described as complete schema-5 support.
+The reader also projects up to 128 target-device rows per package in the 2018
+dependency namespace. Optional bundles, flat bundles and other extensions retain
+explicit limitations. The producer-built schema-5 fixtures exercise the base package
+declarations and 2018 device-family extension.
 
 ## Original bytes and inner packages
 
@@ -108,10 +108,8 @@ native record is `out/windows-baseline/msix-bundle-complete/checks.json`.
 Constructed tests cover namespaces, identity/package cardinality, UTF-16/declaration
 conflicts, DTD refusal, redaction, count/text/node limits, numeric overflow and OPC
 aliases/traversal.
-Scale/DirectX qualifier fields and escaped-space names have constructed coverage only;
-the native resource references cover language declarations. W6 remains open: full resource and dependency relationships,
-optional/flat bundles, broader signed profiles and independent modern samples still
-require implementation and their own evidence.
+The first revision's native resource references covered language declarations. The
+follow-up below expands reference coverage to scale, DirectX and escaped-space names.
 
 The full workspace run passed in `out/windows-baseline/workspace-msix-bundles.log`,
 including the complete damaged-fixture corpus, 48 engine integration tests, 114 Windows
@@ -121,7 +119,47 @@ package then passed among all 49 engine integration tests in
 `out/windows-baseline/msix-bundle-engine-final.log`. Windows unit/pipeline tests were
 also rerun in `out/windows-baseline/msix-bundle-windows-final.log`. Final workspace
 Clippy, format and no-default-feature CLI build passed, followed by the eleven-case
-native comparison and bilingual report checks. Cross-platform CI remains the next gate.
+native comparison and bilingual report checks. All five CI jobs passed for
+`2ba07b3e75fef8148d9721633139258ad8e27061` in
+[run 44888484018](https://github.com/atomsprout/analyze-anything/actions/runs/44888484018).
+
+## Resource and device declarations
+
+The follow-up compares independently bound bundle and inner XML declarations. It
+reads unqualified bundle qualifiers and the qualified `Scale` and `DXFeatureLevel`
+attributes in the inner Windows 10 or 2010 manifest. Resource comparison uses sets
+of ASCII case-folded language tags, SDK scale values and DirectX levels. Default
+language order, alias resolution and fallback are outside this profile. Repeated,
+redacted, foreign, incomplete and build-placeholder rows remain unresolved.
+
+Direct `Dependencies/TargetDeviceFamily` in the 2018 bundle namespace supplies
+literal device-family names, minimum versions and maximum tested versions. Numeric
+version quads compare independently of spelling and declaration order. The
+`not-declared` result preserves the distinction between an older bundle with no
+such declarations and an unqualified or unread section. Maximum tested versions
+are reported as declared test targets. Package identity, resource declarations,
+target-device declarations and signed-byte coverage have their own results.
+
+MakeAppx 10.0.26100.0 built `native-msix-qualifiers.appxbundle` with an x86 app,
+language, scale and DirectX resource packs, two device families and escaped-space
+package names. SHA-256 is
+`164d149b93b35a822be3544696c019607418b376108d98db0eee60c151b61f95`.
+`windows-msix-declarations-check.py` compared four originals with the native
+bundle and inner manifest readers and checked fourteen controlled variants.
+Windows rejected duplicate resources, foreign resource/family elements and a
+missing tested version with HRESULT `0x80080204`. The manifest reader enumerated
+the duplicate device-family case, while the analyzer leaves that comparison
+unresolved. Resource sets and target-device versions have portable regression
+tests against the checked-in native snapshots. The native run is recorded in
+`out/windows-baseline/msix-declarations-native/checks.json`.
+The final workspace test log is
+`out/windows-baseline/workspace-msix-declarations.log`. It includes 51 engine
+integration tests, 118 Windows unit tests, 55 Windows pipeline tests and the
+damaged-fixture corpus. Workspace Clippy, formatting and the no-default-feature
+CLI build also passed.
+
+References: Microsoft [package resource qualifiers](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-f-resource)
+and [bundle target-device declarations](https://learn.microsoft.com/en-us/uwp/schemas/bundlemanifestschema/element-targetdevicefamily).
 
 ## Sources
 
