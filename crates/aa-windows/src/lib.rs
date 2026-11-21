@@ -63,6 +63,7 @@ mod tasks;
 mod text;
 mod tree;
 mod vsix;
+mod winget;
 
 use aa_core::Artifact;
 use aa_core::plugin::{Analyzer, Output, Rule, Tree, Unpacker};
@@ -126,7 +127,22 @@ impl Analyzer for Windows {
         if file.size < 64
             && !matches!(
                 file.extension().as_deref(),
-                Some("url" | "lnk" | "reg" | "inf" | "cat" | "p7x" | "ps1" | "psm1" | "bat" | "cmd" | "nuspec" | "vsixmanifest")
+                Some(
+                    "url"
+                        | "lnk"
+                        | "reg"
+                        | "inf"
+                        | "cat"
+                        | "p7x"
+                        | "ps1"
+                        | "psm1"
+                        | "bat"
+                        | "cmd"
+                        | "nuspec"
+                        | "vsixmanifest"
+                        | "yaml"
+                        | "yml"
+                )
             )
             && !file.name().eq_ignore_ascii_case("AppxBlockMap.xml")
             && !file.name().eq_ignore_ascii_case("AppxSignature.p7x")
@@ -145,6 +161,7 @@ impl Analyzer for Windows {
         catalog::analyze(file, &bytes, out);
         nuspec::analyze(file, &bytes, out);
         vsix::analyze(file, &bytes, out);
+        winget::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
         msix_bundle::analyze(file, &bytes, out);

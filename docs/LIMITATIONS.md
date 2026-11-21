@@ -26,6 +26,13 @@ root-name ambiguity have constructed coverage. The documented profile leaves
 interval dependencies, runtime eligibility, the older manifest schema and
 signature verification open. See [the VSIX record](spikes/windows-vsix.md).
 
+The WinGet 1.x reader was compared with `winget validate` on the published
+7-Zip 24.09 manifest set, with two supplied x64 installers checked by SHA-256.
+Singleton manifests, dependency candidates, duplicate payloads and rejected
+YAML forms have constructed coverage. Client installer selection, version
+ordering and catalog resolution are outside the supported profile.
+See [the WinGet record](spikes/windows-winget.md).
+
 The following features have only been tested with data we constructed ourselves, and have not been compared against reference tools on real samples:
 
 - **Apple**: APFS snapshots and multiple volumes, ECDSA signatures. An encrypted DMG is identified but cannot be read. FairPlay-encrypted IPAs downloaded from the App Store have been verified on real samples: the encryption is identified, metadata, signatures and resources are analyzed as usual, and the encrypted code cannot be read.

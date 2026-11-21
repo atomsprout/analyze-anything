@@ -186,3 +186,10 @@ tagged at madskristensen/MarkdownEditor2022 commit
 Apache-2.0. LICENSE-markdowneditor2022.txt preserves the upstream licence.
 Only the deployment manifest is redistributed. The accompanying .ref.json is
 a project-authored read-only .NET ZIP and XML reference under Apache-2.0.
+
+The four YAML fixtures in crates/aa-windows/tests/data/winget-7zip-24.09
+are unchanged manifests for 7zip.7zip 24.09 from microsoft/winget-pkgs.
+Copyright (c) Microsoft Corporation. MIT, see LICENSE-winget-pkgs.txt.
+The immutable source blob IDs are listed in docs/spikes/windows-winget.md.
+Only manifest text is redistributed. The referenced 7-Zip installers are
+separate downloads and are never executed by the analyzer.

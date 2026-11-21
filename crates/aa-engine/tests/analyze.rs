@@ -18,6 +18,95 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn winget_published_manifest_set_projects_installer_metadata_and_locales() {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/winget-7zip-24.09");
+    let report = run(&folder, &Options::default());
+    let artifact = report.artifacts.iter().find(|a| a.facts.contains_key("windows.winget-package")).expect("version manifest");
+    let package = &artifact.facts["windows.winget-package"];
+    assert_eq!(artifact.path, "7zip.7zip.yaml");
+    assert_eq!(package["id"], "7zip.7zip");
+    assert_eq!(package["version"], "24.09");
+    assert_eq!(package["publisher"], "Igor Pavlov");
+    assert_eq!(package["manifests"].as_array().expect("manifest set").len(), 4);
+    let installers = package["installers"].as_array().expect("installer rows");
+    assert_eq!(installers.len(), 6);
+    assert_eq!(installers[1]["architecture"], "x64");
+    assert_eq!(installers[1]["installer_type"], "exe");
+    assert_eq!(installers[1]["switches"]["Silent"], "/S");
+    assert_eq!(installers[1]["sha256"], "bdd1a33de78618d16ee4ce148b849932c05d0015491c34887846d431d29f308e");
+    assert_eq!(installers[1]["status"], "no-supplied-sha256-match");
+    assert_eq!(installers[5]["installer_type"], "wix");
+    assert_eq!(installers[5]["switches"]["InstallLocation"], "INSTALLDIR=\"<INSTALLPATH>\"");
+    let inventory = report.summary["composition.components"]["components"].as_array().expect("component inventory");
+    let row = inventory.iter().find(|row| row["ecosystem"] == "winget").expect("WinGet identity");
+    assert_eq!(row["version"], "24.09");
+    assert_eq!(row["declared_license"], "LGPL-2.1");
+    assert!(row["purl"].is_null());
+    assert!(report.limitations.iter().all(|entry| !entry.code.starts_with("windows.winget-")));
+}
+
+#[test]
+fn winget_associations_respect_digest_ambiguity_and_yaml_keys() {
+    let dir = tempfile::tempdir().expect("WinGet input set");
+    let file = dir.path().join("manifest.yaml");
+    let bytes = b"fixture installer payload";
+    let manifest = format!(
+        "PackageIdentifier: Fixture.Product\nPackageVersion: '001.0'\nManifestType: singleton\nManifestVersion: 1.12.0\n\
+         PackageLocale: en-US\nPublisher: Fixture\nPackageName: Product\nLicense: MIT\nInstallerType: exe\n\
+         Dependencies:\n  PackageDependencies:\n  - PackageIdentifier: Fixture.Dependency\n    MinimumVersion: '002.0'\n\
+         InstallerSwitches: {{Silent: '--root-silent', Log: '--root-log'}}\nInstallers:\n\
+         - Architecture: x64\n  InstallerUrl: https://example.com/input.exe\n  InstallerSha256: {}\n\
+         \x20 InstallerSwitches: {{Silent: '--row-silent'}}\n",
+        aa_core::sha256_hex(bytes)
+    );
+    std::fs::write(&file, &manifest).expect("singleton");
+    std::fs::write(dir.path().join("renamed.bin"), bytes).expect("supplied bytes");
+    let child = manifest
+        .replace("Fixture.Product", "Fixture.Dependency")
+        .replace("'001.0'", "'002.0'")
+        .replace("Dependencies:\n  PackageDependencies:\n  - PackageIdentifier: Fixture.Dependency\n    MinimumVersion: '002.0'\n", "");
+    let dependency_dir = dir.path().join("dependency");
+    std::fs::create_dir(&dependency_dir).expect("separate directory for dependency");
+    std::fs::write(dependency_dir.join("metadata.yaml"), child.replace("'002.0'", "'003.0'")).expect("supplied later version");
+    let report = run(dir.path(), &Options::default());
+    assert_eq!(report.summary["composition.components"]["winget_dependencies"][0]["status"], "unresolved-minimum-version");
+    std::fs::write(dependency_dir.join("metadata.yaml"), child).expect("supplied minimum version");
+    let report = run(dir.path(), &Options::default());
+    let manifest_file = report.artifacts.iter().find(|a| a.path == "manifest.yaml").expect("manifest artifact");
+    let package = &manifest_file.facts["windows.winget-package"];
+    assert_eq!(package["version"], "001.0");
+    assert_eq!(package["installers"][0]["status"], "sha256-match");
+    assert_eq!(package["installers"][0]["target"], "renamed.bin");
+    assert_eq!(package["installers"][0]["switches"]["Silent"], "--row-silent");
+    assert_eq!(package["installers"][0]["switches"]["Log"], "--root-log");
+    let relationship = &report.summary["composition.components"]["winget_dependencies"][0];
+    assert_eq!(relationship["status"], "supplied-candidate");
+    assert_eq!(relationship["target"], "dependency/metadata.yaml");
+    assert_eq!(
+        serde_json::to_vec(&report).expect("first report"),
+        serde_json::to_vec(&run(dir.path(), &Options::default())).expect("repeat report")
+    );
+
+    std::fs::write(dir.path().join("duplicate.bin"), bytes).expect("duplicate bytes");
+    let report = run(dir.path(), &Options::default());
+    let manifest_file = report.artifacts.iter().find(|a| a.path == "manifest.yaml").expect("manifest artifact");
+    let installer = &manifest_file.facts["windows.winget-package"]["installers"][0];
+    assert_eq!(installer["status"], "ambiguous-sha256");
+    assert!(installer["target"].is_null());
+
+    for invalid in [
+        format!("{manifest}PackageVersion: 2.0\n"),
+        format!("{manifest}CustomAlias: &source test\nCustomCopy: *source\n"),
+        format!("{manifest}---\nOtherDocument: true\n"),
+    ] {
+        std::fs::write(&file, invalid).expect("unsupported input");
+        let report = run(&file, &Options::default());
+        assert!(report.limitations.iter().any(|entry| entry.code == "windows.winget-unreadable"));
+        assert!(report.artifacts.iter().all(|a| !a.is("winget-manifest")));
+    }
+}
+
+#[test]
 fn vsix_published_manifest_agrees_with_windows_zip_and_xml_reference() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-markdowneditor-2.0.464.vsixmanifest");
     let reference: serde_json::Value =

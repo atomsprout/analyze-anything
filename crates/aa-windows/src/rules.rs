@@ -1396,4 +1396,32 @@ pub const RULES: &[Rule] = &[
         text_zh: "VSIX 包和根清单之间无法建立唯一关联，或包信息超过读取上限。",
         text_en: "The VSIX package could not be associated with one qualified root manifest, or package data exceeded a limit.",
     },
+    Rule {
+        id: "windows.winget-manifest",
+        title_zh: "WinGet 软件包清单",
+        title_en: "WinGet package manifest",
+        text_zh: "WinGet 清单声明软件包 {name}，版本 {version}，清单类型 {type}。",
+        text_en: "The WinGet manifest declares package {name}, version {version}, with manifest type {type}.",
+    },
+    Rule {
+        id: "windows.winget-unreadable",
+        title_zh: "WinGet 清单无法读取",
+        title_en: "WinGet manifest could not be read",
+        text_zh: "清单编码、YAML 结构、版本或输入大小超出支持范围，或清单与采集的文件不一致。",
+        text_en: "The manifest encoding, YAML structure, version or size is outside the supported profile, or the manifest differs from the captured file.",
+    },
+    Rule {
+        id: "windows.winget-manifest-incomplete",
+        title_zh: "WinGet 清单读取不完整",
+        title_en: "WinGet manifest partially read",
+        text_zh: "部分安装程序、依赖或安装参数声明超出支持范围，或达到读取上限。",
+        text_en: "Some installer, dependency or switch declarations fall outside the supported profile or exceeded a limit.",
+    },
+    Rule {
+        id: "windows.winget-set-unresolved",
+        title_zh: "WinGet 清单集合未建立",
+        title_en: "WinGet manifest set unresolved",
+        text_zh: "输入缺少唯一且匹配的必要清单，或清单集合超出读取上限。",
+        text_en: "The input lacks a unique matching set of required manifests, or the manifest set exceeded a limit.",
+    },
 ];

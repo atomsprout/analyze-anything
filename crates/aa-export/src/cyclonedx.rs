@@ -50,6 +50,9 @@ pub fn cyclonedx(report: &Report) -> Value {
             {
                 properties.push(json!({ "name": format!("aa:license-{kind}"), "value": value }));
             }
+            if let Some(license) = text(component, "declared_license") {
+                properties.push(json!({ "name": "aa:declared-license", "value": license }));
+            }
             entry["properties"] = json!(properties);
             Some(entry)
         })

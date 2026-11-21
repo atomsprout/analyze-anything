@@ -16,6 +16,8 @@ use serde_json::{Value, json};
 
 #[path = "nuget_relationships.rs"]
 mod nuget_relationships;
+#[path = "winget_relationships.rs"]
+mod winget_relationships;
 
 pub struct Components;
 
@@ -43,6 +45,13 @@ const RULES: &[Rule] = &[
         title_en: "VSIX dependency relationship budget reached",
         text_zh: "部分 VSIX 依赖关系未列入组件清单。完整的已读取关系见对应的包数据。",
         text_en: "Some VSIX dependency relationships were omitted from the component inventory. The corresponding package facts retain the captured relationships.",
+    },
+    Rule {
+        id: "composition.winget-dependency-budget",
+        title_zh: "WinGet 依赖关系达到报告上限",
+        title_en: "WinGet dependency relationship budget reached",
+        text_zh: "部分 WinGet 依赖声明未列入组件关系。原始声明见对应的包数据。",
+        text_en: "Some WinGet dependency declarations were omitted from the component relationships. The corresponding package facts retain the source declarations.",
     },
 ];
 
@@ -177,6 +186,23 @@ impl Analyzer for Components {
                 });
             }
         }
+        let winget: BTreeMap<_, _> = tree
+            .artifacts()
+            .iter()
+            .filter_map(|artifact| artifact.facts.get("windows.winget-package").map(|fact| (artifact.path.as_str(), fact)))
+            .collect();
+        for (&source, package) in &winget {
+            if let (Some(name), Some(version)) = (text(package, "id"), text(package, "version")) {
+                found.push(Component {
+                    ecosystem: "winget",
+                    name: name.to_owned(),
+                    version: Some(version.to_owned()),
+                    kind: "application",
+                    declared_range: None,
+                    source: source.to_owned(),
+                });
+            }
+        }
         if found.is_empty() {
             return;
         }
@@ -219,12 +245,19 @@ impl Analyzer for Components {
                     row["publisher"] = manifest["publisher"].clone();
                     row["display_name"] = manifest["name"].clone();
                 }
+                if let Some(package) = winget.get(c.source.as_str()).filter(|_| c.ecosystem == "winget") {
+                    row["manifests"] = package["manifests"].clone();
+                    row["publisher"] = package["publisher"].clone();
+                    row["display_name"] = package["display_name"].clone();
+                    row["declared_license"] = package["license"].clone();
+                }
                 row
             })
             .collect();
         let mut summary = json!({ "components": listed, "total": found.len(), "truncated": found.len() > LISTED });
         nuget_relationships::attach(tree, out, &manifests, &listed, &mut summary);
         vsix_relationships(out, &extensions, &vsix_occurrences, &listed, &mut summary);
+        winget_relationships::attach(tree, out, &winget, &mut summary);
         out.summary("composition.components", summary);
         let mut finding = Finding::new(Section::Composition, "composition", "composition.components", Confidence::Derived, Severity::Info)
             .param("total", found.len())
