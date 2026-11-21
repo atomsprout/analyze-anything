@@ -12,7 +12,7 @@ fn child<'a>(tree: &'a dyn Tree, parent: &Artifact, name: &str) -> Result<&'a Ar
         .ok_or("canonical publisher input was not captured in the same container")
 }
 
-fn coverage(tree: &dyn Tree, parent: &Artifact, binding: &Value, plain: &[u8]) -> Value {
+fn coverage(tree: &dyn Tree, parent: &Artifact, binding: &Value, manifest_name: &str, plain: &[u8]) -> Value {
     let result = (|| -> Result<()> {
         let map_digest = binding["checks"]
             .as_array()
@@ -30,7 +30,7 @@ fn coverage(tree: &dyn Tree, parent: &Artifact, binding: &Value, plain: &[u8]) -
             .as_array()
             .into_iter()
             .flatten()
-            .filter(|r| r["path"].as_str().is_some_and(|p| p.eq_ignore_ascii_case("AppxManifest.xml")))
+            .filter(|r| r["path"].as_str().is_some_and(|p| p.eq_ignore_ascii_case(manifest_name)))
             .take(2)
             .collect();
         if rows.len() != 1 || !rows[0]["unresolved"].is_null() {
@@ -93,12 +93,19 @@ pub(super) fn analyze(
             return Err("signer subject spelling is outside qualified publisher profile");
         }
         let subject = subject["value"].as_str().ok_or("qualified signer subject spelling absent")?;
-        let manifest = child(tree, parent, "AppxManifest.xml")?;
-        let model = manifest.facts.get("windows.msix").ok_or("manifest declarations absent")?;
+        let candidates: Vec<_> = [("AppxManifest.xml", "windows.msix"), (crate::msix_bundle::MANIFEST, "windows.msix-bundle")]
+            .into_iter()
+            .filter_map(|(name, key)| child(tree, parent, name).ok().map(|artifact| (name, key, artifact)))
+            .collect();
+        if candidates.len() != 1 {
+            return Err("publisher requires one canonical package or bundle manifest");
+        }
+        let (manifest_name, key, manifest) = candidates[0];
+        let model = manifest.facts.get(key).ok_or("manifest declarations absent")?;
         if model["identity_projection_established"] != true || model["identity_status"] != "unique" {
             return Err("manifest has no reusable unique qualified identity");
         }
-        let entry = directory.entries.iter().find(|e| e.name == "AppxManifest.xml").ok_or("canonical original manifest entry absent")?;
+        let entry = directory.entries.iter().find(|e| e.name == manifest_name).ok_or("canonical original manifest entry absent")?;
         let plain = signature::read(bytes, entry, budget)?;
         let manifest_digest = aa_core::sha256_hex(&plain);
         if manifest.size != plain.len() as u64
@@ -113,7 +120,7 @@ pub(super) fn analyze(
             json!({"profile":crate::msix_publisher::PROFILE,"status":if matches {"matches"}else{"differs"},"publisher_checked":true,"matches":matches,
             "manifest_sha256":manifest_digest,"signature_sha256":digest,"manifest_publisher":publisher,"signer_subject_spelling":subject,
             "signer_certificate_sha256":signer["signer"]["sha256"],"signer_subject_sha256":signer["msix_publisher_subject"]["subject_sha256"],
-            "manifest_signed_coverage":coverage(tree,parent,binding,&plain),"schema_validated":false,"certificate_policy_checked":false,"windows_trust_checked":false}),
+            "manifest_name":manifest_name,"manifest_signed_coverage":coverage(tree,parent,binding,manifest_name,&plain),"schema_validated":false,"certificate_policy_checked":false,"windows_trust_checked":false}),
             manifest,
             signature,
         ))
@@ -121,7 +128,7 @@ pub(super) fn analyze(
     let fact = match result {
         Ok((fact, manifest, signature)) => {
             out.finding(Finding::new(Section::Provenance,"windows",if fact["matches"]==true {"windows.msix-publisher-correspondence"}else{"windows.msix-publisher-mismatch"},Confidence::Verified,if fact["matches"]==true {Severity::Info}else{Severity::High})
-                .evidence(Evidence::field(manifest,"Package/Identity/Publisher",fact["manifest_publisher"].clone()))
+                .evidence(Evidence::field(manifest,"Identity/Publisher",fact["manifest_publisher"].clone()))
                 .evidence(Evidence::field(signature,"verified CMS signer/qualified reverse X500 subject",json!({"spelling":fact["signer_subject_spelling"],"certificate_sha256":fact["signer_certificate_sha256"],"subject_sha256":fact["signer_subject_sha256"]}))));
             if fact["manifest_signed_coverage"]["established"] != true {
                 out.limitation(

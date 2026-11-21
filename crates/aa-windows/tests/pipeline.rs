@@ -20,6 +20,46 @@ fn membership_entry<'a>(fact: &'a Value, profile: &str) -> &'a Value {
 }
 
 #[test]
+fn msix_bundle_declarations_match_read_only_native_manifest_references() {
+    for package in ["native-msix-bundle.appxbundle", "upstream-BundleWithIntlPackage.appxbundle", "upstream-SignedUntrustedCert.appxbundle"]
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data(package))).expect("licensed bundle");
+        let mut bytes = Vec::new();
+        archive.by_name("AppxMetadata/AppxBundleManifest.xml").expect("bundle manifest").read_to_end(&mut bytes).expect("manifest bytes");
+        let run = analyze(&[("AppxBundleManifest.xml", bytes)]);
+        let model = run.fact("AppxBundleManifest.xml", "windows.msix-bundle");
+        let native: Value = serde_json::from_slice(&data(&format!("{package}.bundle.ref.json"))).expect("native reference");
+        assert_eq!(model["source_sha256"], native["source_sha256"]);
+        for key in ["name", "publisher", "version"] {
+            assert_eq!(model["identity"][key], native["identity"][key]);
+        }
+        let rows = model["packages"].as_array().expect("declarations");
+        let expected = native["packages"].as_array().expect("native declarations");
+        assert_eq!(rows.len(), expected.len());
+        for (row, expected) in rows.iter().zip(expected) {
+            assert_eq!(row["projection_established"], true);
+            for key in ["type", "file_name", "offset", "size"] {
+                assert_eq!(row[key], expected[key]);
+            }
+            for key in ["version", "architecture", "resource_id"] {
+                assert_eq!(row[key], expected["identity"][key]);
+            }
+            let resources = row["resources"].as_array().expect("resource declarations");
+            let native_resources = expected["resources"].as_array().expect("native resources");
+            assert_eq!(resources.len(), native_resources.len());
+            for (resource, expected) in resources.iter().zip(native_resources) {
+                assert_eq!(
+                    resource["language"].as_str().map(str::to_ascii_lowercase),
+                    expected["language"].as_str().map(str::to_ascii_lowercase)
+                );
+                assert!(resource["scale"].is_null() && expected["scale"].is_null());
+                assert!(resource["dx_feature_level"].is_null() && expected["dx_feature_level"].is_null());
+            }
+        }
+    }
+}
+
+#[test]
 fn msix_manifest_identity_and_dependency_projections_match_native_readers() {
     for package in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"]
     {

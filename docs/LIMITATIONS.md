@@ -38,7 +38,7 @@ not establish package trust. An initial P7X layer checks bounded SHA-256 SIP cap
 CMS signature mathematics and original AXPC/AXCD/AXCT/AXBM/optional AXCI digests for
 the final-signature-record ZIP32/ZIP64 profile. One pinned Microsoft RSA-2048/SHA-256
 APPX has been compared with CryptoAPI and independent hashes. Other SIP/signature
-profiles, bundles, broader publisher subject encodings, timestamp/revocation/certificate
+profiles, broader bundle profiles and publisher subject encodings, timestamp/revocation/certificate
 policy, Windows trust and installation eligibility remain unestablished. Name binding uses the shared conservative
 ASCII Windows path profile and requires complete, unambiguous input enumeration.
 Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and
@@ -59,6 +59,19 @@ Literal comparison and signed manifest coverage are separate; neither establishe
 trust. See [the publisher scope](spikes/windows-msix-publisher.md). The 2010 manifest
 namespace has constructed coverage only; four Windows 10 manifests match native readers.
 See [the manifest scope record](spikes/windows-msix-manifest.md).
+
+The bundle layer reads the 2013 base namespace, keeps bounded identity/package/resource
+declarations, and compares supported stored OPC packages with original ZIP extents and
+captured inner manifests. Separate APPX-bundle SIP and outer CMS/package-digest coverage
+have one pinned signed Microsoft reference. Resource qualifiers are preserved without
+full cross-package matching; optional/flat bundles, modern extension semantics, external
+packages/dependencies and host package selection remain unresolved. Scale/DirectX
+qualifier fields and escaped-space OPC names have constructed coverage only; native
+resource references currently exercise language qualifiers, with one internationalized
+OPC package name. Raw ZIP/name,
+capture, decompression and output budgets apply. One SDK-built application/resource
+bundle and eight upstream positive/negative fixtures are recorded in
+[the bundle scope](spikes/windows-msix-bundles.md). Broader signed bundles and W6 remain open.
 
 ZIP archives whose central directory repeats names receive an explicit limitation:
 the current ZIP library collapses those records, so not every version is retained.

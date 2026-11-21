@@ -82,6 +82,27 @@ Test samples in crates/aa-windows/tests/data (not part of the program):
     by tools/native-compare/windows-msix-publisher-check.py. No private key or
     certificate store is used.
 
+  - upstream-BundleWithIntlPackage.appxbundle, upstream-SignedUntrustedCert.appxbundle,
+    upstream-ManifestPackageHasIncorrectArchitecture.appxbundle,
+    upstream-ManifestPackageHasIncorrectSize.appxbundle,
+    upstream-ManifestPackageHasInvalidOffset.appxbundle,
+    upstream-ManifestHasExtraPackage.appxbundle,
+    upstream-PayloadPackageNotListedInManifest.appxbundle and
+    upstream-PayloadPackageIsCompressed.appxbundle: unchanged bundle test fixtures
+    from microsoft/msix-packaging, src/test/testData/unpack/bundles/, pinned at
+    25a65f5c1690930813bcc10cdf1d59fa865f2bb1. The upstream prefix was added locally;
+    SignedUntrustedCert-CERT_E_CHAINING.appxbundle was shortened to SignedUntrustedCert.
+    Copyright (C) Microsoft Corporation. MIT; see LICENSE-msix-packaging.txt.
+    Sources and hashes are recorded in docs/spikes/windows-msix-bundles.md. Nothing
+    from these packages is executed, installed or imported into a certificate store.
+    Their *.bundle.ref.json files are project-authored read-only native API snapshots.
+
+  - native-msix-bundle.appxbundle: project-authored Apache-2.0 application/resource
+    bundle built by tools/native-compare/windows-msix-bundle-fixtures.py using
+    Windows SDK MakeAppx 10.0.26100.0 and the existing owned MSIX source assets.
+    It is unsigned and contains no private key. Its *.bundle.ref.json is a
+    project-authored AppxPackaging manifest API snapshot under Apache-2.0.
+
   - native-msix-sha256.msix, native-msix-sha384.msix and native-msix-sha512.msix:
     project-authored Apache-2.0 fixtures built by tools/native-compare/
     windows-msix-fixtures.py with Windows SDK MakeAppx 10.0.26100.0. They contain

@@ -38,6 +38,7 @@ mod lnk;
 mod msi;
 mod msisig;
 mod msix_blockmap;
+mod msix_bundle;
 mod msix_publisher;
 mod msix_signature;
 mod msix_xml;
@@ -120,6 +121,7 @@ impl Analyzer for Windows {
             && !matches!(file.extension().as_deref(), Some("url" | "lnk" | "reg" | "inf" | "cat" | "p7x"))
             && !file.name().eq_ignore_ascii_case("AppxBlockMap.xml")
             && !file.name().eq_ignore_ascii_case("AppxSignature.p7x")
+            && !file.name().eq_ignore_ascii_case("AppxBundleManifest.xml")
         {
             return;
         }
@@ -132,6 +134,7 @@ impl Analyzer for Windows {
         catalog::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
+        msix_bundle::analyze(file, &bytes, out);
         msix_blockmap::analyze_file(file, &bytes, out);
         msix_signature::analyze(file, &bytes, out);
         asar_fact(file, &bytes, out);

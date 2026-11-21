@@ -10,6 +10,20 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-msix-bundle",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 MSIX/APPX bundle，包含声明的应用或资源包。内部包的对应关系与外层签名字节覆盖分别记录，不判断本机安装资格。",
+        text_en: "This is an MSIX/APPX bundle containing declared application or resource packages. Inner-package correspondence and outer signed-byte coverage are recorded separately; host installation eligibility is not judged.",
+    },
+    Rule {
+        id: "overview.kind-msix-bundle-manifest",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 MSIX/APPX bundle 清单，声明内部应用包、资源包、架构与位置。清单声明、实际内容对应关系和签名覆盖分别记录。",
+        text_en: "This is an MSIX/APPX bundle manifest declaring inner application/resource packages, architectures and locations. Declarations, content correspondence and signature coverage are recorded separately.",
+    },
+    Rule {
         id: "overview.kind-msix-signature",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -413,6 +427,8 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("windows-catalog", _) => finding("overview.kind-windows-catalog", Confidence::Verified),
         ("msix-block-map", _) => finding("overview.kind-msix-block-map", Confidence::Verified),
         ("msix-signature", _) => finding("overview.kind-msix-signature", Confidence::Verified),
+        ("msix-bundle-manifest", _) => finding("overview.kind-msix-bundle-manifest", Confidence::Verified),
+        ("msix-bundle", _) => finding("overview.kind-msix-bundle", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

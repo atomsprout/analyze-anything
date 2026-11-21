@@ -71,6 +71,118 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
 }
 
 #[test]
+fn msix_bundles_bind_original_package_extents_and_keep_outer_signature_coverage_separate() {
+    let directory = tempfile::tempdir().expect("bundle inputs");
+    for (name, count, signed) in [
+        ("native-msix-bundle.appxbundle", 2, false),
+        ("upstream-BundleWithIntlPackage.appxbundle", 1, false),
+        ("upstream-SignedUntrustedCert.appxbundle", 2, true),
+    ] {
+        let original =
+            std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data").join(name)).expect("licensed bundle");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &original).expect("bundle input");
+        let report = run(&input, &Options::default());
+        let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+        assert_eq!(root.kind.as_deref(), Some("msix-bundle"));
+        let checks = &root.facts["windows.msix-bundle-checks"];
+        assert_eq!(checks["packages_corresponding"], count, "{name}: {checks}");
+        assert_eq!(checks["packages_differing"], 0);
+        assert_eq!(checks["packages_unresolved"], 0);
+        assert_eq!(checks["packages_partial"], 0);
+        assert!(checks["undeclared_packages"].as_array().expect("undeclared packages").is_empty());
+        for row in checks["records"].as_array().expect("bound package records") {
+            assert_eq!(row["result"]["bundle_signed_byte_coverage"], signed);
+            assert_eq!(row["result"]["inner_signature_required_inferred"], false);
+            assert_eq!(row["result"]["windows_trust_checked"], false);
+        }
+        if signed {
+            let binding = &root.facts["windows.msix-signature-binding"];
+            assert_eq!(binding["matching_digests"], 4);
+            assert_eq!(binding["cms_signature_verified"], true);
+            assert_eq!(binding["publisher_matches"], true);
+            assert_eq!(binding["publisher_manifest_signed_coverage"], true);
+        }
+        assert_eq!(
+            serde_json::to_vec(&report).expect("report"),
+            serde_json::to_vec(&run(&input, &Options::default())).expect("repeat report")
+        );
+        assert_eq!(std::fs::read(&input).expect("unchanged input"), original);
+    }
+}
+
+#[test]
+fn independent_bundle_mismatches_missing_extra_and_compressed_packages_have_distinct_results() {
+    let directory = tempfile::tempdir().expect("negative bundle inputs");
+    for (case, field, differing, unresolved, extra) in [
+        ("ManifestPackageHasIncorrectArchitecture", Some("architecture"), 1, 0, 0),
+        ("ManifestPackageHasIncorrectSize", Some("size"), 1, 0, 0),
+        ("ManifestPackageHasInvalidOffset", Some("offset"), 1, 0, 0),
+        ("ManifestHasExtraPackage", None, 0, 1, 0),
+        ("PayloadPackageNotListedInManifest", None, 0, 0, 1),
+        ("PayloadPackageIsCompressed", None, 0, 1, 0),
+    ] {
+        let name = format!("upstream-{case}.appxbundle");
+        let bytes = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data").join(&name))
+            .expect("licensed negative bundle");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &bytes).expect("negative input");
+        let report = run(&input, &Options::default());
+        let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+        let checks = &root.facts["windows.msix-bundle-checks"];
+        assert_eq!(checks["packages_differing"], differing, "{case}: {checks}");
+        assert_eq!(checks["packages_unresolved"], unresolved, "{case}: {checks}");
+        assert_eq!(checks["undeclared_packages"].as_array().expect("extra packages").len(), extra);
+        if let Some(field) = field {
+            assert!(checks["records"].as_array().expect("records").iter().any(|r| {
+                r["result"]["checks"].as_array().is_some_and(|cs| cs.iter().any(|c| c["field"] == field && c["status"] == "differs"))
+            }));
+            assert!(report.findings.iter().any(|f| f.rule == "windows.msix-bundle-mismatch" && !f.evidence.is_empty()));
+        }
+        assert_eq!(std::fs::read(&input).expect("unchanged negative"), bytes);
+    }
+}
+
+#[test]
+fn bundle_physical_size_differences_are_retained_when_inner_package_identity_is_unreadable() {
+    use std::io::{Cursor, Read};
+    let original = std::fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-ManifestPackageHasIncorrectSize.appxbundle"),
+    )
+    .expect("independent negative bundle");
+    let mut archive = zip::ZipArchive::new(Cursor::new(original)).expect("bundle ZIP");
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index).expect("entry");
+        let name = entry.name().expect("entry name").into_owned();
+        let mut bytes = Vec::new();
+        entry.read_to_end(&mut bytes).expect("content");
+        if name.ends_with(".appx") {
+            bytes.fill(b'x');
+        }
+        writer
+            .start_file(name, zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored))
+            .expect("variant entry");
+        writer.write_all(&bytes).expect("variant content");
+    }
+    let directory = tempfile::tempdir().expect("variant input");
+    let input = directory.path().join("unreadable-inner.appxbundle");
+    let bytes = writer.finish().expect("variant ZIP").into_inner();
+    std::fs::write(&input, &bytes).expect("variant bytes");
+    let report = run(&input, &Options::default());
+    let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+    let checks = &root.facts["windows.msix-bundle-checks"];
+    assert_eq!(checks["packages_differing"], 1, "{checks}");
+    let row = &checks["records"][0]["result"];
+    assert_eq!(row["inner_identity_comparison_performed"], false);
+    assert_eq!(checks["packages_with_unresolved_relationships"], 1);
+    assert!(report.limitations.iter().any(|l| l.code == "windows.msix-bundle-unresolved"));
+    assert!(row["reason"].as_str().expect("unread reason").contains("nested package"));
+    assert!(row["checks"].as_array().expect("physical checks").iter().any(|c| c["field"] == "size" && c["status"] == "differs"));
+    assert_eq!(std::fs::read(&input).expect("unchanged variant"), bytes);
+}
+
+#[test]
 fn msix_publisher_correspondence_keeps_manifest_coverage_and_cms_failures_separate() {
     use std::io::{Cursor, Read};
     let original =

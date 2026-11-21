@@ -122,11 +122,14 @@ def independent(raw):
         struct.pack_into("<Q", end, at, value)
     computed = {"AXPC": hashlib.sha256(raw[:sig.header_offset]).hexdigest(), "AXCD": hashlib.sha256(central + end).hexdigest()}
     for label, name in [("AXCT", "[Content_Types].xml"), ("AXBM", "AppxBlockMap.xml"), ("AXCI", "AppxMetadata/CodeIntegrity.cat")]:
-        computed[label] = hashlib.sha256(archive.read(name)).hexdigest()
+        if name in archive.namelist():
+            computed[label] = hashlib.sha256(archive.read(name)).hexdigest()
     at = signature.index(b"APPX")
-    capsule = signature[at:at + 184]
-    assert len(capsule) == 184 and capsule[:4] == b"APPX"
-    declared = {capsule[p:p + 4].decode("ascii"): capsule[p + 4:p + 36].hex() for p in range(4, 184, 36)}
+    size = 4 + len(computed) * 36
+    assert size in (148, 184)
+    capsule = signature[at:at + size]
+    assert len(capsule) == size and capsule[:4] == b"APPX"
+    declared = {capsule[p:p + 4].decode("ascii"): capsule[p + 4:p + 36].hex() for p in range(4, size, 36)}
     return signature, [{"label": label, "expected": declared[label], "computed": digest, "matches": declared[label] == digest} for label, digest in computed.items()]
 
 

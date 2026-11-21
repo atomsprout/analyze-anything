@@ -29,12 +29,15 @@ pub(super) fn parse(bytes: &[u8]) -> Result<Value, String> {
     }
     let mut sip = data.expect(TAG_SEQUENCE)?.children();
     finish(data)?;
-    if sip.expect(TAG_INTEGER)?.integer_bytes() != Some(&[1, 1, 0, 0])
-        || sip.expect(TAG_OCTET_STRING)?.content
-            != [0x4b, 0xdf, 0xc5, 0x0a, 0x07, 0xce, 0xe2, 0x4d, 0xb7, 0x6e, 0x23, 0xc8, 0x39, 0xa0, 0x9f, 0xd1]
-    {
+    if sip.expect(TAG_INTEGER)?.integer_bytes() != Some(&[1, 1, 0, 0]) {
         return Err("MSIX SIP version or subject identifier is unsupported".into());
     }
+    let subject = sip.expect(TAG_OCTET_STRING)?.content;
+    let subject = match subject {
+        [0x4b, 0xdf, 0xc5, 0x0a, 0x07, 0xce, 0xe2, 0x4d, 0xb7, 0x6e, 0x23, 0xc8, 0x39, 0xa0, 0x9f, 0xd1] => "appx",
+        [0xb3, 0x58, 0x5f, 0x0f, 0xde, 0xaa, 0x9a, 0x4b, 0xa4, 0x34, 0x95, 0x74, 0x2d, 0x92, 0xec, 0xeb] => "appx-bundle",
+        _ => return Err("MSIX SIP subject identifier is unsupported".into()),
+    };
     for _ in 0..5 {
         if sip.expect(TAG_INTEGER)?.integer_bytes() != Some(&[0]) {
             return Err("MSIX SIP reserved field is unsupported".into());
@@ -71,7 +74,7 @@ pub(super) fn parse(bytes: &[u8]) -> Result<Value, String> {
     if ["AXPC", "AXCD", "AXCT", "AXBM"].iter().any(|label| !declarations.contains_key(*label)) {
         return Err("MSIX required digest declaration absent".into());
     }
-    let mut fact = json!({"source_sha256":aa_core::sha256_hex(bytes),"algorithm":"sha256","digests":declarations,"cms":signatures,
+    let mut fact = json!({"source_sha256":aa_core::sha256_hex(bytes),"sip_subject":subject,"algorithm":"sha256","digests":declarations,"cms":signatures,
         "package_digests_checked":false,"publisher_checked":false,"windows_trust_checked":false,"timestamp_checked":false,"certificate_policy_checked":false});
     redact(&mut fact)?;
     if serde_json::to_vec(&fact).map_err(|_| "MSIX signature publication failed")?.len() > 8 * 1024 * 1024 {

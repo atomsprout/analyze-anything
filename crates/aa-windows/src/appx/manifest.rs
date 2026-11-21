@@ -479,6 +479,7 @@ pub(super) fn read(bytes: &[u8]) -> Result<Value, &'static str> {
     let fact = json!({"source_sha256":aa_core::sha256_hex(bytes),"namespace":ns,"xml_offset_basis":"decoded-UTF8-XML","identity":identity,"identity_status":identity_status,
         "identity_projection_established":identity_status=="unique","identity_declarations":identity_declarations,"identity_declarations_omitted":identities.len().saturating_sub(16),
         "display_name":property("DisplayName"),"publisher_display_name":property("PublisherDisplayName"),"property_declarations":property_declarations,
+        "resource_package":property("ResourcePackage"),"property_sections":property_sections,
         "capabilities":capabilities,"capability_declarations":capability_declarations,"capability_declarations_omitted":cap_count.saturating_sub(200),
         "applications":applications,"application_declarations":application_declarations,"application_declarations_omitted":app_count.saturating_sub(50),
         "extensions":extensions,"extension_declarations":extension_declarations,"extension_declarations_omitted":ext_count.saturating_sub(200),

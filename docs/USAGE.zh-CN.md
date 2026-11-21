@@ -17,6 +17,11 @@ ZIP32/ZIP64 层会核对记录对应关系及声明的本地头长度。受支�
 详见 [清单读取范围](spikes/windows-msix-manifest.md)（英文）。
 支持的证书主题编码、别名及原生对照见 [发布者对应关系](spikes/windows-msix-publisher.md)（英文）。
 
+MSIX/APPX bundle 还会进行有资源上限的清单读取，核对未压缩内部包的原始数据偏移、大小、标识、架构及
+应用/资源包类型。UTF-8 OPC 文件名转义仅作为归档内的逻辑标识处理。外层 bundle 的 CMS/摘要字节覆盖与
+内部包对应关系分别记录，不推断内部包必须另有签名，也不为本机选择安装包。资源限定符、可选/扁平 bundle
+及信任策略等尚未支持的语义见 [bundle 检查范围](spikes/windows-msix-bundles.md)（英文）。
+
 `analyze-anything` 对文件或文件夹做纯静态分析，写出一份带证据的报告。输入只会被读取，不会被执行、安装或加载。
 
 Homebrew 安装时还提供一个短名字 `aaaa`。

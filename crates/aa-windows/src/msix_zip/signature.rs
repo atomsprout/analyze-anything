@@ -69,6 +69,11 @@ pub(super) fn analyze(tree: &dyn Tree, parent: &Artifact, bytes: &[u8], director
             .filter(|s| s.parent.as_deref() == Some(parent.path.as_str()))
             .ok_or("signature child not captured in original container")?;
         let envelope = source.facts.get("windows.msix-signature").ok_or("signature declarations were not established")?;
+        let bundle = directory.entries.iter().any(|e| e.name == crate::msix_bundle::MANIFEST);
+        let package = directory.entries.iter().any(|e| e.name == "AppxManifest.xml");
+        if bundle == package || envelope["sip_subject"] != if bundle { "appx-bundle" } else { "appx" } {
+            return Err("SIP subject does not correspond to one canonical package or bundle manifest");
+        }
         let signature = read(bytes, entry, budget)?;
         let digest = aa_core::sha256_hex(&signature);
         if source.digests.as_ref().is_none_or(|d| d.sha256 != digest) || envelope["source_sha256"] != digest {

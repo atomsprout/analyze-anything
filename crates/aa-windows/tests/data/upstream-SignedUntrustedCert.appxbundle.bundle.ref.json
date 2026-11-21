@@ -1,0 +1,53 @@
+{
+  "source_sha256": "ee9fd9c8527c9781d886a2178cec3b6d33becc45e3faa3c8bce43b0b635743fe",
+  "identity": {
+    "name": "Microsoft.Help",
+    "architecture": "neutral",
+    "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+    "version": "2013.318.2234.3407",
+    "resource_id": "~"
+  },
+  "packages": [
+    {
+      "identity": {
+        "name": "Microsoft.Help",
+        "architecture": "x86",
+        "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "1.0.0.0",
+        "resource_id": "neutral"
+      },
+      "type": "application",
+      "file_name": "Basic.appx",
+      "offset": 40,
+      "size": 9683,
+      "resources": [
+        {
+          "language": "en-us",
+          "scale": null,
+          "dx_feature_level": null
+        }
+      ]
+    },
+    {
+      "identity": {
+        "name": "Microsoft.Help",
+        "architecture": "x64",
+        "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "1.0.0.0",
+        "resource_id": "neutral"
+      },
+      "type": "application",
+      "file_name": "BasicWithPE.appx",
+      "offset": 9793,
+      "size": 82280,
+      "resources": [
+        {
+          "language": "en-us",
+          "scale": null,
+          "dx_feature_level": null
+        }
+      ]
+    }
+  ],
+  "api": "IAppxBundleManifestReader/IAppxBundleManifestPackageInfo"
+}

@@ -1,0 +1,33 @@
+{
+  "source_sha256": "08c5254a283820690efaa7786c2539ba91bca75ef5819cabc2aafea2abbb5370",
+  "identity": {
+    "name": "20477fca-282d-49fb-b03e-371dca074f0f",
+    "architecture": "neutral",
+    "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+    "version": "2018.1126.2350.0",
+    "resource_id": "~"
+  },
+  "packages": [
+    {
+      "identity": {
+        "name": "20477fca-282d-49fb-b03e-371dca074f0f",
+        "architecture": "x86",
+        "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "1.0.0.0",
+        "resource_id": ""
+      },
+      "type": "application",
+      "file_name": "\u092e\u0939\u0938\u0941\u0938.appx",
+      "offset": 80,
+      "size": 92981,
+      "resources": [
+        {
+          "language": "EN-US",
+          "scale": null,
+          "dx_feature_level": null
+        }
+      ]
+    }
+  ],
+  "api": "IAppxBundleManifestReader/IAppxBundleManifestPackageInfo"
+}

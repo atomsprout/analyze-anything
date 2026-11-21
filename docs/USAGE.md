@@ -40,6 +40,14 @@ not full schema validation or installed-package/host compatibility resolution; s
 See [publisher correspondence](spikes/windows-msix-publisher.md) for supported subject
 encodings, aliases and the native comparisons.
 
+MSIX/APPX bundles also receive bounded bundle-manifest projections and comparisons with
+stored inner packages: original data offsets/sizes, identities, architectures and
+application/resource types. UTF-8 OPC file-name escaping is handled as a logical archive
+identifier. Qualified outer bundle CMS/digest coverage is separate from inner-package
+correspondence and does not imply a separate inner signature is required. No package is
+selected for this host. See [bundle scope](spikes/windows-msix-bundles.md) for unsupported
+resource, optional/flat bundle and trust-policy semantics.
+
 | Format | File | For |
 |---|---|---|
 | `json` | `report.json` | The single source of truth: the whole file tree, every finding and its evidence, the limitations, the text of the rules. Every other format is rendered from it |

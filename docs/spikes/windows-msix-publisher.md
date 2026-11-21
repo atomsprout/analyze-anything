@@ -68,6 +68,12 @@ After adding the final redaction/budget/source-binding cases and four encoding
 references, all 27 selected MSIX unit tests and both selected MSIX pipeline tests passed;
 workspace Clippy and format checks passed again. Cross-platform CI remains the next gate.
 
+All five CI jobs subsequently passed for commit `2dba89f8a24f0d99203e4f4b4e88cbd37666e9d8`
+in [run 44885732035](https://github.com/atomsprout/analyze-anything/actions/runs/44885732035).
+The [bundle increment](windows-msix-bundles.md) extends the same comparison to a unique
+canonical bundle manifest and its signed block-map content, while refusing ambiguous
+package/bundle manifest alternatives.
+
 ## Sources
 
 - Microsoft [CertNameToStrW](https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-certnametostrw)
