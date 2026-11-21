@@ -20,9 +20,10 @@ Reports are in English unless you pass `--lang zh` for Chinese. `report.html` ho
 
 MSIX/APPX inputs with a supported `AppxBlockMap.xml` also receive content-size and
 block/file-hash comparisons. These checks use supplied uncompressed files within the
-same container or extracted package directory. Package signature and ZIP-structure
-validation remain separate, unchecked work; digest agreement does not authenticate a
-package. Unsupported or ambiguous names, missing files and exhausted budgets remain
+same container or extracted package directory. With original archive bytes, a separate
+bounded ZIP32/ZIP64 layer checks record correspondence and declared local-header sizes.
+Compressed-block boundaries and package signatures remain unchecked; digest agreement
+does not authenticate a package. Unsupported or ambiguous names, missing files and exhausted budgets remain
 limitations. See [the MSIX check scope](spikes/windows-msix-integrity.md).
 
 | Format | File | For |

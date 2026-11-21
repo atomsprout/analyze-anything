@@ -235,6 +235,7 @@ dependencies = [
  "aa-unpack",
  "base64 0.22.1",
  "cfb 0.16.0",
+ "crc32fast",
  "flate2",
  "hex",
  "innospect",

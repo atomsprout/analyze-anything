@@ -33,6 +33,13 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
         assert_eq!(checks["files_with_matching_hashes"], if name.starts_with("upstream") { 11 } else { 6 });
         assert_eq!(checks["package_signature_checked"], false);
         assert_eq!(checks["zip_structure_checked"], false);
+        let original_zip = report.artifacts.iter().find(|a| a.path == map.parent.as_deref().expect("map container")).expect("original ZIP");
+        let layout = &original_zip.facts["windows.msix-zip-layout"];
+        assert_eq!(layout["mapped_files_unresolved"], 0);
+        assert_eq!(layout["mapped_files_with_header_or_size_mismatch"], 0);
+        assert_eq!(layout["zip64"], true);
+        assert_eq!(layout["package_signature_checked"], false);
+        assert_eq!(layout["compressed_block_sizes_checked"], false);
         assert!(report.findings.iter().any(|f| f.rule == "windows.msix-block-hashes" && !f.evidence.is_empty()));
         assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
         assert_eq!(

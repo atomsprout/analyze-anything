@@ -25,8 +25,12 @@ The following features have only been tested with data we constructed ourselves,
 
 The initial MSIX/APPX content checks read bounded block maps and compare supported
 SHA-256/384/512 blocks and the checked 2021 FileHash extension with captured uncompressed
-bytes. They do not authenticate the block map or verify ZIP physical structure,
-compressed block sizes, package/bundle signatures, publisher-certificate equality,
+bytes. A separate original-ZIP layer checks a bounded contiguous single-disk ZIP32/ZIP64
+profile, raw block-map byte binding, and declared local-header/uncompressed sizes.
+It requires original captured archive bytes; folders and standalone maps cannot supply
+them. Other ZIP versions/flags/methods/names, prefixes, gaps and inconsistent records
+remain unresolved. These layers do not authenticate the block map or verify compressed
+block boundaries, every payload CRC, package/bundle signatures, publisher-certificate equality,
 Windows trust or installation eligibility. Name binding uses the shared conservative
 ASCII Windows path profile and requires complete, unambiguous input enumeration.
 Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and

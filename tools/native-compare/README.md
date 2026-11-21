@@ -122,3 +122,13 @@ on the checked modern SDK inputs, a matching whole-file hash can make that API a
 an altered block declaration. The analyzer reports both block and file-hash checks.
 These are content checks, not package deployment, signature authentication or ZIP-layout
 validation. Repacked negative cases are not claimed to be valid MSIX packages.
+
+Compare original ZIP record/header results with SDK MakeAppx unpacking (without `/nv`)
+and independent Python ZIP metadata, using the four redistributable MSIX/APPX fixtures:
+
+    python tools/native-compare/windows-msix-layout-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/msix-zip-layout-check
+
+Use a fresh output directory. It checks each original plus a changed LfhSize declaration,
+including repeated report bytes and source preservation. SDK validation applies to the
+four original packages only; repacked negatives are declaration cases. No input is installed
+or executed. Compressed-block boundaries and package signatures remain separate work.

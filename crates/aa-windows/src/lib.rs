@@ -38,6 +38,7 @@ mod lnk;
 mod msi;
 mod msisig;
 mod msix_blockmap;
+mod msix_zip;
 mod nsis;
 mod pe;
 mod pefile;
