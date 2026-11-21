@@ -1,4 +1,4 @@
-# MSIX content and original ZIP record checks
+# MSIX content, original ZIP records and physical blocks
 
 W6 remains open. This increment implements the block-map content layer required by
 [PLAN-WINDOWS.md](../PLAN-WINDOWS.md), alongside the existing manifest reader. Package
@@ -77,6 +77,46 @@ Limits are 256 MiB per package, 512 MiB of original bytes across at most 32 maps
 and six discrepancy examples published per map. Unsupported, stale, absent or exhausted
 inputs produce an explicit limitation. The original-record profile is intentionally
 narrower than ZIP and is not a general ZIP validity test.
+
+## Physical block checks
+
+`windows.msix-zip-blocks` is a third, separate result on the original container.
+It uses the frozen original bytes and source-bound map from the record reader.
+The shared distribution index must establish complete enumeration and an unambiguous
+captured target in that same container. A bounded full-stream decode must reproduce
+the captured target's size and SHA-256 before any physical block agreement is claimed.
+No neighboring host file or installed package content is consulted.
+
+Stored blocks have measured 64-KiB/remainder extents; any optional Size declaration
+is compared with that measurement. DEFLATE blocks require positive Size declarations.
+Each selected compressed segment is independently decoded with a bounded output and
+must reproduce the corresponding bytes from full-stream decoding. Intermediate
+segments are closed with an empty final marker for this independent check. A separately
+stored remainder must itself decode to an empty final stream; its representation is
+not limited to `03 00`. A final segment may instead include the original stream end.
+Both full and independent decoders require exact input consumption, exact output size
+and a completed stream. Cross-block dictionary or other nonrestartable profiles remain
+unresolved, even when full-stream content decoding succeeds.
+
+Block hashes, optional whole-file hashes and the mapped payload CRC are then compared
+independently. The result records physical offsets/lengths, captured target binding,
+expected/computed hashes, measured terminator size and bounded witnesses. The Info
+rule counts files with matching blocks and digests. Fixed High findings cover proven
+extent overshoots, stored-size disagreements and hash/CRC disagreements. A missing
+Size, unsupported boundary, stale/missing/ambiguous target or exhausted budget is an
+explicit limitation, never an inferred mismatch. The aggregate distinguishes
+`files_with_matching_blocks` from `files_with_verified_block_spans`; a digest mismatch
+can coexist with independently verified physical spans.
+
+This layer caps files at 64 MiB plain / 128 MiB compressed, compressed segments and
+separate empty remainders at 256 KiB. Across maps it permits 4,096 file attempts,
+32,768 blocks and 512 MiB of decode work, charging both compressed and plain bytes
+for the full and independent passes. Result records have an 8-MiB shared budget,
+with at most 128 records per map, eight initial/failing witnesses per file and six
+evidence examples per outcome. Omission counts and limitations expose reduced output.
+The record-only fact retains its false compressed-block flag; this separate result
+states which files actually received completed physical checks. Neither layer verifies
+unmapped footprint payloads, package/bundle signatures, Windows trust or installability.
 
 ## Limits and name ambiguity
 
@@ -163,21 +203,43 @@ workspace test run, including the 294-second damaged-fixture test, is recorded i
 `out/windows-baseline/workspace-msix-zip-layout.log`; after the final version/name and
 evidence refinements, all five ZIP unit tests and both MSIX engine tests were rerun
 successfully, followed by the native helper on the rebuilt CLI. Cross-platform CI for
-this ZIP increment remains a separate gate.
+the ZIP-record increment passed in all five jobs of run
+[44876877130](https://github.com/atomsprout/analyze-anything/actions/runs/44876877130).
 
-For the next compressed-block step, an independent bounded Python probe checked the
+For the compressed-block step, an independent bounded Python probe checked the
 13 mapped DEFLATE streams across these four packages, including empty streams. Their
 declared block sizes cover all compressed bytes except a final `03 00`; each declared
 segment, with that terminator appended, independently decodes to its corresponding
-64-KiB block/remainder. These are observed fixture properties, not assumptions accepted
-by the analyzer yet. A future check must bind decoded bytes, reject truncated/trailing
-streams, bound duplicate inflation work and report other compression profiles as
-unresolved. Local observations are `out/windows-baseline/msix-zip-block-spans.json`.
+64-KiB block/remainder. The implemented checker now establishes those properties from
+original bytes rather than assuming them. Constructed cases additionally cover an
+empty stored final block and a terminator included in the last declared segment.
+Local observations are `out/windows-baseline/msix-zip-block-spans.json`.
+
+The raw-block helper now compares 27 original/declaration/profile cases using original
+payload streams preserved in constructed ZIP32 wrappers. Cases include changed block
+hashes, extent overshoots, missing Size attributes, shifted boundaries, alternate empty
+final streams and terminators included in the last segment. Python independently
+checks successful original/variant spans with zlib and hashlib; live AppxPackaging
+GetHash/GetCompressedSize declarations are compared with report witnesses. Its
+ValidateFileHash decision remains a separate recorded observation: on the SHA-256/384
+fixtures it again accepted the changed block hash when the payload's whole-file hash
+matched. The raw checker still records that block's independently proven mismatch.
+Constructed wrappers are not package signature or installation qualification.
+
+All 27 cases repeat JSON byte for byte and preserve inputs; English Markdown/HTML and
+Chinese Markdown expose the new rules. Records are
+`out/windows-baseline/msix-raw-blocks-extended/checks.json`. The full workspace test run
+is `out/windows-baseline/workspace-msix-raw-blocks.log`, including 53 Windows pipeline
+tests and the complete damaged-fixture run. After the final empty-stream extension,
+all 95 Windows unit tests passed (one native fixture helper is intentionally ignored),
+as did all 45 engine integration tests, workspace Clippy and the no-default-feature
+CLI build. This includes a portable regression that preserves native compressed
+payloads while changing map declarations. Cross-platform CI for this increment is
+the next gate. W6 remains open.
 
 ## Remaining W6 gates
 
-Finish physical binding with independently checked compressed-block boundaries and
-broader ZIP profiles; establish package/bundle
+Broaden physical block/ZIP profiles and independent large-file coverage; establish package/bundle
 signature bindings, publisher consistency and manifest identity/namespace conflicts; model bundle architecture/resource
 coverage, dependencies, target-device requirements and appinstaller references. Add
 broader Unicode/alias, large-file, alternate-extension and independently signed/bundled
@@ -188,4 +250,5 @@ References: Microsoft [BlockMap](https://learn.microsoft.com/en-us/uwp/schemas/b
 [Block](https://learn.microsoft.com/en-us/uwp/schemas/blockmapschema/element-block),
 [GetHash](https://learn.microsoft.com/en-us/windows/win32/api/appxpackaging/nf-appxpackaging-iappxblockmapblock-gethash)
 and [ValidateFileHash](https://learn.microsoft.com/en-us/windows/win32/api/appxpackaging/nf-appxpackaging-iappxblockmapfile-validatefilehash),
-and PKWARE's [ZIP specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT).
+PKWARE's [ZIP specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT),
+and [RFC 1951](https://www.rfc-editor.org/rfc/rfc1951).

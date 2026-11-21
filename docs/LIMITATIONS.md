@@ -29,8 +29,12 @@ bytes. A separate original-ZIP layer checks a bounded contiguous single-disk ZIP
 profile, raw block-map byte binding, and declared local-header/uncompressed sizes.
 It requires original captured archive bytes; folders and standalone maps cannot supply
 them. Other ZIP versions/flags/methods/names, prefixes, gaps and inconsistent records
-remain unresolved. These layers do not authenticate the block map or verify compressed
-block boundaries, every payload CRC, package/bundle signatures, publisher-certificate equality,
+remain unresolved. A third layer binds bounded stored/independently decodable DEFLATE
+segments to captured targets, compares physical block lengths/digests and mapped payload
+CRCs, and checks empty final streams or stream ends included in the final segment.
+Missing Size declarations, nonrestartable compression, incomplete listings, stale or
+ambiguous targets and budget exhaustion remain explicit limitations. These layers do
+not authenticate the block map or verify unmapped footprint payloads, package/bundle signatures, publisher-certificate equality,
 Windows trust or installation eligibility. Name binding uses the shared conservative
 ASCII Windows path profile and requires complete, unambiguous input enumeration.
 Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and

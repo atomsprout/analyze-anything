@@ -40,6 +40,11 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
         assert_eq!(layout["zip64"], true);
         assert_eq!(layout["package_signature_checked"], false);
         assert_eq!(layout["compressed_block_sizes_checked"], false);
+        let blocks = &original_zip.facts["windows.msix-zip-blocks"];
+        assert_eq!(blocks["files_unresolved"], 0, "{name}: {blocks}");
+        assert_eq!(blocks["files_with_mismatches"], 0);
+        assert_eq!(blocks["files_with_verified_block_spans"], if name.starts_with("upstream") { 11 } else { 6 });
+        assert_eq!(blocks["package_signature_checked"], false);
         assert!(report.findings.iter().any(|f| f.rule == "windows.msix-block-hashes" && !f.evidence.is_empty()));
         assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
         assert_eq!(
@@ -47,6 +52,63 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
             serde_json::to_vec(&run(&input, &Options::default())).expect("repeat report")
         );
         assert_eq!(std::fs::read(&input).expect("original input"), original);
+    }
+}
+
+#[test]
+fn msix_original_streams_distinguish_block_disagreement_from_unresolved_boundaries() {
+    use std::io::Read;
+    let original = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/native-msix-sha256.msix"))
+        .expect("native package");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&original)).expect("package ZIP");
+    let mut xml = String::new();
+    archive.by_name("AppxBlockMap.xml").expect("map").read_to_string(&mut xml).expect("UTF8 map");
+    let name = xml.find("Name=\"payload.bin\"").expect("payload declaration");
+    let file_start = xml[..name].rfind("<File ").expect("File element");
+    let file_end = name + xml[name..].find("</File>").expect("File end") + 7;
+    let file = &xml[file_start..file_end];
+    let block_positions: Vec<_> = file.match_indices("<Block ").map(|(at, _)| at).collect();
+    assert_eq!(block_positions.len(), 2);
+    let replace_attribute = |text: &mut String, element: usize, key: &str, value: &str| {
+        let marker = format!("{key}=\"");
+        let start = element + text[element..].find(&marker).expect("attribute") + marker.len();
+        let end = start + text[start..].find('"').expect("attribute end");
+        text.replace_range(start..end, value);
+    };
+    let directory = tempfile::tempdir().expect("block cases");
+    for case in ["wrong-hash", "extent-overshoot", "shifted-boundary", "included-terminator"] {
+        let mut changed = file.to_string();
+        match case {
+            "wrong-hash" => replace_attribute(&mut changed, block_positions[0], "Hash", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+            "extent-overshoot" => replace_attribute(&mut changed, block_positions[0], "Size", "600"),
+            "shifted-boundary" => {
+                // Edit from the end so a changed attribute width cannot move the next position.
+                replace_attribute(&mut changed, block_positions[1], "Size", "12");
+                replace_attribute(&mut changed, block_positions[0], "Size", "585");
+            }
+            _ => replace_attribute(&mut changed, block_positions[1], "Size", "15"),
+        }
+        let modified = format!("{}{}{}", &xml[..file_start], changed, &xml[file_end..]);
+        let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for position in 0..archive.len() {
+            let entry = archive.by_index(position).expect("native entry");
+            if entry.name().expect("entry name") == "AppxBlockMap.xml" {
+                writer.start_file("AppxBlockMap.xml", zip::write::SimpleFileOptions::default()).expect("changed map entry");
+                writer.write_all(modified.as_bytes()).expect("changed declaration bytes");
+            } else {
+                // Copy the native compressed bytes; ordinary recompression would erase the boundaries under test.
+                writer.raw_copy_file(entry).expect("original payload stream");
+            }
+        }
+        let input = directory.path().join(format!("{case}.msix"));
+        std::fs::write(&input, writer.finish().expect("controlled ZIP").into_inner()).expect("case input");
+        let report = run(&input, &Options::default());
+        let blocks = &report.artifacts.iter().find(|a| a.facts.contains_key("windows.msix-zip-blocks")).expect("raw block result").facts["windows.msix-zip-blocks"];
+        let mismatch = matches!(case, "wrong-hash" | "extent-overshoot");
+        assert_eq!(blocks["files_with_mismatches"], usize::from(mismatch), "{case}: {blocks}");
+        assert_eq!(blocks["files_unresolved"], usize::from(case == "shifted-boundary"), "{case}: {blocks}");
+        assert_eq!(report.findings.iter().any(|f| f.rule == "windows.msix-zip-block-mismatch"), mismatch);
+        assert_eq!(blocks["package_signature_checked"], false);
     }
 }
 

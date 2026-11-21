@@ -131,4 +131,19 @@ and independent Python ZIP metadata, using the four redistributable MSIX/APPX fi
 Use a fresh output directory. It checks each original plus a changed LfhSize declaration,
 including repeated report bytes and source preservation. SDK validation applies to the
 four original packages only; repacked negatives are declaration cases. No input is installed
-or executed. Compressed-block boundaries and package signatures remain separate work.
+or executed. This helper checks record/header correspondence; physical block checks
+and package signatures remain separate from those results.
+
+Compare physical stored/DEFLATE block checks, preserving original payload streams in
+declaration/profile cases, against independent zlib/hashlib calculations and live
+AppxPackaging declarations:
+
+    python tools/native-compare/windows-msix-blocks-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/msix-raw-blocks-check
+
+Use a fresh output directory. The four fixtures produce 27 original, block-hash,
+extent-overshoot, missing-size, shifted-boundary and final-stream variant cases. The
+helper keeps GetHash/GetCompressedSize and ValidateFileHash observations distinct,
+checks repeated JSON, input preservation, English Markdown/HTML and Chinese Markdown.
+Only input bytes are analyzed; no package is installed or executed. Constructed ZIP32
+wrappers do not qualify package signatures or native installation behavior. Independent
+block decoding remains a bounded profile; unknown stream forms stay unresolved.

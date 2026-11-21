@@ -269,7 +269,7 @@ pub fn analyze_file(file: &Artifact, bytes: &[u8], out: &mut Output) {
     out.fact(file, "windows.msix-blockmap", json!(map));
 }
 
-fn computed(algorithm: &str, bytes: &[u8]) -> Option<String> {
+pub(super) fn computed(algorithm: &str, bytes: &[u8]) -> Option<String> {
     Some(match algorithm {
         "sha256" => hex::encode(sha2::Sha256::digest(bytes)),
         "sha384" => hex::encode(sha2::Sha384::digest(bytes)),

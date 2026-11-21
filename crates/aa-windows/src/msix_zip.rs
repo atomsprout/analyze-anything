@@ -11,6 +11,8 @@ const MAX_PACKAGE: usize = 256 * 1024 * 1024;
 const MAX_DIRECTORY: usize = 16 * 1024 * 1024;
 const MAX_ENTRIES: usize = 16384;
 
+mod blocks;
+
 type Result<T> = std::result::Result<T, &'static str>;
 
 fn span(bytes: &[u8], offset: usize, length: usize) -> Result<&[u8]> {
@@ -326,10 +328,16 @@ fn map_bytes(bytes: &[u8], entry: &Entry<'_>) -> Result<Vec<u8>> {
 
 pub fn analyze(tree: &dyn Tree, out: &mut Output) {
     let mut bytes_left = 512 * 1024 * 1024usize;
+    let mut block_budget = blocks::Budget::default();
     let maps: Vec<_> = tree.artifacts().iter().filter(|a| a.facts.contains_key("windows.msix-blockmap")).take(33).collect();
+    if maps.is_empty() {
+        return;
+    }
     if maps.len() > 32 {
         out.limitation("windows.msix-zip-unresolved", None, Some("raw ZIP checks limited to 32 block maps".into()));
     }
+    let complete = tree.summary().get("engine.input-listing").and_then(|v| v.get("complete")).and_then(Value::as_bool) == Some(true);
+    let index = crate::references::Index::for_distribution_roots(tree.artifacts(), complete);
     for source in maps.into_iter().take(32) {
         let checked = (|| -> Result<(&Artifact, Value, usize, Vec<Value>)> {
             let parent = source.parent.as_deref().and_then(|p| tree.get(p)).ok_or("original ZIP container not supplied")?;
@@ -366,6 +374,7 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
             let mut examples = Vec::new();
             let mut records = Vec::new();
             let mut unresolved = 0;
+            let mut block_checks = blocks::Checks::default();
             let by_name: BTreeMap<_, _> = directory.entries.iter().map(|e| (e.name.to_ascii_lowercase(), e)).collect();
             for (position, row) in map["files"].as_array().ok_or("block-map files absent")?.iter().enumerate() {
                 if position >= 4096 {
@@ -377,8 +386,21 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
                     .and_then(|path| by_name.get(&path.to_ascii_lowercase()).copied());
                 let Some(entry) = entry.filter(|e| !e.name.ends_with('/')) else {
                     unresolved += 1;
+                    let result = block_budget.attempt().and(Err("mapped path has no unambiguous raw regular-file entry"));
+                    block_checks.add(position, result, &mut block_budget);
                     continue;
                 };
+                let block_result = (|| {
+                    block_budget.attempt()?;
+                    let index = index.as_ref().map_err(|reason| *reason)?;
+                    let target = index.resolve_distribution(
+                        source,
+                        &parent.path.to_ascii_lowercase(),
+                        row["path"].as_str().ok_or("unsupported map path")?,
+                    )?;
+                    blocks::check_file(&snapshot, entry, row, map["algorithm"].as_str(), target, &mut block_budget)
+                })();
+                block_checks.add(position, block_result, &mut block_budget);
                 let header = entry.data - entry.local;
                 let agrees = row["local_file_header_size"].as_u64() == Some(header as u64) && row["size"].as_u64() == Some(entry.size);
                 if !agrees {
@@ -401,6 +423,7 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
                 "mapped_files_unresolved":unresolved,"mapped_files_with_header_or_size_mismatch":mismatches,
                 "zip_record_structure_checked":true,"block_map_bytes_bound":true,
                 "all_payload_crc_checked":false,"compressed_block_sizes_checked":false,"package_signature_checked":false,"windows_trust_checked":false});
+            block_checks.publish(parent, source, &digest, out);
             Ok((parent, fact, mismatches, examples))
         })();
         match checked {
