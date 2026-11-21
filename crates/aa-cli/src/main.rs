@@ -88,6 +88,9 @@ enum Command {
         /// Stop the whole analysis after this many seconds, allowing five seconds for a partial report
         #[arg(long)]
         run_timeout: Option<u64>,
+        /// Bind a logical INF path to its distribution root within the input (repeatable)
+        #[arg(long, num_args = 2, value_names = ["INF", "ROOT"])]
+        windows_source_root: Vec<String>,
         /// Also have the AI you set up explain the report (see `analyze-anything ai`)
         #[cfg(feature = "ai")]
         #[arg(long)]
@@ -839,13 +842,19 @@ fn run(cli: Cli) -> Result<u8, String> {
             deep,
             deep_tool,
             run_timeout,
+            windows_source_root,
             #[cfg(feature = "ai")]
             ai,
             #[cfg(feature = "ai")]
             no_ai,
         } => {
             let mut progress = StderrProgress { live: std::io::stderr().is_terminal() };
-            let options = Options { limits: limits(&limit_args), ..Options::default() };
+            let roots = windows_source_root
+                .chunks_exact(2)
+                .map(|pair| aa_engine::WindowsSourceRoot { inf: pair[0].clone(), root: pair[1].clone() })
+                .collect::<Vec<_>>();
+            let roots = aa_engine::validate_windows_source_roots(&roots).map_err(str::to_owned)?;
+            let options = Options { limits: limits(&limit_args), windows_source_roots: roots, ..Options::default() };
             // A run that was killed could not remove what it had unpacked; do it now.
             aa_engine::sweep_stale(None);
             let report = if cli.analysis_worker {
@@ -866,7 +875,7 @@ fn run(cli: Cli) -> Result<u8, String> {
                 aa_worker::serve_process_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
                 return Ok(0);
             } else {
-                supervisor::analyze(&path, &options.limits, run_timeout, &mut progress)?
+                supervisor::analyze(&path, &options, run_timeout, &mut progress)?
             };
             #[cfg(feature = "ai")]
             let wants_ai = if ai {

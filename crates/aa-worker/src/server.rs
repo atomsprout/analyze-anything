@@ -92,7 +92,7 @@ fn serve_inner(input: impl BufRead, output: impl Write + Send + 'static, registr
             Request::Analyze { .. } if started => {
                 send(&out, &Response::Error { id: None, message: "this worker already has its analysis".into() });
             }
-            Request::Analyze { path, scratch, limits } => {
+            Request::Analyze { path, scratch, limits, windows_source_roots } => {
                 if shutdown_grace.is_some() {
                     match crate::scratch::hold(&scratch) {
                         Ok(marker) => _ownership = Some(marker),
@@ -109,7 +109,7 @@ fn serve_inner(input: impl BufRead, output: impl Write + Send + 'static, registr
                 started = true;
                 let (out, cancel, session) = (out.clone(), cancel.clone(), session.clone());
                 running = Some(std::thread::spawn(move || {
-                    let options = Options { limits: limits.apply(), cancel: Some(cancel), temp_root: Some(scratch) };
+                    let options = Options { limits: limits.apply(), cancel: Some(cancel), temp_root: Some(scratch), windows_source_roots };
                     let mut progress = Forward { out: out.clone(), last: None };
                     match aa_engine::analyze_session(&registry, &path, &options, &mut progress) {
                         Ok(done) => {

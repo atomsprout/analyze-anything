@@ -125,9 +125,11 @@ The previously recorded `413e05e` CI success covers the earlier entry-point/refe
 ## Still needed for W5
 
 Full directive/flag applicability, broader interface/WDF and other class-specific
-semantics, decorated-section selection and supplied source-media mapping remain open.
+semantics, decorated-section selection, CAB/tag media and broader source-mapping profiles remain open.
 The initial source graph covers a documented subset of device/model, service, copy and
 registry declarations; it does not implement installation effects. The later
+[explicit-root mapping](windows-inf-source-mapping.md) associates supported loose-file
+candidate paths and captured digests through engine/worker/CLI settings. The
 [catalog reader](windows-catalogs.md) and [membership increment](windows-catalog-membership.md)
 add supported signature checks, flat/default-PE digest comparisons, sibling-CAT
 declarations and six controlled layouts with explicit-catalog SignTool observations.

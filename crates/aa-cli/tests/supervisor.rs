@@ -12,6 +12,32 @@ fn analyze(input: &Path, out: &Path, extra: &[&str]) -> Output {
 }
 
 #[test]
+fn caller_declared_windows_roots_are_repeatable_and_match_direct_engine_settings() {
+    let dir = tempfile::tempdir().expect("fixture root");
+    let input = dir.path().join("input");
+    std::fs::create_dir(&input).expect("input folder");
+    let inf = b"[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\npayload.sys=1,,5\n[SourceDisksNames]\n1=Media\n";
+    for name in ["a.inf", "b.inf"] {
+        std::fs::write(input.join(name), inf).expect("INF");
+    }
+    std::fs::write(input.join("payload.sys"), b"bytes").expect("unexecuted payload");
+    let out = dir.path().join("report");
+    let result = analyze(&input, &out, &["--windows-source-root", "B.INF", ".", "--windows-source-root", "a.inf", "."]);
+    assert!(matches!(result.status.code(), Some(0 | 2)), "{}", String::from_utf8_lossy(&result.stderr));
+    let saved: aa_core::Report = serde_json::from_slice(&std::fs::read(out.join("report.json")).expect("report")).expect("report JSON");
+    let roots = ["b.inf", "a.inf"].into_iter().map(|inf| aa_engine::WindowsSourceRoot { inf: inf.into(), root: ".".into() }).collect();
+    let options = aa_engine::Options { windows_source_roots: roots, ..aa_engine::Options::default() };
+    let direct = aa_engine::analyze(&input, &options, &mut aa_engine::NoProgress).expect("direct engine");
+    assert_eq!(aa_core::canonical_json(&saved), aa_core::canonical_json(&direct));
+    assert_eq!(saved.findings.iter().filter(|f| f.rule == "windows.inf-source-files").count(), 2);
+    let rejected = dir.path().join("rejected");
+    let result = analyze(&input, &rejected, &["--windows-source-root", "a.inf", "C:/private-marker"]);
+    assert_eq!(result.status.code(), Some(1));
+    assert!(!rejected.join("report.json").exists());
+    assert!(!String::from_utf8_lossy(&result.stderr).contains("private-marker"));
+}
+
+#[test]
 fn supervised_cli_matches_the_engine_and_preserves_custom_rules() {
     let dir = tempfile::tempdir().expect("private test folder");
     let input = dir.path().join("中文 ' sample.txt");

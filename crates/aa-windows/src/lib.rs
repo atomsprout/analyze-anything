@@ -46,6 +46,8 @@ mod resources;
 mod rules;
 mod sfx;
 mod shortcuts;
+mod source_mapping;
+pub mod source_roots;
 mod tasks;
 mod text;
 mod tree;

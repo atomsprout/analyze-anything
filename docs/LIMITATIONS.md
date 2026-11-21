@@ -47,8 +47,12 @@ unknown numeric values and external references explicitly. It does not select de
 installation alternatives, map source-media roots to supplied payloads or establish
 runtime effects. Copy-source filenames and decimal media IDs have bounded links within
 the parsed declaration graph; these do not establish a distribution root or associate
-payload bytes. [The source-mapping record](spikes/windows-inf-source-mapping.md) specifies
-the next explicit-root/settings boundary. The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
+payload bytes. Explicit caller-declared logical roots now enable a separate bounded
+loose-file mapping pass, carried through engine/worker/CLI settings. It retains candidate
+paths and captured digests without host resolution or installation selection. The initial
+profile is ASCII-only, rejects ambiguous directories and leaves CAB/tag media unsupported;
+the desktop has no root-selection control yet. See [the source-mapping record](spikes/windows-inf-source-mapping.md).
+The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
 source INF (still containing build placeholders) and a controlled syntax fixture; they
 do not qualify a built driver package. See [the INF scope record](spikes/windows-inf.md)
 and [source graph profile and budgets](spikes/windows-inf-relationships.md).

@@ -50,14 +50,13 @@ def main():
     pe = (fixtures / "hello.exe").read_bytes()
     signed_pe = (fixtures / "hello-signed.exe").read_bytes()
     payload = b"Analyze Anything catalog fixture.\r\n"
-    inf = b'[Version]\r\nSignature="$Windows NT$"\r\nCatalogFile=%Catalog%\r\n[Strings]\r\nCatalog=package.cat\r\n'
     reference = json.loads((fixtures / "native-catalog-v2.cat.ref.json").read_bytes())
     expected = next(m["digest"] for m in reference["members"] if m["data_oid"] == "1.3.6.1.4.1.311.2.1.15")
     records = []
     for case in ("catalog-only", "dual", "modified", "missing", "embedded-only", "archive"):
         source = destination / (case + "-input")
         source.mkdir(exist_ok=True)
-        files = {"driver.inf": inf, "payload.txt": payload}
+        files = {"payload.txt": payload}
         if case != "embedded-only":
             files["package.cat"] = signed_catalog
         if case != "missing":
@@ -65,6 +64,11 @@ def main():
             if case == "modified":
                 content[100] ^= 1
             files["hello.exe"] = bytes(content)
+        files["driver.inf"] = (
+            '[Version]\r\nSignature="$Windows NT$"\r\nCatalogFile=%Catalog%\r\n'
+            f'[SourceDisksFiles]\r\nhello.exe=1,,{len(files.get("hello.exe", pe))}\r\npayload.txt=1,,{len(payload)}\r\n'
+            '[SourceDisksNames]\r\n1=Controlled media\r\n[Strings]\r\nCatalog=package.cat\r\n'
+        ).encode("ascii")
         # Refuse old extra files rather than silently changing the supplied scope on rerun.
         if set(p.name for p in source.iterdir()) - set(files):
             raise ValueError("controlled input contains unexpected files; choose a fresh output directory")
@@ -77,11 +81,22 @@ def main():
                 for name, content in sorted(files.items()):
                     archive.writestr(zipfile.ZipInfo(name, (1980,1,1,0,0,0)), content)
         report_path = destination / (case + "-report")
-        command = [cli, str(input_path), "-o", str(report_path), "--format", "json,md,html", *no_ai]
+        logical_inf = "package.zip/driver.inf" if case == "archive" else "driver.inf"
+        logical_root = "package.zip" if case == "archive" else "."
+        command = [cli, str(input_path), "-o", str(report_path), "--format", "json,md,html",
+                   "--windows-source-root", logical_inf, logical_root, *no_ai]
         run(command)
         raw = (report_path / "report.json").read_bytes()
         report = json.loads(raw)
         artifacts = report["artifacts"]
+        source_inf = next(a for a in artifacts if a["path"].endswith("driver.inf"))
+        source_mapping = source_inf["facts"]["windows.source-files"]
+        assert source_mapping["root"] == logical_root
+        mapped_executable = next(row for row in source_mapping["records"] if row["relative_path"] == "hello.exe")
+        assert mapped_executable["status"] == ("not-supplied-at-candidate-path" if case == "missing" else "associated-supplied-artifact")
+        if case != "missing":
+            assert mapped_executable["size_agreement"]
+        assert not source_mapping["windows_installation_checked"]
         native = None
         if "hello.exe" in files:
             native = sip.sip_hash(source / "hello.exe", "SHA256")
@@ -125,11 +140,14 @@ def main():
         assert raw == (report_path / "report.json").read_bytes()
         assert all((source / name).read_bytes() == content for name, content in files.items())
         records.append({"case": case, "inputs": {n:hashlib.sha256(b).hexdigest() for n,b in files.items()},
+                        "source_mapping": mapped_executable,
                         "native_sip_sha256": native, "expected_catalog_pe_digest": expected,
                         "signtool_policy_observation": native_policy, "repeated_json_identical": True})
     chinese = destination / "zh-report"
-    run([cli, str(destination / "catalog-only-input"), "-o", str(chinese), "--format", "md", "--lang", "zh", *no_ai])
+    run([cli, str(destination / "catalog-only-input"), "-o", str(chinese), "--format", "md", "--lang", "zh",
+         "--windows-source-root", "driver.inf", ".", *no_ai])
     assert "目录摘要与输入中的文件一致" in (chinese / "report.md").read_text(encoding="utf-8")
+    assert "声明的源路径关联到输入文件" in (chinese / "report.md").read_text(encoding="utf-8")
     (destination / "checks.json").write_text(json.dumps({"cases": records},indent=2)+"\n",encoding="utf-8")
     print(f"passed {len(records)} supplied-layout cases")
 

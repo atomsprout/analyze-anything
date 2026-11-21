@@ -18,6 +18,7 @@ const MAX_TEXT: usize = 8192;
 enum Basis {
     ShortcutDirectory,
     InfDirectory,
+    DistributionRoot,
     HostContext,
     CommandLine,
     Uri,
@@ -227,11 +228,12 @@ pub(crate) fn ordinary_component(part: &str) -> bool {
             .is_some_and(|n| matches!(n, "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"))
 }
 
-struct Index<'a> {
+pub(crate) struct Index<'a> {
     names: BTreeMap<(Option<&'a str>, String), Vec<&'a Artifact>>,
     unicode_scopes: BTreeSet<Option<&'a str>>,
     input_listing_complete: bool,
     container_listings: BTreeMap<&'a str, bool>,
+    directories: BTreeMap<(Option<&'a str>, String), (String, bool)>,
 }
 
 impl<'a> Index<'a> {
@@ -246,13 +248,27 @@ impl<'a> Index<'a> {
             .is_some_and(|((namespace, name), _)| *namespace == scope && name.starts_with(&prefix))
     }
 
-    fn new(artifacts: &'a [Artifact], input_listing_complete: bool) -> Result<Self, &'static str> {
+    pub(crate) fn new(artifacts: &'a [Artifact], input_listing_complete: bool) -> Result<Self, &'static str> {
+        Self::build(artifacts, input_listing_complete, false)
+    }
+
+    pub(crate) fn for_distribution_roots(artifacts: &'a [Artifact], input_listing_complete: bool) -> Result<Self, &'static str> {
+        Self::build(artifacts, input_listing_complete, true)
+    }
+
+    fn build(artifacts: &'a [Artifact], input_listing_complete: bool, check_directories: bool) -> Result<Self, &'static str> {
         if artifacts.len() > MAX_INDEX_FILES {
             return Err("supplied-file index exceeds 100,000 artifacts");
         }
-        let mut index =
-            Self { names: BTreeMap::new(), unicode_scopes: BTreeSet::new(), input_listing_complete, container_listings: BTreeMap::new() };
+        let mut index = Self {
+            names: BTreeMap::new(),
+            unicode_scopes: BTreeSet::new(),
+            input_listing_complete,
+            container_listings: BTreeMap::new(),
+            directories: BTreeMap::new(),
+        };
         let mut bytes = 0usize;
+        let mut prefix_bytes = 0usize;
         for file in artifacts {
             let path = local_path(file).ok_or("artifact namespace is inconsistent")?;
             bytes = bytes.saturating_add(file.path.len());
@@ -266,12 +282,43 @@ impl<'a> Index<'a> {
             if !path.is_ascii() {
                 index.unicode_scopes.insert(scope);
             }
+            if check_directories && path.is_ascii() {
+                for (position, _) in path.match_indices('/') {
+                    let prefix = &path[..position];
+                    prefix_bytes = prefix_bytes.saturating_add(prefix.len());
+                    if prefix_bytes > MAX_INDEX_BYTES {
+                        return Err("supplied-file directory prefixes exceed 32 MiB");
+                    }
+                    let directory = index.directories.entry((scope, prefix.to_ascii_lowercase())).or_insert_with(|| (prefix.into(), false));
+                    directory.1 |= directory.0 != prefix;
+                }
+            }
             index.names.entry((scope, path.to_ascii_lowercase())).or_default().push(file);
         }
         Ok(index)
     }
 
     fn resolve(&self, source: &Artifact, pending: &Pending<'_>) -> Result<&'a Artifact, &'static str> {
+        self.resolve_at(source, pending, None)
+    }
+
+    pub(crate) fn resolve_distribution(&self, source: &Artifact, root: &str, relative: &str) -> Result<&'a Artifact, &'static str> {
+        let base = match source.parent.as_deref() {
+            None if root == "." => "",
+            None => root,
+            Some(parent) if root == parent.to_ascii_lowercase() => "",
+            Some(parent) => {
+                root.strip_prefix(&format!("{}/", parent.to_ascii_lowercase())).ok_or("distribution-root-is-outside-source-container")?
+            }
+        };
+        self.resolve_at(
+            source,
+            &Pending { field: String::new(), text: relative, basis: Basis::DistributionRoot, source_literal: None },
+            Some(base),
+        )
+    }
+
+    fn resolve_at(&self, source: &Artifact, pending: &Pending<'_>, base: Option<&str>) -> Result<&'a Artifact, &'static str> {
         let text = pending.text;
         if text.is_empty() {
             return Err("empty-reference");
@@ -297,7 +344,7 @@ impl<'a> Index<'a> {
         if text.starts_with(['/', '\\']) || text.contains(':') {
             return Err("absolute-or-device-path-not-anchored");
         }
-        if !matches!(pending.basis, Basis::ShortcutDirectory | Basis::InfDirectory) {
+        if !matches!(pending.basis, Basis::ShortcutDirectory | Basis::InfDirectory | Basis::DistributionRoot) {
             return Err("host-relative-base-not-established");
         }
         if name_changed(source) {
@@ -318,8 +365,28 @@ impl<'a> Index<'a> {
         if !local.split('/').all(ordinary_component) {
             return Err("source-path-outside-match-profile");
         }
-        let mut parts: Vec<&str> = local.rsplit_once('/').map(|(folder, _)| folder.split('/').collect()).unwrap_or_default();
+        for (position, _) in local.match_indices('/') {
+            let directory = local[..position].to_ascii_lowercase();
+            if self.directories.get(&(scope, directory.clone())).is_some_and(|(_, ambiguous)| *ambiguous) {
+                return Err("directory-case-alias-not-unique");
+            }
+            if self.names.contains_key(&(scope, directory)) {
+                return Err("source-directory-is-also-a-file");
+            }
+        }
+        let mut parts: Vec<&str> = match base {
+            Some("") => Vec::new(),
+            Some(base) => base.split('/').collect(),
+            None => local.rsplit_once('/').map(|(folder, _)| folder.split('/').collect()).unwrap_or_default(),
+        };
         for length in 1..=parts.len() {
+            let path = parts[..length].join("/").to_ascii_lowercase();
+            if self.directories.get(&(scope, path.clone())).is_some_and(|(_, ambiguous)| *ambiguous) {
+                return Err("directory-case-alias-not-unique");
+            }
+            if !self.directory_supplied(scope, &path) {
+                return Err("distribution-root-directory-not-supplied");
+            }
             if self.names.contains_key(&(scope, parts[..length].join("/").to_ascii_lowercase())) {
                 return Err("source-directory-is-also-a-file");
             }
@@ -344,6 +411,9 @@ impl<'a> Index<'a> {
             }
             if position + 1 < raw.len() {
                 let path = parts.join("/").to_ascii_lowercase();
+                if self.directories.get(&(scope, path.clone())).is_some_and(|(_, ambiguous)| *ambiguous) {
+                    return Err("directory-case-alias-not-unique");
+                }
                 if self.names.contains_key(&(scope, path.clone())) {
                     return Err("intermediate-component-is-a-file");
                 }
@@ -483,6 +553,14 @@ mod tests {
             unpacked_by: None,
             facts: BTreeMap::new(),
         }
+    }
+
+    #[test]
+    fn distribution_directory_prefix_work_is_bounded_before_allocation() {
+        let prefix = std::iter::repeat_n("d".repeat(14), 500).collect::<Vec<_>>().join("/");
+        let files: Vec<_> = (0..50).map(|i| file(&format!("{prefix}/f{i}.bin"), None)).collect();
+        assert!(Index::new(&files, true).is_ok());
+        assert!(Index::for_distribution_roots(&files, true).is_err());
     }
     fn shortcut(path: &str, parent: Option<&str>, relative: &str) -> Artifact {
         let mut source = file(path, parent);

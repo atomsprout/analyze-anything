@@ -17,6 +17,120 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
     Options { limits, ..Options::default() }
 }
 
+const ROOT_INF: &[u8] = br#"[Version]
+Signature="$Windows NT$"
+[SourceDisksFiles]
+a.sys=1,\amd64,5
+[SourceDisksNames]
+1=Media,,,\dist
+"#;
+
+fn root_options(inf: &str, root: &str) -> Options {
+    Options { windows_source_roots: vec![aa_engine::WindowsSourceRoot { inf: inf.into(), root: root.into() }], ..Options::default() }
+}
+
+#[test]
+fn explicit_windows_distribution_roots_map_only_supplied_bytes_and_preserve_default_behavior() {
+    let dir = tempfile::tempdir().expect("input folder");
+    std::fs::create_dir_all(dir.path().join("meta")).expect("INF directory");
+    std::fs::create_dir_all(dir.path().join("dist/amd64")).expect("source directory");
+    std::fs::write(dir.path().join("meta/driver.inf"), ROOT_INF).expect("source INF");
+    std::fs::write(dir.path().join("dist/amd64/a.sys"), b"bytes").expect("unexecuted payload");
+    let plain = run(dir.path(), &Options::default());
+    assert!(plain.artifacts.iter().all(|a| !a.facts.contains_key("windows.source-files")));
+    let options = root_options("meta/DRIVER.inf", ".");
+    let report = run(dir.path(), &options);
+    let mapping = &report.artifacts.iter().find(|a| a.path == "meta/driver.inf").expect("INF").facts["windows.source-files"];
+    assert_eq!(mapping["basis"], "caller-declared-logical-distribution-root");
+    assert_eq!(mapping["records"][0]["target"], "dist/amd64/a.sys");
+    assert_eq!(mapping["records"][0]["size_agreement"], true);
+    assert!(report.findings.iter().any(|f| f.rule == "windows.inf-source-files" && !f.evidence.is_empty()));
+    assert_eq!(serde_json::to_vec(&report).expect("report JSON"), serde_json::to_vec(&run(dir.path(), &options)).expect("repeat JSON"));
+    assert_eq!(std::fs::read(dir.path().join("dist/amd64/a.sys")).expect("input unchanged"), b"bytes");
+    let invalid = run(dir.path(), &root_options("meta/driver.inf", "C:/private-marker"));
+    assert!(invalid.limitations.iter().any(|l| l.code == "engine.windows-source-roots-invalid"));
+    assert!(!serde_json::to_string(&invalid).expect("invalid settings report").contains("private-marker"));
+    let invalid_size = String::from_utf8(ROOT_INF.to_vec()).expect("ASCII fixture").replace(",5", ",unknown-size");
+    std::fs::write(dir.path().join("meta/driver.inf"), invalid_size).expect("unsupported size declaration");
+    let report = run(dir.path(), &options);
+    let source = report.artifacts.iter().find(|a| a.path == "meta/driver.inf").expect("INF");
+    assert_eq!(source.facts["windows.source-files"]["records"][0]["size_check"], "unsupported-size-declaration");
+    assert!(report.findings.iter().any(|f| f.rule == "windows.inf-source-files"), "path association is separate from size interpretation");
+    assert!(report.limitations.iter().any(|l| l.code == "windows.source-files-unresolved"));
+}
+
+#[test]
+fn windows_distribution_roots_respect_archive_namespaces_missing_paths_and_directory_aliases() {
+    let dir = tempfile::tempdir().expect("input folder");
+    let zip = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/a.sys", b"bytes")]);
+    let path = dir.path().join("pkg.zip");
+    std::fs::write(&path, zip).expect("archive");
+    let report = run(&path, &root_options("pkg.zip/meta/driver.inf", "pkg.zip"));
+    let source = report.artifacts.iter().find(|a| a.path.ends_with("/driver.inf")).expect("INF child");
+    assert_eq!(source.facts["windows.source-files"]["records"][0]["target"], "pkg.zip/dist/amd64/a.sys");
+    let wrong = run(&path, &root_options("pkg.zip/meta/driver.inf", "."));
+    assert!(!wrong.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    let inner = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/a.sys", b"bytes")]);
+    let nested = dir.path().join("nested.zip");
+    std::fs::write(&nested, zip_of(&[("inner.zip", &inner)])).expect("nested container");
+    let nested_report = run(&nested, &root_options("nested.zip/inner.zip/meta/driver.inf", "nested.zip/inner.zip"));
+    assert!(nested_report.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    let crossed = run(&nested, &root_options("nested.zip/inner.zip/meta/driver.inf", "nested.zip"));
+    assert!(!crossed.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    for extra in ["Meta/other.bin", "Dist/other.bin"] {
+        let zip = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/a.sys", b"bytes"), (extra, b"alias")]);
+        std::fs::write(&path, zip).expect("case-sensitive archive names");
+        let aliases = run(&path, &root_options("pkg.zip/meta/driver.inf", "pkg.zip"));
+        assert!(!aliases.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+        assert!(aliases.limitations.iter().any(|l| l.code == "windows.source-files-unresolved"));
+    }
+    let zip = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/other.bin", b"directory present")]);
+    std::fs::write(&path, zip).expect("missing source archive");
+    let missing = run(&path, &root_options("pkg.zip/meta/driver.inf", "pkg.zip"));
+    let source = missing.artifacts.iter().find(|a| a.path.ends_with("/driver.inf")).expect("INF child");
+    assert_eq!(source.facts["windows.source-files"]["records"][0]["status"], "not-supplied-at-candidate-path");
+    assert!(!missing.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+}
+
+#[test]
+fn partial_input_listing_cannot_establish_a_missing_declared_source() {
+    let dir = tempfile::tempdir().expect("input folder");
+    std::fs::write(dir.path().join("driver.inf"), ROOT_INF).expect("INF");
+    std::fs::write(dir.path().join("z.bin"), b"not a source").expect("second input");
+    let mut options = root_options("driver.inf", ".");
+    options.limits.max_files = 1;
+    let report = run(dir.path(), &options);
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    let source = report.artifacts.iter().find(|a| a.path == "driver.inf").expect("first input");
+    let records = source.facts["windows.source-files"]["records"].as_array().expect("unresolved mappings");
+    assert!(records.iter().all(|r| r["status"] == "unresolved"));
+    assert!(records.iter().any(|r| r["reason"] == "input-listing-completeness-not-established"));
+}
+
+#[test]
+fn windows_source_mapping_bounds_candidate_attempts_and_output_independently() {
+    for (count, subdirectory) in [(300, "".to_string()), (200, std::iter::repeat_n("a".repeat(126), 32).collect::<Vec<_>>().join("\\"))] {
+        let dir = tempfile::tempdir().expect("bounded fixture");
+        let mut text = String::from("[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\n");
+        for index in 0..count {
+            text.push_str(&format!("a{index}.sys=1,{subdirectory}\n"));
+        }
+        text.push_str("[SourceDisksNames]\n");
+        for _ in 0..16 {
+            text.push_str("1=Media\n");
+        }
+        std::fs::write(dir.path().join("driver.inf"), text).expect("declarations");
+        let report = run(dir.path(), &root_options("driver.inf", "."));
+        let source = report.artifacts.iter().find(|a| a.path == "driver.inf").expect("INF");
+        let mapping = &source.facts["windows.source-files"];
+        assert_eq!(mapping["truncated"], true);
+        let records = mapping["records"].as_array().expect("bounded mapping records");
+        assert!(records.len() <= 4096);
+        assert!(records.iter().map(|r| serde_json::to_vec(r).expect("mapping JSON").len()).sum::<usize>() <= 4 * 1024 * 1024);
+        assert!(report.limitations.iter().any(|l| l.code == "windows.source-files-limit"));
+    }
+}
+
 /// Bytes that no type detector recognises and that use every value equally.
 fn noise(length: usize) -> Vec<u8> {
     // A fixed linear congruential generator: the same bytes on every run.

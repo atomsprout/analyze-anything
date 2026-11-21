@@ -102,7 +102,16 @@ impl Worker {
 
     /// Asks for the analysis of `path`, unpacking into this worker's scratch folder.
     pub fn analyze(&mut self, path: &Path, limits: crate::protocol::LimitOverrides) -> Result<(), WorkerError> {
-        let request = Request::Analyze { path: path.to_path_buf(), scratch: self.scratch.clone(), limits };
+        self.analyze_with_source_roots(path, limits, Vec::new())
+    }
+
+    pub fn analyze_with_source_roots(
+        &mut self,
+        path: &Path,
+        limits: crate::protocol::LimitOverrides,
+        windows_source_roots: Vec<aa_engine::WindowsSourceRoot>,
+    ) -> Result<(), WorkerError> {
+        let request = Request::Analyze { path: path.to_path_buf(), scratch: self.scratch.clone(), limits, windows_source_roots };
         self.send(&request)
     }
 

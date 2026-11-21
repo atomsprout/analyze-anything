@@ -63,31 +63,78 @@ References: Microsoft [SourceDisksNames](https://learn.microsoft.com/en-us/windo
 [SourceDisksFiles](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/inf-sourcedisksfiles-section)
 and [CopyFiles](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/inf-copyfiles-directive).
 
-## Next implementation: caller-declared logical roots
+## Caller-declared logical roots
 
-The next mapping increment should take an explicit INF-to-distribution-root assignment
-in analysis settings. Both identifiers must be logical paths within the supplied tree,
+The mapping increment now takes explicit INF-to-distribution-root assignments in
+`Options.windows_source_roots`, the worker Analyze request, and the repeatable CLI flag
+`--windows-source-root <INF> <ROOT>`. Both identifiers are logical paths within the supplied tree,
 never machine paths or permission to read anything else. Bind the root to the named INF
 and its immediate parent-container namespace. Root `.` denotes the outer input namespace;
 an archive root is its logical container path. Do not apply one archive's root to another.
 Ambiguous/conflicting declarations and absent or unenumerated roots cannot yield a unique link.
+Assignments are limited to 32, 8 KiB per identifier and 512 ordinary ASCII components.
+They are case-folded, sorted and deduplicated before publication as
+`engine.windows-source-roots`. Conflicting roots for the same INF are refused. CLI
+validation fails before analysis; direct API/worker validation records a bilingual engine
+limitation and enables no root mapping. Invalid machine paths are not echoed into reports.
 
-Carry this setting through engine Options, worker Analyze requests and clients, and CLI
-arguments. Record the sanitized logical assignment and its caller-supplied basis in the
-report. Default settings must retain today's unresolved-base behavior. Worker protocol
-defaults must preserve existing callers. Validate root counts/lengths and names in the
-shared engine boundary, rather than trusting just CLI parsing; deterministic settings
-ordering is required. This settings and physical-mapping increment is not implemented yet.
+The worker client retains its existing default method and adds an explicit-root method.
+Omitted protocol fields default to empty and empty fields are not serialized, preserving
+existing requests. Empty settings retain unresolved-base behavior and no mapping fact.
+The desktop currently uses that default; its root-selection UI remains open under W10.
+The shared engine boundary validates callers independently of CLI parsing.
 
-With an established root, combine only supported media paths, source subdirectories and
+With an established root, the mapper combines supported media paths, source subdirectories and
 literal source filenames. INF root-relative backslash notation is not a host absolute
 path; UNC/device/drive/ADS paths, escapes, variables and unsupported aliases remain refused.
 Use the existing supplied-artifact index and listing/name-provenance safeguards, not
-filesystem resolution. Preserve alternative media declarations and the literal evidence.
-Report missing supplied candidates conditionally on a complete input namespace, separately
-from unreadable/unsupported candidates. Compare declared sizes separately from digests.
+filesystem resolution. Alternative media declarations and literal/projection evidence are
+retained. `windows.source-files` records the caller-declared basis, source/media node
+indices, relative candidate path, target artifact/digest, status and independent optional
+size comparison. A complete namespace and missing final target can establish
+`not-supplied-at-candidate-path`; incomplete listings, unknown directories and other
+unsupported cases remain unresolved. This is not absence from a Windows installation.
+An Info/Derived finding reports associations with captured digests, independently of CAT
+SIP comparisons. Bad nonempty size declarations produce an explicit unresolved check;
+known size disagreement is a fact, not a claim that the file was modified.
 
-Required checks include direct API/worker/CLI parity, invalid and conflicting settings,
+The loose-file profile supports empty or zero media flags. Tag/CAB declarations, unknown
+flags and extra source/media fields remain unsupported even when a same-named loose file
+exists. Root-relative backslash directory notation is normalized only inside the declared
+logical root. Parent escapes, UNC/device/drive/ADS forms, variables and unsupported names
+are refused. Each root is bound to its INF's immediate container; nested ZIP roots work,
+while another or outer container cannot supply its missing files. Mapping uses captured
+artifact digests and never opens a target or host path.
+
+Distribution-root lookups add a directory-spelling index to reject case-aliased directories.
+Prefix processing is capped at 32 MiB of cumulative logical directory-prefix bytes before
+allocation, alongside the existing 100,000-artifact/32 MiB path/8 KiB-per-path index limits.
+At most 4,096 mapping attempts and 4 MiB of compact mapping records are shared across all
+assignments. Exhaustion is explicit; omitted candidates and assignments stay unchecked.
+Existing shortcut/reference matching continues to use its own documented index profile.
+
+Focused tests cover direct/worker/CLI byte parity, repeatable flags, rejected host paths,
+canonical assignments, subfolders, ZIP and nested ZIP boundaries, missing source paths,
+directory-case aliases, incomplete enumeration, unsupported size declarations, directory
+notation and both attempt/output budgets. The controlled six-layout package helper now
+adds source/media declarations and passes explicit roots for folder/ZIP layouts. All six
+cases pass, including missing-path status, captured target digests, declared sizes, repeated
+JSON and Chinese report inclusion, with SignTool policy observations kept separate.
+The latest native record is `out/windows-baseline/catalog-root-package-final/checks.json`.
+Format, workspace Clippy, the no-default-feature CLI build and full workspace regression
+passed. The complete log is `out/windows-baseline/workspace-windows-source-roots.log`.
+This includes worker/CLI byte parity, the complete damaged-input run and budget tests.
+
+The explicitly selected BasicDisplay folder also passes a caller-root check: the source
+declaration associates the supplied BasicDisplay.sys digest, two runs produce identical
+JSON and both input hashes remain unchanged. No CAT was supplied and no Windows trust
+claim is inferred. Its local record is `out/windows-baseline/basicdisplay-explicit-root/checks.json`;
+the system files remain unredistributed. This is one loose-file layout, not the broader
+licensed built-package corpus gate.
+
+Remaining acceptance work includes more independent licensed built-package layouts,
+CAB/tag media semantics and native directory/alias matrices. Regression cases include
+direct API/worker/CLI parity, invalid and conflicting settings,
 root/subfolder/ZIP/nested-container layouts, root-relative media notation, cabinet cases,
 renames, duplicate/case/Unicode aliases, incomplete input, absent/changed payloads,
 unchanged inputs and repeated reports. Connecting an expected catalog digest to a changed
@@ -101,3 +148,9 @@ attribute. The installed SDK 10.0.26100.0 WinTrust.h defines CAT_NAMEVALUE as OI
 `1.3.6.1.4.1.311.12.2.1`, separately from MemberInfo (`...12.2.2`) and MemberInfo2
 (`...12.2.3`). A subject digest must not be invented into a filename. These header/fixture
 observations do not implement filename attributes or prove their semantics for other catalogs.
+
+The preceding declaration-link increment passed CI for
+`da795908d3c8211d36819391fd81fccd2d7e1669`:
+[run 44854420385](https://github.com/atomsprout/analyze-anything/actions/runs/44854420385).
+Linux/macOS/Windows core checks, macOS desktop and licenses all passed. This does not
+cover the explicit-root implementation, whose cross-platform CI is the next gate.

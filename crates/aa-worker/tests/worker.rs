@@ -120,7 +120,8 @@ fn losing_the_parent_pipe_ends_a_permanently_blocked_worker() {
         .stderr(Stdio::inherit())
         .spawn()
         .expect("helper process");
-    let request = Request::Analyze { path: input, scratch: scratch.clone(), limits: LimitOverrides::default() };
+    let request =
+        Request::Analyze { path: input, scratch: scratch.clone(), limits: LimitOverrides::default(), windows_source_roots: Vec::new() };
     let mut stdin = child.stdin.take().expect("parent pipe");
     writeln!(stdin, "{}", serde_json::to_string(&request).expect("request JSON")).expect("send analysis");
     stdin.flush().expect("flush request");
@@ -204,6 +205,29 @@ fn a_worker_process_reports_what_the_engine_reports_and_serves_bytes() {
     drop(worker);
     assert!(!scratch.exists());
     assert_eq!(files_in(&scratch_root), 0);
+}
+
+#[test]
+fn logical_windows_source_roots_survive_worker_transport_and_match_direct_analysis() {
+    let dir = tempfile::tempdir().expect("fixture root");
+    let input = dir.path().join("input");
+    std::fs::create_dir(&input).expect("input folder");
+    std::fs::write(
+        input.join("driver.inf"),
+        b"[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\na.sys=1,,5\n[SourceDisksNames]\n1=Media\n",
+    )
+    .expect("INF");
+    std::fs::write(input.join("a.sys"), b"bytes").expect("unexecuted source");
+    let roots = vec![aa_engine::WindowsSourceRoot { inf: "DRIVER.INF".into(), root: ".".into() }];
+    let mut worker = Worker::start(worker_program(), &[], &dir.path().join("scratch")).expect("worker");
+    worker.analyze_with_source_roots(&input, LimitOverrides::default(), roots.clone()).expect("send profile");
+    let (response, _) = until_done(&mut worker);
+    let Response::Report { report } = response else { panic!("worker must return a report") };
+    let options = Options { windows_source_roots: roots, ..Options::default() };
+    let direct = aa_engine::analyze_with(&Registry::standard(), &input, &options, &mut NoProgress).expect("direct report");
+    assert_eq!(serde_json::to_vec(&*report).expect("worker JSON"), serde_json::to_vec(&direct).expect("direct JSON"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    worker.stop(WAIT);
 }
 
 #[test]
@@ -339,7 +363,15 @@ fn messages_have_the_documented_shape_and_survive_a_round_trip() {
     }
     // Limits may be left out, in whole or in part.
     let analyze: Request = serde_json::from_str(r#"{"request":"analyze","path":"/in/a.zip","scratch":"/tmp/s"}"#).expect("parse");
-    assert_eq!(analyze, Request::Analyze { path: "/in/a.zip".into(), scratch: "/tmp/s".into(), limits: LimitOverrides::default() });
+    assert_eq!(
+        analyze,
+        Request::Analyze {
+            path: "/in/a.zip".into(),
+            scratch: "/tmp/s".into(),
+            limits: LimitOverrides::default(),
+            windows_source_roots: Vec::new()
+        }
+    );
     let limited: Request =
         serde_json::from_str(r#"{"request":"analyze","path":"a","scratch":"s","limits":{"max_depth":2}}"#).expect("parse");
     let Request::Analyze { limits, .. } = limited else { panic!("expected analyze") };

@@ -12,6 +12,7 @@ mod store;
 mod tree;
 mod walk;
 
+pub use aa_windows::source_roots::{SourceRoot as WindowsSourceRoot, validate as validate_windows_source_roots};
 pub use tree::Reader;
 
 /// Checks storage placement before a supervisor creates its worker directory.
@@ -116,6 +117,8 @@ impl Default for Limits {
 #[derive(Debug, Clone, Default)]
 pub struct Options {
     pub limits: Limits,
+    /// Explicit logical INF/distribution-root assignments, restricted to the supplied tree.
+    pub windows_source_roots: Vec<WindowsSourceRoot>,
     /// Set to `true` from another thread to stop the run. What was finished is still returned.
     pub cancel: Option<Arc<AtomicBool>>,
     /// Folder in which the run keeps large unpacked files while it works; the system's temporary
@@ -362,7 +365,14 @@ fn run_keeping(
     options: &Options,
     sink: &mut dyn ProgressSink,
 ) -> (Report, Reader) {
-    let (tree, mut limitations, mut coverage) = (built.tree, built.limitations, built.coverage);
+    let (mut tree, mut limitations, mut coverage) = (built.tree, built.limitations, built.coverage);
+    match aa_windows::source_roots::validate(&options.windows_source_roots) {
+        Ok(roots) if !roots.is_empty() => {
+            tree.summary.insert("engine.windows-source-roots".into(), serde_json::json!(roots));
+        }
+        Err(reason) => limitations.push(aa_core::Limitation::new("engine.windows-source-roots-invalid", None, Some(reason.into()))),
+        _ => {}
+    }
     sink.event(Event::Analyzing { artifacts: tree.artifacts.len() as u64 });
 
     let cancelled = || options.cancel.as_ref().is_some_and(|flag| flag.load(Ordering::Relaxed));
@@ -528,6 +538,13 @@ fn merge(tree: &mut tree::BuiltTree, out: Output, findings: &mut Vec<aa_core::Fi
 
 /// Text for the limitation codes the engine itself records.
 const ENGINE_RULES: &[Rule] = &[
+    Rule {
+        id: "engine.windows-source-roots-invalid",
+        title_en: "Windows source-root settings were rejected",
+        title_zh: "Windows 源根目录设置已拒绝",
+        text_en: "The caller's logical INF/distribution-root assignments exceed the supported profile or conflict. No source-root mapping was enabled, and invalid host paths are not retained in this report.",
+        text_zh: "调用方的逻辑 INF 与分发根目录关联超出支持范围或存在冲突。没有启用源根目录映射；报告不保留无效的主机路径。",
+    },
     Rule {
         id: "overview.attention",
         title_zh: "需要关注的结论",

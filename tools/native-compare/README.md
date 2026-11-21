@@ -98,6 +98,11 @@ SignTool, then check CLI associations, unchanged input, determinism and rendered
     python tools/native-compare/windows-catalog-package-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/catalog-package-checks
 
 The layouts are catalog-only, dual signatures, modified, missing, embedded-only and ZIP.
+The generated INF includes source/media declarations. The helper explicitly binds its
+logical distribution root through --windows-source-root, checks source-path association
+and declared sizes, and distinguishes a missing supplied candidate from a present file
+whose SIP comparison is separate. ZIP roots remain inside the named container. These
+are controlled layouts, not Windows installation or WHQL qualification.
 Native SignTool policy failures are retained separately: the controlled certificate is
 self-issued, and mathematical digest agreement does not establish Windows trust.
 Nothing is installed or added to the catalog/certificate stores. Generated copies and

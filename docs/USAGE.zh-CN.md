@@ -48,6 +48,20 @@ analyze-anything <文件或文件夹> [-o 文件夹] [--format json,html,pdf,md,
 
 `--rules <文件>`：追加你自己的 YARA 规则（可重复）。规则里的 `meta: severity = "high"`（或 `medium`、`low`、`info`）决定结论的严重度，不写则为低。
 
+`--windows-source-root <INF> <ROOT>`：将 INF 显式关联到输入树中的分发根目录（可重复）。
+使用逻辑路径，不使用主机路径；`.` 表示外层输入根。例如：
+
+```
+analyze-anything ./driver-package -o out --windows-source-root driver.inf .
+analyze-anything ./bundle.zip -o out --windows-source-root bundle.zip/pkg/driver.inf bundle.zip/pkg
+```
+
+未设置时，源介质根目录保持未解析。支持的松散文件介质路径可关联输入文件及已记录的摘要，
+但不会选择 Windows 体系结构、验证目录成员关系或判断安装资格。CAB、标记文件、不支持的别名
+和不完整枚举仍以限制说明。初始规则支持 ASCII 逻辑路径、最多 32 条关联，每条路径最多 8 KiB。
+引擎和 worker 执行相同校验；桌面界面目前保持默认的未配置根目录行为。
+详见[源文件映射范围](spikes/windows-inf-source-mapping.md)（英文）。
+
 `--font <字体文件>`：给 PDF 追加后备字体（可重复），用于内置字体显示不了的文字，例如韩文、阿拉伯文、表情符号。使用后 PDF 的内容也取决于这些字体文件。
 
 `--deep`：再让你电脑上的 Ghidra 或 Hopper 指出是哪些函数在用找到的接口和地址，见 [DEEP.md](DEEP.md)（英文）。默认不启用，而且慢得多。

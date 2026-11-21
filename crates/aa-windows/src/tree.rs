@@ -24,6 +24,7 @@ const MAX_JSON: u64 = 32 * 1024 * 1024;
 
 pub fn analyze(tree: &dyn Tree, out: &mut Output) {
     crate::references::analyze(tree, out);
+    crate::source_mapping::analyze(tree, out);
     crate::catalog_membership::analyze(tree, out);
     // Folder -> the files directly inside it. Containers count as folders.
     let mut folders: BTreeMap<&str, Vec<&Artifact>> = BTreeMap::new();

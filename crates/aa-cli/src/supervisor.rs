@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use aa_core::Report;
-use aa_engine::{Limits, ProgressSink};
+use aa_engine::{Options, ProgressSink};
 use aa_worker::protocol::{LimitOverrides, Request, Response};
 use aa_worker::{Worker, WorkerError};
 
@@ -18,7 +18,8 @@ impl Drop for SignalLifetime {
     }
 }
 
-pub fn analyze(path: &Path, limits: &Limits, seconds: Option<u64>, progress: &mut dyn ProgressSink) -> Result<Report, String> {
+pub fn analyze(path: &Path, options: &Options, seconds: Option<u64>, progress: &mut dyn ProgressSink) -> Result<Report, String> {
+    let limits = &options.limits;
     let cancelled = Arc::new(AtomicBool::new(false));
     let signal = cancelled.clone();
     let active = Arc::new(AtomicBool::new(true));
@@ -40,7 +41,7 @@ pub fn analyze(path: &Path, limits: &Limits, seconds: Option<u64>, progress: &mu
     aa_engine::validate_scratch_root(path, &scratch_root).map_err(|e| e.to_string())?;
     let mut worker = Worker::start_os(&executable, &arguments, &scratch_root).map_err(|e| e.to_string())?;
     worker
-        .analyze(
+        .analyze_with_source_roots(
             path,
             LimitOverrides {
                 max_files: Some(limits.max_files),
@@ -50,6 +51,7 @@ pub fn analyze(path: &Path, limits: &Limits, seconds: Option<u64>, progress: &mu
                 analyzer_seconds: Some(limits.analyzer_seconds),
                 unpack_seconds: Some(limits.unpack_seconds),
             },
+            options.windows_source_roots.clone(),
         )
         .map_err(|e| e.to_string())?;
     let mut stopping: Option<(&str, Instant)> = None;

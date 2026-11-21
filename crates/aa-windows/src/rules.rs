@@ -28,6 +28,27 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.inf-source-files",
+        title_en: "Declared source paths associate supplied files",
+        title_zh: "声明的源路径关联到输入文件",
+        text_en: "Using caller-declared logical distribution root {root}, the report associates {count} source path records with supplied artifacts and their captured digests. Architecture alternatives remain separate. Evidence retains source fields and path projections; this does not select Windows installation actions, prove complete package coverage or verify catalog membership.",
+        text_zh: "使用调用方声明的逻辑分发根目录 {root}，{count} 条源文件及介质路径候选关联到输入文件及已记录的摘要。体系结构候选保持独立。证据保留来源字段及路径投影；这不表示已选择 Windows 安装动作、证明完整包覆盖或验证目录成员关系。",
+    },
+    Rule {
+        id: "windows.source-files-unresolved",
+        title_en: "Declared source files remain unresolved",
+        title_zh: "声明的源文件仍未确认",
+        text_en: "A caller-declared source root, INF/media declaration, source path, supplied target or optional size comparison could not be established under the supported profile. Cabinet/tag and other unsupported media semantics remain explicit. A missing candidate path is conditional on the declared root and does not establish a missing installed file. No host file or Driver Store was searched.",
+        text_zh: "无法按支持的规则确认调用方声明的源根目录、INF 或介质声明、源路径、输入目标或可选的大小比较。CAB、标记文件及其他不支持的介质语义保持明确。候选路径缺失以声明的根目录为条件，不表示已安装的文件缺失。没有搜索主机文件或驱动程序存储。",
+    },
+    Rule {
+        id: "windows.source-files-limit",
+        title_en: "Source-file mapping reached a budget",
+        title_zh: "源文件映射达到预算上限",
+        text_en: "The supplied path/directory index, 4,096 mapping attempts or 4 MiB of mapping records reached its budget. Unchecked declarations remain unresolved and are not described as absent payloads.",
+        text_zh: "输入路径或目录索引、4,096 次映射尝试或 4 MiB 映射记录达到预算上限。未检查的声明保持未确认，不会描述为载荷不存在。",
+    },
+    Rule {
         id: "windows.inf-source-relationships",
         title_en: "Copy sources link to INF file and media declarations",
         title_zh: "复制源关联到 INF 文件及介质声明",

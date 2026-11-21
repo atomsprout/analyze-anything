@@ -49,6 +49,23 @@ timeouts still abandon threads inside the worker; they do not immediately termin
 
 `--rules <file>` adds YARA rules of your own (repeatable). A rule's `meta: severity = "high"` (or `medium`, `low`, `info`) sets the severity of its findings; without it they are low.
 
+`--windows-source-root <INF> <ROOT>` explicitly binds an INF to a distribution root in
+the supplied input tree (repeatable). Use logical paths, not machine paths; `.` is the
+outer input root. For example:
+
+```
+analyze-anything ./driver-package -o out --windows-source-root driver.inf .
+analyze-anything ./bundle.zip -o out --windows-source-root bundle.zip/pkg/driver.inf bundle.zip/pkg
+```
+
+Without this setting, source-media roots remain unresolved. Supported loose-file media
+paths can associate supplied files and captured digests; this does not choose a Windows
+architecture, verify catalog membership or establish installation eligibility. CAB/tag
+media, unsupported aliases and incomplete listings remain limitations. The initial
+profile accepts ASCII logical paths, at most 32 assignments and 8 KiB per path. The
+engine and worker enforce the same validation; the desktop currently keeps the default
+unconfigured-root behavior. See [the source mapping scope](spikes/windows-inf-source-mapping.md).
+
 `--font <font file>` adds a fallback font to the PDF (repeatable) for text the built-in fonts cannot show, such as Korean, Arabic or emoji. The PDF then depends on those font files too.
 
 `--deep` also asks Ghidra or Hopper, whichever you have, which functions use the APIs and addresses that were found; see [DEEP.md](DEEP.md). It is off by default and much slower.
