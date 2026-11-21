@@ -1368,4 +1368,32 @@ pub const RULES: &[Rule] = &[
         text_zh: "无法建立包和根清单的唯一对应关系，或部分包内资产超出输出限制。",
         text_en: "The package could not be associated with a unique root manifest, or some package assets exceeded output limits.",
     },
+    Rule {
+        id: "windows.vsix-identity",
+        title_zh: "VSIX 扩展身份",
+        title_en: "VSIX extension identity",
+        text_zh: "VSIX 清单声明扩展 {name}，版本 {version}，发布者 {publisher}。安装目标、先决条件和资产见清单数据。",
+        text_en: "The VSIX manifest declares extension {name}, version {version}, published by {publisher}. The manifest data records installation targets, prerequisites and assets.",
+    },
+    Rule {
+        id: "windows.vsix-manifest-unreadable",
+        title_zh: "VSIX 清单无法读取",
+        title_en: "VSIX manifest could not be read",
+        text_zh: "清单编码、XML、身份、版本或输入大小超出支持范围，或清单与采集的文件不一致。",
+        text_en: "The manifest encoding, XML, identity, version or size is outside the supported profile, or the manifest differs from the captured file.",
+    },
+    Rule {
+        id: "windows.vsix-manifest-incomplete",
+        title_zh: "VSIX 清单读取不完整",
+        title_en: "VSIX manifest partially read",
+        text_zh: "部分 VSIX 清单声明存在冲突、超出支持范围或达到读取上限。清单数据记录原因和位置。",
+        text_en: "Some VSIX manifest declarations conflict, fall outside the supported profile or exceeded a limit. The manifest data records reasons and locations.",
+    },
+    Rule {
+        id: "windows.vsix-package-unresolved",
+        title_zh: "VSIX 包读取不完整",
+        title_en: "VSIX package partially read",
+        text_zh: "VSIX 包和根清单之间无法建立唯一关联，或包信息超过读取上限。",
+        text_en: "The VSIX package could not be associated with one qualified root manifest, or package data exceeded a limit.",
+    },
 ];

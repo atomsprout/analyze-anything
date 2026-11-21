@@ -36,6 +36,9 @@ pub fn cyclonedx(report: &Report) -> Value {
             if let Some(purl) = text(component, "purl") {
                 entry["purl"] = json!(purl);
             }
+            if let Some(publisher) = text(component, "publisher") {
+                entry["publisher"] = json!(publisher);
+            }
             let mut properties = Vec::new();
             for (key, property) in [("ecosystem", "aa:ecosystem"), ("source", "aa:source"), ("declared_range", "aa:declared-range")] {
                 if let Some(value) = text(component, key) {
@@ -69,10 +72,13 @@ pub fn cyclonedx(report: &Report) -> Value {
     });
     let references: BTreeSet<_> = components.iter().filter_map(|entry| text(entry, "bom-ref")).collect();
     let mut edges = BTreeMap::<String, BTreeSet<String>>::new();
-    for edge in listed.and_then(|f| f["nuget_dependencies"].as_array()).into_iter().flatten() {
-        if edge["status"] != "present" || edge["group_layout"] != "flat" {
-            continue;
-        }
+    let nuget = listed
+        .and_then(|f| f["nuget_dependencies"].as_array())
+        .into_iter()
+        .flatten()
+        .filter(|edge| edge["status"] == "present" && edge["group_layout"] == "flat");
+    let vsix = listed.and_then(|f| f["vsix_dependencies"].as_array()).into_iter().flatten().filter(|edge| edge["status"] == "exact-match");
+    for edge in nuget.chain(vsix) {
         if let Some([source, target]) = edge["components"].as_array().map(Vec::as_slice)
             && let (Some(source), Some(target)) = (source.as_u64(), target.as_u64())
             && source != target
@@ -152,5 +158,19 @@ mod tests {
         let bom = cyclonedx(&report(BTreeMap::from([("composition.components".to_owned(), data)])));
         assert_eq!(bom["dependencies"], json!([{"ref":"component-0","dependsOn":["component-1"]}]));
         assert_eq!(bom["components"][0]["properties"][0], json!({"name":"aa:license-expression","value":"Apache-2.0"}));
+    }
+
+    #[test]
+    fn vsix_publisher_and_qualified_relationships_are_exported() {
+        let data = json!({
+            "components":[{"name":"Parent","publisher":"Example"},{"name":"Child"}],
+            "vsix_dependencies":[
+                {"status":"exact-match","components":[0,1]},
+                {"status":"version-mismatch","components":[1,0]}
+            ]
+        });
+        let bom = cyclonedx(&report(BTreeMap::from([("composition.components".to_owned(), data)])));
+        assert_eq!(bom["components"][0]["publisher"], "Example");
+        assert_eq!(bom["dependencies"], json!([{"ref":"component-0","dependsOn":["component-1"]}]));
     }
 }

@@ -18,6 +18,138 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn vsix_published_manifest_agrees_with_windows_zip_and_xml_reference() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-markdowneditor-2.0.464.vsixmanifest");
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("../../aa-windows/tests/data/upstream-markdowneditor-2.0.464.ref.json"))
+            .expect("native reference");
+    let report = run(&path, &Options::default());
+    let manifest = report.artifacts.iter().find(|artifact| artifact.is("vsix-manifest")).expect("VSIX manifest");
+    let metadata = &manifest.facts["windows.vsix-manifest"];
+    for key in ["id", "version", "publisher", "name", "license_path", "source_sha256"] {
+        assert_eq!(metadata[key], reference[key], "{key}");
+    }
+    for list in ["targets", "prerequisites", "assets"] {
+        let expected = reference[list].as_array().expect("reference rows");
+        let actual = metadata[list].as_array().expect("manifest rows");
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(expected) {
+            for (key, value) in expected.as_object().expect("reference fields") {
+                if key != "sha256" {
+                    assert_eq!(&actual[key], value, "{list}.{key}");
+                }
+            }
+        }
+    }
+    assert_eq!(metadata["issues"], serde_json::json!([]));
+    let components = report.summary["composition.components"]["components"].as_array().expect("component inventory");
+    assert_eq!(components.len(), 1);
+    assert_eq!(components[0]["publisher"], reference["publisher"]);
+    assert!(components[0]["purl"].is_null());
+}
+
+#[test]
+fn vsix_nested_dependencies_need_a_qualified_member_and_matching_identity() {
+    use serde_json::json;
+    use std::io::Cursor;
+
+    let archive = |manifest: &str, members: &[(&str, &[u8])]| {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        zip.start_file("extension.vsixmanifest", zip::write::SimpleFileOptions::default()).expect("manifest member");
+        zip.write_all(manifest.as_bytes()).expect("manifest bytes");
+        for &(path, bytes) in members {
+            zip.start_file(path, zip::write::SimpleFileOptions::default()).expect("captured member");
+            zip.write_all(bytes).expect("captured bytes");
+        }
+        zip.finish().expect("ZIP").into_inner()
+    };
+    let manifest = |id, version, body| {
+        format!(
+            r#"<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+        <Metadata><Identity Id="{id}" Version="{version}" Publisher="Fixture"/></Metadata>{body}</PackageManifest>"#
+        )
+    };
+    let nested = archive(&manifest("Nested", "2.0", ""), &[]);
+    let fake = archive(&manifest("Other", "2.0", ""), &[]);
+    let ranged = archive(&manifest("Ranged", "2.0", ""), &[]);
+    let outdated = archive(&manifest("Outdated", "2.0", ""), &[]);
+    let source = manifest(
+        "Root",
+        "1.0",
+        r#"<Dependencies>
+        <Dependency Id="Nested" Version="[2.0]" Location="Sub\Nested.vsix"/>
+        <Dependency Id="Different" Version="[2.0]" Location="Sub\Other.vsix"/>
+        <Dependency Id="Ranged" Version="[1.0,3.0)" Location="Sub\Ranged.vsix"/>
+        <Dependency Id="Outdated" Version="[3.0]" Location="Sub\Outdated.vsix"/>
+        <Dependency Id="Remote" Version="2.0" Location="https://example.com/remote.vsix"/>
+        <Dependency Id="Outside" Version="2.0" Location="../outside.vsix"/>
+        <Dependency Id="UndeclaredLocation" Version="2.0"/>
+        </Dependencies><Assets><Asset Type="Example.Asset" Path="Data\payload.bin"/></Assets>"#,
+    );
+    let root = archive(
+        &source,
+        &[
+            ("Sub/Nested.vsix", &nested),
+            ("Sub/Other.vsix", &fake),
+            ("Sub/Ranged.vsix", &ranged),
+            ("Sub/Outdated.vsix", &outdated),
+            ("Data/payload.bin", b"fixture payload"),
+        ],
+    );
+    let directory = tempfile::tempdir().expect("inputs");
+    let package = directory.path().join("sample.vsix");
+    std::fs::write(&package, root).expect("source package");
+    let report = run(&package, &Options::default());
+    let source_package = report.artifacts.iter().find(|a| a.path == "sample.vsix").expect("root package");
+    let fact = &source_package.facts["windows.vsix-package"];
+    assert_eq!(fact["source_manifest"], "sample.vsix/extension.vsixmanifest");
+    assert_eq!(fact["assets"][0]["sha256"], aa_core::sha256_hex(b"fixture payload"));
+    let inventory = &report.summary["composition.components"];
+    let dependencies = inventory["vsix_dependencies"].as_array().expect("declared relationships");
+    let statuses: Vec<_> = dependencies.iter().map(|row| row["status"].as_str().expect("status")).collect();
+    assert_eq!(
+        statuses,
+        [
+            "exact-match",
+            "identity-mismatch",
+            "unresolved-range",
+            "version-mismatch",
+            "external-location",
+            "outside-relative-member-profile",
+            "no-location-declared"
+        ]
+    );
+    let components = inventory["components"].as_array().expect("shared inventory");
+    let index = |id: &str| components.iter().position(|component| component["name"] == id).expect("extension index");
+    assert_eq!(dependencies[0]["components"], json!([index("Root"), index("Nested")]));
+    assert!(dependencies[1..].iter().all(|row| row.get("components").is_none()));
+    assert_eq!(dependencies[0]["sha256"], aa_core::sha256_hex(&nested));
+    assert_eq!(
+        serde_json::to_vec(&report).expect("report"),
+        serde_json::to_vec(&run(&package, &Options::default())).expect("repeat report")
+    );
+
+    std::fs::write(&package, archive(&source, &[("Extension.vsixmanifest", source.as_bytes())])).expect("ambiguous package");
+    let report = run(&package, &Options::default());
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.vsix-package-unresolved"));
+    assert!(report.artifacts.iter().all(|a| !a.is("vsix-package")));
+
+    let repeated =
+        source.replace("</Dependencies>", r#"<Dependency Id="Nested" Version="[2.0]" Location="Sub\Nested.vsix"/></Dependencies>"#);
+    std::fs::write(&package, archive(&repeated, &[("Sub/Nested.vsix", &nested)])).expect("repeated dependency");
+    let report = run(&package, &Options::default());
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.vsix-manifest-incomplete"));
+    let relationship = &report.summary["composition.components"]["vsix_dependencies"][0];
+    assert_eq!(relationship["status"], "exact-match");
+    assert!(relationship.get("components").is_none());
+
+    let invalid = directory.path().join("broken.vsixmanifest");
+    std::fs::write(&invalid, "<PackageManifest Version=\"2.0\"/>").expect("unqualified root");
+    let report = run(&invalid, &Options::default());
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.vsix-manifest-unreadable"));
+}
+
+#[test]
 fn nuget_published_package_matches_sdk_metadata() {
     let data = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data");
     let package = data.join("nuget.versioning.6.11.1.nupkg");

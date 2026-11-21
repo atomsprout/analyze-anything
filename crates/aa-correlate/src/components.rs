@@ -37,6 +37,13 @@ const RULES: &[Rule] = &[
         text_zh: "部分 NuGet 依赖声明未列入组件关系。原始声明见对应的清单数据。",
         text_en: "Some NuGet dependency declarations were omitted from the component relationships. The corresponding manifest facts retain the source declarations.",
     },
+    Rule {
+        id: "composition.vsix-dependency-budget",
+        title_zh: "VSIX 依赖关系达到报告上限",
+        title_en: "VSIX dependency relationship budget reached",
+        text_zh: "部分 VSIX 依赖关系未列入组件清单。完整的已读取关系见对应的包数据。",
+        text_en: "Some VSIX dependency relationships were omitted from the component inventory. The corresponding package facts retain the captured relationships.",
+    },
 ];
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -135,12 +142,48 @@ impl Analyzer for Components {
         }
         electron(tree, &mut found);
         android(tree, &mut found);
+        let extensions: BTreeMap<_, _> = tree
+            .artifacts()
+            .iter()
+            .filter_map(|artifact| {
+                artifact
+                    .facts
+                    .get("windows.vsix-package")
+                    .or_else(|| artifact.parent.is_none().then(|| artifact.facts.get("windows.vsix-manifest")).flatten())
+                    .map(|manifest| (artifact.path.as_str(), manifest))
+            })
+            .collect();
+        let mut vsix_occurrences = BTreeMap::new();
+        let extension_rows = extensions
+            .iter()
+            .filter(|(_, manifest)| packaged(manifest))
+            .chain(extensions.iter().filter(|(_, manifest)| !packaged(manifest)));
+        for (&source, manifest) in extension_rows {
+            let (Some(name), Some(version), Some(publisher)) =
+                (text(manifest, "id"), text(manifest, "version"), text(manifest, "publisher"))
+            else {
+                continue;
+            };
+            let count = vsix_occurrences.entry((name, version, publisher)).or_insert(0usize);
+            *count += 1;
+            if *count == 1 {
+                found.push(Component {
+                    ecosystem: "vsix",
+                    name: name.to_owned(),
+                    version: Some(version.to_owned()),
+                    kind: "library",
+                    declared_range: None,
+                    source: source.to_owned(),
+                });
+            }
+        }
         if found.is_empty() {
             return;
         }
         found.sort();
         found.dedup_by(|a, b| {
-            (a.ecosystem, &a.name, &a.version, &a.declared_range) == (b.ecosystem, &b.name, &b.version, &b.declared_range)
+            a.ecosystem != "vsix"
+                && (a.ecosystem, &a.name, &a.version, &a.declared_range) == (b.ecosystem, &b.name, &b.version, &b.declared_range)
         });
 
         let mut by_ecosystem: BTreeMap<&str, usize> = BTreeMap::new();
@@ -168,11 +211,20 @@ impl Analyzer for Components {
                     });
                     row["license"] = manifest["license"].clone();
                 }
+                if let Some(manifest) = extensions.get(c.source.as_str()).filter(|_| c.ecosystem == "vsix") {
+                    row["manifest"] = json!({
+                        "path": text(manifest, "source_manifest").unwrap_or(&c.source),
+                        "sha256": manifest["source_sha256"]
+                    });
+                    row["publisher"] = manifest["publisher"].clone();
+                    row["display_name"] = manifest["name"].clone();
+                }
                 row
             })
             .collect();
         let mut summary = json!({ "components": listed, "total": found.len(), "truncated": found.len() > LISTED });
         nuget_relationships::attach(tree, out, &manifests, &listed, &mut summary);
+        vsix_relationships(out, &extensions, &vsix_occurrences, &listed, &mut summary);
         out.summary("composition.components", summary);
         let mut finding = Finding::new(Section::Composition, "composition", "composition.components", Confidence::Derived, Severity::Info)
             .param("total", found.len())
@@ -187,6 +239,52 @@ impl Analyzer for Components {
             }
         }
         out.finding(finding);
+    }
+}
+
+fn vsix_relationships(
+    out: &mut Output,
+    extensions: &BTreeMap<&str, &Value>,
+    occurrences: &BTreeMap<(&str, &str, &str), usize>,
+    listed: &[Value],
+    summary: &mut Value,
+) {
+    let indexes: BTreeMap<_, _> = listed
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| row["ecosystem"] == "vsix")
+        .filter_map(|(index, row)| {
+            let identity = (text(row, "name")?, text(row, "version")?, text(row, "publisher")?);
+            let source = text(row, "source")?;
+            (occurrences.get(&identity) == Some(&1)).then_some((source, index))
+        })
+        .collect();
+    let mut relationships = Vec::new();
+    'packages: for (&source, manifest) in extensions {
+        if manifest.get("package_sha256").is_none() {
+            continue;
+        }
+        for relationship in manifest["dependencies"].as_array().into_iter().flatten() {
+            if relationships.len() == 4096 {
+                out.limitation("composition.vsix-dependency-budget", None, None);
+                break 'packages;
+            }
+            let mut row = relationship.clone();
+            row["source"] = json!(source);
+            row["source_manifest"] = manifest["source_manifest"].clone();
+            row["source_sha256"] = manifest["source_sha256"].clone();
+            if row["status"] == "exact-match"
+                && manifest["declarations_complete"] == true
+                && let Some(target) = text(&row, "target")
+                && let (Some(from), Some(to)) = (indexes.get(source), indexes.get(target))
+            {
+                row["components"] = json!([from, to]);
+            }
+            relationships.push(row);
+        }
+    }
+    if !relationships.is_empty() {
+        summary["vsix_dependencies"] = json!(relationships);
     }
 }
 

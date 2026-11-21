@@ -178,3 +178,11 @@ Copyright (c) .NET Foundation and Contributors. Apache-2.0, see the root LICENSE
 and the source notice at NuGet/NuGet.Client commit
 5469bd0d9de8108f15f21644759773b85471366c. The accompanying .ref.json is a
 project-authored read-only NuGet SDK snapshot under Apache-2.0.
+
+The fixture crates/aa-windows/tests/data/upstream-markdowneditor-2.0.464.vsixmanifest
+is extension.vsixmanifest from the published Markdown Editor v2 VSIX 2.0.464,
+tagged at madskristensen/MarkdownEditor2022 commit
+1a52038fa85d46ba420df903c84a089d4ba73ff7. Copyright 2020 Mads Kristensen,
+Apache-2.0. LICENSE-markdowneditor2022.txt preserves the upstream licence.
+Only the deployment manifest is redistributed. The accompanying .ref.json is
+a project-authored read-only .NET ZIP and XML reference under Apache-2.0.

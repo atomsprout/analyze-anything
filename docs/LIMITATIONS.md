@@ -20,6 +20,12 @@ packages and incomplete listings have constructed coverage. Only exact stable
 ranges can link to supplied packages. Framework choice, package signatures and
 package restore are outside this profile. See [the NuGet record](spikes/windows-nuget.md).
 
+The VSIX 2.0 ZIP and manifest reader has been compared with .NET ZIP and XML
+APIs on one published Visual Studio extension. Nested dependency matching and
+root-name ambiguity have constructed coverage. The documented profile leaves
+interval dependencies, runtime eligibility, the older manifest schema and
+signature verification open. See [the VSIX record](spikes/windows-vsix.md).
+
 The following features have only been tested with data we constructed ourselves, and have not been compared against reference tools on real samples:
 
 - **Apple**: APFS snapshots and multiple volumes, ECDSA signatures. An encrypted DMG is identified but cannot be read. FairPlay-encrypted IPAs downloaded from the App Store have been verified on real samples: the encryption is identified, metadata, signatures and resources are analyzed as usual, and the encrypted code cannot be read.

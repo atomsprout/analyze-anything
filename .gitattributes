@@ -1,5 +1,6 @@
 # Keep the pinned upstream sample byte-for-byte identical on Windows and Unix checkouts.
 crates/aa-windows/tests/data/upstream-task.xml -text
+crates/aa-windows/tests/data/upstream-markdowneditor-2.0.464.vsixmanifest -text whitespace=cr-at-eol
 crates/aa-windows/tests/data/upstream-nullFilter.inf -text
 # Preserve upstream source whitespace as well as line endings for its checked digest.
 crates/aa-windows/tests/data/upstream-echo.inf -text whitespace=-blank-at-eol
