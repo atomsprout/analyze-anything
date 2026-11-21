@@ -74,8 +74,9 @@ bundles and eight upstream positive/negative fixtures are recorded in
 
 PowerShell syntax inspection covers qualified literal commands in PS1 and PSM1
 files. Grammar errors are reported and dynamic arguments may be unresolved.
-The syntax inventory leaves alias resolution, command binding, execution flow
-and encoded commands unresolved. Batch inspection covers simple literal command
+The syntax inventory leaves alias resolution, command binding and execution flow
+unresolved. The literal EncodedCommand reader supports a bounded one-level
+Base64/UTF-16LE profile. Batch inspection covers simple literal command
 segments in CMD and BAT files. Expansion, redirects, continuations, grouped
 syntax and nested dispatch remain unresolved. Reference coverage is recorded
 in [the Windows script scope](spikes/windows-powershell.md).

@@ -13,6 +13,7 @@ struct Batch {
     issues: Vec<Value>,
     issues_omitted: usize,
     argument_bytes: usize,
+    encoded_budget: crate::encoded_powershell::Budget,
 }
 
 impl Batch {
@@ -117,6 +118,20 @@ fn describe(report: &mut Batch, segment: &str, line: usize, offset: usize, prece
         report.issue(line, offset, "batch command name redaction failed");
         return;
     };
+    let encoded = if crate::encoded_powershell::host(name) {
+        let operands: Vec<_> = tokens
+            .iter()
+            .skip(1)
+            .map(|(at, raw)| crate::encoded_powershell::Operand {
+                value: (!raw.starts_with('\'')).then(|| crate::encoded_powershell::literal(raw)).flatten(),
+                offset: offset + at,
+                length: raw.len(),
+            })
+            .collect();
+        crate::encoded_powershell::inspect(&operands, &mut report.encoded_budget)
+    } else {
+        None
+    };
     let mut arguments = Vec::new();
     let mut sensitive = false;
     // Echo output and variable assignments are not command arguments for this inventory.
@@ -143,8 +158,15 @@ fn describe(report: &mut Batch, segment: &str, line: usize, offset: usize, prece
             }
         }
     }
-    report.commands.push(json!({"name":shown_name,"line":line,"utf8_offset":offset,
-        "utf8_length":segment.len(),"preceding_operator":preceding_operator,"declaration":declaration,"literal_arguments":arguments}));
+    let mut record = json!({"name":shown_name,"line":line,"utf8_offset":offset,
+        "utf8_length":segment.len(),"preceding_operator":preceding_operator,"declaration":declaration,"literal_arguments":arguments});
+    if let Some(encoded) = encoded {
+        if encoded["status"] == "unresolved" || encoded["syntax"]["status"] != "parsed" {
+            report.issue(line, offset, "EncodedCommand representation or decoded syntax unresolved");
+        }
+        record["encoded_command"] = encoded;
+    }
+    report.commands.push(record);
 }
 
 fn scan(text: &str) -> Batch {
@@ -263,6 +285,7 @@ pub(super) fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
         );
     }
     out.kind(file, "batch-script");
+    crate::encoded_powershell::finding(file, &report.commands, out);
     out.limitation("windows.batch-scope", Some(file), None);
     out.fact(
         file,

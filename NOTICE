@@ -163,9 +163,9 @@ Apache-2.0, serialized by tools/native-compare/windows-task-fixture.ps1 through
 a new Windows Task Scheduler definition that is never registered or run.
 
 The PowerShell syntax reader uses Tree-sitter and the Airbus CERT PowerShell
-grammar, both under MIT. The `powershell-ast.ref.json` input examples and reference
-snapshot are project-authored under Apache-2.0. The snapshot records read-only
-PowerShell parser results.
+grammar, both under MIT. The `powershell-ast.ref.json` and `powershell-encoded.ref.json`
+input examples and reference snapshots are project-authored under Apache-2.0.
+The snapshots record read-only PowerShell parser and representation results.
 
 The upstream-makeaosponwinx86.cmd fixture is the unchanged makeaosponwinx86.cmd
 from microsoft/msix-packaging at commit 25a65f5c1690930813bcc10cdf1d59fa865f2bb1.

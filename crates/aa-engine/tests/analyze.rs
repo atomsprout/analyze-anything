@@ -18,6 +18,30 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn script_hosts_report_encoded_powershell_operand_provenance() {
+    let directory = tempfile::tempdir().expect("script inputs");
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("../../aa-windows/tests/data/powershell-encoded.ref.json")).expect("native reference");
+    let encoded = fixture["encoded"].as_str().expect("literal operand");
+    for (extension, key) in [("ps1", "windows.powershell"), ("cmd", "windows.batch")] {
+        let path = directory.path().join(format!("host.{extension}"));
+        let input = format!("pwsh -NoProfile -EncodedCommand \"{encoded}\"\r\npwsh -EncodedCommand ABC\r\n");
+        std::fs::write(&path, &input).expect("fixture script");
+        let report = run(&path, &Options::default());
+        let commands = report.artifacts[0].facts[key]["commands"].as_array().expect("commands");
+        let record = &commands[0]["encoded_command"];
+        assert_eq!(record["decoded_sha256"], fixture["decoded_sha256"], "{record}");
+        let offset = record["operand"]["utf8_offset"].as_u64().expect("operand offset") as usize;
+        let length = record["operand"]["utf8_length"].as_u64().expect("operand length") as usize;
+        assert_eq!(&input[offset..offset + length], format!("\"{encoded}\""));
+        assert_eq!(record["syntax"]["commands"][0]["name"], "Write-Output");
+        assert_eq!(commands[1]["encoded_command"]["status"], "unresolved");
+        assert!(report.findings.iter().any(|f| f.rule == "windows.powershell-encoded-command"));
+        assert_eq!(std::fs::read_to_string(path).expect("source remains readable"), input);
+    }
+}
+
+#[test]
 fn batch_script_reports_literal_segments_without_expanding_input() {
     let directory = tempfile::tempdir().expect("batch input");
     let input = directory.path().join("example.bat");

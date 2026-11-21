@@ -32,6 +32,7 @@ mod catalog_membership;
 mod compound;
 mod der;
 mod dotnet;
+mod encoded_powershell;
 mod inf;
 mod inno;
 mod installer;

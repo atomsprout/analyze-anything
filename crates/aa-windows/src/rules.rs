@@ -1229,6 +1229,13 @@ pub const RULES: &[Rule] = &[
         text_en: "Inspection covers qualified literal command segments. Expansions, command lookup, branches and execution outcomes remain unresolved.",
     },
     Rule {
+        id: "windows.powershell-encoded-command",
+        title_zh: "PowerShell 编码命令",
+        title_en: "PowerShell encoded command",
+        text_zh: "已解码 {count} 个字面 EncodedCommand 参数。证据保留参数位置和解码字节摘要，报告包含可读取的嵌套语法。",
+        text_en: "Decoded {count} literal EncodedCommand operands. Evidence records operand positions and decoded byte digests. The report includes readable nested syntax.",
+    },
+    Rule {
         id: "windows.powershell-commands",
         title_zh: "PowerShell 字面命令声明",
         title_en: "Literal PowerShell command declarations",

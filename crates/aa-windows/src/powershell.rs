@@ -107,7 +107,7 @@ fn literal_argument(node: Node<'_>) -> bool {
         })
 }
 
-fn command(report: &mut Script, node: Node<'_>, text: &str) {
+fn command(report: &mut Script, node: Node<'_>, text: &str, encoded_budget: &mut Option<crate::encoded_powershell::Budget>) {
     if report.commands.len() == MAX_COMMANDS {
         report.issue(node, "command record count budget");
         return;
@@ -186,11 +186,55 @@ fn command(report: &mut Script, node: Node<'_>, text: &str) {
     if elevation {
         report.administrator(node, "start-process-runas");
     }
-    report.commands.push(json!({"name":shown,"operator":operator,"position":position(node),
-        "declaration":classify(name),"literal_arguments":arguments}));
+    let mut record = json!({"name":shown,"operator":operator,"position":position(node),
+        "declaration":classify(name),"literal_arguments":arguments});
+    if matches!(operator, "direct" | "call")
+        && crate::encoded_powershell::host(name)
+        && let Some(elements) = node.child_by_field_name("command_elements")
+    {
+        let mut cursor = elements.walk();
+        let mut operands = Vec::new();
+        for arg in elements.named_children(&mut cursor) {
+            let raw = get_text(arg);
+            if arg.kind() == "comment" || (arg.kind() == "command_argument_sep" && raw.trim().is_empty()) {
+                continue;
+            }
+            if operands.len() == 64 {
+                report.issue(arg, "EncodedCommand argument work budget");
+                operands.clear();
+                break;
+            }
+            let value =
+                (literal_argument(arg) || arg.kind() == "command_parameter").then(|| crate::encoded_powershell::literal(raw)).flatten();
+            operands.push(crate::encoded_powershell::Operand { value, offset: arg.start_byte(), length: arg.byte_range().len() });
+        }
+        if let Some(budget) = encoded_budget {
+            if let Some(result) = crate::encoded_powershell::inspect(&operands, budget) {
+                if result["status"] == "unresolved" || result["syntax"]["status"] != "parsed" {
+                    report.issue(node, "EncodedCommand representation or decoded syntax unresolved");
+                }
+                record["encoded_command"] = result;
+            }
+        } else if operands.iter().any(|arg| arg.value.is_some_and(|v| v.eq_ignore_ascii_case("-EncodedCommand"))) {
+            report.issue(node, "nested EncodedCommand exceeds depth limit");
+        }
+    }
+    report.commands.push(record);
 }
 
 fn read(text: &str) -> Result<Script, &'static str> {
+    read_with_encoded(text, Some(crate::encoded_powershell::Budget::default()))
+}
+
+pub(super) fn inspect_decoded(text: &str) -> Value {
+    match read_with_encoded(text, None) {
+        Ok(report) => json!({"status":"parsed","offset_basis":"decoded-command-UTF8","commands":report.commands,
+            "administrator":report.administrator,"issues":report.issues,"issues_omitted":report.issues_omitted}),
+        Err(reason) => json!({"status":"unresolved","reason":reason}),
+    }
+}
+
+fn read_with_encoded(text: &str, mut encoded_budget: Option<crate::encoded_powershell::Budget>) -> Result<Script, &'static str> {
     let mut parser = Parser::new();
     parser.set_language(&tree_sitter_powershell::LANGUAGE.into()).map_err(|_| "PowerShell grammar is incompatible")?;
     // Bound parser work by callback count rather than a host-dependent time limit.
@@ -221,7 +265,7 @@ fn read(text: &str) -> Result<Script, &'static str> {
             break;
         }
         if node.kind() == "command" {
-            command(&mut report, node, text);
+            command(&mut report, node, text, &mut encoded_budget);
         } else if node.kind() == "comment" {
             let raw = text.get(node.byte_range()).unwrap_or_default();
             let mut parts = raw.split_ascii_whitespace();
@@ -286,6 +330,7 @@ pub(super) fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
         );
     }
     out.kind(file, "powershell-script");
+    crate::encoded_powershell::finding(file, &report.commands, out);
     out.limitation("windows.powershell-scope", Some(file), None);
     out.fact(file, "windows.powershell", json!({"source_sha256":digest,"profile":"powershell-syntax-v1","offset_basis":"decoded-UTF8",
         "commands":report.commands,"administrator":report.administrator,"issues":report.issues,"issues_omitted":report.issues_omitted,"evaluated":false}));

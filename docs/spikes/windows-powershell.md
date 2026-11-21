@@ -60,5 +60,24 @@ unresolved. Synthetic cases exercise comments, operators, quoting, variable
 expansion and resumption after unsupported lines. The reference uses source
 bytes and documented cmd syntax. It does not invoke the build script.
 
-Encoded command provenance and broader script declaration semantics remain
-open under W4.
+## Encoded commands
+
+The two script readers recognize the full literal `-EncodedCommand` switch
+on qualified `pwsh` and `powershell` command spellings. The supported option
+sequence covers the standalone operand and a small set of preceding switches.
+Arguments belonging to a preceding `-File` or `-Command` are outside that
+sequence. Abbreviations, command aliases, other host options and shell
+expansion are outside the checked profile.
+
+A standard Base64 operand can produce up to 16 KiB of UTF-16LE. Each file
+has eight attempts and a 64 KiB aggregate decoded byte budget. The result
+includes the original operand's decoded-UTF-8 span, the decoded byte
+length and SHA-256, and a one-level syntax inventory with its own positions.
+The representation record stores no raw Base64 or decoded script body.
+Invalid Base64, invalid UTF-16LE, dynamic operands and nested encoded commands
+leave explicit limits. See the [PowerShell host documentation](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_pwsh#-encodedcommand---e---ec).
+
+The native reference check compares the representation, decoded hash and
+syntax with .NET and PowerShell's read-only parser. Engine tests cover a
+successful and malformed operand through both script readers, with byte-for-byte
+source checks. Broader script declaration semantics remain open under W4.

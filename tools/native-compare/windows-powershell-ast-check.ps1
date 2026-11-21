@@ -28,6 +28,27 @@ foreach ($case in $cases) {
 }
 "Matched $($cases.Count) owned PowerShell syntax references using ParseInput."
 
+$encodedFixture = Join-Path (Split-Path -Parent $Fixture) 'powershell-encoded.ref.json'
+$reference = Get-Content -Raw -LiteralPath $encodedFixture -Encoding utf8 | ConvertFrom-Json
+$bytes = [Convert]::FromBase64String($reference.encoded)
+$decoded = [System.Text.Encoding]::Unicode.GetString($bytes)
+$sha = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $digest = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant()
+} finally {
+    $sha.Dispose()
+}
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseInput($decoded, [ref]$tokens, [ref]$errors)
+$names = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.CommandAst] }, $true) |
+        ForEach-Object { $_.GetCommandName() })
+if ($decoded -cne $reference.source -or $digest -cne $reference.decoded_sha256 -or
+        ($names -join '|') -cne ($reference.commands -join '|') -or $errors.Count -ne $reference.errors.Count) {
+    throw 'EncodedCommand native reference changed'
+}
+'Matched the UTF-16LE representation, decoded digest and PowerShell AST.'
+
 if ($Cli) {
     $Cli = (Resolve-Path -LiteralPath $Cli).Path
     $repo = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../..')).Path

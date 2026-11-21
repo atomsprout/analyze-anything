@@ -1,0 +1,10 @@
+{
+  "source": "Write-Output 'fixture only'",
+  "representation": "base64-utf16le",
+  "encoded": "VwByAGkAdABlAC0ATwB1AHQAcAB1AHQAIAAnAGYAaQB4AHQAdQByAGUAIABvAG4AbAB5ACcA",
+  "decoded_sha256": "104df9edf4b9c358bb4ef6758a766217759202873222ed9bd62407ac70795551",
+  "commands": [
+    "Write-Output"
+  ],
+  "errors": []
+}
