@@ -239,3 +239,14 @@ declarations and explicit supplied paths. Only a proven filename/source associat
 can help distinguish a missing declared source from bytes that disagree with an expected
 digest. The current digest-only no-match status must remain unresolved when no such
 association exists. W5 still requires a broader licensed built-package corpus.
+
+The next declaration stage now links copy filenames to SourceDisksFiles records and
+decimal IDs to SourceDisksNames records, retaining architecture alternatives. These are
+source relationships, not supplied-byte locations. [The source/root mapping record](windows-inf-source-mapping.md)
+describes that implementation and the still-open caller-declared distribution-root work.
+
+The report-detail implementation passed all CI jobs at
+`ff746184faccccadc73884284433c00ecea9a0ca`:
+[run 44852833438](https://github.com/atomsprout/analyze-anything/actions/runs/44852833438).
+This includes Linux/macOS/Windows core checks, macOS desktop and licenses; it precedes
+the source declaration links above.

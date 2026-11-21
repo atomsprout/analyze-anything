@@ -45,7 +45,10 @@ Include/Needs. A separate bounded source graph records supported device/service/
 registry declarations and section-reference candidates. It retains duplicate occurrences,
 unknown numeric values and external references explicitly. It does not select decorated
 installation alternatives, map source-media roots to supplied payloads or establish
-runtime effects. The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
+runtime effects. Copy-source filenames and decimal media IDs have bounded links within
+the parsed declaration graph; these do not establish a distribution root or associate
+payload bytes. [The source-mapping record](spikes/windows-inf-source-mapping.md) specifies
+the next explicit-root/settings boundary. The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
 source INF (still containing build placeholders) and a controlled syntax fixture; they
 do not qualify a built driver package. See [the INF scope record](spikes/windows-inf.md)
 and [source graph profile and budgets](spikes/windows-inf-relationships.md).

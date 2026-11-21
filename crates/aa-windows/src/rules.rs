@@ -28,6 +28,13 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.inf-source-relationships",
+        title_en: "Copy sources link to INF file and media declarations",
+        title_zh: "复制源关联到 INF 文件及介质声明",
+        text_en: "{copies} copy declarations match source-filename records under the ASCII filename profile; {media} source-file declarations match decimal media identifiers. All compatible architecture alternatives and duplicate occurrences remain in the facts. Evidence retains literal fields and available neutral projections. These are relationships within supplied INF source, not resolved payload paths, selected installation actions or catalog coverage.",
+        text_zh: "按 ASCII 文件名规则，{copies} 条复制声明匹配源文件名记录；{media} 条源文件声明匹配十进制介质标识。事实保留兼容的体系结构候选及重复来源。证据保留原始字段及可用的中性投影。这些是输入 INF 来源内的关联，不表示已解析载荷路径、已选择安装动作或确认目录覆盖。",
+    },
+    Rule {
         id: "windows.inf-model-declaration",
         title_en: "Declared device model",
         title_zh: "声明的设备型号",
@@ -87,8 +94,8 @@ pub const RULES: &[Rule] = &[
         id: "windows.inf-declarations-unresolved",
         title_en: "INF source relationships remain unresolved",
         title_zh: "INF 来源关联仍未确认",
-        text_en: "Some section names, duplicate occurrences, numeric values or external references are unresolved. Incomplete syntax and unsupported name folding cannot establish a complete section namespace. Unknown values and source occurrences remain visible; no external INF or host state supplies missing information.",
-        text_zh: "部分节名称、重复来源、数值或外部引用仍未确认。不完整语法及不支持的名称大小写规则不能确认完整节命名空间。保留未知值及来源记录；不会通过外部 INF 或主机状态补全信息。",
+        text_en: "Some section names, source filenames, media identifiers, duplicate occurrences, numeric values or external references are unresolved. Incomplete syntax and unsupported name folding cannot establish a complete declaration namespace. Unknown values and source occurrences remain visible; no external INF or host state supplies missing information.",
+        text_zh: "部分节名称、源文件名、介质标识、重复来源、数值或外部引用仍未确认。不完整语法及不支持的名称大小写规则不能确认完整声明命名空间。保留未知值及来源记录；不会通过外部 INF 或主机状态补全信息。",
     },
     Rule {
         id: "windows.catalog-digest-agreement",

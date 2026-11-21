@@ -119,6 +119,7 @@ struct Graph<'a> {
     namespace_complete: bool,
     records: Vec<Value>,
     edges: Vec<Value>,
+    source_relationships: Vec<Value>,
     bytes: usize,
     omitted: usize,
     unresolved: usize,
@@ -178,6 +179,7 @@ impl<'a> Graph<'a> {
                 && inf.sections.iter().all(|s| s.name.is_ascii() && !s.name.contains("[redacted")),
             records: Vec::new(),
             edges: Vec::new(),
+            source_relationships: Vec::new(),
             bytes: 0,
             omitted: 0,
             unresolved: 0,
@@ -189,7 +191,7 @@ impl<'a> Graph<'a> {
     }
 
     fn admit(&mut self, value: &Value, edge: bool) -> bool {
-        let count = if edge { self.edges.len() } else { self.records.len() };
+        let count = if edge { self.edges.len() + self.source_relationships.len() } else { self.records.len() };
         let limit = if edge { MAX_EDGES } else { MAX_RECORDS };
         if count >= limit || self.bytes >= MAX_OUTPUT_BYTES {
             self.omitted += 1;
@@ -217,7 +219,7 @@ impl<'a> Graph<'a> {
     }
 
     fn reference(&mut self, section: usize, entry: usize, field: usize, name: &str, kind: &str, alternatives: bool) -> Vec<usize> {
-        if self.edges.len() >= MAX_EDGES || self.bytes >= MAX_OUTPUT_BYTES {
+        if self.edges.len() + self.source_relationships.len() >= MAX_EDGES || self.bytes >= MAX_OUTPUT_BYTES {
             self.omitted += 1;
             return Vec::new();
         }
@@ -510,12 +512,154 @@ impl<'a> Graph<'a> {
                 self.directives(section, role);
             }
         }
+        self.link_sources();
+    }
+
+    fn architecture(&self, record: usize) -> Option<String> {
+        let section =
+            self.records[record]["section"].as_u64().and_then(|v| usize::try_from(v).ok()).and_then(|i| self.inf.sections.get(i))?;
+        section.name.rsplit_once('.').map(|(_, suffix)| suffix.to_ascii_lowercase())
+    }
+
+    fn link_sources(&mut self) {
+        let mut files: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        let mut media: BTreeMap<u32, Vec<usize>> = BTreeMap::new();
+        let mut file_namespace_complete = self.namespace_complete && self.omitted == 0;
+        let mut media_namespace_complete = file_namespace_complete;
+        for (index, record) in self.records.iter().enumerate() {
+            let details = &record["details"];
+            match record["kind"].as_str() {
+                Some("source-file") => {
+                    if let Some(name) = details["filename_literal"]
+                        .as_str()
+                        .filter(|name| crate::references::ordinary_component(name) && !name.contains("[redacted"))
+                    {
+                        files.entry(name.to_ascii_lowercase()).or_default().push(index);
+                    } else {
+                        file_namespace_complete = false;
+                    }
+                }
+                Some("source-media") => {
+                    if let Some(id) = details["disk_id_literal"].as_str().and_then(decimal_id) {
+                        media.entry(id).or_default().push(index);
+                    } else {
+                        media_namespace_complete = false;
+                    }
+                }
+                _ => {}
+            }
+        }
+        for source in 0..self.records.len() {
+            let record = &self.records[source];
+            let details = &record["details"];
+            let kind = record["kind"].as_str().unwrap_or("");
+            if !matches!(kind, "copy-file" | "direct-copy-source" | "source-file") {
+                continue;
+            }
+            if self.edges.len() + self.source_relationships.len() >= MAX_EDGES || self.bytes >= MAX_OUTPUT_BYTES {
+                self.omitted += 1;
+                continue;
+            }
+            let (relation, declaration, complete, candidates) = match kind {
+                "copy-file" | "direct-copy-source" => {
+                    let name = details[if kind == "copy-file" { "source_filename" } else { "filename" }].as_str().unwrap_or("");
+                    let complete = file_namespace_complete && crate::references::ordinary_component(name) && !name.contains("[redacted");
+                    (
+                        "copy-source-declaration",
+                        name,
+                        complete,
+                        if complete { files.get(&name.to_ascii_lowercase()).cloned().unwrap_or_default() } else { Vec::new() },
+                    )
+                }
+                "source-file" => {
+                    let id = details["disk_id"].as_str().unwrap_or("");
+                    let complete = media_namespace_complete && decimal_id(id).is_some();
+                    let architecture = self.architecture(source);
+                    let candidates = if complete {
+                        decimal_id(id)
+                            .and_then(|id| media.get(&id))
+                            .cloned()
+                            .unwrap_or_default()
+                            .into_iter()
+                            .filter(|target| {
+                                architecture.is_none() || self.architecture(*target).is_none() || self.architecture(*target) == architecture
+                            })
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+                    ("source-media-declaration", id, complete, candidates)
+                }
+                _ => continue,
+            };
+            let status = if !complete {
+                "source-declaration-namespace-or-value-unresolved"
+            } else if candidates.is_empty() {
+                "no-matching-supplied-source-declaration"
+            } else if candidates.len() == 1 {
+                "single-source-occurrence-no-platform-selection"
+            } else {
+                "multiple-source-alternatives-no-platform-selection"
+            };
+            if candidates.is_empty() || candidates.len() > 1 {
+                self.unresolved += 1;
+            }
+            let value = json!({"kind":relation,"source_record":source,"declared":declaration,"status":status,
+                "target_records":candidates.iter().copied().take(MAX_TARGETS).collect::<Vec<_>>(),"observed_target_count":candidates.len(),
+                "targets_truncated":candidates.len()>MAX_TARGETS,"declaration_namespace_complete":complete,"platform_selected":false,"payload_path_resolved":false});
+            self.omitted += candidates.len().saturating_sub(MAX_TARGETS);
+            if self.admit(&value, true) {
+                self.source_relationships.push(value);
+            }
+        }
+    }
+}
+
+fn decimal_id(text: &str) -> Option<u32> {
+    (!text.is_empty() && text.bytes().all(|b| b.is_ascii_digit())).then(|| text.parse().ok()).flatten()
+}
+
+fn source_relationship_finding(file: &Artifact, graph: &Graph<'_>, out: &mut Output) {
+    let positives: Vec<_> =
+        graph.source_relationships.iter().filter(|r| r["observed_target_count"].as_u64().is_some_and(|count| count > 0)).collect();
+    if positives.is_empty() {
+        return;
+    }
+    let copies = positives.iter().filter(|r| r["kind"] == "copy-source-declaration").count();
+    let mut finding = Finding::new(Section::Structure, "windows", "windows.inf-source-relationships", Confidence::Derived, Severity::Info)
+        .param("copies", copies)
+        .param("media", positives.len() - copies);
+    let mut sources = BTreeSet::new();
+    for relationship in positives.iter().take(3) {
+        for value in [relationship["source_record"].as_u64(), relationship["target_records"][0].as_u64()].into_iter().flatten() {
+            if let Ok(index) = usize::try_from(value) {
+                sources.insert(index);
+            }
+        }
+    }
+    let mut evidence_count = 0;
+    for index in sources {
+        let Some(record) = graph.records.get(index) else { continue };
+        let source = record["section"].as_u64().and_then(|v| usize::try_from(v).ok()).and_then(|i| graph.inf.sections.get(i));
+        let entry = record["entry"].as_u64().and_then(|v| usize::try_from(v).ok()).and_then(|i| source.and_then(|s| s.entries.get(i)));
+        let (Some(section), Some(entry)) = (source, entry) else { continue };
+        finding = finding.evidence(Evidence::field(
+            file,
+            format!("INF/[{}]/line {}/source declaration", section.name, entry.line),
+            json!({"key":entry.key,"literal_fields":entry.fields.iter().take(2).collect::<Vec<_>>(),
+                "neutral_fields":entry.neutral_fields.as_ref().map(|f|f.iter().take(2).collect::<Vec<_>>())}),
+        ));
+        evidence_count += 1;
+    }
+    if evidence_count > 0 {
+        out.finding(finding);
     }
 }
 
 pub(super) fn analyze(file: &Artifact, inf: &Inf, out: &mut Output) {
     let mut graph = Graph::new(inf);
     graph.build();
+    source_relationship_finding(file, &graph, out);
     let detail_omitted = detail_findings(file, &graph, out);
     if !graph.records.is_empty() {
         let mut finding = Finding::new(Section::Structure, "windows", "windows.inf-declarations", Confidence::Derived, Severity::Info)
@@ -545,7 +689,7 @@ pub(super) fn analyze(file: &Artifact, inf: &Inf, out: &mut Output) {
             Some(aa_core::counted(graph.unresolved as u64, "references or values were unresolved")),
         );
     }
-    out.fact(file,"windows.inf-declarations",json!({"profile":"bounded-source-declarations-no-installation-selection","records":graph.records,"references":graph.edges,
+    out.fact(file,"windows.inf-declarations",json!({"profile":"bounded-source-declarations-no-installation-selection","records":graph.records,"references":graph.edges,"source_relationships":graph.source_relationships,
         "omitted":graph.omitted,"report_details_omitted":detail_omitted,"unresolved":graph.unresolved,"section_namespace_complete":graph.namespace_complete,"platform_selected":false,
         "installed":false,"external_infs_followed":false,"host_registry_consulted":false}));
 }
@@ -737,5 +881,90 @@ HKR,,Feature,,Value
         assert_eq!(records(&graph, "service-addition").count(), 0, "ClassInstall is not a DDInstall.Services context");
         assert_eq!(records(&graph, "unsupported-copy-directive").count(), 1);
         assert!(graph.unresolved > 0);
+    }
+
+    #[test]
+    fn source_relationships_keep_architecture_alternatives_and_match_original_copy_names() {
+        let inf = source(
+            br#"[Version]
+Signature="$Windows NT$"
+[DefaultInstall.NT]
+CopyFiles=Files
+CopyFiles=@absent.sys
+[Files]
+renamed.sys,SoUrCe.sys
+[SourceDisksFiles.amd64]
+source.sys=01
+[SourceDisksFiles.arm64]
+source.sys=2
+[SourceDisksFiles]
+generic.sys=3
+[SourceDisksNames]
+1=GenericFirst
+2=GenericSecond
+[SourceDisksNames.amd64]
+1=AMD
+3=AMDGenericFile
+[SourceDisksNames.arm64]
+1=WrongArchitecture
+2=ARM
+[SourceDisksNames.x86]
+3=X86GenericFile
+"#,
+        );
+        let mut graph = Graph::new(&inf);
+        graph.build();
+        let copy = graph.source_relationships.iter().find(|r| r["declared"] == "SoUrCe.sys").expect("original copy filename");
+        assert_eq!(copy["observed_target_count"], 2);
+        assert_eq!(copy["status"], "multiple-source-alternatives-no-platform-selection");
+        let absent = graph.source_relationships.iter().find(|r| r["declared"] == "absent.sys").expect("missing declaration");
+        assert_eq!(absent["status"], "no-matching-supplied-source-declaration");
+        let amd = graph.source_relationships.iter().find(|r| r["declared"] == "01").expect("decimal disk ID");
+        assert_eq!(amd["observed_target_count"], 2, "generic and same-architecture alternatives remain");
+        for target in amd["target_records"].as_array().expect("media candidates") {
+            assert_ne!(graph.architecture(target.as_u64().expect("record index") as usize).as_deref(), Some("arm64"));
+        }
+        let generic = graph.source_relationships.iter().find(|r| r["declared"] == "3").expect("generic source file");
+        assert_eq!(generic["observed_target_count"], 2, "generic files retain distinct media architectures");
+        assert!(graph.source_relationships.iter().all(|r| r["platform_selected"] == false && r["payload_path_resolved"] == false));
+        let mut repeat = Graph::new(&inf);
+        repeat.build();
+        assert_eq!(graph.source_relationships, repeat.source_relationships);
+    }
+
+    #[test]
+    fn source_relationships_reject_uncertain_namespaces_and_bound_duplicate_candidates() {
+        for invalid in ["%Unexpanded%.sys", "\u{212a}.sys"] {
+            let text = format!(
+                "\u{feff}[Version]\nSignature=X\n[DefaultInstall.NT]\nCopyFiles=Files\n[Files]\nx.sys\n[SourceDisksFiles]\nx.sys=1\n{invalid}=1\n[SourceDisksNames]\n1=Media\n"
+            );
+            let inf = source(text.as_bytes());
+            let mut graph = Graph::new(&inf);
+            graph.build();
+            let copy = graph.source_relationships.iter().find(|r| r["kind"] == "copy-source-declaration").expect("unresolved copy");
+            assert_eq!(copy["observed_target_count"], 0);
+            assert_eq!(copy["declaration_namespace_complete"], false);
+        }
+        let inf = source(b"[Version]\nSignature=X\n[SourceDisksFiles]\nx.sys=1\n[SourceDisksNames]\n1=First\n0x1=UnsupportedDecimalKey\n");
+        let mut graph = Graph::new(&inf);
+        graph.build();
+        assert!(graph.source_relationships.iter().all(|r| r["observed_target_count"] == 0 && r["declaration_namespace_complete"] == false));
+        let mut text = String::from("[Version]\nSignature=X\n[SourceDisksFiles]\nx.sys=1\n[SourceDisksNames]\n");
+        for _ in 0..20 {
+            text.push_str("1=Duplicate\n");
+        }
+        let inf = source(text.as_bytes());
+        let mut graph = Graph::new(&inf);
+        graph.build();
+        let relationship = &graph.source_relationships[0];
+        assert_eq!(relationship["observed_target_count"], 20);
+        assert_eq!(relationship["target_records"].as_array().expect("bounded candidates").len(), MAX_TARGETS);
+        assert_eq!(graph.omitted, 4);
+        let mut graph = Graph::new(&inf);
+        graph.roots();
+        graph.bytes = MAX_OUTPUT_BYTES;
+        graph.link_sources();
+        assert!(graph.source_relationships.is_empty());
+        assert!(graph.omitted > 0);
     }
 }

@@ -309,6 +309,29 @@ fn inf_report_details_have_count_and_byte_budgets_without_discarding_the_graph()
 }
 
 #[test]
+fn inf_copy_and_media_relationships_are_source_evidence_not_payload_locations() {
+    for name in ["upstream-echo.inf", "upstream-nullFilter.inf", "native-inf-relationships.inf"] {
+        let run = analyze(&[(name, data(name))]);
+        let graph = run.fact(name, "windows.inf-declarations");
+        let records = graph["records"].as_array().expect("source records");
+        let links = graph["source_relationships"].as_array().expect("source relationships");
+        assert!(links.iter().any(|r| r["kind"] == "copy-source-declaration" && r["observed_target_count"] == 1));
+        assert!(links.iter().any(|r| r["kind"] == "source-media-declaration" && r["observed_target_count"] == 1));
+        assert!(links.iter().all(|r| r["payload_path_resolved"] == false && r["platform_selected"] == false));
+        for link in links {
+            for target in link["target_records"].as_array().expect("target records") {
+                assert!(target.as_u64().expect("record index") < (records.len() as u64));
+            }
+        }
+        let findings = run.findings("windows.inf-source-relationships");
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].confidence, aa_core::Confidence::Derived);
+        assert!(!findings[0].evidence.is_empty());
+        assert_eq!(run.tree.artifacts().len(), 1, "no target or external source was read into the tree");
+    }
+}
+
+#[test]
 fn independent_shell_link_relative_path_can_name_a_supplied_sibling() {
     let run = analyze(&[("upstream-test.lnk", data("upstream-test.lnk")), ("a.txt", b"supplied text".to_vec())]);
     let refs = run.fact("upstream-test.lnk", "windows.input-references")["references"].as_array().expect("reference declarations");

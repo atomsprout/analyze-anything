@@ -186,6 +186,20 @@ def main():
             for reference in graph["references"]:
                 assert all(0 <= target < len(fact["sections"]) for target in reference["target_sections"])
                 assert len(reference["target_sections"]) <= reference["observed_target_count"]
+            for relationship in graph.get("source_relationships", []):
+                source = graph["records"][relationship["source_record"]]["details"]
+                assert not relationship["platform_selected"] and not relationship["payload_path_resolved"]
+                assert len(relationship["target_records"]) <= relationship["observed_target_count"]
+                for target in relationship["target_records"]:
+                    destination = graph["records"][target]["details"]
+                    if relationship["kind"] == "copy-source-declaration":
+                        name = source.get("source_filename", source.get("filename"))
+                        assert name.isascii() and destination["filename_literal"].isascii()
+                        assert name.lower() == destination["filename_literal"].lower()
+                    else:
+                        assert source["disk_id"].isascii() and source["disk_id"].isdigit()
+                        assert destination["disk_id_literal"].isascii() and destination["disk_id_literal"].isdigit()
+                        assert int(source["disk_id"]) == int(destination["disk_id_literal"])
         run(command)
         assert raw == (args.output / "report.json").read_bytes(), "report changed on repeat"
         assert "windows.inf" in (args.output / "report.html").read_text(encoding="utf-8")
@@ -198,6 +212,9 @@ def main():
             assert "windows.inf-declarations" in (args.output / "report.html").read_text(encoding="utf-8")
             assert "INF device, service and file declarations" in (args.output / "report.md").read_text(encoding="utf-8")
             assert "INF 设备、服务及文件声明" in (chinese / "report.md").read_text(encoding="utf-8")
+            if any(row["observed_target_count"] for row in graph.get("source_relationships", [])):
+                assert "Copy sources link to INF file and media declarations" in (args.output / "report.md").read_text(encoding="utf-8")
+                assert "复制源关联到 INF 文件及介质声明" in (chinese / "report.md").read_text(encoding="utf-8")
             details = {
                 "device-model": ("windows.inf-model-declaration", "Declared device model", "声明的设备型号"),
                 "service-addition": ("windows.inf-service-declaration", "Declared service association", "声明的服务关联"),

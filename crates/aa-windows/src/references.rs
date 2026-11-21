@@ -210,7 +210,7 @@ fn name_changed(file: &Artifact) -> bool {
     })
 }
 
-fn ordinary_component(part: &str) -> bool {
+pub(crate) fn ordinary_component(part: &str) -> bool {
     if part.is_empty()
         || part.len() > 255
         || !part.is_ascii()
