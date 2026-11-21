@@ -68,6 +68,12 @@ SHA-256: `04351440bf6ee49fd39f2d36d76ced97af06941d3faadc1865862c0bff35891d`.
 The source still contains `$ARCH$` build placeholders and is not a built driver package.
 No SYS, catalog or certificate is included.
 
+The second pinned Microsoft source, `upstream-echo.inf`, adds Models/device-ID and
+service declarations; it preserves upstream echo.inx bytes with an extension rename.
+Read-only SetupAPI agrees on 43 projected fields. Its provenance and limitations are
+recorded in [the next relationship boundary](windows-inf-relationships.md). This is
+source-parser coverage, not an implemented device/service graph or a built package.
+
 `tools/native-compare/windows-inf-check.py` captured the checked-in reference through
 SetupOpenInfFileW, SetupEnumInfSectionsW, SetupGetLineByIndexW and SetupGetStringFieldW on
 the available Windows x64 host. It passes a full path to avoid implicit host-INF search,

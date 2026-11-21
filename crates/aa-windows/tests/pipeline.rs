@@ -219,6 +219,17 @@ fn controlled_inf_quotes_and_continuations_match_setupapi_snapshot() {
 }
 
 #[test]
+fn independent_models_inf_preserves_device_ids_and_unbuilt_architecture_declarations() {
+    let run = compare_inf_reference("upstream-echo.inf", 43);
+    let sections = run.fact("upstream-echo.inf", "windows.inf")["sections"].as_array().expect("source sections");
+    let model = sections.iter().find(|s| s["name"] == "Standard.NT$ARCH$.10.0...16299").expect("unbuilt model section");
+    assert_eq!(model["entries"][0]["fields"], serde_json::json!(["ECHO_Device", r"root\ECHO"]));
+    let service = sections.iter().find(|s| s["name"] == "ECHO_Device.NT.Services").expect("service declaration");
+    assert_eq!(service["entries"][0]["neutral_fields"], serde_json::json!(["ECHO", "0x00000002", "ECHO_Service_Inst"]));
+    assert!(run.findings("windows.input-reference").is_empty(), "source declarations do not supply the absent catalog or driver");
+}
+
+#[test]
 fn independent_shell_link_relative_path_can_name_a_supplied_sibling() {
     let run = analyze(&[("upstream-test.lnk", data("upstream-test.lnk")), ("a.txt", b"supplied text".to_vec())]);
     let refs = run.fact("upstream-test.lnk", "windows.input-references")["references"].as_array().expect("reference declarations");

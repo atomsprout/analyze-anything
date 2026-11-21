@@ -94,7 +94,9 @@ Workspace Clippy with warnings denied and the no-default-feature CLI build passe
 `cargo fmt --all --check` and `cargo test --workspace` passed, including the damaged
 fixture robustness run; the complete local log is
 `out/windows-baseline/workspace-catalog-membership.log`. Cross-platform CI for this
-increment remains the next gate. No report templates or desktop code changed in this
+increment is running for `e6f38d035c2be543269cb2fec6afb42639d0488a`:
+[run 44849363474](https://github.com/atomsprout/analyze-anything/actions/runs/44849363474).
+Its terminal result is not yet established. No report templates or desktop code changed in this
 increment; the native CLI checks cover its actual new Markdown/HTML/Chinese output.
 
 Native development output lives under `out/windows-baseline/catalog-package-checks`

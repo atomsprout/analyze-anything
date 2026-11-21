@@ -59,6 +59,15 @@ by the tests only, not part of the program):
 
 Test samples in crates/aa-windows/tests/data (not part of the program):
 
+  - upstream-echo.inf: unchanged bytes of general/echo/kmdf/driver/AutoSync/echo.inx
+    from Microsoft's Windows-driver-samples at commit
+    d49bb7d72f3651952b2b6e4ad28d14fe2247eb69, renamed to .inf for the reader.
+    Copyright (c) 1990-2000 Microsoft Corporation, as retained in the source.
+    Microsoft Public License (MS-PL); see windows-driver-samples.LICENSE, including
+    its Copyright (c) 2015 Microsoft notice. Build placeholders remain unexpanded;
+    no driver binary, catalog or installation action is included. Its *.ref.json is
+    a project-authored read-only SetupAPI field snapshot under Apache-2.0.
+
   - upstream-nullFilter.inf: unchanged source INF from Microsoft's Windows-driver-samples,
     filesys/miniFilter/nullFilter/nullFilter.inf at commit
     d49bb7d72f3651952b2b6e4ad28d14fe2247eb69
