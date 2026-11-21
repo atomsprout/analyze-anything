@@ -18,6 +18,28 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn powershell_script_reports_bound_syntax_and_preserves_input() {
+    let directory = tempfile::tempdir().expect("script input");
+    let input = directory.path().join("example.psm1");
+    let source =
+        b"\xef\xbb\xbf#Requires -RunAsAdministrator\r\n# Write-Output ignored\r\nWrite-Output 'C:\\Reports\\summary.txt'\r\n& $command\r\n";
+    std::fs::write(&input, source).expect("script fixture");
+    let report = run(&input, &Options::default());
+    let file = report.artifacts.iter().find(|a| a.name() == "example.psm1").expect("script artifact");
+    assert_eq!(file.kind.as_deref(), Some("powershell-script"));
+    let fact = &file.facts["windows.powershell"];
+    assert_eq!(fact["source_sha256"], aa_core::sha256_hex(source));
+    assert_eq!(fact["commands"].as_array().expect("commands").len(), 1);
+    assert_eq!(fact["commands"][0]["position"]["line"], 3);
+    assert_eq!(fact["commands"][0]["literal_arguments"][0]["value"], r"C:\Reports\summary.txt");
+    assert_eq!(fact["administrator"][0]["kind"], "requires-directive");
+    assert_eq!(fact["evaluated"], false);
+    assert!(report.limitations.iter().any(|l| l.code == "windows.powershell-incomplete"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.powershell-administrator" && !f.evidence.is_empty()));
+    assert_eq!(std::fs::read(input).expect("input remains readable"), source);
+}
+
+#[test]
 fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_authentication() {
     let directory = tempfile::tempdir().expect("package inputs");
     for name in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"] {

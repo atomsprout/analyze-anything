@@ -72,6 +72,12 @@ capture, decompression and output budgets apply. Two SDK-built application/resou
 bundles and eight upstream positive/negative fixtures are recorded in
 [the bundle scope](spikes/windows-msix-bundles.md). Broader signed bundles and W6 remain open.
 
+PowerShell syntax inspection covers qualified literal commands in PS1 and PSM1
+files. Grammar errors are reported and dynamic arguments may be unresolved.
+The syntax inventory leaves alias resolution, command binding, execution flow,
+encoded commands and batch scripts outside this increment. Native reference
+coverage is recorded in [the PowerShell scope](spikes/windows-powershell.md).
+
 ZIP archives whose central directory repeats names receive an explicit limitation:
 the current ZIP library collapses those records, so not every version is retained.
 Their container listing is incomplete and cannot establish name-unique relationships.

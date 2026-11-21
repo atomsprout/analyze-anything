@@ -36,6 +36,9 @@ memchr = "2"
 regex.workspace = true
 base64 = "0.22"
 crc32fast = "1"
+# PowerShell syntax is parsed in process with the generated MIT grammar.
+tree-sitter = "=0.26.9"
+tree-sitter-powershell = "=0.26.4"
 
 [dev-dependencies]
 aa-unpack.workspace = true
