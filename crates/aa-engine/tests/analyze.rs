@@ -45,6 +45,16 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
         assert_eq!(blocks["files_with_mismatches"], 0);
         assert_eq!(blocks["files_with_verified_block_spans"], if name.starts_with("upstream") { 11 } else { 6 });
         assert_eq!(blocks["package_signature_checked"], false);
+        if name.starts_with("upstream") {
+            let binding = &original_zip.facts["windows.msix-signature-binding"];
+            assert_eq!(binding["matching_digests"], 5, "{binding}");
+            assert_eq!(binding["mismatching_digests"], 0);
+            assert_eq!(binding["unresolved_digests"], 0);
+            assert_eq!(binding["cms_signature_verified"], true);
+            assert_eq!(binding["all_declared_package_digests_agree"], true);
+            assert_eq!(binding["publisher_checked"], false);
+            assert_eq!(binding["windows_trust_checked"], false);
+        }
         assert!(report.findings.iter().any(|f| f.rule == "windows.msix-block-hashes" && !f.evidence.is_empty()));
         assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
         assert_eq!(

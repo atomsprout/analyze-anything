@@ -24,7 +24,9 @@ same container or extracted package directory. With original archive bytes, a se
 bounded ZIP32/ZIP64 layer checks record correspondence and declared local-header sizes.
 Supported stored/independently decodable DEFLATE blocks are also bound to captured
 content, with measured physical extents and digest/CRC comparisons. Unsupported
-compression profiles remain explicit limitations. Package signatures remain unchecked; digest agreement
+compression profiles remain explicit limitations. Supported P7X signatures receive
+separate CMS mathematics and SHA-256 package-region/footprint comparisons. Publisher,
+certificate policy and Windows trust remain unchecked; digest agreement
 does not authenticate a package. Unsupported or ambiguous names, missing files and exhausted budgets remain
 limitations. See [the MSIX check scope](spikes/windows-msix-integrity.md).
 

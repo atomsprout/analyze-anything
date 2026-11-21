@@ -12,6 +12,7 @@ const MAX_DIRECTORY: usize = 16 * 1024 * 1024;
 const MAX_ENTRIES: usize = 16384;
 
 mod blocks;
+mod signature;
 
 type Result<T> = std::result::Result<T, &'static str>;
 
@@ -329,6 +330,7 @@ fn map_bytes(bytes: &[u8], entry: &Entry<'_>) -> Result<Vec<u8>> {
 pub fn analyze(tree: &dyn Tree, out: &mut Output) {
     let mut bytes_left = 512 * 1024 * 1024usize;
     let mut block_budget = blocks::Budget::default();
+    let mut signature_budget = signature::Budget::default();
     let maps: Vec<_> = tree.artifacts().iter().filter(|a| a.facts.contains_key("windows.msix-blockmap")).take(33).collect();
     if maps.is_empty() {
         return;
@@ -424,6 +426,7 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
                 "zip_record_structure_checked":true,"block_map_bytes_bound":true,
                 "all_payload_crc_checked":false,"compressed_block_sizes_checked":false,"package_signature_checked":false,"windows_trust_checked":false});
             block_checks.publish(parent, source, &digest, out);
+            signature::analyze(tree, parent, &snapshot, &directory, &mut signature_budget, out);
             Ok((parent, fact, mismatches, examples))
         })();
         match checked {
@@ -481,7 +484,7 @@ mod tests {
         bytes[at..at + 8].copy_from_slice(&value.to_le_bytes());
     }
 
-    fn stored(name: &str, data: &[u8], descriptor: usize) -> Vec<u8> {
+    pub(super) fn stored(name: &str, data: &[u8], descriptor: usize) -> Vec<u8> {
         let version = if descriptor >= 20 { 45 } else { 20 };
         let flags = if descriptor == 0 { 0 } else { 8 };
         let crc = crc32fast::hash(data);

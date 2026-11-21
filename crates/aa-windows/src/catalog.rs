@@ -49,7 +49,7 @@ struct Catalog {
 
 // Count actual nodes before a shared CMS helper allocates lists. Primitive octets are
 // opaque here; an encapsulated CTL receives the same check again before interpretation.
-fn bounded_asn1(data: &[u8]) -> Result<()> {
+pub(super) fn bounded_asn1(data: &[u8]) -> Result<()> {
     fn visit(node: Tlv<'_>, depth: usize, count: &mut usize) -> Result<()> {
         *count += 1;
         if depth > 32 || *count > MAX_NODES {

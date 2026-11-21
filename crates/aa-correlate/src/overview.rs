@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-msix-signature",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 MSIX/APPX 的 P7X 签名文件，包含包摘要声明与 CMS 签名。数学检查、原始包对应关系与 Windows 信任分别记录。",
+        text_en: "This is an MSIX/APPX P7X signature with package digest declarations and a CMS signature. Mathematical checks, original package correspondence and Windows trust are recorded separately.",
+    },
+    Rule {
         id: "overview.kind-msix-block-map",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -405,6 +412,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("windows-inf", _) => finding("overview.kind-windows-inf", Confidence::Verified),
         ("windows-catalog", _) => finding("overview.kind-windows-catalog", Confidence::Verified),
         ("msix-block-map", _) => finding("overview.kind-msix-block-map", Confidence::Verified),
+        ("msix-signature", _) => finding("overview.kind-msix-signature", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

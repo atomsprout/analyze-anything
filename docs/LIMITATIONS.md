@@ -34,8 +34,12 @@ segments to captured targets, compares physical block lengths/digests and mapped
 CRCs, and checks empty final streams or stream ends included in the final segment.
 Missing Size declarations, nonrestartable compression, incomplete listings, stale or
 ambiguous targets and budget exhaustion remain explicit limitations. These layers do
-not authenticate the block map or verify unmapped footprint payloads, package/bundle signatures, publisher-certificate equality,
-Windows trust or installation eligibility. Name binding uses the shared conservative
+not establish package trust. An initial P7X layer checks bounded SHA-256 SIP capsules,
+CMS signature mathematics and original AXPC/AXCD/AXCT/AXBM/optional AXCI digests for
+the final-signature-record ZIP32/ZIP64 profile. One pinned Microsoft RSA-2048/SHA-256
+APPX has been compared with CryptoAPI and independent hashes. Other SIP/signature
+profiles, bundles, publisher-certificate equality, timestamp/revocation/certificate
+policy, Windows trust and installation eligibility remain unestablished. Name binding uses the shared conservative
 ASCII Windows path profile and requires complete, unambiguous input enumeration.
 Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and
 content comparisons; broader profiles and W6 acceptance remain open. See

@@ -147,3 +147,16 @@ checks repeated JSON, input preservation, English Markdown/HTML and Chinese Mark
 Only input bytes are analyzed; no package is installed or executed. Constructed ZIP32
 wrappers do not qualify package signatures or native installation behavior. Independent
 block decoding remains a bounded profile; unknown stream forms stay unresolved.
+
+Compare the pinned Microsoft APPX's P7X signature with CryptoAPI message mathematics
+and independently reconstructed package regions/footprints:
+
+    python tools/native-compare/windows-msix-signature-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/msix-signature-check
+
+Use a fresh output directory. Five original/metadata/signature/capsule cases keep
+CMS signature results separate from package digest agreement. It also checks a Chinese
+standalone P7X report, repeated JSON and source preservation. Certificates are only
+decoded into memory for public-key verification; no certificate is installed, no
+trust/chain/revocation lookup is requested, and no package is installed or run.
+Other SIP versions, signature algorithms, publisher policies and bundles retain their
+separate qualification gates.

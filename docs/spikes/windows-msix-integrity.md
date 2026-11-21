@@ -1,8 +1,9 @@
-# MSIX content, original ZIP records and physical blocks
+# MSIX content, ZIP records, physical blocks and signature digests
 
-W6 remains open. This increment implements the block-map content layer required by
+W6 remains open. These increments implement content, physical structure and initial
+SHA-256 signature-envelope/byte-binding checks required by
 [PLAN-WINDOWS.md](../PLAN-WINDOWS.md), alongside the existing manifest reader. Package
-and bundle models, ZIP/signature binding, dependencies and appinstaller references
+and bundle models, publisher/certificate policy, dependencies and appinstaller references
 retain their separate acceptance work.
 
 ## Implemented representation
@@ -118,7 +119,51 @@ The record-only fact retains its false compressed-block flag; this separate resu
 states which files actually received completed physical checks. Neither layer verifies
 unmapped footprint payloads, package/bundle signatures, Windows trust or installability.
 
-## Limits and name ambiguity
+## Signature declarations and original-byte binding
+
+`windows.msix-signature` reads P7X extensions or the `PKCX` prefix, including standalone
+signatures. It requires one bounded definite/minimal DER CMS object, the supported
+SpcIndirectDataContent/SIP subject identifier and version, SHA-256 package digest
+algorithm, and an exact APPX capsule with unique AXPC/AXCD/AXCT/AXBM declarations and
+optional AXCI. Unknown/duplicate labels, missing required records, trailing data,
+unqualified SIP fields and other capsule/hash profiles remain unread with a limitation.
+The capsule is read from its ASN.1 field; the analyzer does not scan for an APPX marker.
+
+CMS checking reuses the strict catalog envelope primitives with an explicit expected
+content type. Digest algorithm declarations, signer-certificate uniqueness, signed
+attribute cardinality/order/content type, content digest and RSA/ECDSA mathematics
+are separate checks. Embedded-chain observations are retained but do not establish
+Windows trust. Missing/ambiguous keys or unsupported checks remain unresolved. P7X
+inputs are at most 4 MiB; the shared preflight bounds ASN.1 depth to 32 and nodes to
+250,000, with certificate/signer/attribute limits before cryptographic work. Published
+facts are capped at 8 MiB, with the existing credential redaction applied to strings.
+
+`windows.msix-signature-binding` on the original container requires the raw P7X bytes
+to match both the captured child digest and its signature-declaration source. For the
+checked final-signature-record profile, AXPC covers all local records before P7X.
+AXCD is computed over the directory without its final signature entry and the restored
+unsigned ZIP32/ZIP64 end records: entry counts, directory size/offset and ZIP64 locator
+are adjusted. Comments are preserved. Prefixes, overlaps and unsupported ZIP layouts
+have already been refused by the record reader; nonfinal signature placement remains
+unresolved for the affected region comparison. This initial placement profile is not
+a general signer-reconstruction algorithm for arbitrary ZIP layouts.
+
+AXCT, AXBM and optional AXCI compare captured original uncompressed footprint bytes,
+with bounded stream decoding and CRC checks. Each digest has its own expected/computed
+values and agree/mismatch/unresolved state; one unread footprint does not erase other
+comparisons. The footprint read/decode budget is 512 MiB across packages, with the
+record reader's 8-MiB plain / 16-MiB compressed per-footprint limits. Missing signatures,
+uncaptured/stale P7X children, unestablished CI coverage and exhaustion remain explicit.
+Agreement with an unauthenticated digest declaration is never promoted to authentication.
+
+Info findings report declared digest agreement or successful CMS mathematics separately.
+Fixed High rules report proven package-digest differences or CMS content/signature
+failures, without attributing a cause/time. `all_declared_package_digests_agree` and
+`cms_signature_verified` are independent facts. Publisher/certificate correspondence,
+code-signing policy, timestamp policy, revocation, system trust and installability are
+not checked. Existing content/record facts retain their scoped false signature flags.
+
+## Content limits and name ambiguity
 
 The XML input is at most 8 MiB and 100,000 nodes; declarations are bounded to 4,096
 files, 32,768 blocks, 8-KiB logical file names and 8 MiB of serialized facts per map.
@@ -234,13 +279,41 @@ tests and the complete damaged-fixture run. After the final empty-stream extensi
 all 95 Windows unit tests passed (one native fixture helper is intentionally ignored),
 as did all 45 engine integration tests, workspace Clippy and the no-default-feature
 CLI build. This includes a portable regression that preserves native compressed
-payloads while changing map declarations. Cross-platform CI for this increment is
-the next gate. W6 remains open.
+payloads while changing map declarations. Cross-platform CI for this increment
+passed in all five jobs of run
+[44878595483](https://github.com/atomsprout/analyze-anything/actions/runs/44878595483).
+W6 remains open.
+
+The signature increment uses the pinned Microsoft APPX's embedded RSA-2048/SHA-256
+signature as its independent real sample. Windows CryptoAPI `CryptMsgControl` with
+`CMSG_CTRL_VERIFY_SIGNATURE` checks message mathematics against its embedded public
+certificate in memory. No certificate is installed, no trust provider/chain/revocation
+lookup is used, and no package/code is installed or run. Five cases compare original
+bytes, central metadata only, local+central metadata, a changed CMS signature value
+and a changed capsule digest. The respective package mismatch counts are 0, 1, 2, 0,
+1; CMS succeeds in the first three and fails in the last two, agreeing with CryptoAPI.
+Independent Python region/footprint hashes match the report's five digest records.
+All cases repeat JSON byte for byte and preserve inputs, with English Markdown/HTML
+and a separate Chinese standalone P7X report. Records are
+`out/windows-baseline/msix-signature-final/checks.json`. Constructed DER, malformed
+capsules, truncation/corruption, unknown keys, ZIP32 comment preservation, nonfinal
+signature placement and footprint budgets have portable tests. Other SIP versions,
+digest profiles, modern independent signers/bundles and signer-policy cases still need
+their own samples and native references.
+
+Local format, workspace Clippy, locked dependency resolution and the no-default-feature
+CLI build passed. The full workspace run is recorded in
+`out/windows-baseline/workspace-msix-signature.log`, including the complete damaged
+corpus and 53 Windows pipeline tests. After the final independent DER-test helper and
+stale-source cases, all 101 Windows unit tests passed (one fixture-generation helper
+remains intentionally ignored), as did all 45 engine integration tests. The CMS reuse
+also retains the existing catalog regressions. Cross-platform CI for this signature
+increment is the next gate; W6 is not complete.
 
 ## Remaining W6 gates
 
 Broaden physical block/ZIP profiles and independent large-file coverage; establish package/bundle
-signature bindings, publisher consistency and manifest identity/namespace conflicts; model bundle architecture/resource
+signature/bundle coverage beyond this initial profile, publisher consistency and manifest identity/namespace conflicts; model bundle architecture/resource
 coverage, dependencies, target-device requirements and appinstaller references. Add
 broader Unicode/alias, large-file, alternate-extension and independently signed/bundled
 samples with their native references. None of these gates is closed by content agreement.
@@ -251,4 +324,6 @@ References: Microsoft [BlockMap](https://learn.microsoft.com/en-us/uwp/schemas/b
 [GetHash](https://learn.microsoft.com/en-us/windows/win32/api/appxpackaging/nf-appxpackaging-iappxblockmapblock-gethash)
 and [ValidateFileHash](https://learn.microsoft.com/en-us/windows/win32/api/appxpackaging/nf-appxpackaging-iappxblockmapfile-validatefilehash),
 PKWARE's [ZIP specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT),
-and [RFC 1951](https://www.rfc-editor.org/rfc/rfc1951).
+and [RFC 1951](https://www.rfc-editor.org/rfc/rfc1951). Signature references include the
+pinned Microsoft [digest capsule definitions](https://github.com/microsoft/msix-packaging/blob/25a65f5c1690930813bcc10cdf1d59fa865f2bb1/src/inc/internal/AppxSignature.hpp),
+and Microsoft's [CryptMsgControl](https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptmsgcontrol).

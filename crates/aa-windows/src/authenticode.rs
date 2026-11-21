@@ -481,14 +481,23 @@ pub fn analyze_blob(blob: &[u8], file_digest_of: &FileDigest) -> Authenticode {
 /// The caller bounds and validates the ASN.1 tree before entering this function.
 pub(super) fn catalog_envelope(blob: &[u8]) -> Result<(Vec<u8>, Vec<Value>), String> {
     const CTL: &str = "1.3.6.1.4.1.311.10.1";
+    checked_envelope(blob, CTL)
+}
+
+/// The caller preflights the same bounded DER profile as catalogs; no package digest is assumed.
+pub(super) fn msix_envelope(blob: &[u8]) -> Result<(Vec<u8>, Vec<Value>), String> {
+    checked_envelope(blob, OID_SPC_INDIRECT_DATA).map_err(|reason| reason.replace("catalog", "MSIX CMS"))
+}
+
+fn checked_envelope(blob: &[u8], expected_type: &str) -> Result<(Vec<u8>, Vec<Value>), String> {
     let (outer, rest) = der::parse_prefix(blob)?;
     if !rest.is_empty() {
         return Err("bytes follow the catalog ContentInfo".into());
     }
     let declared_hashes = catalog_shape(outer)?;
     let data = parse_signed_data(outer)?;
-    if data.content_type != CTL {
-        return Err("the signed content is not a Microsoft CTL".into());
+    if data.content_type != expected_type {
+        return Err("signed envelope content type differs from the requested profile".into());
     }
     if data.signer_infos.len() > MAX_SIGNATURES {
         return Err("catalog signer count exceeds the budget".into());
@@ -510,7 +519,7 @@ pub(super) fn catalog_envelope(blob: &[u8]) -> Result<(Vec<u8>, Vec<Value>), Str
             }
         };
         let (signer, candidates) = catalog_find_signer(&info, &data.certificates);
-        let attributes = catalog_attributes(&info);
+        let attributes = envelope_attributes(&info, expected_type);
         let claimed_digest = if attributes.passed() { attributes_list_message_digest(&info).map(hex::encode) } else { None };
         let computed_digest = Hash::from_oid(&info.digest_oid).map(|hash| hex::encode(hash.digest(&signed_bytes)));
         let algorithms = if candidates > 1 {
@@ -678,7 +687,12 @@ fn catalog_hash_identifier(node: Tlv<'_>) -> Result<String, String> {
     Ok(oid)
 }
 
+#[cfg(test)]
 fn catalog_attributes(info: &SignerInfo) -> Check {
+    envelope_attributes(info, "1.3.6.1.4.1.311.10.1")
+}
+
+fn envelope_attributes(info: &SignerInfo, expected_type: &str) -> Check {
     let verify = || -> Result<(), String> {
         let set = info.signed_attributes.ok_or("catalog signed attributes are absent")?;
         let mut seen = std::collections::BTreeSet::new();
@@ -718,7 +732,7 @@ fn catalog_attributes(info: &SignerInfo) -> Check {
                     }
                     digest = true;
                 } else {
-                    if value.oid().as_deref() != Some("1.3.6.1.4.1.311.10.1") {
+                    if value.oid().as_deref() != Some(expected_type) {
                         return Err("catalog signed contentType differs".into());
                     }
                     content_type = true;
