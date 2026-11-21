@@ -14,6 +14,61 @@ fn data(name: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+#[test]
+fn catalog_entry_declarations_and_signatures_match_native_references() {
+    for version in [1, 2] {
+        let name = format!("native-catalog-v{version}.cat");
+        let reference: Value = serde_json::from_slice(&data(&format!("{name}.ref.json"))).expect("native catalog reference");
+        assert_eq!(sha256_hex(&data(&name)), reference["sha256"]);
+        let run = analyze(&[(&name, data(&name))]);
+        let fact = run.fact(&name, "windows.catalog");
+        let entries = fact["entries"].as_array().expect("CTL entries");
+        let native = reference["members"].as_array().expect("native records");
+        assert_eq!(entries.len(), native.len());
+        let mut declared_digests = 0;
+        for entry in entries {
+            let tag = entry["reference_tag"].as_str().unwrap_or_else(|| entry["subject_identifier"].as_str().expect("subject id"));
+            let expected =
+                native.iter().find(|n| n["reference_tag"].as_str().expect("native tag").eq_ignore_ascii_case(tag)).expect("native member");
+            assert_eq!(entry["sip_guid"], expected["sip_guid"]);
+            if entry["digest"].is_string() {
+                for key in ["data_oid", "digest_algorithm", "digest"] {
+                    assert_eq!(entry[key], expected[key]);
+                }
+                declared_digests += 1;
+            } else {
+                assert_eq!(version, 2, "only the v2 compatibility entries omit indirect data");
+            }
+        }
+        assert_eq!(declared_digests, 2);
+        let signature = &fact["signatures"][0];
+        assert_eq!(reference["cms_signature_only"]["signatures"][0]["combined_content_and_signature"], "passed");
+        assert_eq!(signature["signer"]["sha256"], reference["cms_signature_only"]["signatures"][0]["signer_sha256"]);
+        assert_eq!(signature["checks"]["signature"], "passed");
+        assert_eq!(signature["checks"]["content_digest"], "passed");
+        assert_eq!(fact["payloads_checked"], false);
+        assert_eq!(fact["windows_trust_checked"], false);
+        assert!(run.findings("windows.catalog-integrity-failed").is_empty());
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.catalog-scope"));
+    }
+}
+
+#[test]
+fn malformed_catalog_is_unreadable_and_damaged_signature_has_evidence() {
+    let run = analyze(&[("invalid.cat", b"not a catalog".to_vec())]);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.catalog-unreadable"));
+    assert!(run.findings("windows.catalog").is_empty());
+    let mut bytes = data("native-catalog-v2.cat");
+    *bytes.last_mut().expect("native signature") ^= 1;
+    let run = analyze(&[("changed.cat", bytes)]);
+    let failures = run.findings("windows.catalog-integrity-failed");
+    assert_eq!(failures.len(), 1);
+    assert!(!failures[0].evidence.is_empty());
+    let fact = run.fact("changed.cat", "windows.catalog");
+    assert_eq!(fact["signatures"][0]["checks"]["content_digest"], "passed");
+    assert_eq!(fact["signatures"][0]["checks"]["signature"], "failed");
+}
+
 fn compare_inf_reference(name: &str, expected_fields: usize) -> Run {
     let reference: Value = serde_json::from_slice(&data(&format!("{name}.ref.json"))).expect("SetupAPI reference");
     assert_eq!(sha256_hex(&data(name)), reference["sha256"]);

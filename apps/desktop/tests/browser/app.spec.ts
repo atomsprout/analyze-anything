@@ -143,6 +143,8 @@ test("a dropped file is analyzed, a failure is said, and cancelling returns home
   await page.goto("/");
   await page.evaluate(() => window.localStorage.setItem("lang", "en"));
   await page.reload();
+  // The backend is imported asynchronously; home appears after its event handlers exist.
+  await expect(page.locator(".home")).toBeVisible();
   await mock(page, (m) => m.drag(true));
   await expect(page.locator(".drop")).toHaveClass(/over/);
   await expect(page.locator(".drop h2")).toHaveText("Release to analyze");

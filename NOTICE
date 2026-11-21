@@ -5,6 +5,15 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This product bundles the following, each under its own licence.
 
+The project-authored native-catalog-v1.cat, native-catalog-v2.cat and their -unsigned.cat
+fixtures in crates/aa-windows/tests/data were generated with Windows SDK MakeCat
+10.0.26100.0 and signed with SignTool using a temporary project-generated test key.
+They and their native reference JSON are distributed under Apache-2.0. The catalogs
+contain declarations for the existing hello.exe fixture and a project-authored text
+payload, plus the public signer certificate in the signed cases. No private key,
+PFX file, third-party payload or Windows certificate-store export is distributed.
+tools/native-compare/windows-catalog-fixture.ps1 records how to regenerate them.
+
 The project-authored native-inf-syntax.inf fixture in crates/aa-windows/tests/data and
 its read-only SetupAPI reference snapshot are distributed under Apache-2.0. It declares
 syntax examples only; no driver, installation or registry modification was performed.

@@ -23,6 +23,16 @@ The following features have only been tested with data we constructed ourselves,
 
 ## Systems it has been verified on
 
+The initial Windows catalog reader supports a bounded, definite/minimal DER CMS/CTL
+profile. It distinguishes CTL entries from digest declarations and does not invent
+digests for v2 compatibility entries. Catalog content digests, signature values and
+embedded certificate-link signatures are checked using the shared offline primitives;
+payload membership, INF/package relationships and member data parameters are not yet
+verified. Unknown attributes remain length/digest records with limitations. Windows
+trust, revocation, timestamps, WHQL and installation eligibility remain unverified.
+Native MakeCat/SignTool v1/v2 fixtures and signature-only references are checked, while
+an independent real driver-package corpus remains open; see [the catalog scope](spikes/windows-catalogs.md).
+
 The initial INF reader records syntax, ordered section occurrences, literal fields and
 source lines under explicit input/count/field/projection budgets. Its optional neutral
 string projection does not select a platform or locale, resolve directory IDs or follow

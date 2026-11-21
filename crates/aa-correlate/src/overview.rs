@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-windows-catalog",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 Windows 目录文件，以 CTL 记录文件主体标识和摘要声明。目录自身的签名不等于确认所有载荷的覆盖情况或 Windows 信任。",
+        text_en: "This is a Windows catalog with CTL subject identifiers and digest declarations. Its own signature does not establish coverage of every payload or Windows trust.",
+    },
+    Rule {
         id: "overview.kind-windows-inf",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -389,6 +396,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("registry-export", _) => finding("overview.kind-registry-export", Confidence::Verified),
         ("scheduled-task", _) => finding("overview.kind-scheduled-task", Confidence::Verified),
         ("windows-inf", _) => finding("overview.kind-windows-inf", Confidence::Verified),
+        ("windows-catalog", _) => finding("overview.kind-windows-catalog", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

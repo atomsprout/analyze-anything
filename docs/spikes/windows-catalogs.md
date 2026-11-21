@@ -1,0 +1,147 @@
+# Windows catalog structure and cryptographic checks
+
+Initial catalog increment of W5, 2026-11-20. W5 is still open. This reader establishes
+what the supplied catalog declares and which supported cryptographic checks can be
+made on it; it does not yet establish coverage of supplied payloads.
+
+## Representation and boundary
+
+`.cat` files are read in process as a Microsoft CTL inside CMS/PKCS#7 SignedData.
+The `windows.catalog` fact retains the catalog subject algorithm, list identifier,
+encoded sequence number when present, claimed update times, ordered CTL entries and
+signer records. It distinguishes catalog-list v1/v2 subject identifiers. Version 1
+hexadecimal UTF-16 reference tags can be decoded; v2 binary identifiers remain hex.
+
+Supported member-info GUID forms and indirect-data attributes retain the literal SIP
+subject GUID, data OID, digest algorithm and digest. Other attributes retain their OID,
+encoded length and SHA-256 with an explicit partial-reading limitation. Duplicate
+member attributes prevent their digest from being used as an unambiguous declaration.
+Unknown source data is never interpreted as an executable, path or instruction.
+Declared member digests are not described as verified payload coverage.
+
+Catalog CMS checks use the existing certificate parsing, RSA PKCS#1 v1.5 and ECDSA
+verification primitives, without changing the existing PE/MSI verification paths.
+The catalog path separately validates the supported envelope shape, declared digest
+algorithms and signature algorithm/key consistency. Required signed contentType and
+messageDigest attributes must be present, unique and unambiguous. Signed attributes
+must be DER ordered; duplicate or unsupported structures cannot become passed checks.
+Signer identifiers must name one distinct embedded certificate. Identical repeated
+certificates are deduplicated by fingerprint; conflicting certificates sharing an
+identifier remain unresolved instead of selecting the first and reporting a false failure.
+
+Per signer, the fact records signed-attribute/algorithm checks, the content digest,
+the signature value and signatures of available embedded certificate links. A chain
+ending in an embedded self-issued certificate is not Windows root trust. Certificate
+validity dates come from input, and update/signing times are not compared with the
+machine clock. Signer metadata is redacted before facts/evidence are published.
+
+The cryptographic content is selected according to the encoded envelope: legacy direct
+CTL sequences and primitive octet-string encapsulation are distinguished. Native
+fixtures below cover legacy direct CTL sequences. Other encodings and algorithm variants
+do not gain native-comparison status merely by sharing primitives with PE signatures.
+
+The summary has evidence for content type, subject algorithm, declared/recomputed digests,
+signature-field fingerprints and per-signer check results.
+A fixed High-severity rule records an actual content-digest or signer signature-value
+mismatch. Embedded certificate-link outcomes remain separate facts/limitations; chain
+construction does not determine this catalog-integrity finding. Unsupported checks become limitations; nothing calls
+the file safe, trusted or eligible for installation. A malformed catalog is unread,
+not classified as unsigned. Readable catalogs without signer records keep that absence
+explicit in the fact and summary count.
+
+`payloads_checked`, `windows_trust_checked` and `timestamps_verified` remain false.
+Unsigned CMS attributes are presence-marked but not interpreted. Member data parameters,
+timestamps, nested-signature semantics, root trust, revocation, current validity, WHQL
+policy and installation eligibility remain outside the conclusion. No host catalog
+database, certificate store, registry or Driver Store is consulted by analysis. Native
+development references are never invoked by the analyzer.
+
+## Resource and encoding profile
+
+- At most 16 MiB of input and 250,000 ASN.1 nodes, with nesting limited to 32.
+- Definite, minimally encoded DER lengths/OIDs/integers and ordered universal SETs.
+  BER indefinite lengths and unsupported representations become an unread limitation.
+- Up to 16,384 CTL entries, 32 attributes per entry and one value for interpreted attributes.
+- Subject identifier at most 512 bytes; list identifier 256; encoded sequence number 64.
+- Up to 16 signer records/digest algorithms and 64 signed attributes per signer.
+- At most 64 embedded certificates, 64 KiB per certificate and 1 MiB for their bag.
+- Member digest at most 64 bytes. Unsupported algorithm semantics do not imply a match.
+
+The shared DER/CMS helpers receive bounded data. The encapsulated CTL receives the same
+node/encoding checks again before member interpretation. Malformed, unsupported and
+exhausted cases produce `windows.catalog-unreadable` or `windows.catalog-partial`, with
+the always-present `windows.catalog-scope` explaining remaining coverage.
+
+## Native fixtures and reference results
+
+The project-authored generator uses Windows SDK MakeCat/SignTool 10.0.26100.0 on the
+available Windows x64 host. It includes a known text payload and the existing hello.exe
+fixture by digest, then signs copies with an in-memory self-issued test certificate.
+No source program is run. No certificate is added to a Windows store; the temporary
+PFX is deleted in finally. The generated catalogs include only declarations and, in
+signed cases, the public signer certificate. They are Apache-2.0 test data, recorded in
+NOTICE. Regeneration changes producer-generated identifiers and signatures; fixed
+checked-in bytes and SHA-256 references provide the portable regression inputs.
+
+| Fixture | SHA-256 |
+|---|---|
+| native-catalog-v1.cat | 0a3c46e609bf8d53e91079a36baaaeaa55aba60aa0cb31af0d00602637c37661 |
+| native-catalog-v1-unsigned.cat | 81a7109cbc12324390ac8a73d7f8ec9b91d8e287fd5352b24903f3f277a79787 |
+| native-catalog-v2.cat | 7aa36456f40f34d9be1df20b08a6c9b234640270bea1f2ef2b2e99ee3014dad1 |
+| native-catalog-v2-unsigned.cat | 8c1c9dbc75a42e2bb5f2aa1b8dad2f297847888f3231395d5d1450cd4378c7f0 |
+
+`windows-catalog-check.py` uses read-only CryptCATOpen/CryptCATEnumerateMember and a
+signature-only SignedCms reference. Native records agree on subject GUIDs and the
+explicit digest declarations. Both signed catalogs pass content/signature checks;
+changed-content and changed-signature copies fail the native combined check, while the
+analyzer distinguishes which check failed. The CLI helper also checks repeated JSON,
+unchanged source bytes, English/Chinese Markdown and HTML inclusion.
+
+**Version 2 is not four payloads.** MakeCat writes four CTL entries for these two source
+files: two SHA-256 indirect-data declarations and two compatibility identifiers. The
+latter contain no indirect-data attribute in the file. CryptCATEnumerateMember supplies
+synthesized SHA-1 indirect metadata for those compatibility records. The analyzer retains
+the raw identifiers/GUIDs and leaves their absent digest fields null, instead of claiming
+that synthesized API output was read from the catalog. The portable comparison checks
+the two explicit digests separately from all four identifiers and subject types.
+
+Constructed tests cover tampering, truncations, unsupported BER/DER/OID encodings,
+non-ASCII GUIDs, duplicate/missing/excessive signed attributes, absent digest algorithm
+declarations, ambiguous signer certificates, independent certificate-link corruption,
+nesting/node/entry and certificate/signer budgets. Whole-engine fixture
+mutations automatically preserve `.cat` names. New helpers use only controlled samples;
+their corruption assumptions do not describe arbitrary third-party CMS layouts.
+
+## Still open
+
+Correct SIP hashing and supplied-payload membership; catalog-only/embedded/dual coverage;
+missing and modified payload comparisons with explicit-catalog SignTool; INF-to-catalog
+and file associations; richer member attributes/data parameters; broader CMS variants;
+an independently distributed, licensed real driver-package corpus. These native-generated
+fixtures are not an independent vendor package and do not close W5 or qualify Windows trust.
+
+## Local verification
+
+Nine new catalog unit/pipeline tests passed on Windows, including native snapshots,
+content/signature/certificate-link mutations and ambiguous signer identity. Workspace
+Clippy with warnings denied and the CLI build without default features passed. Native
+CLI comparisons for both signed profiles passed again after the identity checks, with
+six original/content/signature cases; an unsigned v2 CLI comparison also passed.
+The local records are `out/windows-baseline/catalogs/v1-final-checks.json`,
+`v2-final-checks.json` and `v2-unsigned-checks.json`.
+`cargo fmt --all --check` and the final `cargo test --workspace` passed as well;
+the complete local log is `out/windows-baseline/workspace-catalog-final.log`.
+Cross-platform CI for this catalog increment is the next gate. The recorded
+`b35f16d` CI success covers the preceding INF implementation, not this new reader.
+
+The desktop sample was regenerated and 22 WebKit/Chromium cases passed three consecutive
+runs (66 executions). A WebKit startup race in the drag/drop test was fixed by waiting
+for the home view, which is rendered after backend event registration, before sending
+the simulated event. This remains a stand-in backend check, not Windows native-window
+or real drag/drop qualification. The browser log is `out/windows-baseline/catalog-browser.log`.
+
+References: Microsoft's [MakeCat](https://learn.microsoft.com/en-us/windows/win32/seccrypto/makecat),
+[CTL_INFO](https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-ctl_info),
+[CryptCATOpen](https://learn.microsoft.com/en-us/windows/win32/api/mscat/nf-mscat-cryptcatopen),
+[catalog members](https://learn.microsoft.com/en-us/windows/win32/api/mscat/ns-mscat-cryptcatmember)
+and [SIP-dependent hashing](https://learn.microsoft.com/en-us/windows/win32/secbp/understanding-pe-signatures).

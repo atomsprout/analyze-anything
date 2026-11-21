@@ -104,8 +104,11 @@ both checked fixture digests. Native CLI comparisons passed again for 91 + 25 pr
 fields, repeated JSON, unchanged input and English/Chinese/HTML output.
 Windows desktop page tests/build, portable fixture generation and 22 browser tests also
 passed; [DESKTOP.md](../DESKTOP.md) states the distinction from native-window validation.
-Cross-platform CI for this INF increment remains to be run; the previously recorded
-`413e05e` CI success covers the earlier entry-point/reference implementation.
+Cross-platform CI passed for this INF increment at commit
+`b35f16d55971275191a3ca2f5bd2cf7706bc92cf`:
+[run 44840156007](https://github.com/atomsprout/analyze-anything/actions/runs/44840156007).
+Linux, macOS and Windows core checks, the macOS desktop checks and licenses all passed.
+The previously recorded `413e05e` CI success covers the earlier entry-point/reference implementation.
 
 ## Still needed for W5
 

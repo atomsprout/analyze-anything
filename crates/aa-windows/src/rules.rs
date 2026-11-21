@@ -28,6 +28,41 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.catalog",
+        title_en: "Windows catalog declarations and signature checks",
+        title_zh: "Windows 目录声明与签名检查",
+        text_en: "The catalog contains {entries} CTL entries and {signatures} signer records. Entry subject identifiers, supported member digests and cryptographic check results are recorded separately. Compatibility entries are not counted as additional payloads. No supplied payload coverage or Windows trust decision is established here.",
+        text_zh: "目录包含 {entries} 条 CTL 记录和 {signatures} 条签名者记录。分别记录条目主体标识、支持的成员摘要及密码学检查结果。兼容记录不作为额外载荷计数。这里没有确认输入载荷的覆盖情况，也没有判断 Windows 信任状态。",
+    },
+    Rule {
+        id: "windows.catalog-integrity-failed",
+        title_en: "Catalog cryptographic check failed",
+        title_zh: "目录密码学检查失败",
+        text_en: "A catalog content digest or signer signature value did not match. The evidence identifies the checks and source values. Certificate-chain construction, Windows trust, revocation and installation eligibility are separate questions and do not determine this finding.",
+        text_zh: "目录内容摘要或签名者签名值不匹配。证据标明了检查和来源值。证书链构造、Windows 信任、吊销及安装资格是另外的问题，不决定这条结论。",
+    },
+    Rule {
+        id: "windows.catalog-unreadable",
+        title_en: "Catalog structure could not be read",
+        title_zh: "无法读取目录结构",
+        text_en: "The catalog's encoding, CMS/CTL structure or resource use is unsupported. This is unread content, not an unsigned-file or trust verdict.",
+        text_zh: "不支持此目录的编码、CMS/CTL 结构或资源用量。这表示内容无法读取，不表示文件未签名，也不是信任结论。",
+    },
+    Rule {
+        id: "windows.catalog-partial",
+        title_en: "Catalog checks are incomplete",
+        title_zh: "目录检查不完整",
+        text_en: "Catalog entry attributes, extensions or signer checks could not be fully interpreted. Opaque attribute lengths and digests and per-check reasons remain in the catalog fact. No missing check is treated as passed.",
+        text_zh: "部分目录条目属性、扩展或签名者检查无法完整解释。目录事实中保留了不透明属性的长度和摘要以及各项检查的原因。不会把缺少的检查视为通过。",
+    },
+    Rule {
+        id: "windows.catalog-scope",
+        title_en: "Catalog coverage and trust remain separate",
+        title_zh: "目录覆盖与信任需要分别检查",
+        text_en: "Catalog signature checks concern the supplied CTL, not every referenced payload. Payload membership, member data parameters and unsigned CMS attributes have not been fully interpreted by this reader. Windows root trust, revocation, current validity, timestamps, WHQL policy and installation eligibility were not verified; no host catalog store was searched.",
+        text_zh: "目录签名检查针对输入中的 CTL，不等于检查所有引用载荷。此读取器尚未完整解释载荷成员关系、成员数据参数和未签名 CMS 属性。没有验证 Windows 根信任、吊销、当前有效期、时间戳、WHQL 策略或安装资格，也没有搜索主机目录存储。",
+    },
+    Rule {
         id: "windows.inf",
         title_en: "Windows INF declarations",
         title_zh: "Windows INF 声明",

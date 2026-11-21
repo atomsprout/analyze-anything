@@ -44,3 +44,24 @@ where the analyzer's conservative neutral projection is present. It checks repea
 and unchanged input too. Source section names must be unique for this comparison; the
 analyzer preserves repeated occurrences while SetupAPI merges them. See
 [the scope and provenance record](../../docs/spikes/windows-inf.md).
+
+Generate controlled v1/v2 catalogs with SDK MakeCat/SignTool (PowerShell 7):
+
+    pwsh -NoProfile -File tools/native-compare/windows-catalog-fixture.ps1 -OutputDirectory D:\github\analyze-anything\out\windows-baseline\catalogs
+
+The output must be below this checkout's out folder. A temporary test PFX is removed in
+finally; its certificate is created in memory and is never added to a Windows store.
+Catalogs have changing producer identifiers/signatures when regenerated; analysis of
+the same resulting bytes must still be deterministic. Source payloads are never run.
+
+Read native catalog records and compare the controlled fixture with the CLI:
+
+    python tools/native-compare/windows-catalog-check.py --sample crates/aa-windows/tests/data/native-catalog-v2.cat --version 2 --reference out/windows-baseline/catalogs/v2-checks.json --cli target/debug/analyze-anything.exe --output out/windows-baseline/catalogs/v2-checks
+
+Use version 1 and the v1 sample for the other profile. Without --cli/--output the helper
+only captures the native snapshot. CryptCATOpen opens the explicit catalog without
+adding it to the host catalog database; SignedCms checks content/signatures with trust
+verification disabled. The controlled CLI comparison also checks changed-content and
+changed-signature copies, repeated reports, unchanged source bytes and bilingual output.
+These checks do not establish supplied payload membership or Windows trust. See
+[the catalog record](../../docs/spikes/windows-catalogs.md) for the native v2 alias caveat.
