@@ -114,6 +114,9 @@ struct Builder<'a> {
     artifacts: Vec<Artifact>,
     stores: BTreeMap<String, Store>,
     taken: BTreeSet<String>,
+    /// ASCII case aliases of logical archive paths, independent of the host filesystem.
+    archive_names: BTreeMap<String, String>,
+    entry_name_changes: BTreeMap<String, EntryNameChange>,
     limitations: Vec<Limitation>,
     coverage: Coverage,
     temp: Option<Spill>,
@@ -122,6 +125,12 @@ struct Builder<'a> {
     unpacked_bytes: u64,
     /// Limit codes already recorded, so each is reported once.
     reported: BTreeSet<&'static str>,
+}
+
+#[derive(Default)]
+struct EntryNameChange {
+    normalized: bool,
+    colliding: bool,
 }
 
 /// A child waiting to be measured and, perhaps, unpacked in turn.
@@ -146,6 +155,8 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
         artifacts: Vec::new(),
         stores: BTreeMap::new(),
         taken: BTreeSet::new(),
+        archive_names: BTreeMap::new(),
+        entry_name_changes: BTreeMap::new(),
         limitations: Vec::new(),
         coverage: Coverage::default(),
         temp: None,
@@ -157,14 +168,17 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
     let input_name = match &roots {
         Roots::Memory { name, .. } | Roots::Disk { name, .. } => name.to_string(),
     };
+    let mut input_listing_complete = true;
     let files: Vec<(String, Store)> = match roots {
         Roots::Memory { name, bytes } => vec![(name.to_string(), Store::Memory(bytes))],
         Roots::Disk { input, kind: InputKind::File, name } => vec![(name.to_string(), Store::Disk(input.to_path_buf()))],
         Roots::Disk { input, kind: InputKind::Directory, .. } => {
             let listing = walk::list(input, builder.options.limits.max_files);
+            input_listing_complete = !listing.truncated && listing.limitations.is_empty();
             for limitation in &listing.limitations {
                 builder.sink.event(Event::Warning { code: limitation.code.clone(), path: limitation.artifact.clone() });
             }
+            builder.coverage.content_lost += listing.limitations.len() as u64;
             builder.limitations.extend(listing.limitations);
             builder.coverage.truncated |= listing.truncated;
             listing.entries.into_iter().map(|entry| (entry.path, Store::Disk(entry.on_disk))).collect()
@@ -182,6 +196,7 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
             None
         };
         if let Some(code) = stop {
+            input_listing_complete = false;
             let detail = format!("{} of {} files were not read", files.len() - position, files.len());
             builder.stop(code, None, Some(detail));
             break;
@@ -192,12 +207,19 @@ pub fn build(roots: Roots<'_>, options: &Options, unpackers: &[Box<dyn Unpacker>
         disk_bytes += size;
     }
     builder.coverage.artifacts_total = builder.artifacts.len() as u64;
+    for artifact in &mut builder.artifacts {
+        if let Some(change) = builder.entry_name_changes.get(&artifact.path) {
+            artifact
+                .facts
+                .insert("engine.entry-name".into(), serde_json::json!({"normalized": change.normalized, "colliding": change.colliding}));
+        }
+    }
     builder.coverage.artifacts_analyzed = builder.artifacts.iter().filter(|a| a.digests.is_some()).count() as u64;
     builder.artifacts.sort_by(|a, b| a.path.cmp(&b.path));
     Built {
         tree: BuiltTree {
             artifacts: builder.artifacts,
-            summary: BTreeMap::new(),
+            summary: BTreeMap::from([("engine.input-listing".into(), serde_json::json!({"complete": input_listing_complete}))]),
             input: input_name,
             stores: builder.stores,
             _temp: builder.temp.map(Arc::new),
@@ -276,6 +298,7 @@ impl Builder<'_> {
                     refuse: at_depth_limit,
                     refused: false,
                     added: 0,
+                    incomplete: false,
                 };
                 // Unpackers lean on third-party decoders; a panic in one must not end the run.
                 // Children added before the panic are kept, like after any other failure.
@@ -287,13 +310,14 @@ impl Builder<'_> {
                         detail: format!("the unpacker failed: {}", message.unwrap_or_else(|| "panic".into())),
                     }
                 });
-                let (found, added) = (std::mem::take(&mut sink.children), sink.added);
+                let (found, added, incomplete) = (std::mem::take(&mut sink.children), sink.added, sink.incomplete);
                 let (kind, failure) = match outcome {
                     Unpack::NotMine => continue,
                     Unpack::Done { kind } => (kind, None),
                     Unpack::Failed { kind, detail } => (kind, Some(detail)),
                 };
                 artifact.kind = Some(kind.to_string());
+                artifact.facts.insert("engine.container-listing".into(), serde_json::json!({"complete": failure.is_none() && !incomplete}));
                 if added > 0 || failure.is_none() && !at_depth_limit {
                     artifact.unpacked_by = Some(unpacker.id().to_string());
                     self.coverage.containers_unpacked += 1;
@@ -309,9 +333,13 @@ impl Builder<'_> {
         drop(bytes);
         let size = artifact.size;
         self.stores.insert(child.path.clone(), child.store);
+        let artifact_index = self.artifacts.len();
         self.artifacts.push(artifact);
         for grandchild in children {
             if self.cancelled() {
+                if let Some(parent) = self.artifacts.get_mut(artifact_index) {
+                    parent.facts.insert("engine.container-listing".into(), serde_json::json!({"complete": false}));
+                }
                 self.stop("cancelled", None, None);
                 break;
             }
@@ -347,11 +375,13 @@ struct Sink<'a, 'b> {
     refuse: bool,
     refused: bool,
     added: u64,
+    incomplete: bool,
 }
 
 impl UnpackSink for Sink<'_, '_> {
     fn add(&mut self, path: &str, data: &mut dyn Read) -> Result<(), SinkError> {
         if self.refuse {
+            self.incomplete = true;
             if !self.refused {
                 self.refused = true;
                 self.builder.warn("depth_limit", self.container, None);
@@ -360,6 +390,7 @@ impl UnpackSink for Sink<'_, '_> {
             return Err(SinkError::LimitReached);
         }
         if std::time::Instant::now() > self.deadline {
+            self.incomplete = true;
             if !self.refused {
                 self.refused = true;
                 let detail = format!("stopped after {} seconds", self.builder.options.limits.unpack_seconds);
@@ -370,15 +401,18 @@ impl UnpackSink for Sink<'_, '_> {
         }
         let limits = &self.builder.options.limits;
         if self.builder.cancelled() {
+            self.incomplete = true;
             self.builder.stop("cancelled", None, None);
             return Err(SinkError::LimitReached);
         }
         if (self.builder.taken.len() as u64) >= limits.max_files {
+            self.incomplete = true;
             let detail = format!("only the first {} files were kept", limits.max_files);
             self.builder.stop("limit_reached", None, Some(detail));
             return Err(SinkError::LimitReached);
         }
         let Some(relative) = normalise(path) else {
+            self.incomplete = true;
             self.builder.warn("unsafe_path", self.container, Some(printable(path)));
             return Ok(());
         };
@@ -387,11 +421,13 @@ impl UnpackSink for Sink<'_, '_> {
         let allowed = budget.min(limits.max_entry_bytes);
         let mut bytes = Vec::new();
         if let Err(error) = data.take(allowed.saturating_add(1)).read_to_end(&mut bytes) {
+            self.incomplete = true;
             let full = format!("{}/{relative}", self.container);
             self.builder.warn("entry_unreadable", &full, Some(error.to_string()));
             return Err(SinkError::Read(error.to_string()));
         }
         if bytes.len() as u64 > allowed {
+            self.incomplete = true;
             let full = format!("{}/{relative}", self.container);
             if allowed == budget {
                 let detail = format!("more than {} bytes would be unpacked in total", limits.max_unpacked_bytes);
@@ -408,6 +444,22 @@ impl UnpackSink for Sink<'_, '_> {
             full = format!("{}/{relative} ({copy})", self.container);
             copy += 1;
         }
+        let requested = format!("{}/{relative}", self.container);
+        let alias = requested.to_ascii_lowercase();
+        let collision = self.builder.archive_names.get(&alias).cloned().or_else(|| (full != requested).then(|| requested.clone()));
+        if path != relative {
+            self.builder.entry_name_changes.entry(full.clone()).or_default().normalized = true;
+        }
+        if let Some(previous) = collision {
+            self.builder.entry_name_changes.entry(previous.clone()).or_default().colliding = true;
+            self.builder.entry_name_changes.entry(full.clone()).or_default().colliding = true;
+            // Both byte streams are kept. This is ambiguity, not lost content.
+            let code = "engine.entry-name-collision";
+            let detail = serde_json::json!({ "requested": requested, "stored": full, "collides_with": previous }).to_string();
+            self.builder.limitations.push(Limitation::new(code, Some(self.container), Some(detail)));
+            self.builder.sink.event(Event::Warning { code: code.into(), path: Some(self.container.to_string()) });
+        }
+        self.builder.archive_names.entry(alias).or_insert_with(|| full.clone());
         self.builder.unpacked_bytes += bytes.len() as u64;
         match self.builder.keep(bytes) {
             Ok(store) => {
@@ -416,6 +468,7 @@ impl UnpackSink for Sink<'_, '_> {
                 Ok(())
             }
             Err(error) => {
+                self.incomplete = true;
                 self.builder.warn("entry_unreadable", &full, Some(error.to_string()));
                 Err(SinkError::Read(error.to_string()))
             }
@@ -423,6 +476,7 @@ impl UnpackSink for Sink<'_, '_> {
     }
 
     fn limitation(&mut self, code: &str, detail: Option<String>) {
+        self.incomplete = true;
         self.builder.warn(code, self.container, detail);
     }
 }

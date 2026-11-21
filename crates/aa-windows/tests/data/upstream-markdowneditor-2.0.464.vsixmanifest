@@ -1,0 +1,28 @@
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+  <Metadata>
+    <Identity Id="MarkdownEditor2022.2347dc70-1875-4775-bf48-f2b9fdfee8d4" Version="2.0.464" Language="en-US" Publisher="Mads Kristensen" />
+    <DisplayName>Markdown Editor v2</DisplayName>
+    <Description xml:space="preserve">A full featured Markdown editor with live preview and syntax highlighting. Supports GitHub flavored Markdown.</Description>
+    <MoreInfo>https://github.com/MadsKristensen/MarkdownEditor2022</MoreInfo>
+    <License>Resources\LICENSE</License>
+    <Icon>Resources\Icon.png</Icon>
+    <PreviewImage>Resources\Icon.png</PreviewImage>
+    <Tags>markdown</Tags>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Version="[17.0,19.0)" Id="Microsoft.VisualStudio.Community">
+      <ProductArchitecture>arm64</ProductArchitecture>
+    </InstallationTarget>
+  </Installation>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,)" DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" Path="MarkdownEditor2022.pkgdef" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" Path="MarkdownEditor2022.dll" />
+    <Asset Type="Microsoft.VisualStudio.VsPackage" Path="Registry.pkgdef" />
+  </Assets>
+</PackageManifest>

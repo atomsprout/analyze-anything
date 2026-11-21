@@ -17,6 +17,1064 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
     Options { limits, ..Options::default() }
 }
 
+#[test]
+fn winget_published_manifest_set_projects_installer_metadata_and_locales() {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/winget-7zip-24.09");
+    let report = run(&folder, &Options::default());
+    let artifact = report.artifacts.iter().find(|a| a.facts.contains_key("windows.winget-package")).expect("version manifest");
+    let package = &artifact.facts["windows.winget-package"];
+    assert_eq!(artifact.path, "7zip.7zip.yaml");
+    assert_eq!(package["id"], "7zip.7zip");
+    assert_eq!(package["version"], "24.09");
+    assert_eq!(package["publisher"], "Igor Pavlov");
+    assert_eq!(package["manifests"].as_array().expect("manifest set").len(), 4);
+    let installers = package["installers"].as_array().expect("installer rows");
+    assert_eq!(installers.len(), 6);
+    assert_eq!(installers[1]["architecture"], "x64");
+    assert_eq!(installers[1]["installer_type"], "exe");
+    assert_eq!(installers[1]["switches"]["Silent"], "/S");
+    assert_eq!(installers[1]["sha256"], "bdd1a33de78618d16ee4ce148b849932c05d0015491c34887846d431d29f308e");
+    assert_eq!(installers[1]["status"], "no-supplied-sha256-match");
+    assert_eq!(installers[5]["installer_type"], "wix");
+    assert_eq!(installers[5]["switches"]["InstallLocation"], "INSTALLDIR=\"<INSTALLPATH>\"");
+    let inventory = report.summary["composition.components"]["components"].as_array().expect("component inventory");
+    let row = inventory.iter().find(|row| row["ecosystem"] == "winget").expect("WinGet identity");
+    assert_eq!(row["version"], "24.09");
+    assert_eq!(row["declared_license"], "LGPL-2.1");
+    assert!(row["purl"].is_null());
+    assert!(report.limitations.iter().all(|entry| !entry.code.starts_with("windows.winget-")));
+}
+
+#[test]
+fn winget_associations_respect_digest_ambiguity_and_yaml_keys() {
+    let dir = tempfile::tempdir().expect("WinGet input set");
+    let file = dir.path().join("manifest.yaml");
+    let bytes = b"fixture installer payload";
+    let manifest = format!(
+        "PackageIdentifier: Fixture.Product\nPackageVersion: '001.0'\nManifestType: singleton\nManifestVersion: 1.12.0\n\
+         PackageLocale: en-US\nPublisher: Fixture\nPackageName: Product\nLicense: MIT\nInstallerType: exe\n\
+         Dependencies:\n  PackageDependencies:\n  - PackageIdentifier: Fixture.Dependency\n    MinimumVersion: '002.0'\n\
+         InstallerSwitches: {{Silent: '--root-silent', Log: '--root-log'}}\nInstallers:\n\
+         - Architecture: x64\n  InstallerUrl: https://example.com/input.exe\n  InstallerSha256: {}\n\
+         \x20 InstallerSwitches: {{Silent: '--row-silent'}}\n",
+        aa_core::sha256_hex(bytes)
+    );
+    std::fs::write(&file, &manifest).expect("singleton");
+    std::fs::write(dir.path().join("renamed.bin"), bytes).expect("supplied bytes");
+    let child = manifest
+        .replace("Fixture.Product", "Fixture.Dependency")
+        .replace("'001.0'", "'002.0'")
+        .replace("Dependencies:\n  PackageDependencies:\n  - PackageIdentifier: Fixture.Dependency\n    MinimumVersion: '002.0'\n", "");
+    let dependency_dir = dir.path().join("dependency");
+    std::fs::create_dir(&dependency_dir).expect("separate directory for dependency");
+    std::fs::write(dependency_dir.join("metadata.yaml"), child.replace("'002.0'", "'003.0'")).expect("supplied later version");
+    let report = run(dir.path(), &Options::default());
+    assert_eq!(report.summary["composition.components"]["winget_dependencies"][0]["status"], "unresolved-minimum-version");
+    std::fs::write(dependency_dir.join("metadata.yaml"), child).expect("supplied minimum version");
+    let report = run(dir.path(), &Options::default());
+    let manifest_file = report.artifacts.iter().find(|a| a.path == "manifest.yaml").expect("manifest artifact");
+    let package = &manifest_file.facts["windows.winget-package"];
+    assert_eq!(package["version"], "001.0");
+    assert_eq!(package["installers"][0]["status"], "sha256-match");
+    assert_eq!(package["installers"][0]["target"], "renamed.bin");
+    assert_eq!(package["installers"][0]["switches"]["Silent"], "--row-silent");
+    assert_eq!(package["installers"][0]["switches"]["Log"], "--root-log");
+    let relationship = &report.summary["composition.components"]["winget_dependencies"][0];
+    assert_eq!(relationship["status"], "supplied-candidate");
+    assert_eq!(relationship["target"], "dependency/metadata.yaml");
+    assert_eq!(
+        serde_json::to_vec(&report).expect("first report"),
+        serde_json::to_vec(&run(dir.path(), &Options::default())).expect("repeat report")
+    );
+
+    std::fs::write(dir.path().join("duplicate.bin"), bytes).expect("duplicate bytes");
+    let report = run(dir.path(), &Options::default());
+    let manifest_file = report.artifacts.iter().find(|a| a.path == "manifest.yaml").expect("manifest artifact");
+    let installer = &manifest_file.facts["windows.winget-package"]["installers"][0];
+    assert_eq!(installer["status"], "ambiguous-sha256");
+    assert!(installer["target"].is_null());
+
+    for invalid in [
+        format!("{manifest}PackageVersion: 2.0\n"),
+        format!("{manifest}CustomAlias: &source test\nCustomCopy: *source\n"),
+        format!("{manifest}---\nOtherDocument: true\n"),
+    ] {
+        std::fs::write(&file, invalid).expect("unsupported input");
+        let report = run(&file, &Options::default());
+        assert!(report.limitations.iter().any(|entry| entry.code == "windows.winget-unreadable"));
+        assert!(report.artifacts.iter().all(|a| !a.is("winget-manifest")));
+    }
+}
+
+#[test]
+fn vsix_published_manifest_agrees_with_windows_zip_and_xml_reference() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-markdowneditor-2.0.464.vsixmanifest");
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("../../aa-windows/tests/data/upstream-markdowneditor-2.0.464.ref.json"))
+            .expect("native reference");
+    let report = run(&path, &Options::default());
+    let manifest = report.artifacts.iter().find(|artifact| artifact.is("vsix-manifest")).expect("VSIX manifest");
+    let metadata = &manifest.facts["windows.vsix-manifest"];
+    for key in ["id", "version", "publisher", "name", "license_path", "source_sha256"] {
+        assert_eq!(metadata[key], reference[key], "{key}");
+    }
+    for list in ["targets", "prerequisites", "assets"] {
+        let expected = reference[list].as_array().expect("reference rows");
+        let actual = metadata[list].as_array().expect("manifest rows");
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(expected) {
+            for (key, value) in expected.as_object().expect("reference fields") {
+                if key != "sha256" {
+                    assert_eq!(&actual[key], value, "{list}.{key}");
+                }
+            }
+        }
+    }
+    assert_eq!(metadata["issues"], serde_json::json!([]));
+    let components = report.summary["composition.components"]["components"].as_array().expect("component inventory");
+    assert_eq!(components.len(), 1);
+    assert_eq!(components[0]["publisher"], reference["publisher"]);
+    assert!(components[0]["purl"].is_null());
+}
+
+#[test]
+fn vsix_nested_dependencies_need_a_qualified_member_and_matching_identity() {
+    use serde_json::json;
+    use std::io::Cursor;
+
+    let archive = |manifest: &str, members: &[(&str, &[u8])]| {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        zip.start_file("extension.vsixmanifest", zip::write::SimpleFileOptions::default()).expect("manifest member");
+        zip.write_all(manifest.as_bytes()).expect("manifest bytes");
+        for &(path, bytes) in members {
+            zip.start_file(path, zip::write::SimpleFileOptions::default()).expect("captured member");
+            zip.write_all(bytes).expect("captured bytes");
+        }
+        zip.finish().expect("ZIP").into_inner()
+    };
+    let manifest = |id, version, body| {
+        format!(
+            r#"<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+        <Metadata><Identity Id="{id}" Version="{version}" Publisher="Fixture"/></Metadata>{body}</PackageManifest>"#
+        )
+    };
+    let nested = archive(&manifest("Nested", "2.0", ""), &[]);
+    let fake = archive(&manifest("Other", "2.0", ""), &[]);
+    let ranged = archive(&manifest("Ranged", "2.0", ""), &[]);
+    let outdated = archive(&manifest("Outdated", "2.0", ""), &[]);
+    let source = manifest(
+        "Root",
+        "1.0",
+        r#"<Dependencies>
+        <Dependency Id="Nested" Version="[2.0]" Location="Sub\Nested.vsix"/>
+        <Dependency Id="Different" Version="[2.0]" Location="Sub\Other.vsix"/>
+        <Dependency Id="Ranged" Version="[1.0,3.0)" Location="Sub\Ranged.vsix"/>
+        <Dependency Id="Outdated" Version="[3.0]" Location="Sub\Outdated.vsix"/>
+        <Dependency Id="Remote" Version="2.0" Location="https://example.com/remote.vsix"/>
+        <Dependency Id="Outside" Version="2.0" Location="../outside.vsix"/>
+        <Dependency Id="UndeclaredLocation" Version="2.0"/>
+        </Dependencies><Assets><Asset Type="Example.Asset" Path="Data\payload.bin"/></Assets>"#,
+    );
+    let root = archive(
+        &source,
+        &[
+            ("Sub/Nested.vsix", &nested),
+            ("Sub/Other.vsix", &fake),
+            ("Sub/Ranged.vsix", &ranged),
+            ("Sub/Outdated.vsix", &outdated),
+            ("Data/payload.bin", b"fixture payload"),
+        ],
+    );
+    let directory = tempfile::tempdir().expect("inputs");
+    let package = directory.path().join("sample.vsix");
+    std::fs::write(&package, root).expect("source package");
+    let report = run(&package, &Options::default());
+    let source_package = report.artifacts.iter().find(|a| a.path == "sample.vsix").expect("root package");
+    let fact = &source_package.facts["windows.vsix-package"];
+    assert_eq!(fact["source_manifest"], "sample.vsix/extension.vsixmanifest");
+    assert_eq!(fact["assets"][0]["sha256"], aa_core::sha256_hex(b"fixture payload"));
+    let inventory = &report.summary["composition.components"];
+    let dependencies = inventory["vsix_dependencies"].as_array().expect("declared relationships");
+    let statuses: Vec<_> = dependencies.iter().map(|row| row["status"].as_str().expect("status")).collect();
+    assert_eq!(
+        statuses,
+        [
+            "exact-match",
+            "identity-mismatch",
+            "unresolved-range",
+            "version-mismatch",
+            "external-location",
+            "outside-relative-member-profile",
+            "no-location-declared"
+        ]
+    );
+    let components = inventory["components"].as_array().expect("shared inventory");
+    let index = |id: &str| components.iter().position(|component| component["name"] == id).expect("extension index");
+    assert_eq!(dependencies[0]["components"], json!([index("Root"), index("Nested")]));
+    assert!(dependencies[1..].iter().all(|row| row.get("components").is_none()));
+    assert_eq!(dependencies[0]["sha256"], aa_core::sha256_hex(&nested));
+    assert_eq!(
+        serde_json::to_vec(&report).expect("report"),
+        serde_json::to_vec(&run(&package, &Options::default())).expect("repeat report")
+    );
+
+    std::fs::write(&package, archive(&source, &[("Extension.vsixmanifest", source.as_bytes())])).expect("ambiguous package");
+    let report = run(&package, &Options::default());
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.vsix-package-unresolved"));
+    assert!(report.artifacts.iter().all(|a| !a.is("vsix-package")));
+
+    let repeated =
+        source.replace("</Dependencies>", r#"<Dependency Id="Nested" Version="[2.0]" Location="Sub\Nested.vsix"/></Dependencies>"#);
+    std::fs::write(&package, archive(&repeated, &[("Sub/Nested.vsix", &nested)])).expect("repeated dependency");
+    let report = run(&package, &Options::default());
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.vsix-manifest-incomplete"));
+    let relationship = &report.summary["composition.components"]["vsix_dependencies"][0];
+    assert_eq!(relationship["status"], "exact-match");
+    assert!(relationship.get("components").is_none());
+
+    let invalid = directory.path().join("broken.vsixmanifest");
+    std::fs::write(&invalid, "<PackageManifest Version=\"2.0\"/>").expect("unqualified root");
+    let report = run(&invalid, &Options::default());
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.vsix-manifest-unreadable"));
+}
+
+#[test]
+fn nuget_published_package_matches_sdk_metadata() {
+    let data = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data");
+    let package = data.join("nuget.versioning.6.11.1.nupkg");
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("../../aa-windows/tests/data/nuget.versioning.6.11.1.ref.json")).expect("SDK reference");
+    let report = run(&package, &Options::default());
+    let packaged = report.artifacts.iter().find(|a| a.is("nuget-package")).expect("qualified package");
+    let manifest = report.artifacts.iter().find(|a| a.is("nuget-manifest")).expect("root manifest");
+    let package_fact = &packaged.facts["windows.nupkg"];
+    let metadata = &manifest.facts["windows.nuspec"];
+    assert_eq!(manifest.name(), reference["manifest"].as_str().expect("SDK manifest name"));
+    assert_eq!(package_fact["source_manifest"], manifest.path);
+    assert_eq!(package_fact["package_sha256"], reference["package_sha256"]);
+    assert_eq!(package_fact["source_sha256"], manifest.digests.as_ref().expect("manifest digest").sha256);
+    assert_eq!(metadata["name"], reference["name"]);
+    assert_eq!(metadata["version"], reference["version"]);
+    assert_eq!(metadata["license"]["kind"], reference["license_kind"]);
+    assert_eq!(metadata["license"]["value"], reference["license_value"]);
+    let groups = metadata["dependency_groups"].as_array().expect("framework groups");
+    assert_eq!(groups.len(), reference["dependency_frameworks"].as_array().expect("SDK frameworks").len());
+    assert_eq!(groups[0]["target_framework"], ".NETFramework4.7.2");
+    assert_eq!(groups[1]["target_framework"], ".NETStandard2.0");
+    for (index, group) in groups.iter().enumerate() {
+        assert_eq!(
+            group["dependencies"].as_array().expect("dependency rows").len(),
+            reference["dependency_counts"][index].as_u64().expect("SDK count") as usize
+        );
+    }
+    let assets = package_fact["assets"].as_array().expect("package assets");
+    assert_eq!(assets.iter().map(|row| row["path"].clone()).collect::<Vec<_>>(), *reference["assets"].as_array().expect("SDK assets"));
+    for row in assets {
+        let path = format!("{}/{}", packaged.path, row["path"].as_str().expect("asset path"));
+        let artifact = report.artifacts.iter().find(|a| a.path == path).expect("captured asset");
+        assert_eq!(row["sha256"], artifact.digests.as_ref().expect("asset digest").sha256);
+    }
+    let components = report.summary["composition.components"]["components"].as_array().expect("shared inventory");
+    assert_eq!(components.len(), 1);
+    assert_eq!(components[0]["purl"], "pkg:nuget/NuGet.Versioning@6.11.1");
+    assert_eq!(components[0]["manifest"]["path"], manifest.path);
+    assert_eq!(
+        serde_json::to_vec(&report).expect("first report"),
+        serde_json::to_vec(&run(&package, &Options::default())).expect("repeat report")
+    );
+}
+
+#[test]
+fn nuget_dependency_relationships_need_captured_unique_package_identities() {
+    use serde_json::json;
+
+    let directory = tempfile::tempdir().expect("package directory");
+    let write_package = |file: &str, manifest: &str| {
+        let mut zip = zip::ZipWriter::new(std::fs::File::create(directory.path().join(file)).expect("package file"));
+        zip.start_file("package.nuspec", zip::write::SimpleFileOptions::default()).expect("manifest member");
+        zip.write_all(manifest.as_bytes()).expect("write manifest");
+        if file == "source.nupkg" {
+            for path in ["build/Source.targets", "runtimes/win-x64/native/asset.bin"] {
+                zip.start_file(path, zip::write::SimpleFileOptions::default()).expect("asset member");
+                zip.write_all(b"fixture asset").expect("write asset");
+            }
+        }
+        zip.finish().expect("finish package");
+    };
+    let target = "<package><metadata><id>Target</id><version>1.0.0.0</version></metadata></package>";
+    write_package("arbitrary-name.nupkg", target);
+    write_package(
+        "source.nupkg",
+        r#"<package><metadata><id>Source</id><version>2.0</version>
+        <dependencies><dependency id="target" version="[1.0]"/><dependency id="Target" version="1.0"/>
+        <dependency id="Missing" version="[1.0]"/></dependencies></metadata></package>"#,
+    );
+    write_package(
+        "grouped.nupkg",
+        r#"<package><metadata><id>Grouped</id><version>2.0</version>
+        <dependencies><group targetFramework="net8.0"><dependency id="Target" version="[1.0]"/></group></dependencies>
+        </metadata></package>"#,
+    );
+
+    let report = run(directory.path(), &Options::default());
+    let source = report.artifacts.iter().find(|a| a.path == "source.nupkg").expect("source archive");
+    let assets = source.facts["windows.nupkg"]["assets"].as_array().expect("captured assets");
+    assert_eq!(assets.len(), 2);
+    assert_eq!(assets[0]["kind"], "build");
+    assert_eq!(assets[1]["kind"], "runtime");
+    assert_eq!(assets[1]["sha256"], aa_core::sha256_hex(b"fixture asset"));
+    let rows = report.summary["composition.components"]["nuget_dependencies"].as_array().expect("declared dependency rows");
+    assert_eq!(rows[0]["target_framework"], "net8.0");
+    assert_eq!(rows[0]["status"], "present");
+    assert!(rows[0].get("components").is_none());
+    assert_eq!(rows[1]["target"], "arbitrary-name.nupkg");
+    assert_eq!(rows[1]["components"], json!([1, 2]));
+    assert_eq!(rows[2]["status"], "unresolved-range");
+    assert_eq!(rows[3]["status"], "not-supplied");
+
+    write_package("duplicate.nupkg", target);
+    let report = run(directory.path(), &Options::default());
+    let row = &report.summary["composition.components"]["nuget_dependencies"][1];
+    assert_eq!(row["status"], "ambiguous");
+    assert!(row.get("components").is_none());
+
+    std::fs::write(directory.path().join("broken.nupkg"), b"unreadable package").expect("broken package");
+    std::fs::write(
+        directory.path().join("broken.nuspec"),
+        b"<package><metadata><id>First</id><id>Second</id><version>1.0</version></metadata></package>",
+    )
+    .expect("ambiguous standalone manifest");
+    let report = run(directory.path(), &Options::default());
+    assert_eq!(report.summary["composition.components"]["nuget_dependencies"][1]["status"], "incomplete-input");
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.nupkg-unresolved"));
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.nuspec-unreadable"));
+    let malformed = report.artifacts.iter().find(|a| a.path == "broken.nuspec").expect("ambiguous manifest");
+    assert!(!malformed.facts.contains_key("windows.nuspec"));
+}
+
+#[test]
+fn script_hosts_report_encoded_powershell_operand_provenance() {
+    let directory = tempfile::tempdir().expect("script inputs");
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("../../aa-windows/tests/data/powershell-encoded.ref.json")).expect("native reference");
+    let encoded = fixture["encoded"].as_str().expect("literal operand");
+    for (extension, key) in [("ps1", "windows.powershell"), ("cmd", "windows.batch")] {
+        let path = directory.path().join(format!("host.{extension}"));
+        let input = format!("pwsh -NoProfile -EncodedCommand \"{encoded}\"\r\npwsh -EncodedCommand ABC\r\n");
+        std::fs::write(&path, &input).expect("fixture script");
+        let report = run(&path, &Options::default());
+        let commands = report.artifacts[0].facts[key]["commands"].as_array().expect("commands");
+        let record = &commands[0]["encoded_command"];
+        assert_eq!(record["decoded_sha256"], fixture["decoded_sha256"], "{record}");
+        let offset = record["operand"]["utf8_offset"].as_u64().expect("operand offset") as usize;
+        let length = record["operand"]["utf8_length"].as_u64().expect("operand length") as usize;
+        assert_eq!(&input[offset..offset + length], format!("\"{encoded}\""));
+        assert_eq!(record["syntax"]["commands"][0]["name"], "Write-Output");
+        assert_eq!(commands[1]["encoded_command"]["status"], "unresolved");
+        assert!(report.findings.iter().any(|f| f.rule == "windows.powershell-encoded-command"));
+        assert_eq!(std::fs::read_to_string(path).expect("source remains readable"), input);
+    }
+}
+
+#[test]
+fn batch_script_reports_literal_segments_without_expanding_input() {
+    let directory = tempfile::tempdir().expect("batch input");
+    let input = directory.path().join("example.bat");
+    let source = b"@echo off\r\nREM dir ignored\r\necho %TEMP%\r\ndir \"C:\\Report Folder\" && echo done\r\n";
+    std::fs::write(&input, source).expect("script fixture");
+    let report = run(&input, &Options::default());
+    let file = report.artifacts.iter().find(|a| a.name() == "example.bat").expect("batch artifact");
+    assert_eq!(file.kind.as_deref(), Some("batch-script"));
+    let fact = &file.facts["windows.batch"];
+    assert_eq!(fact["source_sha256"], aa_core::sha256_hex(source));
+    assert_eq!(fact["commands"].as_array().expect("commands").len(), 3);
+    assert_eq!(fact["commands"][1]["name"], "dir");
+    assert_eq!(fact["commands"][1]["line"], 4);
+    assert_eq!(fact["commands"][1]["literal_arguments"][0]["value"], r"C:\Report Folder");
+    assert_eq!(fact["commands"][2]["preceding_operator"], "&&");
+    assert_eq!(fact["issues"][0]["line"], 3);
+    assert_eq!(fact["evaluated"], false);
+    assert!(report.limitations.iter().any(|l| l.code == "windows.batch-incomplete"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.batch-commands" && !f.evidence.is_empty()));
+    assert_eq!(std::fs::read(input).expect("input remains readable"), source);
+}
+
+#[test]
+fn powershell_script_reports_bound_syntax_and_preserves_input() {
+    let directory = tempfile::tempdir().expect("script input");
+    let input = directory.path().join("example.psm1");
+    let source =
+        b"\xef\xbb\xbf#Requires -RunAsAdministrator\r\n# Write-Output ignored\r\nWrite-Output 'C:\\Reports\\summary.txt'\r\n& $command\r\n";
+    std::fs::write(&input, source).expect("script fixture");
+    let report = run(&input, &Options::default());
+    let file = report.artifacts.iter().find(|a| a.name() == "example.psm1").expect("script artifact");
+    assert_eq!(file.kind.as_deref(), Some("powershell-script"));
+    let fact = &file.facts["windows.powershell"];
+    assert_eq!(fact["source_sha256"], aa_core::sha256_hex(source));
+    assert_eq!(fact["commands"].as_array().expect("commands").len(), 1);
+    assert_eq!(fact["commands"][0]["position"]["line"], 3);
+    assert_eq!(fact["commands"][0]["literal_arguments"][0]["value"], r"C:\Reports\summary.txt");
+    assert_eq!(fact["administrator"][0]["kind"], "requires-directive");
+    assert_eq!(fact["evaluated"], false);
+    assert!(report.limitations.iter().any(|l| l.code == "windows.powershell-incomplete"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.powershell-administrator" && !f.evidence.is_empty()));
+    assert_eq!(std::fs::read(input).expect("input remains readable"), source);
+}
+
+#[test]
+fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_authentication() {
+    let directory = tempfile::tempdir().expect("package inputs");
+    for name in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"] {
+        let original =
+            std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data").join(name)).expect("native fixture");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &original).expect("package input");
+        let report = run(&input, &Options::default());
+        let map = report.artifacts.iter().find(|a| a.path.ends_with("/AppxBlockMap.xml")).expect("block map");
+        let checks = &map.facts["windows.msix-blockmap-checks"];
+        assert_eq!(checks["files_unresolved"], 0);
+        assert_eq!(checks["files_with_mismatches"], 0);
+        assert_eq!(checks["files_with_matching_hashes"], if name.starts_with("upstream") { 11 } else { 6 });
+        assert_eq!(checks["package_signature_checked"], false);
+        assert_eq!(checks["zip_structure_checked"], false);
+        let original_zip = report.artifacts.iter().find(|a| a.path == map.parent.as_deref().expect("map container")).expect("original ZIP");
+        let layout = &original_zip.facts["windows.msix-zip-layout"];
+        assert_eq!(layout["mapped_files_unresolved"], 0);
+        assert_eq!(layout["mapped_files_with_header_or_size_mismatch"], 0);
+        assert_eq!(layout["zip64"], true);
+        assert_eq!(layout["package_signature_checked"], false);
+        assert_eq!(layout["compressed_block_sizes_checked"], false);
+        let blocks = &original_zip.facts["windows.msix-zip-blocks"];
+        assert_eq!(blocks["files_unresolved"], 0, "{name}: {blocks}");
+        assert_eq!(blocks["files_with_mismatches"], 0);
+        assert_eq!(blocks["files_with_verified_block_spans"], if name.starts_with("upstream") { 11 } else { 6 });
+        assert_eq!(blocks["package_signature_checked"], false);
+        if name.starts_with("upstream") {
+            let binding = &original_zip.facts["windows.msix-signature-binding"];
+            assert_eq!(binding["matching_digests"], 5, "{binding}");
+            assert_eq!(binding["mismatching_digests"], 0);
+            assert_eq!(binding["unresolved_digests"], 0);
+            assert_eq!(binding["cms_signature_verified"], true);
+            assert_eq!(binding["all_declared_package_digests_agree"], true);
+            assert_eq!(binding["publisher_checked"], true);
+            assert_eq!(binding["publisher_matches"], true);
+            assert_eq!(binding["publisher_manifest_signed_coverage"], true);
+            let publisher = &original_zip.facts["windows.msix-publisher"];
+            assert_eq!(publisher["manifest_signed_coverage"]["established"], true);
+            assert_eq!(publisher["matches"], true);
+            assert_eq!(binding["windows_trust_checked"], false);
+        }
+        assert!(report.findings.iter().any(|f| f.rule == "windows.msix-block-hashes" && !f.evidence.is_empty()));
+        assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
+        assert_eq!(
+            serde_json::to_vec(&report).expect("report"),
+            serde_json::to_vec(&run(&input, &Options::default())).expect("repeat report")
+        );
+        assert_eq!(std::fs::read(&input).expect("original input"), original);
+    }
+}
+
+#[test]
+fn msix_resource_and_device_declarations_match_native_snapshots_without_selecting_for_this_host() {
+    use std::collections::{BTreeMap, BTreeSet};
+    let directory = tempfile::tempdir().expect("bundle declaration inputs");
+    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data");
+    let dimensions = |rows: &serde_json::Value| {
+        let rows = rows.as_array().expect("native resources");
+        let languages: BTreeSet<_> = rows.iter().filter_map(|r| r["language"].as_str().map(str::to_ascii_lowercase)).collect();
+        let scales: BTreeSet<_> = rows.iter().filter_map(|r| r["scale"].as_u64()).collect();
+        let levels: BTreeSet<_> = rows
+            .iter()
+            .filter_map(|r| match r["dx_feature_level"].as_u64() {
+                Some(1) => Some("dx9"),
+                Some(2) => Some("dx10"),
+                Some(3) => Some("dx11"),
+                _ => None,
+            })
+            .collect();
+        serde_json::json!({"languages":languages,"scales":scales,"dx_feature_levels":levels,"default_rows":0})
+    };
+    let families = |rows: &serde_json::Value| -> serde_json::Value {
+        let rows: BTreeMap<_, _> = rows
+            .as_array()
+            .expect("native device families")
+            .iter()
+            .map(|r| {
+                (
+                    r["Name"].as_str().expect("family name"),
+                    serde_json::json!({"minimum":r["MinVersion"],"maximum_tested":r["MaxVersionTested"]}),
+                )
+            })
+            .collect();
+        serde_json::json!(rows)
+    };
+    for name in [
+        "native-msix-bundle.appxbundle",
+        "native-msix-qualifiers.appxbundle",
+        "upstream-BundleWithIntlPackage.appxbundle",
+        "upstream-SignedUntrustedCert.appxbundle",
+    ] {
+        let original = std::fs::read(data_dir.join(name)).expect("owned or licensed bundle");
+        let native: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(data_dir.join(format!("{name}.declarations.ref.json"))).expect("native snapshot"))
+                .expect("snapshot JSON");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &original).expect("bundle input");
+        let report = run(&input, &Options::default());
+        let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+        let fact = &root.facts["windows.msix-bundle-checks"];
+        let declared = native["bundle"]["packages"].as_array().expect("native declarations");
+        let observed = native["inner"].as_array().expect("native inner packages");
+        assert_eq!(fact["resource_declarations_agree"], declared.len());
+        for ((row, declared), observed) in fact["records"].as_array().expect("records").iter().zip(declared).zip(observed) {
+            let result = &row["result"];
+            let resources = &result["resource_declaration_comparison"];
+            assert_eq!(resources["declared"], dimensions(&declared["resources"]));
+            assert_eq!(resources["observed"], dimensions(&observed["manifest"]["resources"]));
+            assert_eq!(resources["host_resource_selection_performed"], false);
+            let device = &result["target_device_family_comparison"];
+            if declared["target_device_families"].as_array().expect("native bundle families").is_empty() {
+                assert_eq!(device["status"], "not-declared");
+            } else {
+                assert_eq!(device["status"], "agrees");
+                assert_eq!(device["declared"], families(&declared["target_device_families"]));
+                assert_eq!(device["observed"], families(&observed["manifest"]["target_device_families"]));
+            }
+            assert_eq!(device["maximum_tested_is_compatibility_ceiling"], false);
+            assert_eq!(device["host_compatibility_checked"], false);
+        }
+        assert!(report.findings.iter().any(|f| f.rule == "windows.msix-bundle-resources" && !f.evidence.is_empty()));
+        assert_eq!(
+            serde_json::to_vec(&report).expect("report"),
+            serde_json::to_vec(&run(&input, &Options::default())).expect("repeated report")
+        );
+        assert_eq!(std::fs::read(&input).expect("unchanged input"), original);
+    }
+}
+
+#[test]
+fn bundle_resource_and_device_differences_remain_distinct_from_unread_and_absent_declarations() {
+    use std::io::{Cursor, Read};
+    let bytes = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/native-msix-qualifiers.appxbundle"))
+        .expect("owned bundle");
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).expect("bundle ZIP");
+    let entries: Vec<_> = (0..archive.len())
+        .map(|i| {
+            let mut entry = archive.by_index(i).expect("entry");
+            let mut content = Vec::new();
+            entry.read_to_end(&mut content).expect("content");
+            (entry.name().expect("entry name").into_owned(), content)
+        })
+        .collect();
+    let directory = tempfile::tempdir().expect("declaration variants");
+    for case in [
+        "resource-difference",
+        "resource-duplicate",
+        "resource-foreign",
+        "family-difference",
+        "family-duplicate",
+        "family-missing-version",
+        "family-absent",
+        "inner-unqualified-scale",
+    ] {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in &entries {
+            let mut bytes = bytes.clone();
+            if name == "AppxMetadata/AppxBundleManifest.xml" {
+                let mut xml = String::from_utf8(bytes).expect("owned UTF8 manifest");
+                let language = "<Resource Language=\"zh-CN\"/>";
+                let family =
+                    "<b4:TargetDeviceFamily Name=\"Windows.Universal\" MinVersion=\"10.0.19041.0\" MaxVersionTested=\"10.0.22621.0\"/>";
+                match case {
+                    "resource-difference" => xml = xml.replace("Language=\"zh-CN\"", "Language=\"ja-JP\""),
+                    "resource-duplicate" => xml = xml.replace(language, &format!("{language}{language}")),
+                    "resource-foreign" => {
+                        xml = xml.replace(language, &format!("{language}<Resource xmlns=\"urn:foreign\" Language=\"ja-JP\"/>"))
+                    }
+                    "family-difference" => xml = xml.replace("MaxVersionTested=\"10.0.22621.0\"", "MaxVersionTested=\"10.0.26100.0\""),
+                    "family-duplicate" => xml = xml.replace(family, &format!("{family}{family}")),
+                    "family-missing-version" => xml = xml.replace("MaxVersionTested=\"10.0.22621.0\"", ""),
+                    "family-absent" => {
+                        let start = xml.find("<b4:Dependencies>").expect("dependencies section");
+                        let end = start + xml[start..].find("</b4:Dependencies>").expect("section end") + "</b4:Dependencies>".len();
+                        xml.replace_range(start..end, "");
+                    }
+                    _ => {}
+                }
+                bytes = xml.into_bytes();
+            } else if name == "app.appx" && case == "inner-unqualified-scale" {
+                let mut inner = zip::ZipArchive::new(Cursor::new(&bytes)).expect("owned inner package");
+                let mut changed = zip::ZipWriter::new(Cursor::new(Vec::new()));
+                for i in 0..inner.len() {
+                    let mut entry = inner.by_index(i).expect("inner entry");
+                    let path = entry.name().expect("inner name").into_owned();
+                    let mut content = Vec::new();
+                    entry.read_to_end(&mut content).expect("inner bytes");
+                    if path == "AppxManifest.xml" {
+                        content = String::from_utf8(content).expect("inner UTF8").replace("uap:Scale=", "Scale=").into_bytes();
+                    }
+                    changed.start_file(path, zip::write::SimpleFileOptions::default()).expect("changed entry");
+                    changed.write_all(&content).expect("changed content");
+                }
+                bytes = changed.finish().expect("changed package").into_inner();
+            }
+            writer
+                .start_file(name, zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored))
+                .expect("variant entry");
+            writer.write_all(&bytes).expect("variant content");
+        }
+        let input = directory.path().join(format!("{case}.appxbundle"));
+        let bytes = writer.finish().expect("variant bundle").into_inner();
+        std::fs::write(&input, &bytes).expect("variant input");
+        let report = run(&input, &Options::default());
+        let fact = &report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root").facts["windows.msix-bundle-checks"];
+        assert_eq!(fact["resource_declarations_differ"], usize::from(case == "resource-difference"), "{case}: {fact}");
+        let resource_unknown = matches!(case, "resource-duplicate" | "resource-foreign" | "inner-unqualified-scale");
+        assert_eq!(fact["resource_declarations_unresolved"], usize::from(resource_unknown), "{case}: {fact}");
+        assert_eq!(fact["target_device_families_differ"], usize::from(case == "family-difference"), "{case}: {fact}");
+        assert_eq!(
+            fact["target_device_families_unresolved"],
+            usize::from(matches!(case, "family-duplicate" | "family-missing-version")),
+            "{case}: {fact}"
+        );
+        assert_eq!(fact["target_device_families_not_declared"], usize::from(case == "family-absent"), "{case}: {fact}");
+        assert_eq!(std::fs::read(&input).expect("unchanged variant"), bytes);
+    }
+}
+
+#[test]
+fn msix_bundles_bind_original_package_extents_and_keep_outer_signature_coverage_separate() {
+    let directory = tempfile::tempdir().expect("bundle inputs");
+    for (name, count, signed) in [
+        ("native-msix-bundle.appxbundle", 2, false),
+        ("upstream-BundleWithIntlPackage.appxbundle", 1, false),
+        ("upstream-SignedUntrustedCert.appxbundle", 2, true),
+    ] {
+        let original =
+            std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data").join(name)).expect("licensed bundle");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &original).expect("bundle input");
+        let report = run(&input, &Options::default());
+        let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+        assert_eq!(root.kind.as_deref(), Some("msix-bundle"));
+        let checks = &root.facts["windows.msix-bundle-checks"];
+        assert_eq!(checks["packages_corresponding"], count, "{name}: {checks}");
+        assert_eq!(checks["packages_differing"], 0);
+        assert_eq!(checks["packages_unresolved"], 0);
+        assert_eq!(checks["packages_partial"], 0);
+        assert!(checks["undeclared_packages"].as_array().expect("undeclared packages").is_empty());
+        for row in checks["records"].as_array().expect("bound package records") {
+            assert_eq!(row["result"]["bundle_signed_byte_coverage"], signed);
+            assert_eq!(row["result"]["inner_signature_required_inferred"], false);
+            assert_eq!(row["result"]["windows_trust_checked"], false);
+        }
+        if signed {
+            let binding = &root.facts["windows.msix-signature-binding"];
+            assert_eq!(binding["matching_digests"], 4);
+            assert_eq!(binding["cms_signature_verified"], true);
+            assert_eq!(binding["publisher_matches"], true);
+            assert_eq!(binding["publisher_manifest_signed_coverage"], true);
+        }
+        assert_eq!(
+            serde_json::to_vec(&report).expect("report"),
+            serde_json::to_vec(&run(&input, &Options::default())).expect("repeat report")
+        );
+        assert_eq!(std::fs::read(&input).expect("unchanged input"), original);
+    }
+}
+
+#[test]
+fn independent_bundle_mismatches_missing_extra_and_compressed_packages_have_distinct_results() {
+    let directory = tempfile::tempdir().expect("negative bundle inputs");
+    for (case, field, differing, unresolved, extra) in [
+        ("ManifestPackageHasIncorrectArchitecture", Some("architecture"), 1, 0, 0),
+        ("ManifestPackageHasIncorrectSize", Some("size"), 1, 0, 0),
+        ("ManifestPackageHasInvalidOffset", Some("offset"), 1, 0, 0),
+        ("ManifestHasExtraPackage", None, 0, 1, 0),
+        ("PayloadPackageNotListedInManifest", None, 0, 0, 1),
+        ("PayloadPackageIsCompressed", None, 0, 1, 0),
+    ] {
+        let name = format!("upstream-{case}.appxbundle");
+        let bytes = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data").join(&name))
+            .expect("licensed negative bundle");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &bytes).expect("negative input");
+        let report = run(&input, &Options::default());
+        let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+        let checks = &root.facts["windows.msix-bundle-checks"];
+        assert_eq!(checks["packages_differing"], differing, "{case}: {checks}");
+        assert_eq!(checks["packages_unresolved"], unresolved, "{case}: {checks}");
+        assert_eq!(checks["undeclared_packages"].as_array().expect("extra packages").len(), extra);
+        if let Some(field) = field {
+            assert!(checks["records"].as_array().expect("records").iter().any(|r| {
+                r["result"]["checks"].as_array().is_some_and(|cs| cs.iter().any(|c| c["field"] == field && c["status"] == "differs"))
+            }));
+            assert!(report.findings.iter().any(|f| f.rule == "windows.msix-bundle-mismatch" && !f.evidence.is_empty()));
+        }
+        assert_eq!(std::fs::read(&input).expect("unchanged negative"), bytes);
+    }
+}
+
+#[test]
+fn bundle_physical_size_differences_are_retained_when_inner_package_identity_is_unreadable() {
+    use std::io::{Cursor, Read};
+    let original = std::fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-ManifestPackageHasIncorrectSize.appxbundle"),
+    )
+    .expect("independent negative bundle");
+    let mut archive = zip::ZipArchive::new(Cursor::new(original)).expect("bundle ZIP");
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index).expect("entry");
+        let name = entry.name().expect("entry name").into_owned();
+        let mut bytes = Vec::new();
+        entry.read_to_end(&mut bytes).expect("content");
+        if name.ends_with(".appx") {
+            bytes.fill(b'x');
+        }
+        writer
+            .start_file(name, zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored))
+            .expect("variant entry");
+        writer.write_all(&bytes).expect("variant content");
+    }
+    let directory = tempfile::tempdir().expect("variant input");
+    let input = directory.path().join("unreadable-inner.appxbundle");
+    let bytes = writer.finish().expect("variant ZIP").into_inner();
+    std::fs::write(&input, &bytes).expect("variant bytes");
+    let report = run(&input, &Options::default());
+    let root = report.artifacts.iter().find(|a| a.parent.is_none()).expect("bundle root");
+    let checks = &root.facts["windows.msix-bundle-checks"];
+    assert_eq!(checks["packages_differing"], 1, "{checks}");
+    let row = &checks["records"][0]["result"];
+    assert_eq!(row["inner_identity_comparison_performed"], false);
+    assert_eq!(checks["packages_with_unresolved_relationships"], 1);
+    assert!(report.limitations.iter().any(|l| l.code == "windows.msix-bundle-unresolved"));
+    assert!(row["reason"].as_str().expect("unread reason").contains("nested package"));
+    assert!(row["checks"].as_array().expect("physical checks").iter().any(|c| c["field"] == "size" && c["status"] == "differs"));
+    assert_eq!(std::fs::read(&input).expect("unchanged variant"), bytes);
+}
+
+#[test]
+fn msix_publisher_correspondence_keeps_manifest_coverage_and_cms_failures_separate() {
+    use std::io::{Cursor, Read};
+    let original =
+        std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-TestAppxPackage_Win32.appx"))
+            .expect("licensed package");
+    let mut archive = zip::ZipArchive::new(Cursor::new(&original)).expect("fixture ZIP");
+    let entries: Vec<_> = (0..archive.len())
+        .map(|i| {
+            let mut entry = archive.by_index(i).expect("fixture entry");
+            let mut bytes = Vec::new();
+            entry.read_to_end(&mut bytes).expect("fixture content");
+            (entry.name().expect("fixture name").into_owned(), bytes)
+        })
+        .collect();
+    let directory = tempfile::tempdir().expect("variants");
+    for (case, matches, coverage) in [
+        ("repacked", Some(true), true),
+        ("different-publisher", Some(false), false),
+        ("alias-publisher", Some(false), false),
+        ("unsigned-manifest-change", Some(true), false),
+        ("duplicate-identity", None, false),
+        ("bad-cms", None, false),
+    ] {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in &entries {
+            let mut bytes = bytes.clone();
+            if name == "AppxManifest.xml" {
+                let mut xml = String::from_utf8(bytes).expect("fixture UTF8");
+                match case {
+                    "different-publisher" => xml = xml.replace("CN=Microsoft Corporation", "CN=Other Corporation"),
+                    "alias-publisher" => xml = xml.replace("S=Washington", "ST=Washington"),
+                    "unsigned-manifest-change" => xml.push(' '),
+                    "duplicate-identity" => {
+                        let start = xml.find("<Identity ").expect("fixture identity");
+                        let end = start + xml[start..].find("/>").expect("identity end") + 2;
+                        let identity = xml[start..end].to_string();
+                        xml.insert_str(end, &identity);
+                    }
+                    _ => {}
+                }
+                bytes = xml.into_bytes();
+            } else if name == "AppxSignature.p7x" && case == "bad-cms" {
+                *bytes.last_mut().expect("signature value") ^= 1;
+            }
+            writer
+                .start_file(name, zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated))
+                .expect("variant entry");
+            writer.write_all(&bytes).expect("variant content");
+        }
+        let bytes = writer.finish().expect("variant ZIP").into_inner();
+        let input = directory.path().join(format!("{case}.appx"));
+        std::fs::write(&input, &bytes).expect("variant input");
+        let report = run(&input, &Options::default());
+        let publisher = report.artifacts.iter().find_map(|a| a.facts.get("windows.msix-publisher")).expect("publisher result");
+        assert_eq!(publisher["publisher_checked"], matches.is_some(), "{case}: {publisher}");
+        if let Some(matches) = matches {
+            assert_eq!(publisher["matches"], matches, "{case}: {publisher}");
+            assert_eq!(publisher["manifest_signed_coverage"]["established"], coverage, "{case}: {publisher}");
+        }
+        assert_eq!(report.findings.iter().any(|f| f.rule == "windows.msix-publisher-mismatch"), matches == Some(false), "{case}");
+        assert_eq!(publisher["windows_trust_checked"], false);
+        assert_eq!(std::fs::read(&input).expect("unchanged input"), bytes);
+    }
+}
+
+#[test]
+fn msix_original_streams_distinguish_block_disagreement_from_unresolved_boundaries() {
+    use std::io::Read;
+    let original = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/native-msix-sha256.msix"))
+        .expect("native package");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&original)).expect("package ZIP");
+    let mut xml = String::new();
+    archive.by_name("AppxBlockMap.xml").expect("map").read_to_string(&mut xml).expect("UTF8 map");
+    let name = xml.find("Name=\"payload.bin\"").expect("payload declaration");
+    let file_start = xml[..name].rfind("<File ").expect("File element");
+    let file_end = name + xml[name..].find("</File>").expect("File end") + 7;
+    let file = &xml[file_start..file_end];
+    let block_positions: Vec<_> = file.match_indices("<Block ").map(|(at, _)| at).collect();
+    assert_eq!(block_positions.len(), 2);
+    let replace_attribute = |text: &mut String, element: usize, key: &str, value: &str| {
+        let marker = format!("{key}=\"");
+        let start = element + text[element..].find(&marker).expect("attribute") + marker.len();
+        let end = start + text[start..].find('"').expect("attribute end");
+        text.replace_range(start..end, value);
+    };
+    let directory = tempfile::tempdir().expect("block cases");
+    for case in ["wrong-hash", "extent-overshoot", "shifted-boundary", "included-terminator"] {
+        let mut changed = file.to_string();
+        match case {
+            "wrong-hash" => replace_attribute(&mut changed, block_positions[0], "Hash", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+            "extent-overshoot" => replace_attribute(&mut changed, block_positions[0], "Size", "600"),
+            "shifted-boundary" => {
+                // Edit from the end so a changed attribute width cannot move the next position.
+                replace_attribute(&mut changed, block_positions[1], "Size", "12");
+                replace_attribute(&mut changed, block_positions[0], "Size", "585");
+            }
+            _ => replace_attribute(&mut changed, block_positions[1], "Size", "15"),
+        }
+        let modified = format!("{}{}{}", &xml[..file_start], changed, &xml[file_end..]);
+        let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for position in 0..archive.len() {
+            let entry = archive.by_index(position).expect("native entry");
+            if entry.name().expect("entry name") == "AppxBlockMap.xml" {
+                writer.start_file("AppxBlockMap.xml", zip::write::SimpleFileOptions::default()).expect("changed map entry");
+                writer.write_all(modified.as_bytes()).expect("changed declaration bytes");
+            } else {
+                // Copy the native compressed bytes; ordinary recompression would erase the boundaries under test.
+                writer.raw_copy_file(entry).expect("original payload stream");
+            }
+        }
+        let input = directory.path().join(format!("{case}.msix"));
+        std::fs::write(&input, writer.finish().expect("controlled ZIP").into_inner()).expect("case input");
+        let report = run(&input, &Options::default());
+        let blocks = &report.artifacts.iter().find(|a| a.facts.contains_key("windows.msix-zip-blocks")).expect("raw block result").facts["windows.msix-zip-blocks"];
+        let mismatch = matches!(case, "wrong-hash" | "extent-overshoot");
+        assert_eq!(blocks["files_with_mismatches"], usize::from(mismatch), "{case}: {blocks}");
+        assert_eq!(blocks["files_unresolved"], usize::from(case == "shifted-boundary"), "{case}: {blocks}");
+        assert_eq!(report.findings.iter().any(|f| f.rule == "windows.msix-zip-block-mismatch"), mismatch);
+        assert_eq!(blocks["package_signature_checked"], false);
+    }
+}
+
+#[test]
+fn msix_tampering_missing_files_and_archive_name_ambiguity_have_distinct_results() {
+    use std::io::Read;
+    let bytes = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/native-msix-sha256.msix"))
+        .expect("native package");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes)).expect("fixture ZIP");
+    let mut original = Vec::new();
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).expect("fixture entry");
+        if file.is_dir() {
+            continue;
+        }
+        let name = file.name().expect("fixture name").into_owned();
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).expect("fixture bytes");
+        original.push((name, bytes));
+    }
+    let directory = tempfile::tempdir().expect("case inputs");
+    for case in ["changed-payload", "changed-block-hash", "changed-file-hash", "missing", "duplicate", "directory-alias"] {
+        let mut files = original.clone();
+        if case == "changed-payload" {
+            files.iter_mut().find(|(n, _)| n == "payload.bin").expect("payload").1[65536] ^= 1;
+        } else if case == "changed-block-hash" || case == "changed-file-hash" {
+            let map = &mut files.iter_mut().find(|(n, _)| n == "AppxBlockMap.xml").expect("map").1;
+            let xml = std::str::from_utf8(map).expect("UTF-8 map");
+            let marker = if case == "changed-block-hash" { "<Block Hash=\"" } else { "<b4:FileHash Hash=\"" };
+            let hash = xml.split_once(marker).expect("hash declaration").1.split('"').next().expect("hash");
+            *map = xml.replace(hash, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=").into_bytes();
+        } else if case == "missing" {
+            files.retain(|(n, _)| n != "payload.bin");
+        } else if case == "duplicate" {
+            let mut duplicate = files.iter().find(|(n, _)| n == "payload.bin").expect("payload").clone();
+            duplicate.0 = "payload.tmp".into();
+            files.push(duplicate);
+        } else {
+            files.push(("assets/unlisted.txt".into(), b"directory alias".to_vec()));
+        }
+        let entries: Vec<_> = files.iter().map(|(n, b)| (n.as_str(), b.as_slice())).collect();
+        let path = directory.path().join(format!("{case}.msix"));
+        let mut bytes = zip_of(&entries);
+        if case == "duplicate" {
+            // The writer refuses duplicate names. Give the two headers the same
+            // equal-length name after building this otherwise ordinary fixture.
+            let positions: Vec<_> = bytes.windows(11).enumerate().filter_map(|(i, b)| (b == b"payload.tmp").then_some(i)).collect();
+            assert_eq!(positions.len(), 2, "local and central filename fields");
+            for i in positions {
+                bytes[i..i + 11].copy_from_slice(b"payload.bin");
+            }
+        }
+        std::fs::write(&path, bytes).expect("controlled case");
+        let report = run(&path, &Options::default());
+        let source = report.artifacts.iter().find(|a| a.path.ends_with("/AppxBlockMap.xml")).expect("map");
+        let checks = &source.facts["windows.msix-blockmap-checks"];
+        if case == "duplicate" {
+            assert!(report.limitations.iter().any(|l| l.code == "zip.entry-names-duplicated"));
+            assert_eq!(
+                report.artifacts.iter().find(|a| a.path == format!("{case}.msix")).expect("container").facts["engine.container-listing"]["complete"],
+                false
+            );
+        }
+        let tampered = case.starts_with("changed");
+        assert_eq!(report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"), tampered, "{case}: {checks}");
+        if tampered {
+            assert_eq!(checks["files_with_mismatches"], 1);
+        } else {
+            assert!(checks["files_unresolved"].as_u64().expect("count") > 0, "{case}: {checks}");
+        }
+        assert_eq!(checks["package_signature_checked"], false);
+        assert_eq!(checks["zip_structure_checked"], false);
+    }
+    let map = original.iter().find(|(n, _)| n == "AppxBlockMap.xml").expect("map");
+    let standalone = directory.path().join("AppxBlockMap.xml");
+    std::fs::write(&standalone, &map.1).expect("standalone map");
+    let report = run(&standalone, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-msix-block-map"));
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
+    let only_map = directory.path().join("isolated.msix");
+    std::fs::write(&only_map, zip_of(&[("AppxBlockMap.xml", &map.1)])).expect("isolated map");
+    std::fs::write(directory.path().join("payload.bin"), b"unrelated outer bytes").expect("outer file");
+    let report = run(directory.path(), &Options::default());
+    let map = report.artifacts.iter().find(|a| a.path == "isolated.msix/AppxBlockMap.xml").expect("isolated map");
+    assert_eq!(map.facts["windows.msix-blockmap-checks"]["files_with_matching_hashes"], 0);
+}
+
+const ROOT_INF: &[u8] = br#"[Version]
+Signature="$Windows NT$"
+[SourceDisksFiles]
+a.sys=1,\amd64,5
+[SourceDisksNames]
+1=Media,,,\dist
+"#;
+
+fn root_options(inf: &str, root: &str) -> Options {
+    Options { windows_source_roots: vec![aa_engine::WindowsSourceRoot { inf: inf.into(), root: root.into() }], ..Options::default() }
+}
+
+#[test]
+fn explicit_windows_distribution_roots_map_only_supplied_bytes_and_preserve_default_behavior() {
+    let dir = tempfile::tempdir().expect("input folder");
+    std::fs::create_dir_all(dir.path().join("meta")).expect("INF directory");
+    std::fs::create_dir_all(dir.path().join("dist/amd64")).expect("source directory");
+    std::fs::write(dir.path().join("meta/driver.inf"), ROOT_INF).expect("source INF");
+    std::fs::write(dir.path().join("dist/amd64/a.sys"), b"bytes").expect("unexecuted payload");
+    let plain = run(dir.path(), &Options::default());
+    assert!(plain.artifacts.iter().all(|a| !a.facts.contains_key("windows.source-files")));
+    let options = root_options("meta/DRIVER.inf", ".");
+    let report = run(dir.path(), &options);
+    let mapping = &report.artifacts.iter().find(|a| a.path == "meta/driver.inf").expect("INF").facts["windows.source-files"];
+    assert_eq!(mapping["basis"], "caller-declared-logical-distribution-root");
+    assert_eq!(mapping["records"][0]["target"], "dist/amd64/a.sys");
+    assert_eq!(mapping["records"][0]["size_agreement"], true);
+    assert!(report.findings.iter().any(|f| f.rule == "windows.inf-source-files" && !f.evidence.is_empty()));
+    assert_eq!(serde_json::to_vec(&report).expect("report JSON"), serde_json::to_vec(&run(dir.path(), &options)).expect("repeat JSON"));
+    assert_eq!(std::fs::read(dir.path().join("dist/amd64/a.sys")).expect("input unchanged"), b"bytes");
+    let invalid = run(dir.path(), &root_options("meta/driver.inf", "C:/private-marker"));
+    assert!(invalid.limitations.iter().any(|l| l.code == "engine.windows-source-roots-invalid"));
+    assert!(!serde_json::to_string(&invalid).expect("invalid settings report").contains("private-marker"));
+    let invalid_size = String::from_utf8(ROOT_INF.to_vec()).expect("ASCII fixture").replace(",5", ",unknown-size");
+    std::fs::write(dir.path().join("meta/driver.inf"), invalid_size).expect("unsupported size declaration");
+    let report = run(dir.path(), &options);
+    let source = report.artifacts.iter().find(|a| a.path == "meta/driver.inf").expect("INF");
+    assert_eq!(source.facts["windows.source-files"]["records"][0]["size_check"], "unsupported-size-declaration");
+    assert!(report.findings.iter().any(|f| f.rule == "windows.inf-source-files"), "path association is separate from size interpretation");
+    assert!(report.limitations.iter().any(|l| l.code == "windows.source-files-unresolved"));
+}
+
+#[test]
+fn windows_distribution_roots_respect_archive_namespaces_missing_paths_and_directory_aliases() {
+    let dir = tempfile::tempdir().expect("input folder");
+    let zip = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/a.sys", b"bytes")]);
+    let path = dir.path().join("pkg.zip");
+    std::fs::write(&path, zip).expect("archive");
+    let report = run(&path, &root_options("pkg.zip/meta/driver.inf", "pkg.zip"));
+    let source = report.artifacts.iter().find(|a| a.path.ends_with("/driver.inf")).expect("INF child");
+    assert_eq!(source.facts["windows.source-files"]["records"][0]["target"], "pkg.zip/dist/amd64/a.sys");
+    let wrong = run(&path, &root_options("pkg.zip/meta/driver.inf", "."));
+    assert!(!wrong.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    let inner = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/a.sys", b"bytes")]);
+    let nested = dir.path().join("nested.zip");
+    std::fs::write(&nested, zip_of(&[("inner.zip", &inner)])).expect("nested container");
+    let nested_report = run(&nested, &root_options("nested.zip/inner.zip/meta/driver.inf", "nested.zip/inner.zip"));
+    assert!(nested_report.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    let crossed = run(&nested, &root_options("nested.zip/inner.zip/meta/driver.inf", "nested.zip"));
+    assert!(!crossed.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    for extra in ["Meta/other.bin", "Dist/other.bin"] {
+        let zip = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/a.sys", b"bytes"), (extra, b"alias")]);
+        std::fs::write(&path, zip).expect("case-sensitive archive names");
+        let aliases = run(&path, &root_options("pkg.zip/meta/driver.inf", "pkg.zip"));
+        assert!(!aliases.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+        assert!(aliases.limitations.iter().any(|l| l.code == "windows.source-files-unresolved"));
+    }
+    let zip = zip_of(&[("meta/driver.inf", ROOT_INF), ("dist/amd64/other.bin", b"directory present")]);
+    std::fs::write(&path, zip).expect("missing source archive");
+    let missing = run(&path, &root_options("pkg.zip/meta/driver.inf", "pkg.zip"));
+    let source = missing.artifacts.iter().find(|a| a.path.ends_with("/driver.inf")).expect("INF child");
+    assert_eq!(source.facts["windows.source-files"]["records"][0]["status"], "not-supplied-at-candidate-path");
+    assert!(!missing.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+}
+
+#[test]
+fn partial_input_listing_cannot_establish_a_missing_declared_source() {
+    let dir = tempfile::tempdir().expect("input folder");
+    std::fs::write(dir.path().join("driver.inf"), ROOT_INF).expect("INF");
+    std::fs::write(dir.path().join("z.bin"), b"not a source").expect("second input");
+    let mut options = root_options("driver.inf", ".");
+    options.limits.max_files = 1;
+    let report = run(dir.path(), &options);
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    let source = report.artifacts.iter().find(|a| a.path == "driver.inf").expect("first input");
+    let records = source.facts["windows.source-files"]["records"].as_array().expect("unresolved mappings");
+    assert!(records.iter().all(|r| r["status"] == "unresolved"));
+    assert!(records.iter().any(|r| r["reason"] == "input-listing-completeness-not-established"));
+}
+
+#[test]
+fn windows_source_mapping_bounds_candidate_attempts_and_output_independently() {
+    for (count, subdirectory) in [(300, "".to_string()), (200, std::iter::repeat_n("a".repeat(126), 32).collect::<Vec<_>>().join("\\"))] {
+        let dir = tempfile::tempdir().expect("bounded fixture");
+        let mut text = String::from("[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\n");
+        for index in 0..count {
+            text.push_str(&format!("a{index}.sys=1,{subdirectory}\n"));
+        }
+        text.push_str("[SourceDisksNames]\n");
+        for _ in 0..16 {
+            text.push_str("1=Media\n");
+        }
+        std::fs::write(dir.path().join("driver.inf"), text).expect("declarations");
+        let report = run(dir.path(), &root_options("driver.inf", "."));
+        let source = report.artifacts.iter().find(|a| a.path == "driver.inf").expect("INF");
+        let mapping = &source.facts["windows.source-files"];
+        assert_eq!(mapping["truncated"], true);
+        let records = mapping["records"].as_array().expect("bounded mapping records");
+        assert!(records.len() <= 4096);
+        assert!(records.iter().map(|r| serde_json::to_vec(r).expect("mapping JSON").len()).sum::<usize>() <= 4 * 1024 * 1024);
+        assert!(report.limitations.iter().any(|l| l.code == "windows.source-files-limit"));
+    }
+}
+
 /// Bytes that no type detector recognises and that use every value equally.
 fn noise(length: usize) -> Vec<u8> {
     // A fixed linear congruential generator: the same bytes on every run.
@@ -72,6 +1130,101 @@ fn write_input(name: &str, bytes: &[u8]) -> (tempfile::TempDir, std::path::PathB
     (dir, path)
 }
 
+fn relative_shortcut(path: &str) -> Vec<u8> {
+    let mut bytes = vec![0; 76];
+    bytes[..20].copy_from_slice(&[0x4c, 0, 0, 0, 1, 0x14, 2, 0, 0, 0, 0, 0, 0xc0, 0, 0, 0, 0, 0, 0, 0x46]);
+    bytes[20..24].copy_from_slice(&0x88u32.to_le_bytes());
+    let units: Vec<_> = path.encode_utf16().collect();
+    bytes.extend((units.len() as u16).to_le_bytes());
+    bytes.extend(units.into_iter().flat_map(u16::to_le_bytes));
+    bytes.extend([0; 4]);
+    bytes
+}
+
+#[test]
+fn supplied_shortcut_references_are_scoped_deterministic_and_do_not_add_host_files() {
+    let link = relative_shortcut(r"..\bin\TOOL.exe");
+    let pack = zip_of(&[("shortcuts/launch.lnk", &link), ("bin/tool.exe", b"supplied payload")]);
+    let (_dir, path) = write_input("package.zip", &pack);
+    let report = run(&path, &Options::default());
+    let source = report.artifacts.iter().find(|a| a.path == "package.zip/shortcuts/launch.lnk").expect("shortcut");
+    let reference = &source.facts["windows.input-references"]["references"][0];
+    assert_eq!(reference["target"], "package.zip/bin/tool.exe");
+    assert_eq!(reference["target_sha256"], aa_core::sha256_hex(b"supplied payload"));
+    assert_eq!(report.artifacts.len(), 3);
+    let finding = report.findings.iter().find(|f| f.rule == "windows.input-reference").expect("relationship finding");
+    assert_eq!(finding.evidence.len(), 2);
+    assert_eq!(finding.evidence[1].artifact, "package.zip/bin/tool.exe");
+    assert!(report.limitations.iter().any(|l| l.code == "windows.shortcut-target-unresolved"));
+    for id in report.findings.iter().map(|f| &f.rule).chain(report.limitations.iter().map(|l| &l.code)) {
+        let rule = report.rules.get(id).expect("rule wording");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(
+        serde_json::to_vec(&report).expect("first report"),
+        serde_json::to_vec(&run(&path, &Options::default())).expect("second report")
+    );
+    assert_eq!(std::fs::read(&path).expect("unchanged archive"), pack);
+}
+
+#[test]
+fn archive_collisions_and_normalized_names_cannot_create_false_unique_shortcut_targets() {
+    let link = relative_shortcut("same.txt");
+    let copied = relative_shortcut("same.txt (2)");
+    let bytes = tar_gz_of(&[("launch.lnk", &link), ("copied.lnk", &copied), ("same.txt", b"one"), ("same.txt", b"two")]);
+    let (_dir, path) = write_input("collision.tar.gz", &bytes);
+    let report = run(&path, &Options::default());
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let targets: Vec<_> = report.artifacts.iter().filter(|a| a.name().starts_with("same.txt")).collect();
+    assert_eq!(targets.len(), 2);
+    assert!(targets.iter().all(|a| a.facts["engine.entry-name"]["colliding"] == true));
+    let source = report.artifacts.iter().find(|a| a.name() == "launch.lnk").expect("shortcut");
+    assert_eq!(source.facts["windows.input-references"]["references"][0]["status"], "unresolved");
+
+    let pack = zip_of(&[("launch.lnk", &link), ("./same.txt", b"one")]);
+    let (_dir, path) = write_input("normalized.zip", &pack);
+    let report = run(&path, &Options::default());
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let target = report.artifacts.iter().find(|a| a.name() == "same.txt").expect("normalized entry preserved");
+    assert_eq!(target.facts["engine.entry-name"]["normalized"], true);
+}
+
+#[test]
+fn partial_input_or_container_listings_do_not_establish_unique_targets() {
+    let dir = tempfile::tempdir().expect("listing fixture");
+    let link = relative_shortcut("target.exe");
+    std::fs::write(dir.path().join("a.lnk"), &link).expect("shortcut");
+    std::fs::write(dir.path().join("target.exe"), b"payload").expect("target");
+    std::fs::write(dir.path().join("zz-extra"), b"not listed").expect("additional input");
+    let report = run(dir.path(), &limits(|limits| limits.max_files = 2));
+    assert_eq!(report.artifacts.len(), 2);
+    assert_eq!(report.summary["engine.input-listing"]["complete"], false);
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let source = report.artifacts.iter().find(|a| a.name() == "a.lnk").expect("listed shortcut");
+    assert_eq!(source.facts["windows.input-references"]["references"][0]["reason"], "input-listing-completeness-not-established");
+
+    let bytes = zip_of(&[("a.lnk", &link), ("target.exe", b"payload"), ("zz-extra", b"not unpacked")]);
+    let (_dir, path) = write_input("partial.zip", &bytes);
+    let report = run(&path, &limits(|limits| limits.max_files = 3));
+    assert_eq!(report.artifacts.len(), 3);
+    assert_eq!(report.artifacts[0].facts["engine.container-listing"]["complete"], false);
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+    let source = report.artifacts.iter().find(|a| a.name() == "a.lnk").expect("unpacked shortcut");
+    assert_eq!(source.facts["windows.input-references"]["references"][0]["reason"], "container-listing-completeness-not-established");
+}
+
+#[test]
+fn an_unrelated_broken_container_does_not_hide_a_complete_input_namespace() {
+    let dir = tempfile::tempdir().expect("complete folder fixture");
+    std::fs::write(dir.path().join("a.lnk"), relative_shortcut("target.exe")).expect("shortcut");
+    std::fs::write(dir.path().join("target.exe"), b"payload").expect("target");
+    std::fs::write(dir.path().join("broken.zip"), b"PK\x03\x04broken").expect("damaged container");
+    let report = run(dir.path(), &Options::default());
+    assert!(report.limitations.iter().any(|l| l.code == "unpack_failed"));
+    assert_eq!(report.summary["engine.input-listing"]["complete"], true);
+    assert!(report.findings.iter().any(|f| f.rule == "windows.input-reference"));
+}
+
 fn paths(report: &Report) -> Vec<&str> {
     report.artifacts.iter().map(|a| a.path.as_str()).collect()
 }
@@ -99,6 +1252,78 @@ fn single_file_has_known_digests() {
     let rules: Vec<&str> = report.findings.iter().map(|f| f.rule.as_str()).collect();
     assert_eq!(rules, ["overview.kind-file", "overview.attention-none", "structure.totals"]);
     assert!(!report.coverage.truncated);
+}
+
+#[test]
+fn shortcut_credentials_do_not_leak_through_generic_content_facts() {
+    let bytes = b"[InternetShortcut]\nURL=https://user:fixture-password@example.invalid/?token=fixture-token&ok=1\n";
+    let (_dir, path) = write_input("private.url", bytes);
+    let report = run(&path, &Options::default());
+    let serialized = serde_json::to_string(&report).expect("complete report JSON");
+    for secret in ["fixture-password", "fixture-token"] {
+        assert!(!serialized.contains(secret), "credential leaked into report");
+    }
+    assert!(serialized.contains("example.invalid"));
+    assert!(report.artifacts[0].facts.contains_key("windows.internet-shortcut"));
+    assert!(report.artifacts[0].facts.contains_key("content.urls"));
+    assert_eq!(std::fs::read(&path).expect("input remains readable"), bytes);
+    assert_eq!(serialized, serde_json::to_string(&run(&path, &Options::default())).expect("second report"));
+}
+
+#[test]
+fn registry_reports_preserve_declarations_and_redact_named_credentials() {
+    let bytes = b"Windows Registry Editor Version 5.00\n[HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run]\n\"Fixture\"=\"%SystemRoot%\\\\fixture.exe\"\n\"Password\"=\"fixture secret with spaces\"\n\"Old\"=-\n";
+    let (_dir, path) = write_input("fixture.reg", bytes);
+    let report = run(&path, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-registry-export"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.registry-autostart"));
+    let json = serde_json::to_string(&report).expect("registry report");
+    assert!(!json.contains("fixture secret"));
+    assert!(json.contains("%SystemRoot%"));
+    assert!(json.contains("delete_value"));
+    for code in report.findings.iter().map(|f| &f.rule).chain(report.limitations.iter().map(|l| &l.code)) {
+        let rule = report.rules.get(code).expect("rule included in report");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(json, serde_json::to_string(&run(&path, &Options::default())).expect("repeat report"));
+    assert_eq!(std::fs::read(&path).expect("input bytes"), bytes);
+}
+
+#[test]
+fn task_xml_reports_are_deterministic_redacted_and_never_add_referenced_files() {
+    let bytes = br#"<Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Principals><Principal id="fixture"><UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel></Principal></Principals><Triggers><LogonTrigger><Enabled>false</Enabled></LogonTrigger></Triggers><Actions Context="fixture"><Exec><Command>\\server\share\outside.exe</Command><Arguments>--password 'fixture secret with spaces' https://user:fixture-password@example.invalid/?token=fixture-token</Arguments></Exec></Actions></Task>"#;
+    let (_dir, path) = write_input("fixture.xml", bytes);
+    let report = run(&path, &Options::default());
+    assert_eq!(report.artifacts.len(), 1, "references do not become new inputs");
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-scheduled-task"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.task-highest-available"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.task-startup-trigger"));
+    let serialized = serde_json::to_string(&report).expect("task report");
+    for secret in ["fixture secret", "fixture-password", "fixture-token"] {
+        assert!(!serialized.contains(secret));
+    }
+    for id in report.findings.iter().map(|f| &f.rule).chain(report.limitations.iter().map(|l| &l.code)) {
+        let rule = report.rules.get(id).expect("translated rule in report");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(serialized, serde_json::to_string(&run(&path, &Options::default())).expect("second report"));
+    assert_eq!(std::fs::read(&path).expect("original input bytes"), bytes);
+}
+
+#[test]
+fn shell_link_reports_are_deterministic_and_have_translated_rules() {
+    let bytes = include_bytes!("../../aa-windows/tests/data/native.lnk");
+    let (_dir, path) = write_input("native.lnk", bytes);
+    let report = run(&path, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-shell-link"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.shell-link" && !f.evidence.is_empty()));
+    assert!(report.limitations.iter().any(|l| l.code == "windows.shortcut-target-unresolved"));
+    for code in report.findings.iter().map(|f| f.rule.as_str()).chain(report.limitations.iter().map(|l| l.code.as_str())) {
+        let rule = report.rules.get(code).expect("report includes rule wording");
+        assert!(!rule.text_en.is_empty() && !rule.text_zh.is_empty());
+    }
+    assert_eq!(serde_json::to_vec(&report).expect("report"), serde_json::to_vec(&run(&path, &Options::default())).expect("second report"));
+    assert_eq!(std::fs::read(&path).expect("unchanged input"), bytes);
 }
 
 #[test]
@@ -249,6 +1474,66 @@ fn duplicate_entry_names_are_both_kept() {
     assert_eq!(report.artifacts[2].size, 5);
     assert_eq!(report.artifacts[3].size, 6);
     assert!(!report.summary.contains_key("structure.duplicates"), "same name, different content");
+    assert!(codes(&report).contains(&"engine.entry-name-collision"));
+    assert_eq!(report.coverage.content_lost, 0, "ambiguity does not mean either byte stream was lost");
+}
+
+#[test]
+fn supervisors_refuse_scratch_storage_inside_the_input_before_creating_it() {
+    let dir = tempfile::tempdir().expect("private fixture root");
+    let input = dir.path().join("input");
+    std::fs::create_dir(&input).expect("input directory");
+    let scratch = input.join("new").join("scratch");
+    assert!(aa_engine::validate_scratch_root(&input, &scratch).is_err());
+    assert!(!input.join("new").exists(), "validation must not write inside the input");
+    let missing = dir.path().join("missing");
+    assert!(aa_engine::validate_scratch_root(&missing, &missing.join("scratch")).is_err());
+    assert!(aa_engine::validate_scratch_root(&input, &dir.path().join("missing").join("..").join("input").join("scratch")).is_err());
+    assert!(aa_engine::validate_scratch_root(&input, &dir.path().join("external")).is_ok());
+    let file = input.join("file.txt");
+    std::fs::write(&file, "ordinary bytes").expect("input file");
+    assert!(aa_engine::validate_scratch_root(&file, &input.join("scratch")).is_ok());
+}
+
+#[test]
+fn windows_archive_names_are_logical_even_when_spilled_to_disk() {
+    let names = ["CON", "case.txt", "CASE.txt", "name.", "name:stream", "C:\\absolute", "same", "same"];
+    let mut writer = tar::Builder::new(flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default()));
+    for (index, name) in names.iter().enumerate() {
+        let content = vec![b'A' + index as u8; 300 * 1024];
+        let mut header = tar::Header::new_gnu();
+        header.set_path("placeholder").expect("ordinary header name");
+        // Construct names directly in the format, without asking the host to interpret them.
+        header.as_mut_bytes()[..100].fill(0);
+        header.as_mut_bytes()[..name.len()].copy_from_slice(name.as_bytes());
+        header.set_size(content.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        writer.append(&header, content.as_slice()).expect("archive entry");
+    }
+    let compressed = writer.into_inner().expect("tar finish").finish().expect("gzip finish");
+    let (dir, path) = write_input("names.tar.gz", &compressed);
+    let scratch = dir.path().join("scratch");
+    std::fs::create_dir(&scratch).expect("scratch root");
+    let options = Options { temp_root: Some(scratch.clone()), ..Options::default() };
+    let session = analyze_session(&Registry::standard(), &path, &options, &mut NoProgress).expect("archive session");
+    let expected = ["CON", "case.txt", "CASE.txt", "name.", "name:stream", "C:/absolute", "same", "same (2)"];
+    for (index, name) in expected.iter().enumerate() {
+        let logical = format!("names.tar.gz/names.tar/{name}");
+        assert_eq!(session.read(&logical, 100, 3).expect("logical bytes"), [b'A' + index as u8; 3]);
+    }
+    let report = session.report();
+    assert_eq!(report.coverage.content_lost, 0);
+    assert_eq!(report.limitations.iter().filter(|l| l.code == "engine.entry-name-collision").count(), 2);
+    let repeat = analyze(&path, &options, &mut NoProgress).expect("repeat analysis");
+    assert_eq!(aa_core::canonical_json(report), aa_core::canonical_json(&repeat));
+    for folder in std::fs::read_dir(&scratch).expect("scratch listing") {
+        for file in std::fs::read_dir(folder.expect("scratch entry").path()).expect("spill listing") {
+            let name = file.expect("spill file").file_name();
+            let name = name.to_str().expect("internal ASCII names");
+            assert!(name == ".lock" || name.bytes().all(|b| b.is_ascii_digit()), "{name}");
+        }
+    }
 }
 
 #[test]

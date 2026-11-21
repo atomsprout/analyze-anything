@@ -13,6 +13,12 @@ brew install atomsprout/tap/analyze-anything                  # command line, in
 
 Neither depends on the other; you can install just one.
 
+For driver-package inputs, the home page offers **Driver source mapping (optional)**.
+Add logical INF/distribution-root pairs before selecting or dropping the input; the
+same limits and interpretation as `--windows-source-root` apply (see [USAGE.md](USAGE.md)).
+The default is no assignments. Returning home clears the draft; language changes keep
+it, and analyzing a kept report again uses that report's validated assignments.
+
 ## Structure
 
 | Location | Contents |
@@ -47,6 +53,14 @@ The workspace's default members do not include the desktop app, so `cargo build`
 
 ## Test layers
 
+The logical-root control passed the 14 page unit tests, TypeScript/Vite build and
+28 WebKit/Chromium browser tests on the Windows x64 development host. These include
+invalid-path refusal, canonical assignments, clearing new-input settings, preserving
+drafts across language changes and retaining mappings when reanalyzing history.
+The browser backend is a stand-in; a separate `aa-app` test compares the configured
+worker's complete report with a direct engine run on a constructed INF/payload folder.
+This does not qualify the control in a native Windows window.
+
 | Layer | Where |
 |---|---|
 | Analysis session, reading bytes, progress events, cleanup of leftover temporary directories | `crates/aa-engine/tests/analyze.rs` |
@@ -56,6 +70,23 @@ The workspace's default members do not include the desktop app, so `cargo build`
 | Page logic (text, hex view conversions, progress) | `apps/desktop/tests/format.test.ts` |
 | The page working with a real report page (sandboxed frame, clicking evidence sends a message, language sync, export, history, diff) | `apps/desktop/tests/browser/app.spec.ts` |
 | The whole flow in a real window, and exports being byte-for-byte identical to the command line | `tools/desktop-check/check.py` |
+
+On 2026-11-20 the Windows x64 development host passed `npm ci`, the 10 page unit tests,
+`npm run build`, sample generation with `npm run fixture`, and all 22 WebKit/Chromium
+browser tests. Fixture generation now uses Node's file-copy API instead of a POSIX `cp`
+command and explicitly disables optional AI interpretation. These browser tests use the
+stand-in backend. They do not establish native Windows WebView2 behavior, real-window
+CLI parity, menus, dialogs, Explorer drop/open integration, packaging or signed delivery;
+those remain W10/D6 acceptance work.
+
+A later Windows x64 check passed the production page build, 14 unit tests and all
+28 WebKit/Chromium browser tests, including retained driver source mappings. The
+MSIX content commit's CI run 44868624432 passed the three core platform jobs and
+licence check but timed out in one Chromium history test. That test counted evidence
+disclosures before its report frame had loaded. The shared evidence interaction now
+waits for a disclosure before counting; the history test also holds the report response
+until the host is visible to exercise the separate loading stages. This is browser-test
+synchronization, and does not establish any additional native Windows behavior.
 
 ### Self-check mode
 

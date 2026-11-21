@@ -53,11 +53,32 @@ impl ProgressSink for Forward {
 /// Returns when the conversation is over. An analysis still running at that point is told to
 /// stop and is waited for, so nothing of it outlives this call.
 pub fn serve(input: impl BufRead, output: impl Write + Send + 'static) {
+    serve_with_registry(input, output, Registry::standard());
+}
+
+/// Serves one analysis using a caller-configured registry, including optional rule/deep readers.
+pub fn serve_with_registry(input: impl BufRead, output: impl Write + Send + 'static, registry: Registry) {
+    serve_inner(input, output, registry, None);
+}
+
+/// Process entry point: loss of the parent pipe must not leave a hung analysis alive.
+pub fn serve_process(input: impl BufRead, output: impl Write + Send + 'static) {
+    serve_process_with_registry(input, output, Registry::standard());
+}
+
+/// Process entry point with caller-configured analyzers. May terminate this process on shutdown.
+pub fn serve_process_with_registry(input: impl BufRead, output: impl Write + Send + 'static, registry: Registry) {
+    serve_inner(input, output, registry, Some(Duration::from_secs(5)));
+}
+
+fn serve_inner(input: impl BufRead, output: impl Write + Send + 'static, registry: Registry, shutdown_grace: Option<Duration>) {
     let out: Out = Arc::new(Mutex::new(Box::new(output)));
     let cancel = Arc::new(AtomicBool::new(false));
     let session: Arc<Mutex<Option<Session>>> = Arc::new(Mutex::new(None));
     let mut running: Option<std::thread::JoinHandle<()>> = None;
     let mut started = false;
+    let mut registry = Some(registry);
+    let mut _ownership = None;
 
     for line in lines(input) {
         let request = match line.and_then(|line| serde_json::from_str::<Request>(&line).map_err(|e| e.to_string())) {
@@ -71,13 +92,26 @@ pub fn serve(input: impl BufRead, output: impl Write + Send + 'static) {
             Request::Analyze { .. } if started => {
                 send(&out, &Response::Error { id: None, message: "this worker already has its analysis".into() });
             }
-            Request::Analyze { path, scratch, limits } => {
+            Request::Analyze { path, scratch, limits, windows_source_roots } => {
+                if shutdown_grace.is_some() {
+                    match crate::scratch::hold(&scratch) {
+                        Ok(marker) => _ownership = Some(marker),
+                        Err(error) => {
+                            send(&out, &Response::Error { id: None, message: format!("cannot hold worker scratch ownership: {error}") });
+                            continue;
+                        }
+                    }
+                }
+                let Some(registry) = registry.take() else {
+                    send(&out, &Response::Error { id: None, message: "the worker registry was already used".into() });
+                    continue;
+                };
                 started = true;
                 let (out, cancel, session) = (out.clone(), cancel.clone(), session.clone());
                 running = Some(std::thread::spawn(move || {
-                    let options = Options { limits: limits.apply(), cancel: Some(cancel), temp_root: Some(scratch) };
+                    let options = Options { limits: limits.apply(), cancel: Some(cancel), temp_root: Some(scratch), windows_source_roots };
                     let mut progress = Forward { out: out.clone(), last: None };
-                    match aa_engine::analyze_session(&Registry::standard(), &path, &options, &mut progress) {
+                    match aa_engine::analyze_session(&registry, &path, &options, &mut progress) {
                         Ok(done) => {
                             let report = Box::new(done.report().clone());
                             *lock(&session) = Some(done);
@@ -109,6 +143,16 @@ pub fn serve(input: impl BufRead, output: impl Write + Send + 'static) {
     // which removes what it unpacked.
     cancel.store(true, Ordering::Relaxed);
     if let Some(handle) = running {
+        if let Some(grace) = shutdown_grace {
+            let deadline = Instant::now() + grace;
+            while !handle.is_finished() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            if !handle.is_finished() {
+                // Only process entry points opt in: a library server must never exit its host.
+                std::process::exit(1);
+            }
+        }
         let _ = handle.join();
     }
     lock(&session).take();

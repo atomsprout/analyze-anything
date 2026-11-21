@@ -19,7 +19,7 @@ fn compile(pattern: &str) -> Regex {
 }
 
 pub struct Found {
-    /// Distinct URLs, sorted.
+    /// Distinct URL representations after credential redaction, sorted.
     pub urls: Vec<String>,
     pub truncated: bool,
 }
@@ -34,11 +34,17 @@ pub fn find(bytes: &[u8]) -> Found {
         if host(&url).is_none() {
             continue;
         }
-        if urls.len() >= PER_FILE && !urls.contains(&url) {
+        // URL userinfo and query credentials must not be copied into the structured report.
+        // Host validation happens first; a redaction initialization failure suppresses the URL.
+        if let Ok(display) = aa_core::text::redact_sensitive_text(&url) {
+            if urls.len() >= PER_FILE && !urls.contains(&display) {
+                truncated = true;
+                break;
+            }
+            urls.insert(display);
+        } else {
             truncated = true;
-            break;
         }
-        urls.insert(url);
     }
     Found { urls: urls.into_iter().collect(), truncated }
 }
@@ -114,5 +120,19 @@ mod tests {
         let found = find(text.as_bytes());
         assert_eq!(found.urls.len(), PER_FILE);
         assert!(found.truncated);
+    }
+
+    #[test]
+    fn credentials_are_removed_before_deduplication_and_the_output_limit() {
+        let mut text: String = (0..PER_FILE - 1).map(|i| format!("https://h{i}.example.com/ ")).collect();
+        text.push_str("https://user:fixture-password@example.com/?token=fixture-token ");
+        text.push_str("https://other:another-password@example.com/?token=another-token ");
+        let found = find(text.as_bytes());
+        assert_eq!(found.urls.len(), PER_FILE);
+        assert!(!found.truncated);
+        assert!(found.urls.iter().any(|url| url == "https://[redacted]@example.com/?token=[redacted]"));
+        let wide: Vec<u8> =
+            "https://user:fixture-password@example.com/?token=fixture-token".encode_utf16().flat_map(u16::to_le_bytes).collect();
+        assert_eq!(find(&wide).urls, ["https://[redacted]@example.com/?token=[redacted]"]);
     }
 }

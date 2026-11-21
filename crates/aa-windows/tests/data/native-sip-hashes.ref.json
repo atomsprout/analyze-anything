@@ -1,0 +1,178 @@
+{
+  "reference": "CryptCATAdminCalcHashFromFileHandle2",
+  "cases": [
+    {
+      "case": "plain",
+      "base": "hello.exe",
+      "operation": "copy",
+      "size": 18432,
+      "input_sha256": "afa842ca77436006bf1376f7f2ba7dadb6f13a317c9f061d10c646eb3db03a38",
+      "sha1": "4041aebf1556781887299754c8cc0f101b3c74e0",
+      "sha256": "e207e59287f06b56469189b112205feb9e4d179145e23144da77bd4bb948d37f"
+    },
+    {
+      "case": "signed",
+      "base": "hello-signed.exe",
+      "operation": "copy",
+      "size": 24488,
+      "input_sha256": "874dd045e7a59b0d07e3bd1a0c9a2513135a0258c4986ad4d2b9842220110844",
+      "sha1": "4041aebf1556781887299754c8cc0f101b3c74e0",
+      "sha256": "e207e59287f06b56469189b112205feb9e4d179145e23144da77bd4bb948d37f"
+    },
+    {
+      "case": "append-1",
+      "base": "hello.exe",
+      "operation": "append:1",
+      "size": 18433,
+      "input_sha256": "f4895a14b96ac6f8d538ef6ddb7a313445a3cc5a28b3fbe16149ac40fcf912f7",
+      "sha1": "faa2dbf1c0b978d8a866bf27afd9476801011ced",
+      "sha256": "e2aee03b8e07e94f43d8fbac1cd8047ad556945416236181b42e4fc9b53b6ba5"
+    },
+    {
+      "case": "append-2",
+      "base": "hello.exe",
+      "operation": "append:2",
+      "size": 18434,
+      "input_sha256": "dfb7f28ad50bca6028833007a8c13e2f5b3a5e3ae0d925759c9851f48cc7cb50",
+      "sha1": "51e0c187f23834eb8ed61fd9c77bf1a6f52914f7",
+      "sha256": "d1e11aa4505c482357a2cb5e758a0c8ca590714e7b569345f4a75592e90e3552"
+    },
+    {
+      "case": "append-7",
+      "base": "hello.exe",
+      "operation": "append:7",
+      "size": 18439,
+      "input_sha256": "910082a983e15c4a338610888baedc18f9345651695900df93f3803a87b8cd18",
+      "sha1": "7577e63f3207464695097909b364326b7625599b",
+      "sha256": "d4d23f41c16e24fc17a06d0b69ddfd9be9ca70adcbb36c0da72ed8ea5c9a4231"
+    },
+    {
+      "case": "append-8",
+      "base": "hello.exe",
+      "operation": "append:8",
+      "size": 18440,
+      "input_sha256": "7f013ec066794d5fcc6f74f6b53f27888eb532749117607a54bbf77296a5acfa",
+      "sha1": "6dc84b6d57508e80d0a640c1bf040960c1c607d7",
+      "sha256": "e9374587029fcc45f3968cd3096619a1f76d3bd330b2b32a2126405a183b4cf3"
+    },
+    {
+      "case": "append-9",
+      "base": "hello.exe",
+      "operation": "append:9",
+      "size": 18441,
+      "input_sha256": "afda13fbf486e33472153d3d939c90999255f33772f492766c440c1e38bc21a9",
+      "sha1": "c94882eabc8fa301c032b039ff7c2cdda56ca84f",
+      "sha256": "0680b5d299f40845b016e17c70c26626de1763c64115d5f32c4f9236eb1f51fb"
+    },
+    {
+      "case": "signed-append-1",
+      "base": "hello-signed.exe",
+      "operation": "append:1",
+      "size": 24489,
+      "input_sha256": "9cb8cd82cd835e6c3bd23f78eea0adb5ca120b8f5eeaa1215bf94973f40c02cc",
+      "sha1": {
+        "native_error": 2147942593
+      },
+      "sha256": {
+        "native_error": 2147942593
+      }
+    },
+    {
+      "case": "signed-append-8",
+      "base": "hello-signed.exe",
+      "operation": "append:8",
+      "size": 24496,
+      "input_sha256": "b459d54d3bc7e64cc26e6aa0571d9d1bfeb7aa8df984b67f4d08ade2a967ffb1",
+      "sha1": {
+        "native_error": 2147942593
+      },
+      "sha256": {
+        "native_error": 2147942593
+      }
+    },
+    {
+      "case": "section-gap",
+      "base": "hello.exe",
+      "operation": "section-gap:512",
+      "size": 18944,
+      "input_sha256": "ea6e8b761021d23c1e3fefed8866097b8ac97ed6bc6d2cbb39188b27882993ed",
+      "sha1": "cb6365f8f4f2e676edc398daa108c892569965be",
+      "sha256": "303329d069b41983efa8a5beedff925600084ccf6fac6cc9fe7c5aa3d3b79ea1"
+    },
+    {
+      "case": "section-overlap",
+      "base": "hello.exe",
+      "operation": "u32:452:1024",
+      "size": 18432,
+      "input_sha256": "d7fa18c8f1d3f39ea20fa7dc8fe21f864d8730be4af95392661a52b037fb1123",
+      "sha1": "389d7b6ada2bff807bd69d9d1f75195b6705c733",
+      "sha256": "dd54676536026e97a72eb1473107fd55f824363bd64a741f64572206e8f10091"
+    },
+    {
+      "case": "section-outside",
+      "base": "hello.exe",
+      "operation": "u32:412:18944",
+      "size": 18432,
+      "input_sha256": "df0ef87ca88282ef94b65f6514ab92c086c413e38a07a372fa69d7bc1cdbc22b",
+      "sha1": {
+        "native_error": 2147942593
+      },
+      "sha256": {
+        "native_error": 2147942593
+      }
+    },
+    {
+      "case": "header-outside",
+      "base": "hello.exe",
+      "operation": "u32:212:18944",
+      "size": 18432,
+      "input_sha256": "4e03d01d9f6efba4718130544052cb78c576ebb4638897c989a629c93a02468a",
+      "sha1": {
+        "native_error": 2147942593
+      },
+      "sha256": {
+        "native_error": 2147942593
+      }
+    },
+    {
+      "case": "no-directories",
+      "base": "hello.exe",
+      "operation": "u32:260:0",
+      "size": 18432,
+      "input_sha256": "6647c67ad19bbc02238c2deba1c2d9596931e6710d6eaa57a1034aa4edab9c6d",
+      "sha1": "71cc036581c8de2dc7c2e70ed65ebf5eb7d78c37",
+      "sha256": "d4e3e505257ce4e118661acb9d1f04829c506cbfc69bd3a61771990c78b8852c"
+    },
+    {
+      "case": "zero-cert-offset",
+      "base": "hello.exe",
+      "operation": "u32:300:16",
+      "size": 18432,
+      "input_sha256": "7f00800e70b7dc047d2ff4173e1cba80392414b1bc192682931757089712c145",
+      "sha1": "4041aebf1556781887299754c8cc0f101b3c74e0",
+      "sha256": "e207e59287f06b56469189b112205feb9e4d179145e23144da77bd4bb948d37f"
+    },
+    {
+      "case": "truncated",
+      "base": "hello.exe",
+      "operation": "truncate:1024",
+      "size": 1024,
+      "input_sha256": "e595ce4fea0553ab35457a004e085454c386e10012c330096b59cee7e817409b",
+      "sha1": {
+        "native_error": 2147942593
+      },
+      "sha256": {
+        "native_error": 2147942593
+      }
+    },
+    {
+      "case": "pe32",
+      "base": "dotnet.exe",
+      "operation": "copy",
+      "size": 4096,
+      "input_sha256": "792f4770fd1461953fe3d204ddd996729ff130a5e94ae801293805263eb53ece",
+      "sha1": "b644bbde274ae98a3a1d75768ca03e310f6fe5e5",
+      "sha256": "eec7993e4621a1efae3dcee08fa1db2516562421dbc4957a380ec2de3d877dd5"
+    }
+  ]
+}

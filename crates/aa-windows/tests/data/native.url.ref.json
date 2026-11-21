@@ -1,0 +1,4 @@
+{
+  "producer": "Windows WScript.Shell",
+  "target": "https://example.invalid/windows-shortcut-reference"
+}

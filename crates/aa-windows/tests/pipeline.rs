@@ -8,10 +8,643 @@ use std::io::Read;
 use aa_core::plugin::{Bytes, Output, SinkError, Tree, Unpack, UnpackSink};
 use aa_core::{Artifact, Digests, Finding, fill, sha256_hex};
 use serde_json::Value;
+use sha1::{Digest, Sha1};
 
 fn data(name: &str) -> Vec<u8> {
     let path = format!("{}/tests/data/{name}", env!("CARGO_MANIFEST_DIR"));
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+fn membership_entry<'a>(fact: &'a Value, profile: &str) -> &'a Value {
+    fact["entries"].as_array().expect("membership comparisons").iter().find(|e| e["sip_hash_profile"] == profile).expect("supported member")
+}
+
+#[test]
+fn msix_bundle_declarations_match_read_only_native_manifest_references() {
+    for package in ["native-msix-bundle.appxbundle", "upstream-BundleWithIntlPackage.appxbundle", "upstream-SignedUntrustedCert.appxbundle"]
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data(package))).expect("licensed bundle");
+        let mut bytes = Vec::new();
+        archive.by_name("AppxMetadata/AppxBundleManifest.xml").expect("bundle manifest").read_to_end(&mut bytes).expect("manifest bytes");
+        let run = analyze(&[("AppxBundleManifest.xml", bytes)]);
+        let model = run.fact("AppxBundleManifest.xml", "windows.msix-bundle");
+        let native: Value = serde_json::from_slice(&data(&format!("{package}.bundle.ref.json"))).expect("native reference");
+        assert_eq!(model["source_sha256"], native["source_sha256"]);
+        for key in ["name", "publisher", "version"] {
+            assert_eq!(model["identity"][key], native["identity"][key]);
+        }
+        let rows = model["packages"].as_array().expect("declarations");
+        let expected = native["packages"].as_array().expect("native declarations");
+        assert_eq!(rows.len(), expected.len());
+        for (row, expected) in rows.iter().zip(expected) {
+            assert_eq!(row["projection_established"], true);
+            for key in ["type", "file_name", "offset", "size"] {
+                assert_eq!(row[key], expected[key]);
+            }
+            for key in ["version", "architecture", "resource_id"] {
+                assert_eq!(row[key], expected["identity"][key]);
+            }
+            let resources = row["resources"].as_array().expect("resource declarations");
+            let native_resources = expected["resources"].as_array().expect("native resources");
+            assert_eq!(resources.len(), native_resources.len());
+            for (resource, expected) in resources.iter().zip(native_resources) {
+                assert_eq!(
+                    resource["language"].as_str().map(str::to_ascii_lowercase),
+                    expected["language"].as_str().map(str::to_ascii_lowercase)
+                );
+                assert!(resource["scale"].is_null() && expected["scale"].is_null());
+                assert!(resource["dx_feature_level"].is_null() && expected["dx_feature_level"].is_null());
+            }
+        }
+    }
+}
+
+#[test]
+fn msix_manifest_identity_and_dependency_projections_match_native_readers() {
+    for package in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"]
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data(package))).expect("licensed package");
+        let mut bytes = Vec::new();
+        archive.by_name("AppxManifest.xml").expect("manifest").read_to_end(&mut bytes).expect("XML bytes");
+        let run = analyze(&[("AppxManifest.xml", bytes.clone())]);
+        let fact = run.fact("AppxManifest.xml", "windows.msix");
+        let native: Value = serde_json::from_slice(&data(&format!("{package}.manifest.ref.json"))).expect("native manifest reference");
+        assert_eq!(fact["source_sha256"], native["source_sha256"]);
+        assert_eq!(fact["identity_status"], "unique");
+        assert_eq!(fact["identity_projection_established"], true);
+        for key in ["name", "publisher", "version", "architecture"] {
+            assert_eq!(fact["identity"][key], native["identity"][key]);
+        }
+        assert_eq!(
+            fact["identity"]["resource_id"].as_str().unwrap_or(""),
+            native["identity"]["resource_id"].as_str().expect("native resource id")
+        );
+        for (kind, keys) in [
+            ("dependencies", &["Name", "Publisher", "MinVersion"][..]),
+            ("target_device_families", &["Name", "MinVersion", "MaxVersionTested"][..]),
+        ] {
+            let projected = fact[kind].as_array().expect("projected dependencies");
+            let expected = native[kind].as_array().expect("native dependencies");
+            assert_eq!(projected.len(), expected.len());
+            for (row, native) in projected.iter().zip(expected) {
+                assert_eq!(row["projection_supported"], true);
+                for key in keys {
+                    assert_eq!(row["attributes"][key], native[key]);
+                }
+            }
+        }
+        assert_eq!(fact["schema_validated"], false);
+        assert_eq!(fact["references_resolved"], false);
+        assert_eq!(fact["package_signature_checked"], false);
+        assert!(!run.findings("windows.msix-identity").is_empty());
+        assert!(!run.findings("windows.msix-dependencies").is_empty());
+        assert_eq!(fact, analyze(&[("AppxManifest.xml", bytes)]).fact("AppxManifest.xml", "windows.msix"));
+    }
+}
+
+#[test]
+fn msix_content_declarations_and_checks_match_native_appxpackaging_references() {
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD;
+    for package in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"]
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data(package))).expect("fixture ZIP");
+        let mut files = Vec::new();
+        for position in 0..archive.len() {
+            let mut file = archive.by_index(position).expect("fixture entry");
+            if file.is_dir() {
+                continue;
+            }
+            let name = file.name().expect("valid fixture entry name").into_owned();
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).expect("fixture content");
+            files.push((name, bytes));
+        }
+        let input: Vec<_> = files.iter().map(|(n, b)| (n.as_str(), b.clone())).collect();
+        let run = analyze(&input);
+        let declaration = run.fact("AppxBlockMap.xml", "windows.msix-blockmap");
+        let check = run.fact("AppxBlockMap.xml", "windows.msix-blockmap-checks");
+        let reference: Value = serde_json::from_slice(&data(&format!("{package}.ref.json"))).expect("native block-map reference");
+        assert_eq!(declaration["source_sha256"], reference["sha256"]);
+        assert_eq!(declaration["hash_method"], reference["hash_method_declared"]);
+        let native = reference["files"].as_array().expect("native files");
+        assert_eq!(declaration["files"].as_array().expect("file declarations").len(), native.len());
+        assert_eq!(check["files_with_matching_hashes"], native.len());
+        assert_eq!(check["files_with_mismatches"], 0);
+        assert_eq!(check["files_unresolved"], 0);
+        assert_eq!(check["package_signature_checked"], false);
+        for row in declaration["files"].as_array().expect("declarations") {
+            let expected = native.iter().find(|r| r["name"] == row["name"]).expect("same native file");
+            assert_eq!(row["size"], expected["size"]);
+            assert_eq!(row["local_file_header_size"], expected["local_file_header_size"]);
+            assert_eq!(expected["native_block_size"], 65536);
+            assert_eq!(expected["content_matches"], true);
+            let blocks = row["blocks"].as_array().expect("block declarations");
+            assert_eq!(blocks.len(), expected["blocks"].as_array().expect("native blocks").len());
+            for (block, native) in blocks.iter().zip(expected["blocks"].as_array().expect("native blocks")) {
+                assert_eq!(block["digest"], native["digest"]);
+                if !block["compressed_size"].is_null() {
+                    assert_eq!(block["compressed_size"], native["native_compressed_size"]);
+                }
+            }
+            if let Some(value) = expected["file_hash_base64_declared"].as_str() {
+                assert_eq!(row["file_digest"], hex::encode(STANDARD.decode(value).expect("native declared file hash")));
+            } else {
+                assert_eq!(row["file_digest"], Value::Null);
+            }
+        }
+        let finding = run.findings("windows.msix-block-hashes");
+        assert_eq!(finding.len(), 1);
+        assert!(!finding[0].evidence.is_empty());
+        assert!(run.findings("windows.msix-content-hash-mismatch").is_empty());
+        assert_eq!(check, analyze(&input).fact("AppxBlockMap.xml", "windows.msix-blockmap-checks"));
+    }
+}
+
+#[test]
+fn catalog_digest_agreement_is_separate_from_signature_binding_and_embedded_signatures() {
+    for payload in ["hello.exe", "hello-signed.exe"] {
+        for catalog in
+            ["native-catalog-v2.cat", "native-catalog-v2-unsigned.cat", "native-catalog-named-v1.cat", "native-catalog-named-v2.cat"]
+        {
+            let run = analyze(&[
+                (catalog, data(catalog)),
+                (payload, data(payload)),
+                ("payload.txt", b"Analyze Anything catalog fixture.\r\n".to_vec()),
+            ]);
+            let fact = run.fact(catalog, "windows.catalog-membership");
+            assert_eq!(membership_entry(fact, "pe-default")["status"], "digest-agreement");
+            assert_eq!(membership_entry(fact, "flat-file")["status"], "digest-agreement");
+            assert_eq!(membership_entry(fact, "pe-default")["matches"][0]["path"], payload);
+            assert_eq!(membership_entry(fact, "pe-default")["matches"][0]["sha256"], sha256_hex(&data(payload)));
+            assert_eq!(
+                fact["signed_content_binding_signers"].as_array().expect("binding indices").len(),
+                usize::from(!catalog.contains("unsigned"))
+            );
+            assert_eq!(fact["windows_trust_checked"], false);
+            if payload == "hello-signed.exe" {
+                assert_eq!(run.fact(payload, "windows.authenticode")["signatures"][0]["checks"]["signature"], "passed");
+            }
+            let findings = run.findings("windows.catalog-digest-agreement");
+            assert_eq!(findings.len(), 1);
+            assert!(!findings[0].evidence.is_empty());
+        }
+    }
+}
+
+#[test]
+fn unmatched_catalog_digest_does_not_claim_missing_instead_of_modified() {
+    for payload in [None, Some(data("hello.exe"))] {
+        let mut files = vec![("native-catalog-v2.cat", data("native-catalog-v2.cat"))];
+        if let Some(mut changed) = payload {
+            changed[100] ^= 1;
+            files.push(("hello.exe", changed));
+        }
+        let run = analyze(&files);
+        let entry = membership_entry(run.fact("native-catalog-v2.cat", "windows.catalog-membership"), "pe-default");
+        assert_eq!(entry["status"], "no-matching-checked-artifact");
+        assert_eq!(entry["search_complete"], true);
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.catalog-membership-unresolved"));
+        assert!(run.findings("windows.catalog-integrity-failed").is_empty());
+    }
+}
+
+#[test]
+fn pe_membership_never_substitutes_an_ordinary_file_hash() {
+    let reference: Value = serde_json::from_slice(&data("native-catalog-v2.cat.ref.json")).expect("catalog oracle");
+    let declared = reference["members"]
+        .as_array()
+        .expect("native members")
+        .iter()
+        .find(|m| m["data_oid"] == "1.3.6.1.4.1.311.2.1.15")
+        .expect("PE member")["digest"]
+        .as_str()
+        .expect("digest");
+    let old = hex::decode(declared).expect("old digest");
+    let ordinary = hex::decode(sha256_hex(&data("hello.exe"))).expect("ordinary digest");
+    let mut catalog = data("native-catalog-v2-unsigned.cat");
+    let positions: Vec<_> = catalog.windows(old.len()).enumerate().filter_map(|(at, b)| (b == old).then_some(at)).collect();
+    assert_eq!(positions.len(), 2, "identifier and indirect digest");
+    for at in positions {
+        catalog[at..at + old.len()].copy_from_slice(&ordinary);
+    }
+    let run = analyze(&[("changed.cat", catalog), ("hello.exe", data("hello.exe"))]);
+    let entry = membership_entry(run.fact("changed.cat", "windows.catalog-membership"), "pe-default");
+    assert_eq!(entry["status"], "no-matching-checked-artifact");
+    assert!(run.findings("windows.catalog-digest-agreement").is_empty());
+}
+
+#[test]
+fn inf_catalog_declarations_use_only_the_supplied_relative_namespace_and_keep_literal_evidence() {
+    let inf = b"[Version]\nSignature=\"$Windows NT$\"\nCatalogFile.NTamd64=%Catalog%\nCatalogFile.NTarm64=missing.cat\nCatalogFile.NTx86=../native.cat\n[Strings]\nCatalog=native.cat\n".to_vec();
+    let run = analyze(&[
+        ("sub/driver.inf", inf),
+        ("sub/native.cat", data("native-catalog-v2.cat")),
+        ("native.cat", data("native-catalog-v2.cat")),
+    ]);
+    let fact = run.fact("sub/driver.inf", "windows.input-references");
+    let references = fact["references"].as_array().expect("INF catalog references");
+    assert_eq!(references.len(), 3);
+    assert_eq!(references[0]["target"], "sub/native.cat");
+    assert_eq!(references[0]["basis"], "inf-directory");
+    assert_eq!(references[0]["source_literal"], "%Catalog%");
+    assert_eq!(references[1]["status"], "unresolved");
+    assert_eq!(references[2]["reason"], "inf-catalog-declaration-is-not-a-sibling-name");
+    assert!(run.findings("windows.input-reference").iter().flat_map(|f| &f.evidence).any(|e| e.value.to_string().contains("%Catalog%")));
+}
+
+#[test]
+fn catalog_entry_declarations_and_signatures_match_native_references() {
+    for version in [1, 2] {
+        let name = format!("native-catalog-v{version}.cat");
+        let reference: Value = serde_json::from_slice(&data(&format!("{name}.ref.json"))).expect("native catalog reference");
+        assert_eq!(sha256_hex(&data(&name)), reference["sha256"]);
+        let run = analyze(&[(&name, data(&name))]);
+        let fact = run.fact(&name, "windows.catalog");
+        let entries = fact["entries"].as_array().expect("CTL entries");
+        let native = reference["members"].as_array().expect("native records");
+        assert_eq!(entries.len(), native.len());
+        let mut declared_digests = 0;
+        for entry in entries {
+            let tag = entry["reference_tag"].as_str().unwrap_or_else(|| entry["subject_identifier"].as_str().expect("subject id"));
+            let expected =
+                native.iter().find(|n| n["reference_tag"].as_str().expect("native tag").eq_ignore_ascii_case(tag)).expect("native member");
+            assert_eq!(entry["sip_guid"], expected["sip_guid"]);
+            if entry["digest"].is_string() {
+                for key in ["data_oid", "digest_algorithm", "digest"] {
+                    assert_eq!(entry[key], expected[key]);
+                }
+                declared_digests += 1;
+            } else {
+                assert_eq!(version, 2, "only the v2 compatibility entries omit indirect data");
+            }
+        }
+        assert_eq!(declared_digests, 2);
+        let signature = &fact["signatures"][0];
+        assert_eq!(reference["cms_signature_only"]["signatures"][0]["combined_content_and_signature"], "passed");
+        assert_eq!(signature["signer"]["sha256"], reference["cms_signature_only"]["signatures"][0]["signer_sha256"]);
+        assert_eq!(signature["checks"]["signature"], "passed");
+        assert_eq!(signature["checks"]["content_digest"], "passed");
+        assert_eq!(fact["payloads_checked"], false);
+        assert_eq!(fact["windows_trust_checked"], false);
+        assert!(run.findings("windows.catalog-integrity-failed").is_empty());
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.catalog-scope"));
+    }
+}
+
+#[test]
+fn malformed_catalog_is_unreadable_and_damaged_signature_has_evidence() {
+    let run = analyze(&[("invalid.cat", b"not a catalog".to_vec())]);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.catalog-unreadable"));
+    assert!(run.findings("windows.catalog").is_empty());
+    let mut bytes = data("native-catalog-v2.cat");
+    *bytes.last_mut().expect("native signature") ^= 1;
+    let run = analyze(&[("changed.cat", bytes)]);
+    let failures = run.findings("windows.catalog-integrity-failed");
+    assert_eq!(failures.len(), 1);
+    assert!(!failures[0].evidence.is_empty());
+    let fact = run.fact("changed.cat", "windows.catalog");
+    assert_eq!(fact["signatures"][0]["checks"]["content_digest"], "passed");
+    assert_eq!(fact["signatures"][0]["checks"]["signature"], "failed");
+}
+
+fn compare_inf_reference(name: &str, expected_fields: usize) -> Run {
+    let reference: Value = serde_json::from_slice(&data(&format!("{name}.ref.json"))).expect("SetupAPI reference");
+    assert_eq!(sha256_hex(&data(name)), reference["sha256"]);
+    let run = analyze(&[(name, data(name))]);
+    let fact = run.fact(name, "windows.inf");
+    assert_eq!(fact["issue_count"], 0);
+    assert_eq!(fact["installed"], false);
+    assert_eq!(fact["platform_selected"], false);
+    assert_eq!(fact["catalog_verified"], false);
+    let sections = fact["sections"].as_array().expect("INF sections");
+    let native = reference["sections"].as_array().expect("native sections");
+    assert_eq!(sections.len(), native.len());
+    let mut compared = 0;
+    for section in sections {
+        let expected = native
+            .iter()
+            .find(|s| s["name"].as_str().expect("native name").eq_ignore_ascii_case(section["name"].as_str().expect("name")))
+            .expect("native section");
+        let entries = section["entries"].as_array().expect("entries");
+        let native_entries = expected["entries"].as_array().expect("native entries");
+        assert_eq!(entries.len(), native_entries.len());
+        for (entry, expected) in entries.iter().zip(native_entries) {
+            if let Some(fields) = entry["neutral_fields"].as_array() {
+                assert_eq!(entry["neutral_fields"], expected["fields"], "{} line {}", section["name"], entry["line"]);
+                compared += fields.len();
+            }
+        }
+    }
+    assert_eq!(compared, expected_fields);
+    assert_eq!(run.findings("windows.inf").len(), 1);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.inf-semantics-unresolved"));
+    run
+}
+
+#[test]
+fn independent_inf_source_matches_read_only_setupapi_fields_without_platform_selection() {
+    let run = compare_inf_reference("upstream-nullFilter.inf", 91);
+    let sections = run.fact("upstream-nullFilter.inf", "windows.inf")["sections"].as_array().expect("INF sections");
+    let service = sections.iter().find(|s| s["name"] == "NullFilter.Service").expect("service declaration section");
+    let binary = service["entries"]
+        .as_array()
+        .expect("service entries")
+        .iter()
+        .find(|e| e["key"] == "ServiceBinary")
+        .expect("literal service binary");
+    assert_eq!(binary["fields"][0], r"%13%\%DriverName%.sys");
+    assert!(binary["neutral_fields"].is_null(), "directory IDs remain unresolved");
+}
+
+#[test]
+fn controlled_inf_quotes_and_continuations_match_setupapi_snapshot() {
+    compare_inf_reference("native-inf-syntax.inf", 25);
+}
+
+#[test]
+fn controlled_inf_relationship_declarations_match_setupapi_source_fields() {
+    compare_inf_reference("native-inf-relationships.inf", 51);
+}
+
+#[test]
+fn independent_models_inf_preserves_device_ids_and_unbuilt_architecture_declarations() {
+    let run = compare_inf_reference("upstream-echo.inf", 43);
+    let sections = run.fact("upstream-echo.inf", "windows.inf")["sections"].as_array().expect("source sections");
+    let model = sections.iter().find(|s| s["name"] == "Standard.NT$ARCH$.10.0...16299").expect("unbuilt model section");
+    assert_eq!(model["entries"][0]["fields"], serde_json::json!(["ECHO_Device", r"root\ECHO"]));
+    let service = sections.iter().find(|s| s["name"] == "ECHO_Device.NT.Services").expect("service declaration");
+    assert_eq!(service["entries"][0]["neutral_fields"], serde_json::json!(["ECHO", "0x00000002", "ECHO_Service_Inst"]));
+    assert!(run.findings("windows.input-reference").is_empty(), "source declarations do not supply the absent catalog or driver");
+}
+
+#[test]
+fn independent_inf_sources_have_evidenced_declaration_graphs_without_installation_selection() {
+    for (name, expected_models, expected_services) in [("upstream-echo.inf", 1, 1), ("upstream-nullFilter.inf", 0, 2)] {
+        let run = analyze(&[(name, data(name))]);
+        let graph = run.fact(name, "windows.inf-declarations");
+        assert_eq!(graph["platform_selected"], false);
+        assert_eq!(graph["installed"], false);
+        assert_eq!(graph["external_infs_followed"], false);
+        let records = graph["records"].as_array().expect("source graph");
+        assert_eq!(records.iter().filter(|r| r["kind"] == "device-model").count(), expected_models);
+        assert_eq!(records.iter().filter(|r| r["kind"] == "service-addition").count(), expected_services);
+        assert!(records.iter().any(|r| r["kind"] == "service-property" && r["details"]["declared_start_type"] == "demand"));
+        assert!(records.iter().any(|r| r["kind"] == "registry-row"));
+        let findings = run.findings("windows.inf-declarations");
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].confidence, aa_core::Confidence::Derived);
+        assert!(!findings[0].evidence.is_empty());
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.inf-semantics-unresolved"));
+    }
+}
+
+#[test]
+fn inf_report_details_surface_values_with_literal_and_projection_evidence() {
+    let run = analyze(&[
+        ("native-inf-relationships.inf", data("native-inf-relationships.inf")),
+        ("upstream-echo.inf", data("upstream-echo.inf")),
+    ]);
+    let model = run.findings("windows.inf-model-declaration");
+    assert!(model.iter().any(|f| f.params["hardware"] == r"ROOT\SAMPLE"));
+    let copy = run.findings("windows.inf-copy-declaration");
+    assert!(copy.iter().any(|f| f.params["source"] == "original.sys" && f.params["destination"] == "renamed.sys"));
+    let property = run.findings("windows.inf-service-property");
+    assert!(property.iter().any(|f| f.params["name"] == "ServiceBinary" && f.params["value"] == r"%13%\renamed.sys"));
+    let service = run.findings("windows.inf-service-declaration");
+    let projected = service.iter().find(|f| f.params["name"] == "ECHO").expect("ECHO declaration");
+    assert!(projected.evidence.iter().any(|e| e.value == serde_json::json!("%SPSVCINST_ASSOCSERVICE%")));
+    assert!(projected.evidence.iter().any(|e| e.value == serde_json::json!("0x00000002")));
+    assert!(service.iter().any(|f| f.params["null_driver"] == true));
+    for rule in [
+        "windows.inf-model-declaration",
+        "windows.inf-service-declaration",
+        "windows.inf-service-property",
+        "windows.inf-copy-declaration",
+        "windows.inf-source-declaration",
+        "windows.inf-registry-declaration",
+    ] {
+        let findings = run.findings(rule);
+        assert!(!findings.is_empty());
+        assert!(
+            findings
+                .iter()
+                .all(|f| f.severity == aa_core::Severity::Info && f.confidence == aa_core::Confidence::Derived && !f.evidence.is_empty())
+        );
+    }
+}
+
+#[test]
+fn inf_report_details_have_count_and_byte_budgets_without_discarding_the_graph() {
+    for (rows, width) in [(80, 8), (40, 4000)] {
+        let mut text = String::from("[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\n");
+        for index in 0..rows {
+            text.push_str(&format!("{index}{}.sys=1,,\n", "a".repeat(width)));
+        }
+        let run = analyze(&[("budget.inf", text.into_bytes())]);
+        let graph = run.fact("budget.inf", "windows.inf-declarations");
+        assert_eq!(graph["omitted"], 0);
+        assert!(graph["report_details_omitted"].as_u64().expect("omission count") > 0);
+        let details = run.findings("windows.inf-source-declaration");
+        assert!(!details.is_empty() && details.len() <= 64);
+        assert!(details.iter().map(|f| serde_json::to_vec(f).expect("finding JSON").len()).sum::<usize>() <= 256 * 1024);
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.inf-declarations-limit"));
+    }
+}
+
+#[test]
+fn inf_copy_and_media_relationships_are_source_evidence_not_payload_locations() {
+    for name in ["upstream-echo.inf", "upstream-nullFilter.inf", "native-inf-relationships.inf"] {
+        let run = analyze(&[(name, data(name))]);
+        let graph = run.fact(name, "windows.inf-declarations");
+        let records = graph["records"].as_array().expect("source records");
+        let links = graph["source_relationships"].as_array().expect("source relationships");
+        assert!(links.iter().any(|r| r["kind"] == "copy-source-declaration" && r["observed_target_count"] == 1));
+        assert!(links.iter().any(|r| r["kind"] == "source-media-declaration" && r["observed_target_count"] == 1));
+        assert!(links.iter().all(|r| r["payload_path_resolved"] == false && r["platform_selected"] == false));
+        for link in links {
+            for target in link["target_records"].as_array().expect("target records") {
+                assert!(target.as_u64().expect("record index") < (records.len() as u64));
+            }
+        }
+        let findings = run.findings("windows.inf-source-relationships");
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].confidence, aa_core::Confidence::Derived);
+        assert!(!findings[0].evidence.is_empty());
+        assert_eq!(run.tree.artifacts().len(), 1, "no target or external source was read into the tree");
+    }
+}
+
+#[test]
+fn independent_shell_link_relative_path_can_name_a_supplied_sibling() {
+    let run = analyze(&[("upstream-test.lnk", data("upstream-test.lnk")), ("a.txt", b"supplied text".to_vec())]);
+    let refs = run.fact("upstream-test.lnk", "windows.input-references")["references"].as_array().expect("reference declarations");
+    let relative = refs.iter().find(|r| r["field"] == "RelativePath").expect("relative path declaration");
+    assert_eq!(relative["target"], "a.txt");
+    assert_eq!(relative["status"], "matched-supplied-declaration");
+    assert_eq!(relative["target_sha256"], sha256_hex(b"supplied text"));
+    assert_eq!(run.findings("windows.input-reference").len(), 1);
+    assert_eq!(
+        run.fact("upstream-test.lnk", "windows.shell-link")["target_resolved"],
+        false,
+        "a declaration link does not resolve the Windows launch target"
+    );
+}
+
+fn task_declaration<'a>(root: &'a Value, path: &[&str]) -> &'a Value {
+    path.iter().fold(root, |node, name| {
+        node["children"].as_array().expect("declaration children").iter().find(|n| n["element"] == *name).expect("native declaration")
+    })
+}
+
+#[test]
+fn unregistered_native_task_matches_literal_fields_without_guessing_omitted_values() {
+    let reference: Value = serde_json::from_slice(&data("native-task.xml.ref.json")).expect("task reference");
+    let run = analyze(&[("native-task.xml", data("native-task.xml"))]);
+    let fact = run.fact("native-task.xml", "windows.scheduled-task");
+    assert_eq!(fact["actions"], 1);
+    assert_eq!(fact["triggers"], 2);
+    assert_eq!(fact["principals"], 1);
+    assert_eq!(fact["registered"], false);
+    assert_eq!(fact["issue_count"], 0);
+    let root = &fact["declarations"];
+    for (path, key) in [
+        (vec!["Actions", "Exec", "Command"], "command"),
+        (vec!["Actions", "Exec", "Arguments"], "arguments"),
+        (vec!["Actions", "Exec", "WorkingDirectory"], "working_directory"),
+        (vec!["Principals", "Principal", "UserId"], "principal"),
+        (vec!["Principals", "Principal", "RunLevel"], "run_level"),
+        (vec!["Triggers", "TimeTrigger", "StartBoundary"], "time_start"),
+    ] {
+        assert_eq!(task_declaration(root, &path)["text"], reference[key], "{path:?}");
+    }
+    for (path, key) in [
+        (vec!["Triggers", "TimeTrigger", "Enabled"], "time_enabled"),
+        (vec!["Triggers", "LogonTrigger", "Enabled"], "logon_enabled"),
+        (vec!["Settings", "Enabled"], "task_enabled"),
+    ] {
+        assert_eq!(task_declaration(root, &path)["text"], reference[key].to_string());
+    }
+    assert_eq!(task_declaration(root, &["Actions"])["attributes"]["Context"], reference["action_context"]);
+    let principal = task_declaration(root, &["Principals", "Principal"]);
+    assert!(
+        !principal["children"].as_array().expect("principal fields").iter().any(|n| n["element"] == "LogonType"),
+        "native serializer omits this field; the reader must not invent it"
+    );
+    assert_eq!(run.findings("windows.task-highest-available").len(), 1);
+    let summary = run.findings("windows.scheduled-task");
+    let summary_rule = aa_windows::analyzers()
+        .into_iter()
+        .flat_map(|a| a.rules().to_vec())
+        .find(|r| r.id == "windows.scheduled-task")
+        .expect("summary wording");
+    let rendered = fill(summary_rule.text_en, &summary[0].params);
+    assert!(rendered.contains("1 supported action, 2 supported triggers and 1 supported principal"), "{rendered}");
+    assert_eq!(run.findings("windows.task-startup-trigger").len(), 1, "disabled trigger is a declaration, not an active task");
+}
+
+#[test]
+fn independent_task_deployment_sample_is_read_as_data_with_encoding_mismatch_noted() {
+    assert_eq!(sha256_hex(&data("upstream-task.xml")), "a426a793001633d0f4eab87ffd5fa82e157d15d5ad924ba95617136bc557fe59");
+    let run = analyze(&[("upstream-task.xml", data("upstream-task.xml"))]);
+    let fact = run.fact("upstream-task.xml", "windows.scheduled-task");
+    let root = &fact["declarations"];
+    assert_eq!(task_declaration(root, &["Actions", "Exec", "Command"])["text"], "powershell.exe");
+    assert_eq!(task_declaration(root, &["Triggers", "TimeTrigger", "Repetition", "Interval"])["text"], "PT1M");
+    assert_eq!(task_declaration(root, &["Principals", "Principal", "UserId"])["text"], "system");
+    assert_eq!(fact["registered"], false);
+    assert!(
+        run.out.limitations.iter().any(|l| l.code == "windows.task-partial" && l.detail.as_deref().is_some_and(|d| d.contains("encoding")))
+    );
+}
+
+#[test]
+fn native_registry_export_matches_read_only_registry_reference() {
+    let reference: Value = serde_json::from_slice(&data("native-codepages.reg.ref.json")).expect("registry reference");
+    let run = analyze(&[("native-codepages.reg", data("native-codepages.reg"))]);
+    let fact = run.fact("native-codepages.reg", "windows.registry");
+    assert_eq!(fact["applied"], false);
+    assert_eq!(fact["issue_count"], 0);
+    let entries = fact["entries"].as_array().expect("registry entries");
+    let keys = reference["keys"].as_array().expect("reference keys");
+    assert_eq!(entries.len(), keys.iter().map(|key| key["values"].as_array().expect("values").len() + 1).sum::<usize>());
+    for key in keys {
+        assert!(entries.iter().any(|e| e["operation"] == "create_key" && e["key"] == key["key"]));
+        for value in key["values"].as_array().expect("reference values") {
+            let entry = entries
+                .iter()
+                .find(|e| e["operation"] == "set_value" && e["key"] == key["key"] && e["name"] == value["name"])
+                .expect("native value declaration");
+            assert_eq!(entry["value"], value["value"]);
+            assert_eq!(entry["value_type"], if value["kind"] == "DWord" { 4 } else { 1 });
+        }
+    }
+    assert_eq!(run.findings("windows.registry").len(), 1);
+}
+
+#[test]
+fn shell_links_match_native_producer_and_independent_fixture_declarations() {
+    assert_eq!(sha256_hex(&data("upstream-test.lnk")), "09ac337f52c4c9dc49772e97060145a316cb4af076cfb122fb4a219ecbfbfdd7");
+    let reference: Value = serde_json::from_slice(&data("native.lnk.ref.json")).expect("native reference");
+    let run = analyze(&[("native.lnk", data("native.lnk"))]);
+    let fact = run.fact("native.lnk", "windows.shell-link");
+    let declarations = fact["declarations"].as_array().expect("declarations");
+    for (field, key) in [
+        ("LinkInfo/LocalBasePath", "target"),
+        ("Name", "description"),
+        ("Arguments", "arguments"),
+        ("WorkingDirectory", "working_directory"),
+    ] {
+        assert!(declarations.iter().any(|d| d["field"] == field && d["value"] == reference[key]), "{field}: {fact}");
+    }
+    let icon = format!(
+        "{},{}",
+        declarations.iter().find(|d| d["field"] == "IconLocation").expect("icon")["value"].as_str().expect("path"),
+        fact["icon_index"]
+    );
+    assert_eq!(icon, reference["icon"].as_str().expect("reference icon"));
+    assert_eq!(fact["show_command"], reference["show_command"]);
+    assert_eq!(fact["target_resolved"], false);
+    assert_eq!(run.findings("windows.shell-link").len(), 1);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.shortcut-target-unresolved"));
+
+    let upstream = analyze(&[("upstream-test.lnk", data("upstream-test.lnk"))]);
+    let fact = upstream.fact("upstream-test.lnk", "windows.shell-link");
+    assert!(
+        fact["declarations"]
+            .as_array()
+            .expect("upstream declarations")
+            .iter()
+            .any(|d| d["field"] == "LinkInfo/LocalBasePath" && d["value"] == r"C:\test\a.txt")
+    );
+    assert!(upstream.out.limitations.iter().any(|l| l.code == "windows.shortcut-partial"));
+    let disguised = analyze(&[("disguised.bin", data("upstream-test.lnk"))]);
+    assert_eq!(disguised.findings("windows.shell-link").len(), 1, "magic recognition does not depend on extension");
+    let damaged = analyze(&[("damaged.lnk", vec![0; 8])]);
+    assert!(damaged.out.limitations.iter().any(|l| l.code == "windows.shortcut-unreadable"));
+}
+
+#[test]
+fn windows_generated_url_matches_the_native_producer_and_small_urls_are_read() {
+    let reference: Value = serde_json::from_slice(&data("native.url.ref.json")).expect("native producer reference");
+    let run = analyze(&[("native.url", data("native.url"))]);
+    let fact = run.fact("native.url", "windows.internet-shortcut");
+    assert!(fact["fields"].as_array().expect("field declarations").contains(&serde_json::json!(["url", reference["target"]])));
+    assert_eq!(fact["target_resolved"], false);
+    assert_eq!(run.findings("windows.internet-shortcut").len(), 1);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.shortcut-partial"), "native extra properties are acknowledged");
+    let small = analyze(&[("small.url", b"[InternetShortcut]\nURL=https://example.invalid/\n".to_vec())]);
+    assert_eq!(small.findings("windows.internet-shortcut").len(), 1, "text shortcuts may be shorter than a PE header");
+    let sensitive = analyze(&[(
+        "private.url",
+        b"[InternetShortcut]\nURL=https://user:fixture-password@example.invalid/?token=fixture-token\n".to_vec(),
+    )]);
+    let fact = serde_json::to_string(sensitive.fact("private.url", "windows.internet-shortcut")).expect("facts JSON");
+    let evidence = serde_json::to_string(&sensitive.out.findings).expect("findings JSON");
+    for secret in ["fixture-password", "fixture-token"] {
+        assert!(!fact.contains(secret));
+        assert!(!evidence.contains(secret));
+    }
 }
 
 fn reference(name: &str) -> String {
@@ -26,6 +659,11 @@ struct MemoryTree {
 }
 
 impl Tree for MemoryTree {
+    fn summary(&self) -> &BTreeMap<String, Value> {
+        static COMPLETE: std::sync::LazyLock<BTreeMap<String, Value>> =
+            std::sync::LazyLock::new(|| BTreeMap::from([("engine.input-listing".into(), serde_json::json!({"complete": true}))]));
+        &COMPLETE
+    }
     fn artifacts(&self) -> &[Artifact] {
         &self.artifacts
     }
@@ -102,7 +740,7 @@ fn analyze(files: &[(&str, Vec<u8>)]) -> Run {
             path: path.clone(),
             parent,
             size: bytes.len() as u64,
-            digests: Some(Digests { md5: String::new(), sha1: String::new(), sha256: sha256_hex(&bytes) }),
+            digests: Some(Digests { md5: String::new(), sha1: hex::encode(Sha1::digest(&bytes)), sha256: sha256_hex(&bytes) }),
             detected: None,
             kind: None,
             entropy: None,

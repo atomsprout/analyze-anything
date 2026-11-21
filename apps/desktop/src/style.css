@@ -114,6 +114,12 @@ input[type="text"], input[type="search"] { font: inherit; color: var(--text); ba
 .entry-meta { color: var(--muted); font-size: 12px; }
 .entry-counts { display: flex; gap: 6px; flex: none; }
 .home footer { text-align: center; margin-top: auto; }
+.source-root-options { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.source-root-options summary { cursor: pointer; font-weight: 600; }
+.source-root-list { display: grid; gap: 8px; margin: 10px 0; }
+.source-root-row { display: flex; align-items: end; gap: 8px; }
+.source-root-row label { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.source-root-row input { min-width: 0; width: 100%; }
 
 /* ---------- progress ---------- */
 .progress { height: 100%; display: grid; place-items: center; padding: 24px; }

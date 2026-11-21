@@ -1,0 +1,97 @@
+[
+  {
+    "case": "literal",
+    "source": "Write-Output \"bonjour\"; Get-ChildItem -LiteralPath \".\"",
+    "commands": [
+      {
+        "name": "Write-Output",
+        "operator": "Unknown",
+        "line": 1,
+        "column": 1
+      },
+      {
+        "name": "Get-ChildItem",
+        "operator": "Unknown",
+        "line": 1,
+        "column": 25
+      }
+    ],
+    "requires_administrator": false,
+    "errors": []
+  },
+  {
+    "case": "strings",
+    "source": "'Write-Output not-a-command'\n# Get-ChildItem\n@\"\nWrite-Output here-string\n\"@",
+    "commands": [],
+    "requires_administrator": false,
+    "errors": []
+  },
+  {
+    "case": "dynamic",
+    "source": "& $command \"value\"; & \"Write-Output\" \"literal\"",
+    "commands": [
+      {
+        "name": null,
+        "operator": "Ampersand",
+        "line": 1,
+        "column": 1
+      },
+      {
+        "name": "Write-Output",
+        "operator": "Ampersand",
+        "line": 1,
+        "column": 21
+      }
+    ],
+    "requires_administrator": false,
+    "errors": []
+  },
+  {
+    "case": "block",
+    "source": "if ($true) { Write-Output \"branch\" }",
+    "commands": [
+      {
+        "name": "Write-Output",
+        "operator": "Unknown",
+        "line": 1,
+        "column": 14
+      }
+    ],
+    "requires_administrator": false,
+    "errors": []
+  },
+  {
+    "case": "pipeline",
+    "source": "Write-Output \"value\" | Select-Object -First 1",
+    "commands": [
+      {
+        "name": "Write-Output",
+        "operator": "Unknown",
+        "line": 1,
+        "column": 1
+      },
+      {
+        "name": "Select-Object",
+        "operator": "Unknown",
+        "line": 1,
+        "column": 24
+      }
+    ],
+    "requires_administrator": false,
+    "errors": []
+  },
+  {
+    "case": "requires",
+    "source": "#Requires -RunAsAdministrator\nWrite-Output 'example'",
+    "commands": [
+      {
+        "name": "Write-Output",
+        "operator": "Unknown",
+        "line": 2,
+        "column": 1
+      }
+    ],
+    "requires_administrator": true,
+    "errors": []
+  }
+]

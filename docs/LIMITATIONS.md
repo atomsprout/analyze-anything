@@ -14,18 +14,140 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 
 ## Parts not verified on real samples
 
+The NuGet reader has been compared with the Windows .NET SDK on the published
+NuGet.Versioning and NuGet.Configuration 6.11.1 packages. Ambiguous sibling
+packages and incomplete listings have constructed coverage. Only exact stable
+ranges can link to supplied packages. Framework choice, package signatures and
+package restore are outside this profile. See [the NuGet record](spikes/windows-nuget.md).
+
+The VSIX 2.0 ZIP and manifest reader has been compared with .NET ZIP and XML
+APIs on one published Visual Studio extension. Nested dependency matching and
+root-name ambiguity have constructed coverage. The documented profile leaves
+interval dependencies, runtime eligibility, the older manifest schema and
+signature verification open. See [the VSIX record](spikes/windows-vsix.md).
+
+The WinGet 1.x reader was compared with `winget validate` on the published
+7-Zip 24.09 manifest set, with two supplied x64 installers checked by SHA-256.
+Singleton manifests, dependency candidates, duplicate payloads and rejected
+YAML forms have constructed coverage. Client installer selection, version
+ordering and catalog resolution are outside the supported profile.
+See [the WinGet record](spikes/windows-winget.md).
+
 The following features have only been tested with data we constructed ourselves, and have not been compared against reference tools on real samples:
 
 - **Apple**: APFS snapshots and multiple volumes, ECDSA signatures. An encrypted DMG is identified but cannot be read. FairPlay-encrypted IPAs downloaded from the App Store have been verified on real samples: the encryption is identified, metadata, signatures and resources are analyzed as usual, and the encrypted code cannot be read.
-- **Windows**: Inno Setup 6.4 files can be extracted, but the reference tool cannot read this version, so the result cannot be checked; NSIS 1.x / 2.x and forked versions are untested; an MSI's own digital signature is verified (content digest, metadata digest, signature value, certificate chain), with osslsigncode as the reference tool and no comparison against Windows' own signtool; the position of the `MsiDigitalSignatureEx` stream in the digest has two readings, and when only the other reading matches, it is reported as "could not verify" without drawing a conclusion; a RAR self-extractor only has its appended data exported and is not unpacked (for license reasons); Quantum-compressed CABs, multi-volume CABs and external CABs are not unpacked.
+- **Windows**: Inno Setup 6.4 files can be extracted, but the reference tool cannot read this version, so the result cannot be checked; NSIS 1.x / 2.x and forked versions are untested; an MSI's own digital signature is verified (content digest, metadata digest, signature value, certificate chain), with osslsigncode as the reference tool. An initial Windows SignTool comparison of the signed MSI fixture is recorded in [the baseline](spikes/windows-baseline.md); Windows reported UnknownError and SignTool returned nonzero; the cause was not established, and a real trusted signed installer distribution remains unverified. The position of the `MsiDigitalSignatureEx` stream in the digest has two readings, and when only the other reading matches, it is reported as "could not verify" without drawing a conclusion; a RAR self-extractor only has its appended data exported and is not unpacked (for license reasons); Quantum-compressed CABs, multi-volume CABs and external CABs are not unpacked.
 - **Android**: XAPK / APKS have only been tested with hand-built samples; packers, Janus and unusual compression methods have only been tested on constructed samples; for AAB only the base module is analyzed in depth; a manifest in text format (apktool output) is not decoded.
 - **Binaries**: Mach-O imports and exports are read from the symbol table, the export trie, chained fixups and bind opcodes, and have been compared against `dyld_info`, `nm` and `objdump`; compressed symbol names in chained fixups and the big-endian format are not read (recorded as a limitation). PE delay imports have only been verified on samples we constructed ourselves.
 
 ## Systems it has been verified on
 
+The initial MSIX/APPX content checks read bounded block maps and compare supported
+SHA-256/384/512 blocks and the checked 2021 FileHash extension with captured uncompressed
+bytes. A separate original-ZIP layer checks a bounded contiguous single-disk ZIP32/ZIP64
+profile, raw block-map byte binding, and declared local-header/uncompressed sizes.
+It requires original captured archive bytes; folders and standalone maps cannot supply
+them. Other ZIP versions/flags/methods/names, prefixes, gaps and inconsistent records
+remain unresolved. A third layer binds bounded stored/independently decodable DEFLATE
+segments to captured targets, compares physical block lengths/digests and mapped payload
+CRCs, and checks empty final streams or stream ends included in the final segment.
+Missing Size declarations, nonrestartable compression, incomplete listings, stale or
+ambiguous targets and budget exhaustion remain explicit limitations. These layers do
+not establish package trust. An initial P7X layer checks bounded SHA-256 SIP capsules,
+CMS signature mathematics and original AXPC/AXCD/AXCT/AXBM/optional AXCI digests for
+the final-signature-record ZIP32/ZIP64 profile. One pinned Microsoft RSA-2048/SHA-256
+APPX has been compared with CryptoAPI and independent hashes. Other SIP/signature
+profiles, broader bundle profiles and publisher subject encodings, timestamp/revocation/certificate
+policy, Windows trust and installation eligibility remain unestablished. Name binding uses the shared conservative
+ASCII Windows path profile and requires complete, unambiguous input enumeration.
+Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and
+content comparisons; broader profiles and W6 acceptance remain open. See
+[the MSIX scope record](spikes/windows-msix-integrity.md).
+
+The MSIX manifest reader projects known namespace/hierarchy paths and bounded separate
+declarations. Missing/unsupported/duplicate direct identities do not select a first
+identity; repeated properties, application IDs and dependency/device-family names are
+explicit. Dependencies, device-family versions and resource metadata remain literal,
+with no installed-state, external-target or host-version resolution. Unknown namespaces,
+attributes, modern qualifiers and nested behavior remain unread issues. Schema validation,
+full certificate policy and installability are not established. The separate publisher
+layer compares a unique manifest identity with a uniquely verified embedded CMS signer
+under a bounded static Windows reverse-X.500 spelling profile. Unknown OID aliases,
+unsupported legacy encodings, control characters, redaction and ambiguity remain unresolved.
+Literal comparison and signed manifest coverage are separate; neither establishes Windows
+trust. See [the publisher scope](spikes/windows-msix-publisher.md). Native comparisons now
+include 2010 manifests inside the signed bundle fixture as well as Windows 10 manifests.
+See [the manifest scope record](spikes/windows-msix-manifest.md).
+
+The bundle layer reads the 2013 base namespace, keeps bounded identity/package/resource
+declarations, and compares supported stored OPC packages with original ZIP extents and
+captured inner manifests. Separate APPX-bundle SIP and outer CMS/package-digest coverage
+have one pinned signed Microsoft reference. Qualified resource declaration sets and the
+2018 bundle target-device declarations are compared with captured inner manifests.
+The native references include language, scale, DirectX and escaped-space OPC names.
+Language aliases, fallback and default ordering, optional/flat bundles, other modern
+extensions, external dependencies and host selection remain unresolved. Raw ZIP, name,
+capture, decompression and output budgets apply. Two SDK-built application/resource
+bundles and eight upstream positive/negative fixtures are recorded in
+[the bundle scope](spikes/windows-msix-bundles.md). Broader signed bundles and W6 remain open.
+
+PowerShell syntax inspection covers qualified literal commands in PS1 and PSM1
+files. Grammar errors are reported and dynamic arguments may be unresolved.
+The syntax inventory leaves alias resolution, command binding and execution flow
+unresolved. The literal EncodedCommand reader supports a bounded one-level
+Base64/UTF-16LE profile. Batch inspection covers simple literal command
+segments in CMD and BAT files. Expansion, redirects, continuations, grouped
+syntax and nested dispatch remain unresolved. Reference coverage is recorded
+in [the Windows script scope](spikes/windows-powershell.md).
+
+ZIP archives whose central directory repeats names receive an explicit limitation:
+the current ZIP library collapses those records, so not every version is retained.
+Their container listing is incomplete and cannot establish name-unique relationships.
+This differs from ASCII-case aliases and duplicate names in formats whose entries are
+all exposed to the engine; those retain their existing ambiguity/name-provenance checks.
+
+The initial Windows catalog reader supports a bounded, definite/minimal DER CMS/CTL
+profile. It distinguishes CTL entries from digest declarations and does not invent
+digests for v2 compatibility entries. Catalog content digests, signature values and
+embedded certificate-link signatures are checked using the shared offline primitives;
+the separate tree pass compares explicit SHA-1/SHA-256 declarations for supported flat
+and default-PE SIP parameter profiles with supplied bytes in the same container.
+CatalogFile declarations can link to unique supplied CAT siblings. This is neither
+complete package coverage nor platform selection. Custom tags, other SIP/parameter
+profiles and broader INF package relationships remain unresolved. Bounded CAT_NAMEVALUE
+attributes preserve names, flags and supported text values; they do not resolve named
+missing-versus-changed members. Unknown attributes remain length/digest records with limitations. Windows
+trust, revocation, timestamps, WHQL and installation eligibility remain unverified.
+Native MakeCat/SignTool v1/v2 fixtures and signature-only references are checked, along
+with five supplied layouts of one pinned usbipd-win x64 driver snapshot. Broader independent
+packages remain open; see [the catalog scope](spikes/windows-catalogs.md),
+[membership/native comparison record](spikes/windows-catalog-membership.md) and
+[independent driver input](spikes/windows-driver-corpus.md).
+
+The initial INF reader records syntax, ordered section occurrences, literal fields and
+source lines under explicit input/count/field/projection budgets. Its optional neutral
+string projection does not select a platform or locale, resolve directory IDs or follow
+Include/Needs. A separate bounded source graph records supported device/service/file/
+registry declarations and section-reference candidates. It retains duplicate occurrences,
+unknown numeric values and external references explicitly. It does not select decorated
+installation alternatives, infer source-media roots or establish runtime effects.
+Copy-source filenames and decimal media IDs have bounded links within
+the parsed declaration graph; these do not establish a distribution root or associate
+payload bytes. Explicit caller-declared logical roots now enable a separate bounded
+loose-file mapping pass, carried through engine/worker/CLI settings. It retains candidate
+paths and captured digests without host resolution or installation selection. The initial
+profile is ASCII-only, rejects ambiguous directories and leaves CAB/tag media unsupported;
+the desktop's optional logical-root control still needs native Windows window qualification.
+See [the source-mapping record](spikes/windows-inf-source-mapping.md).
+The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
+source INF (still containing build placeholders), a controlled syntax fixture and the
+pinned usbipd-win INF. Source-field agreement alone does not qualify a built package.
+See [the INF scope record](spikes/windows-inf.md)
+and [source graph profile and budgets](spikes/windows-inf-relationships.md).
+
 The automated tests pass on Linux, macOS and Windows (GitHub Actions). Release builds were run successfully on Linux x64 / arm64, macOS arm64 / x64 and Windows x64 and passed the self-check. The large-scale comparison using release packages of open source projects was done on Linux.
 
-It has been tested with real samples on one Apple silicon Mac (macOS 27): 8 installed applications (all 332 items match `codesign`), an encrypted IPA downloaded from the App Store and a decrypted IPA, and two DMGs (one of which unpacked to 7461 files). On the same Mac, version 0.1.1 was run over every app in the Applications folder (52 apps, 677,336 files); the findings that looked wrong were compared with `codesign` and the differences fixed ([TODO.md](TODO.md) lists them). The desktop app has only been verified on this Mac. Testing on a real Windows machine has not been done yet.
+It has been tested with real samples on one Apple silicon Mac (macOS 27): 8 installed applications (all 332 items match `codesign`), an encrypted IPA downloaded from the App Store and a decrypted IPA, and two DMGs (one of which unpacked to 7461 files). On the same Mac, version 0.1.1 was run over every app in the Applications folder (52 apps, 677,336 files); the findings that looked wrong were compared with `codesign` and the differences fixed ([TODO.md](TODO.md) lists them). The desktop app has only been verified on this Mac. Initial native Windows x64 CLI comparisons and file-access checks are now recorded in [the Windows baseline](spikes/windows-baseline.md) and [file-access record](spikes/windows-file-access.md); their explicitly pending cases remain open. This does not establish Windows desktop release readiness.
 
 ## Comparison with the system's own tools
 
@@ -47,11 +169,23 @@ These comparisons do not cover: certificate revocation, root certificate trust, 
 
 ## Other
 
+- Windows entry-point references are associated only inside the supplied tree. The initial positive profile uses ASCII names/case folding and excludes namespaces containing non-ASCII names, so unestablished Unicode aliases cannot create false unique matches. Only LNK RelativePath establishes the file-relative base in this pass. Host-based task/REG references, URLs, variables, ambiguous or changed archive names and paths outside the profile remain unresolved. The index caps artifacts at 100,000 and full path bytes at 32 MiB; sources, references and path lengths have further limits. It never searches the host or uses a partial index to assert uniqueness; see [input-reference coverage](spikes/windows-input-references.md).
+
+- Task Scheduler XML recognition checks a Task root/namespace within the first 16 KiB. Inputs are limited to 2 MiB, XML parsing to 20,000 nodes and captured declarations to 4,096. DTDs are refused. Supported literal trigger/action/principal/settings fields are recorded; unknown elements, application Data and unknown attribute values are omitted with limitations. No task is registered, no account/path/COM reference is resolved and no schema defaults, scalar constraints or schedule behavior are inferred. Native serialization and an independent MIT deployment fixture are checked; the latter's UTF-16 declaration conflicts with its UTF-8 bytes and is explicitly marked. See [the task record](spikes/windows-tasks.md) for further bounds and coverage.
+
+- REG exports have a 4 MiB input, 128 KiB logical-line, 4 KiB key-path and 4,096-entry limit. UTF-8/BOM UTF-16 version 5 and ASCII REGEDIT4 declarations are supported; no machine code page is assumed. Writes/deletions remain ordered and are never applied. Binary/unknown values retain type, length and digest only. Malformed entries and exhausted limits are reported, with the first 64 issue details. Registry classification is heuristic path/name matching; effective settings, permissions, hive files and virtualization are not established. The native comparison covers a real code-page metadata subtree, with other value forms covered by constructed tests; see [the registry record](spikes/windows-registry.md).
+
+- Internet shortcuts (`.url`) are read as UTF-8 or BOM-marked UTF-16 declarations, with a 1 MiB text limit and 256 supported fields. No system code page is guessed, no target or icon is opened, and variables are not expanded. Unsupported properties and duplicate keys are reported as limitations. The URL reference fixture is generated by Windows WScript.Shell, not a collection of independently distributed shortcuts. Recognizable credentials are redacted from shortcut declarations and generic HTTP URL facts; this is pattern-based and does not identify every possible secret. URL counts deduplicate the redacted representations.
+- Shell Links (`.lnk`, also recognized by header) have a 1 MiB reader limit, at most 128 ExtraData blocks and 4,096 IDList items. UTF-16 and ASCII path/launch declarations, LinkInfo local/UNC path strings and environment target/icon blocks are read. Non-ASCII legacy text has no established code page and is omitted with a limitation. IDList contents, volume/provider metadata and other ExtraData blocks are not interpreted; their presence is reported. Multiple declarations are kept independently; targets are never resolved and precedence is not evaluated. Comparisons cover one Windows-generated fixture and one independent MIT-licensed fixture, not every Shell namespace or extension. Supplied-artifact target relationships remain open.
+
+- Windows file access refuses explicit UNC/device/ADS paths, ambiguous DOS names, reparse points and file attributes indicating remote recall or EFS encryption. Ordinary directory scans cover unnamed data streams only. Attribute checks and final-handle checks do not eliminate ancestor-replacement races or detect drive-letter mappings to network shares. Actual cloud-provider/EFS cases remain unverified; [the Windows file-access record](spikes/windows-file-access.md) lists the tested filesystem cases and remaining work.
+
 - The fonts embedded for PDF only cover Chinese and Latin characters. Other scripts (Korean, Arabic, emoji and so on) appear as boxes in the PDF unless a font is added with `--font`; HTML and JSON are not affected.
-- When an analyzer times out (300 seconds per file by default), it is abandoned and recorded as a limitation, and the run ends as usual; but on the command line the thread it runs on cannot be forcibly terminated and stays occupied until the process exits. The desktop app runs analysis in a child process and force-ends it if it has not exited within 5 seconds of cancellation. The unpack timeout (900 seconds per container by default) is only checked when the unpacker hands over the next file; an unpacker that never hands over a file is not interrupted.
+- Individual analyzer timeouts (300 seconds per file by default) abandon threads inside the analysis process; they do not immediately terminate a parser. Both CLI analyze and the desktop app use child processes. CLI Ctrl+C or the optional `--run-timeout` asks for cancellation, allowing five seconds for a partial report before terminating the worker; no new report is written if none finishes. This does not yet guarantee termination of external disassembler descendants, cleanup after the supervisor itself is killed, or a partial report after every hard termination. CLI inspect remains in-process. The unpack timeout (900 seconds per container by default) is checked only when the unpacker hands over the next file.
 - The executable with PDF is about 49 MB, of which the Chinese font is 8.6 MB.
 - macOS has a command of its own called `aa` (Apple Archive). This program was called `aa` in its first releases (0.1.0 to 0.2.0 on Homebrew installed it as `analyze-anything`); it is `analyze-anything` everywhere now, with the short name `aaaa`.
 - Heuristic findings (suspected credentials, packing, SDK identification) can be false positives; they are all marked "Heuristic" in the report.
 - When the process is forcibly terminated, the files unpacked into the temporary directory are not cleaned up at that time (they are cleaned up on both normal exit and error); the next run clears these leftover directories when it starts.
-- When two reports are diffed, findings are paired by "rule + file location within the input". If the text of a finding contains the name of the input (for example "the largest file is App-1.0.ipa/…"), it is counted as "changed" between the two versions.
+- When two reports are diffed, findings are paired by "rule + file location within the input". Known artifact display parameters (including the largest-file path and the input bundle label) are normalized relative to the input. Arbitrary strings read from the input, including product names and embedded debug paths, remain literal; a difference in those values is still reported.
 - Desktop app: history records only save the report, so a history report that is reopened cannot show hex evidence and the input must be analyzed again; there is no automatic update; on macOS no external tool can drive the system WebView, so the whole flow is covered by the application's self-check mode (see [DESKTOP.md](DESKTOP.md)), and the native menus, drag and drop, and system dialogs can only be checked manually.
+- Supervised runs refuse a scratch location inside the selected input folder before creating it. Process workers have a bounded shutdown after parent-pipe loss; recognized scratch folders can be recovered on the next start after both ownership locks are released. Unmarked/legacy folders are left alone. Actual supervisor-kill scenarios beyond pipe-disconnect tests and external disassembler descendant termination remain unverified; see [CLI supervision](spikes/cli-supervision.md).

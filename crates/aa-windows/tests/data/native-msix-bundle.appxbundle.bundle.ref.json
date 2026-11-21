@@ -1,0 +1,53 @@
+{
+  "source_sha256": "d8f5a50dd59e476348a0791d169543c0e4e42d22d0bdc6ba0b2d75e524a25764",
+  "identity": {
+    "name": "AnalyzeAnything.BundleFixture",
+    "architecture": "neutral",
+    "publisher": "CN=Analyze Anything Fixture",
+    "version": "2.0.0.0",
+    "resource_id": "~"
+  },
+  "packages": [
+    {
+      "identity": {
+        "name": "AnalyzeAnything.BundleFixture",
+        "architecture": "x86",
+        "publisher": "CN=Analyze Anything Fixture",
+        "version": "1.0.0.0",
+        "resource_id": ""
+      },
+      "type": "application",
+      "file_name": "app.appx",
+      "offset": 38,
+      "size": 9979,
+      "resources": [
+        {
+          "language": "en-us",
+          "scale": null,
+          "dx_feature_level": null
+        }
+      ]
+    },
+    {
+      "identity": {
+        "name": "AnalyzeAnything.BundleFixture",
+        "architecture": "neutral",
+        "publisher": "CN=Analyze Anything Fixture",
+        "version": "1.0.0.0",
+        "resource_id": "language-zh"
+      },
+      "type": "resource",
+      "file_name": "resource.appx",
+      "offset": 10084,
+      "size": 2153,
+      "resources": [
+        {
+          "language": "zh-CN",
+          "scale": null,
+          "dx_feature_level": null
+        }
+      ]
+    }
+  ],
+  "api": "IAppxBundleManifestReader/IAppxBundleManifestPackageInfo"
+}

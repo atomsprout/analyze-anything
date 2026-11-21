@@ -3,6 +3,8 @@
 //! The document carries no serial number or timestamp, so the same report always exports to the
 //! same bytes.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use aa_core::Report;
 use serde_json::{Value, json};
 
@@ -34,11 +36,22 @@ pub fn cyclonedx(report: &Report) -> Value {
             if let Some(purl) = text(component, "purl") {
                 entry["purl"] = json!(purl);
             }
+            if let Some(publisher) = text(component, "publisher") {
+                entry["publisher"] = json!(publisher);
+            }
             let mut properties = Vec::new();
             for (key, property) in [("ecosystem", "aa:ecosystem"), ("source", "aa:source"), ("declared_range", "aa:declared-range")] {
                 if let Some(value) = text(component, key) {
                     properties.push(json!({ "name": property, "value": value }));
                 }
+            }
+            if let (Some(kind), Some(value)) = (text(&component["license"], "kind"), text(&component["license"], "value"))
+                && matches!(kind, "expression" | "file")
+            {
+                properties.push(json!({ "name": format!("aa:license-{kind}"), "value": value }));
+            }
+            if let Some(license) = text(component, "declared_license") {
+                properties.push(json!({ "name": "aa:declared-license", "value": license }));
             }
             entry["properties"] = json!(properties);
             Some(entry)
@@ -49,7 +62,7 @@ pub fn cyclonedx(report: &Report) -> Value {
         subject["hashes"] = json!([{ "alg": "SHA-256", "content": sha256 }]);
     }
     let truncated = listed.and_then(|f| f.get("truncated")).and_then(Value::as_bool).unwrap_or(false);
-    json!({
+    let mut bom = json!({
         "bomFormat": "CycloneDX",
         "specVersion": "1.5",
         "version": 1,
@@ -59,7 +72,32 @@ pub fn cyclonedx(report: &Report) -> Value {
             "properties": [{ "name": "aa:component-list-truncated", "value": truncated.to_string() }],
         },
         "components": components,
-    })
+    });
+    let references: BTreeSet<_> = components.iter().filter_map(|entry| text(entry, "bom-ref")).collect();
+    let mut edges = BTreeMap::<String, BTreeSet<String>>::new();
+    let nuget = listed
+        .and_then(|f| f["nuget_dependencies"].as_array())
+        .into_iter()
+        .flatten()
+        .filter(|edge| edge["status"] == "present" && edge["group_layout"] == "flat");
+    let vsix = listed.and_then(|f| f["vsix_dependencies"].as_array()).into_iter().flatten().filter(|edge| edge["status"] == "exact-match");
+    for edge in nuget.chain(vsix) {
+        if let Some([source, target]) = edge["components"].as_array().map(Vec::as_slice)
+            && let (Some(source), Some(target)) = (source.as_u64(), target.as_u64())
+            && source != target
+        {
+            let source = format!("component-{source}");
+            let target = format!("component-{target}");
+            if references.contains(source.as_str()) && references.contains(target.as_str()) {
+                edges.entry(source).or_default().insert(target);
+            }
+        }
+    }
+    if !edges.is_empty() {
+        bom["dependencies"] =
+            json!(edges.into_iter().map(|(source, targets)| json!({"ref":source,"dependsOn":targets})).collect::<Vec<_>>());
+    }
+    bom
 }
 
 #[cfg(test)]
@@ -106,5 +144,36 @@ mod tests {
         let bom = cyclonedx(&report(BTreeMap::new()));
         assert_eq!(bom["components"], json!([]));
         assert_eq!(bom["specVersion"], "1.5");
+    }
+
+    #[test]
+    fn only_present_flat_nuget_relationships_with_both_components_are_exported() {
+        let data = json!({
+            "components":[{"name":"first","license":{"kind":"expression","value":"Apache-2.0"}},{"name":"second"}],
+            "nuget_dependencies":[
+                {"status":"present","group_layout":"flat","components":[0,1]},
+                {"status":"present","group_layout":"flat","components":[0,1]},
+                {"status":"present","group_layout":"group","components":[1,0]},
+                {"status":"ambiguous","group_layout":"flat","components":[1,0]},
+                {"status":"present","group_layout":"flat","components":[0,99]}
+            ]
+        });
+        let bom = cyclonedx(&report(BTreeMap::from([("composition.components".to_owned(), data)])));
+        assert_eq!(bom["dependencies"], json!([{"ref":"component-0","dependsOn":["component-1"]}]));
+        assert_eq!(bom["components"][0]["properties"][0], json!({"name":"aa:license-expression","value":"Apache-2.0"}));
+    }
+
+    #[test]
+    fn vsix_publisher_and_qualified_relationships_are_exported() {
+        let data = json!({
+            "components":[{"name":"Parent","publisher":"Example"},{"name":"Child"}],
+            "vsix_dependencies":[
+                {"status":"exact-match","components":[0,1]},
+                {"status":"version-mismatch","components":[1,0]}
+            ]
+        });
+        let bom = cyclonedx(&report(BTreeMap::from([("composition.components".to_owned(), data)])));
+        assert_eq!(bom["components"][0]["publisher"], "Example");
+        assert_eq!(bom["dependencies"], json!([{"ref":"component-0","dependsOn":["component-1"]}]));
     }
 }

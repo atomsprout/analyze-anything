@@ -1,0 +1,290 @@
+{
+  "sample": "native-inf-relationships.inf",
+  "sha256": "a83e67591c2b491fb928f2e724f3cfa1fffb9010a2cfc40068ba7be4dcad890a",
+  "reference": "SetupOpenInfFileW/SetupEnumInfSectionsW/SetupGetStringFieldW",
+  "sections": [
+    {
+      "name": "version",
+      "entries": [
+        {
+          "key": "Signature",
+          "fields": [
+            "$Windows NT$"
+          ]
+        },
+        {
+          "key": "Provider",
+          "fields": [
+            "Example"
+          ]
+        },
+        {
+          "key": "DriverVer",
+          "fields": [
+            "01/01/2020",
+            "1.2.3.4"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "manufacturer",
+      "entries": [
+        {
+          "key": "Example",
+          "fields": [
+            "Models",
+            "NTamd64",
+            "NTarm64"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "models.ntamd64",
+      "entries": [
+        {
+          "key": "Device",
+          "fields": [
+            "Install",
+            "ROOT\\SAMPLE",
+            "ROOT\\COMPAT"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "models.ntarm64",
+      "entries": [
+        {
+          "key": "Device",
+          "fields": [
+            "Install",
+            "ROOT\\ARM"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "install.ntamd64",
+      "entries": [
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "Files"
+          ]
+        },
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "@direct.sys"
+          ]
+        },
+        {
+          "key": "AddReg",
+          "fields": [
+            "Registry"
+          ]
+        },
+        {
+          "key": "Include",
+          "fields": [
+            "external.inf"
+          ]
+        },
+        {
+          "key": "Needs",
+          "fields": [
+            "External.Install"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "install.ntarm64",
+      "entries": [
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "Files"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "install.ntamd64.services",
+      "entries": [
+        {
+          "key": "AddService",
+          "fields": [
+            "Sample",
+            "2",
+            "Service"
+          ]
+        },
+        {
+          "key": "AddService",
+          "fields": [
+            "",
+            "2"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "install.ntamd64.hw",
+      "entries": [
+        {
+          "key": "AddReg",
+          "fields": [
+            "Registry"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "service",
+      "entries": [
+        {
+          "key": "StartType",
+          "fields": [
+            "3"
+          ]
+        },
+        {
+          "key": "ServiceType",
+          "fields": [
+            "0x1"
+          ]
+        },
+        {
+          "key": "ServiceBinary",
+          "fields": [
+            ".\\renamed.sys"
+          ]
+        },
+        {
+          "key": "AddReg",
+          "fields": [
+            "Registry"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "files",
+      "entries": [
+        {
+          "key": null,
+          "fields": [
+            "renamed.sys",
+            "original.sys",
+            "",
+            "0x10"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "registry",
+      "entries": [
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "Parameters",
+            "Feature",
+            "0x00010001",
+            "1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksfiles.amd64",
+      "entries": [
+        {
+          "key": "original.sys",
+          "fields": [
+            "1",
+            "source",
+            "123"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksfiles.ntamd64",
+      "entries": [
+        {
+          "key": "unsupported.sys",
+          "fields": [
+            "1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksnames",
+      "entries": [
+        {
+          "key": "1",
+          "fields": [
+            "Media",
+            "",
+            "",
+            "\\distribution"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "destinationdirs",
+      "entries": [
+        {
+          "key": "Files",
+          "fields": [
+            "13",
+            "drivers"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unrelated",
+      "entries": [
+        {
+          "key": "AddService",
+          "fields": [
+            "Fake",
+            "2",
+            "FakeService"
+          ]
+        },
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "FakeList"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fakeservice",
+      "entries": [
+        {
+          "key": "StartType",
+          "fields": [
+            "0"
+          ]
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "projected_fields_equal": 51,
+    "repeated_json_identical": true,
+    "english_chinese_markdown": true,
+    "graph_source_rows_checked": 18
+  }
+}

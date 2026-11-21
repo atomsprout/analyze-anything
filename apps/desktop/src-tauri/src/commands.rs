@@ -73,7 +73,13 @@ async fn pick_input(app: AppHandle, state: State<'_, AppState>, folder: bool) ->
 /// Starts analyzing `path`, which must be an input the user chose. What happens next arrives as
 /// the events `run-progress`, then one of `run-done`, `run-failed` and `run-cancelled`.
 #[tauri::command]
-fn start_analysis(app: AppHandle, state: State<'_, AppState>, path: String) -> CommandResult<()> {
+fn start_analysis(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    path: String,
+    windows_source_roots: Option<Vec<aa_app::run::WindowsSourceRoot>>,
+) -> CommandResult<()> {
+    let roots = aa_app::run::validate_windows_source_roots(&windows_source_roots.unwrap_or_default()).map_err(str::to_owned)?;
     let input = PathBuf::from(&path);
     if !state.is_allowed(&input) {
         return Err("this path was not chosen by the user".into());
@@ -85,7 +91,7 @@ fn start_analysis(app: AppHandle, state: State<'_, AppState>, path: String) -> C
     let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
 
     let (handle, source) = (app.clone(), input.clone());
-    let started = Run::start(&state.program, &input, LimitOverrides::default(), move |update| {
+    let started = Run::start_with_source_roots(&state.program, &input, LimitOverrides::default(), roots, move |update| {
         let state = handle.state::<AppState>();
         if state.generation.load(Ordering::SeqCst) != generation {
             return;
@@ -156,13 +162,25 @@ struct Opened {
     live: bool,
     /// True when the input is still where it was, so it can be analyzed again.
     source_present: bool,
+    windows_source_roots: Vec<aa_app::run::WindowsSourceRoot>,
 }
 
 /// Loads the kept report `id` for display. The page then shows `report://localhost/<id>`.
 #[tauri::command]
 fn open_report(state: State<'_, AppState>, id: String) -> CommandResult<Opened> {
     let entry = state.history.entry(&id).map_err(|e| e.to_string())?;
-    state.report(&id)?;
+    let report = state.report(&id)?;
+    let roots = match report.summary.get("engine.windows-source-roots") {
+        None => Vec::new(),
+        Some(value) => {
+            if !value.as_array().is_some_and(|a| a.len() <= 32) {
+                return Err("saved source-root settings exceed their profile".into());
+            }
+            let roots = serde_json::from_value::<Vec<aa_app::run::WindowsSourceRoot>>(value.clone())
+                .map_err(|_| "saved source-root settings could not be read")?;
+            aa_app::run::validate_windows_source_roots(&roots).map_err(str::to_owned)?
+        }
+    };
     let live = lock(&state.live).as_deref() == Some(id.as_str());
     let source_present = entry.source.as_deref().is_some_and(|source| {
         let path = Path::new(source);
@@ -173,7 +191,7 @@ fn open_report(state: State<'_, AppState>, id: String) -> CommandResult<Opened> 
         }
         present
     });
-    Ok(Opened { entry, live, source_present })
+    Ok(Opened { entry, live, source_present, windows_source_roots: roots })
 }
 
 #[derive(Serialize)]

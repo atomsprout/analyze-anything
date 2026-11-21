@@ -1,0 +1,424 @@
+{
+  "date": "2026-11-20",
+  "host": "Windows x64 10.0.26200.0",
+  "runs": [
+    {
+      "analyzer": "analyze-anything 0.1.1",
+      "analyzer_sha256": "85d35f00ed40f32675cd619d38aeaaf29add17a99105e4b64cd183ca5869a7a2",
+      "checks_passed": 12,
+      "failures": [],
+      "name": "explicit",
+      "samples": [
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "dotnet.exe",
+          "native_status": "Valid",
+          "sha256": "21a46f1e5235cf4e844b9de5429f0e198b9c97a41f0503a66442f1d639ca3ee6",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "BB793DB742624269BB5F4515BBE9A3DF418F588D",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "hello-signed.exe",
+          "native_status": "UnknownError",
+          "sha256": "874dd045e7a59b0d07e3bd1a0c9a2513135a0258c4986ad4d2b9842220110844",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "145BEC8B3A59DD46D8AF9E2C612538F468C38AE1",
+          "signtool_exit": 1
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "msi-signed.msi",
+          "native_status": "UnknownError",
+          "sha256": "ef1e6832d44740b25241643e5e0ffb7c638c3a7666f073215e0350edc502f282",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "4C87D63B308DFE079E670B1ED5F785AB206D9F04",
+          "signtool_exit": 1
+        }
+      ],
+      "signtool_sha256": null
+    },
+    {
+      "analyzer": "analyze-anything 0.1.1",
+      "analyzer_sha256": "85d35f00ed40f32675cd619d38aeaaf29add17a99105e4b64cd183ca5869a7a2",
+      "checks_passed": 50,
+      "failures": [],
+      "name": "discovered",
+      "samples": [
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "dotnet.exe",
+          "native_status": "Valid",
+          "sha256": "21a46f1e5235cf4e844b9de5429f0e198b9c97a41f0503a66442f1d639ca3ee6",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "BB793DB742624269BB5F4515BBE9A3DF418F588D",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "git-gui.exe",
+          "native_status": "Valid",
+          "sha256": "50c885fa12b44f86a16f3e37c283a47154bbabf81f43d9067bfcc5c4862f5afc",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "git-lfs.exe",
+          "native_status": "Valid",
+          "sha256": "f668c4ba88417ecdf29470b3af92d576a701cc0f76dd083b13d032f4b3f1f247",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "git-receive-pack.exe",
+          "native_status": "NotSigned",
+          "sha256": "1c862092fcab077b40ee2032fcfe76d38ce23a09d8650af59022b994d6d95b87",
+          "signature_type": "None",
+          "signer_thumbprint": null,
+          "signtool_exit": 1
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "git-upload-pack.exe",
+          "native_status": "NotSigned",
+          "sha256": "fedec96497a2a492f8968a262101dd7814d911d68237b09b44cfb8924b8a49a4",
+          "signature_type": "None",
+          "signer_thumbprint": null,
+          "signtool_exit": 1
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "git.exe",
+          "native_status": "Valid",
+          "sha256": "f668c4ba88417ecdf29470b3af92d576a701cc0f76dd083b13d032f4b3f1f247",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "gitk.exe",
+          "native_status": "Valid",
+          "sha256": "7d2fb89106ad635e1243d559fdd4d2d2f7ac75e8ff7f35da52dbc9fd8ecb94eb",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "scalar.exe",
+          "native_status": "Valid",
+          "sha256": "f668c4ba88417ecdf29470b3af92d576a701cc0f76dd083b13d032f4b3f1f247",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "tig.exe",
+          "native_status": "Valid",
+          "sha256": "d676d144907e84a6d1d43732dc4d3e6ad22db385a33bc33640f880fd07f9b570",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "bash.exe",
+          "native_status": "Valid",
+          "sha256": "e5c6faaffbcfd51751f168a0e447d065deb1165e4420d0f7649fc0b6cfc046b4",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "git.exe",
+          "native_status": "Valid",
+          "sha256": "f668c4ba88417ecdf29470b3af92d576a701cc0f76dd083b13d032f4b3f1f247",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "sh.exe",
+          "native_status": "Valid",
+          "sha256": "e5c6faaffbcfd51751f168a0e447d065deb1165e4420d0f7649fc0b6cfc046b4",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "3EB14A3AEF84B7153E139397F0A49E2FAC662B0E",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "7z.exe",
+          "native_status": "NotSigned",
+          "sha256": "634d38c0c414178e2f35de5cc0fb29aa082eec227e630c4481e1af7694980ac9",
+          "signature_type": "None",
+          "signer_thumbprint": null,
+          "signtool_exit": 1
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "7zFM.exe",
+          "native_status": "NotSigned",
+          "sha256": "2e030aa5cdf7c562c0acc516e43265d031ec41f448f972d2c3882e9208aa3eb8",
+          "signature_type": "None",
+          "signer_thumbprint": null,
+          "signtool_exit": 1
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "7zG.exe",
+          "native_status": "NotSigned",
+          "sha256": "7b5eda73c21960c451ea3148900b28cdbac7180e43047fbc944028096e497c08",
+          "signature_type": "None",
+          "signer_thumbprint": null,
+          "signtool_exit": 1
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "Uninstall.exe",
+          "native_status": "NotSigned",
+          "sha256": "e25b1326cbaf8e558d76b366c2ad62f1ef78d0d1ec7a47dd583d265ecf5e491b",
+          "signature_type": "None",
+          "signer_thumbprint": null,
+          "signtool_exit": 1
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "msedge.exe",
+          "native_status": "Valid",
+          "sha256": "2497874639116d8edc3de34b3fd83f72fa099112a5d2a426e1f08fcf39a99612",
+          "signature_type": "Authenticode",
+          "signer_thumbprint": "4028CAD637509D4744B17EC5B42AED8D7A31E6AF",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "notepad.exe",
+          "native_status": "Valid",
+          "sha256": "2d0b3948c1edc5c6a1d1f3e3658613252cfbbfa1b98b46cb7cc8e5bf2efb158f",
+          "signature_type": "Catalog",
+          "signer_thumbprint": "AD714D3C4B2B794A95441375C954130E9109EF4C",
+          "signtool_exit": 1
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "cmd.exe",
+          "native_status": "Valid",
+          "sha256": "ccd79a7568ea9240ccd6fe124807b9d3e4dbc3a4cf92954299ac3029f4a91d02",
+          "signature_type": "Catalog",
+          "signer_thumbprint": "AD714D3C4B2B794A95441375C954130E9109EF4C",
+          "signtool_exit": 1
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            },
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "kernel32.dll",
+          "native_status": "Valid",
+          "sha256": "970e5e15eed7d53c8b88e06ddc71884c31804f1cb5286abf01fbce39b7f0e29f",
+          "signature_type": "Catalog",
+          "signer_thumbprint": "667BBA1E1F478221AA65DE4F75187A751B03A453",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            },
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "ntfs.sys",
+          "native_status": "Valid",
+          "sha256": "fd8bb864753d8614bd6a722e92f7a972267ab173484885f29dc9617382fe8071",
+          "signature_type": "Catalog",
+          "signer_thumbprint": "AD714D3C4B2B794A95441375C954130E9109EF4C",
+          "signtool_exit": 0
+        },
+        {
+          "checks": [],
+          "limitations": {},
+          "name": "powershell.exe",
+          "native_status": "Valid",
+          "sha256": "d8f182560210d43baaf767d482ad1dc1207372522e91413b9d5e515a875e552d",
+          "signature_type": "Catalog",
+          "signer_thumbprint": "667BBA1E1F478221AA65DE4F75187A751B03A453",
+          "signtool_exit": 1
+        },
+        {
+          "checks": [
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            },
+            {
+              "chain": "passed",
+              "content_digest": "passed",
+              "file_digest": "passed",
+              "signature": "passed"
+            }
+          ],
+          "limitations": {},
+          "name": "explorer.exe",
+          "native_status": "Valid",
+          "sha256": "eee840f2bce235dce1da0a5f4eacdb94a2bfb11acf13822d7dbcd243273219c3",
+          "signature_type": "Catalog",
+          "signer_thumbprint": "AD714D3C4B2B794A95441375C954130E9109EF4C",
+          "signtool_exit": 0
+        }
+      ],
+      "signtool_sha256": "e7b517a6a2828af2d1fba3da60ae1e322a95141bfae192622725329630caa2b3"
+    }
+  ],
+  "schema_version": 1
+}

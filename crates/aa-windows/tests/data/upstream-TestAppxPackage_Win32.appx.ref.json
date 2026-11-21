@@ -1,0 +1,191 @@
+{
+  "reference": "IAppxBlockMapReader/IAppxBlockMapFile/IAppxBlockMapBlock",
+  "sha256": "f9eb64ea3d5d0815b5dd4c6476bf3dbe3d695baad4020ca92ee878af8115ebda",
+  "hash_method_declared": "http://www.w3.org/2001/04/xmlenc#sha256",
+  "files": [
+    {
+      "name": "AppxManifest.xml",
+      "size": 3251,
+      "local_file_header_size": 46,
+      "blocks": [
+        {
+          "digest": "3f48220562f3eac7ecb3c2998e34c9ebfd231298b6e3e08f467a237f6c82e9c3",
+          "native_compressed_size": 1332
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "3f48220562f3eac7ecb3c2998e34c9ebfd231298b6e3e08f467a237f6c82e9c3",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\LockScreenLogo.scale-200.png",
+      "size": 1430,
+      "local_file_header_size": 65,
+      "blocks": [
+        {
+          "digest": "a41a053b3fc3b0c109720ccd437a19725ae9163ea75990222a12b596b9c7ca76",
+          "native_compressed_size": 1430
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "a41a053b3fc3b0c109720ccd437a19725ae9163ea75990222a12b596b9c7ca76",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\SplashScreen.scale-200.png",
+      "size": 7700,
+      "local_file_header_size": 63,
+      "blocks": [
+        {
+          "digest": "a3382b0b1b834e95b888f06d483dc2d78fa1b3855e0683d5cfbd5167be9731a6",
+          "native_compressed_size": 7700
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "a3382b0b1b834e95b888f06d483dc2d78fa1b3855e0683d5cfbd5167be9731a6",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\Square150x150Logo.scale-200.png",
+      "size": 2937,
+      "local_file_header_size": 68,
+      "blocks": [
+        {
+          "digest": "7f3cb5738e8f05544445f79996a313f8b47dee22dbc9c7be859d2707710f0c73",
+          "native_compressed_size": 2937
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "7f3cb5738e8f05544445f79996a313f8b47dee22dbc9c7be859d2707710f0c73",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\Square44x44Logo.scale-200.png",
+      "size": 1647,
+      "local_file_header_size": 66,
+      "blocks": [
+        {
+          "digest": "594492a25070951d7462c091d9f899a66f55ba992bb9b05d98d50f67cdfb2abe",
+          "native_compressed_size": 1647
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "594492a25070951d7462c091d9f899a66f55ba992bb9b05d98d50f67cdfb2abe",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\Square44x44Logo.targetsize-24_altform-unplated.png",
+      "size": 1255,
+      "local_file_header_size": 87,
+      "blocks": [
+        {
+          "digest": "48cf9c22156a0b3d77982641f972785e7861a7257f7bcf155be7d5a12e1aa3d8",
+          "native_compressed_size": 1255
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "48cf9c22156a0b3d77982641f972785e7861a7257f7bcf155be7d5a12e1aa3d8",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\StoreLogo.png",
+      "size": 1451,
+      "local_file_header_size": 50,
+      "blocks": [
+        {
+          "digest": "ae95e99a96251abaf8de15c9cdaddb8cefb1b8b320b10a4f1f4e1dc3c25c1b1a",
+          "native_compressed_size": 1451
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "ae95e99a96251abaf8de15c9cdaddb8cefb1b8b320b10a4f1f4e1dc3c25c1b1a",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\Wide310x150Logo.scale-200.png",
+      "size": 3204,
+      "local_file_header_size": 66,
+      "blocks": [
+        {
+          "digest": "b5b7754832c08e58faacfe64ea4b9f8b59b52a658e4eea4aab3790cfb89faa03",
+          "native_compressed_size": 3204
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "b5b7754832c08e58faacfe64ea4b9f8b59b52a658e4eea4aab3790cfb89faa03",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "resources.pri",
+      "size": 3760,
+      "local_file_header_size": 43,
+      "blocks": [
+        {
+          "digest": "a2669d167e735db05f0ed9806636e3179e1b8771ca65badc0fc5290685138916",
+          "native_compressed_size": 1501
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "a2669d167e735db05f0ed9806636e3179e1b8771ca65badc0fc5290685138916",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "TestAppxPackage.exe",
+      "size": 186368,
+      "local_file_header_size": 49,
+      "blocks": [
+        {
+          "digest": "78e76cad44119895e217753636e3703b071d0277d80297a4881f3d02050aaa10",
+          "native_compressed_size": 20070
+        },
+        {
+          "digest": "8949278415072ea59688454ee9d020f6e02319c3c546d8f4a234eb8b7451fb84",
+          "native_compressed_size": 24274
+        },
+        {
+          "digest": "2ccf2e411f6320165cef6c8ad70c8b0a074697e3d2401e421fe49f7477527ac4",
+          "native_compressed_size": 21197
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "0a530b3fb0597db25632dac938815fe954cf4ee950bb052bc70f4a4073b59b39",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "TestAppxPackage.winmd",
+      "size": 3072,
+      "local_file_header_size": 51,
+      "blocks": [
+        {
+          "digest": "577eea08ec388e14ba5a479a38bc0e88b5e7a2f051fc4bba6d7652c16a867e04",
+          "native_compressed_size": 1311
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "577eea08ec388e14ba5a479a38bc0e88b5e7a2f051fc4bba6d7652c16a867e04",
+      "file_hash_base64_declared": null
+    }
+  ]
+}

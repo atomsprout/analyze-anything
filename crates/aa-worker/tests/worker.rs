@@ -9,6 +9,55 @@ use aa_worker::WorkerError;
 use aa_worker::protocol::{LimitOverrides, MAX_CHUNK, Request, Response};
 use aa_worker::{Worker, serve};
 
+#[test]
+#[ignore = "helper run only as a child process by an_unresponsive_worker_is_forcibly_ended"]
+fn unresponsive_worker_fixture() {
+    struct Stuck;
+    impl aa_core::plugin::Analyzer for Stuck {
+        fn id(&self) -> &'static str {
+            "stuck-test"
+        }
+        fn rules(&self) -> &'static [aa_core::plugin::Rule] {
+            &[]
+        }
+        fn analyze_file(&self, _: &dyn aa_core::plugin::Tree, _: &aa_core::Artifact, _: &mut aa_core::plugin::Output) {
+            loop {
+                std::thread::park();
+            }
+        }
+    }
+    let registry = Registry { analyzers: vec![Arc::new(Stuck)], unpackers: Vec::new() };
+    aa_worker::serve_process_with_registry(std::io::stdin().lock(), std::io::stdout(), registry);
+}
+
+#[test]
+fn an_unresponsive_worker_is_forcibly_ended() {
+    let dir = tempfile::tempdir().expect("private test root");
+    let input = dir.path().join("input.txt");
+    std::fs::write(&input, "plain input data").expect("fixture data");
+    let args = ["--ignored", "--exact", "unresponsive_worker_fixture", "--nocapture"].map(std::ffi::OsString::from);
+    let mut worker = Worker::start_os(&std::env::current_exe().expect("test program"), &args, dir.path()).expect("helper process");
+    let scratch = worker.scratch().to_path_buf();
+    worker.analyze(&input, LimitOverrides::default()).expect("analysis request");
+    let deadline = std::time::Instant::now() + WAIT;
+    loop {
+        assert!(std::time::Instant::now() < deadline, "helper did not start analysis");
+        match worker.receive(Duration::from_secs(1)) {
+            Ok(Response::Progress { step: Event::Analyzing { .. } }) => break,
+            Ok(Response::Progress { .. }) | Err(aa_worker::WorkerError::Timeout) => {}
+            other => panic!("unexpected helper result: {other:?}"),
+        }
+    }
+    // Let the analyzer enter its noncooperative call before requesting cancellation.
+    std::thread::sleep(Duration::from_millis(100));
+    let started = std::time::Instant::now();
+    assert!(!worker.stop(Duration::from_millis(100)), "hung worker needs force termination");
+    assert!(!worker.is_running());
+    assert!(started.elapsed() < Duration::from_secs(5));
+    drop(worker);
+    assert!(!scratch.exists(), "force termination must clean its scratch folder");
+}
+
 const WAIT: Duration = Duration::from_secs(60);
 
 fn worker_program() -> &'static Path {
@@ -53,7 +102,60 @@ fn until_done(worker: &mut Worker) -> (Response, Vec<Event>) {
 }
 
 fn files_in(dir: &Path) -> usize {
-    std::fs::read_dir(dir).map(|entries| entries.count()).unwrap_or(0)
+    std::fs::read_dir(dir).map(|entries| entries.flatten().filter(|entry| entry.file_name() != ".owner.lock").count()).unwrap_or(0)
+}
+
+#[test]
+fn losing_the_parent_pipe_ends_a_permanently_blocked_worker() {
+    use std::process::{Command, Stdio};
+    let dir = tempfile::tempdir().expect("private fixture root");
+    let input = dir.path().join("input.txt");
+    std::fs::write(&input, "unexecuted input").expect("fixture bytes");
+    let scratch = dir.path().join("worker-123-abc-0");
+    std::fs::create_dir(&scratch).expect("scratch directory");
+    let mut child = Command::new(std::env::current_exe().expect("test program"))
+        .args(["--ignored", "--exact", "unresponsive_worker_fixture", "--nocapture"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("helper process");
+    let request =
+        Request::Analyze { path: input, scratch: scratch.clone(), limits: LimitOverrides::default(), windows_source_roots: Vec::new() };
+    let mut stdin = child.stdin.take().expect("parent pipe");
+    writeln!(stdin, "{}", serde_json::to_string(&request).expect("request JSON")).expect("send analysis");
+    stdin.flush().expect("flush request");
+    // Keep stdout draining and confirm the analyzer actually starts before closing the parent pipe.
+    let stdout = child.stdout.take().expect("worker output");
+    let (sender, started) = std::sync::mpsc::channel();
+    let reader = std::thread::spawn(move || {
+        use std::io::BufRead;
+        for line in std::io::BufReader::new(stdout).lines().map_while(Result::ok) {
+            if matches!(serde_json::from_str::<Response>(&line), Ok(Response::Progress { step: Event::Analyzing { .. } })) {
+                let _ = sender.send(());
+            }
+        }
+    });
+    started.recv_timeout(WAIT).expect("worker analysis started");
+    std::thread::sleep(Duration::from_millis(100));
+    assert_eq!(aa_worker::sweep_stale_workers(dir.path()), 0, "the child owns its scratch folder");
+    drop(stdin);
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        if let Some(status) = child.try_wait().expect("worker status") {
+            assert!(!status.success(), "the permanently blocked worker cannot finish normally");
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("the worker outlived its disconnected parent pipe");
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    reader.join().expect("output reader");
+    assert_eq!(aa_worker::sweep_stale_workers(dir.path()), 1, "the next run recovers the orphan");
+    assert!(!scratch.exists());
 }
 
 #[test]
@@ -103,6 +205,29 @@ fn a_worker_process_reports_what_the_engine_reports_and_serves_bytes() {
     drop(worker);
     assert!(!scratch.exists());
     assert_eq!(files_in(&scratch_root), 0);
+}
+
+#[test]
+fn logical_windows_source_roots_survive_worker_transport_and_match_direct_analysis() {
+    let dir = tempfile::tempdir().expect("fixture root");
+    let input = dir.path().join("input");
+    std::fs::create_dir(&input).expect("input folder");
+    std::fs::write(
+        input.join("driver.inf"),
+        b"[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\na.sys=1,,5\n[SourceDisksNames]\n1=Media\n",
+    )
+    .expect("INF");
+    std::fs::write(input.join("a.sys"), b"bytes").expect("unexecuted source");
+    let roots = vec![aa_engine::WindowsSourceRoot { inf: "DRIVER.INF".into(), root: ".".into() }];
+    let mut worker = Worker::start(worker_program(), &[], &dir.path().join("scratch")).expect("worker");
+    worker.analyze_with_source_roots(&input, LimitOverrides::default(), roots.clone()).expect("send profile");
+    let (response, _) = until_done(&mut worker);
+    let Response::Report { report } = response else { panic!("worker must return a report") };
+    let options = Options { windows_source_roots: roots, ..Options::default() };
+    let direct = aa_engine::analyze_with(&Registry::standard(), &input, &options, &mut NoProgress).expect("direct report");
+    assert_eq!(serde_json::to_vec(&*report).expect("worker JSON"), serde_json::to_vec(&direct).expect("direct JSON"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.inf-source-files"));
+    worker.stop(WAIT);
 }
 
 #[test]
@@ -238,7 +363,15 @@ fn messages_have_the_documented_shape_and_survive_a_round_trip() {
     }
     // Limits may be left out, in whole or in part.
     let analyze: Request = serde_json::from_str(r#"{"request":"analyze","path":"/in/a.zip","scratch":"/tmp/s"}"#).expect("parse");
-    assert_eq!(analyze, Request::Analyze { path: "/in/a.zip".into(), scratch: "/tmp/s".into(), limits: LimitOverrides::default() });
+    assert_eq!(
+        analyze,
+        Request::Analyze {
+            path: "/in/a.zip".into(),
+            scratch: "/tmp/s".into(),
+            limits: LimitOverrides::default(),
+            windows_source_roots: Vec::new()
+        }
+    );
     let limited: Request =
         serde_json::from_str(r#"{"request":"analyze","path":"a","scratch":"s","limits":{"max_depth":2}}"#).expect("parse");
     let Request::Analyze { limits, .. } = limited else { panic!("expected analyze") };
