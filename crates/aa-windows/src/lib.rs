@@ -39,6 +39,7 @@ mod msi;
 mod msisig;
 mod msix_blockmap;
 mod msix_signature;
+mod msix_xml;
 mod msix_zip;
 mod nsis;
 mod pe;

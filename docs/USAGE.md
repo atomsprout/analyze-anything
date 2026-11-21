@@ -30,6 +30,12 @@ certificate policy and Windows trust remain unchecked; digest agreement
 does not authenticate a package. Unsupported or ambiguous names, missing files and exhausted budgets remain
 limitations. See [the MSIX check scope](spikes/windows-msix-integrity.md).
 
+Manifest declarations use known namespace/hierarchy paths. Duplicate identities do not
+select a first value; dependencies and target-device families are preserved as literal
+constraints. Unknown extensions and limited fields remain explicit issues. This is
+not full schema validation or installed-package/host compatibility resolution; see
+[the manifest scope](spikes/windows-msix-manifest.md).
+
 | Format | File | For |
 |---|---|---|
 | `json` | `report.json` | The single source of truth: the whole file tree, every finding and its evidence, the limitations, the text of the rules. Every other format is rendered from it |

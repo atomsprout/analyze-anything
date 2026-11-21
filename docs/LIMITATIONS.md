@@ -45,6 +45,16 @@ Three SDK-built profiles and Microsoft's pinned test APPX have native declaratio
 content comparisons; broader profiles and W6 acceptance remain open. See
 [the MSIX scope record](spikes/windows-msix-integrity.md).
 
+The MSIX manifest reader projects known namespace/hierarchy paths and bounded separate
+declarations. Missing/unsupported/duplicate direct identities do not select a first
+identity; repeated properties, application IDs and dependency/device-family names are
+explicit. Dependencies, device-family versions and resource metadata remain literal,
+with no installed-state, external-target or host-version resolution. Unknown namespaces,
+attributes, modern qualifiers and nested behavior remain unread issues. Schema validation,
+publisher/certificate comparison and installability are not established. The 2010 manifest
+namespace has constructed coverage only; four Windows 10 manifests match native readers.
+See [the manifest scope record](spikes/windows-msix-manifest.md).
+
 ZIP archives whose central directory repeats names receive an explicit limitation:
 the current ZIP library collapses those records, so not every version is retained.
 Their container listing is incomplete and cannot establish name-unique relationships.

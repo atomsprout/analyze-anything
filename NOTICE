@@ -83,7 +83,7 @@ Test samples in crates/aa-windows/tests/data (not part of the program):
     the existing project hello.exe fixture, generated PNGs and deterministic data,
     an empty file and a project manifest. They are unsigned, never installed or
     executed, and contain no private key. Their *.ref.json files are Apache-2.0
-    snapshots from the read-only Windows AppxPackaging block-map APIs.
+    snapshots from the read-only Windows AppxPackaging block-map and manifest APIs.
 
   - upstream-echo.inf: unchanged bytes of general/echo/kmdf/driver/AutoSync/echo.inx
     from Microsoft's Windows-driver-samples at commit

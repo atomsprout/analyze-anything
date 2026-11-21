@@ -160,3 +160,15 @@ decoded into memory for public-key verification; no certificate is installed, no
 trust/chain/revocation lookup is requested, and no package is installed or run.
 Other SIP versions, signature algorithms, publisher policies and bundles retain their
 separate qualification gates.
+
+Compare manifest identity, package dependencies and target-device families with native
+read-only AppxPackaging readers, using the same four licensed package fixtures:
+
+    python tools/native-compare/windows-msix-manifest-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/msix-manifest-check
+
+Use a fresh output directory. It writes native reference snapshots and compares four
+originals plus five namespace/cardinality/version variants, repeated JSON, source
+preservation and both report languages. A native rejection is recorded separately
+from static projection of known declarations. No package is installed, no referenced
+resource/executable/package is opened, and no installed state is consulted. Full XSD
+validation, publisher/certificate matching and dependency resolution remain separate.

@@ -20,6 +20,49 @@ fn membership_entry<'a>(fact: &'a Value, profile: &str) -> &'a Value {
 }
 
 #[test]
+fn msix_manifest_identity_and_dependency_projections_match_native_readers() {
+    for package in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"]
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data(package))).expect("licensed package");
+        let mut bytes = Vec::new();
+        archive.by_name("AppxManifest.xml").expect("manifest").read_to_end(&mut bytes).expect("XML bytes");
+        let run = analyze(&[("AppxManifest.xml", bytes.clone())]);
+        let fact = run.fact("AppxManifest.xml", "windows.msix");
+        let native: Value = serde_json::from_slice(&data(&format!("{package}.manifest.ref.json"))).expect("native manifest reference");
+        assert_eq!(fact["source_sha256"], native["source_sha256"]);
+        assert_eq!(fact["identity_status"], "unique");
+        assert_eq!(fact["identity_projection_established"], true);
+        for key in ["name", "publisher", "version", "architecture"] {
+            assert_eq!(fact["identity"][key], native["identity"][key]);
+        }
+        assert_eq!(
+            fact["identity"]["resource_id"].as_str().unwrap_or(""),
+            native["identity"]["resource_id"].as_str().expect("native resource id")
+        );
+        for (kind, keys) in [
+            ("dependencies", &["Name", "Publisher", "MinVersion"][..]),
+            ("target_device_families", &["Name", "MinVersion", "MaxVersionTested"][..]),
+        ] {
+            let projected = fact[kind].as_array().expect("projected dependencies");
+            let expected = native[kind].as_array().expect("native dependencies");
+            assert_eq!(projected.len(), expected.len());
+            for (row, native) in projected.iter().zip(expected) {
+                assert_eq!(row["projection_supported"], true);
+                for key in keys {
+                    assert_eq!(row["attributes"][key], native[key]);
+                }
+            }
+        }
+        assert_eq!(fact["schema_validated"], false);
+        assert_eq!(fact["references_resolved"], false);
+        assert_eq!(fact["package_signature_checked"], false);
+        assert!(!run.findings("windows.msix-identity").is_empty());
+        assert!(!run.findings("windows.msix-dependencies").is_empty());
+        assert_eq!(fact, analyze(&[("AppxManifest.xml", bytes)]).fact("AppxManifest.xml", "windows.msix"));
+    }
+}
+
+#[test]
 fn msix_content_declarations_and_checks_match_native_appxpackaging_references() {
     use base64::Engine;
     use base64::engine::general_purpose::STANDARD;

@@ -307,14 +307,18 @@ CLI build passed. The full workspace run is recorded in
 corpus and 53 Windows pipeline tests. After the final independent DER-test helper and
 stale-source cases, all 101 Windows unit tests passed (one fixture-generation helper
 remains intentionally ignored), as did all 45 engine integration tests. The CMS reuse
-also retains the existing catalog regressions. Cross-platform CI for this signature
-increment is the next gate; W6 is not complete.
+also retains the existing catalog regressions. All five jobs passed for this signature
+increment in run [44880651282](https://github.com/atomsprout/analyze-anything/actions/runs/44880651282).
+W6 is not complete. The next [manifest increment](windows-msix-manifest.md) establishes
+bounded namespace/path and ambiguity projections plus literal dependency/device-family
+declarations; it does not validate the whole schema or compare publisher certificates.
 
 ## Remaining W6 gates
 
 Broaden physical block/ZIP profiles and independent large-file coverage; establish package/bundle
-signature/bundle coverage beyond this initial profile, publisher consistency and manifest identity/namespace conflicts; model bundle architecture/resource
-coverage, dependencies, target-device requirements and appinstaller references. Add
+signature/bundle coverage beyond this initial profile and publisher consistency; broaden
+manifest namespace/extension/schema coverage, then model bundle architecture/resource
+coverage, supported dependency resolution, target-device relationships and appinstaller references. Add
 broader Unicode/alias, large-file, alternate-extension and independently signed/bundled
 samples with their native references. None of these gates is closed by content agreement.
 

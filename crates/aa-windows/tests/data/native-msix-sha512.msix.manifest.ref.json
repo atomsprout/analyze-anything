@@ -1,0 +1,19 @@
+{
+  "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+  "source_sha256": "3c733fda9540f520e21c74b1c0f3ff6ee17cd59b6c8cf38a87f76e7adc502348",
+  "identity": {
+    "name": "AnalyzeAnything.BlockMapFixture",
+    "publisher": "CN=Analyze Anything Fixture",
+    "version": "1.0.0.0",
+    "architecture": "x86",
+    "resource_id": ""
+  },
+  "dependencies": [],
+  "target_device_families": [
+    {
+      "Name": "Windows.Desktop",
+      "MinVersion": "10.0.17763.0",
+      "MaxVersionTested": "10.0.26100.0"
+    }
+  ]
+}
