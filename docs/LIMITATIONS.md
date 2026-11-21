@@ -38,7 +38,7 @@ not establish package trust. An initial P7X layer checks bounded SHA-256 SIP cap
 CMS signature mathematics and original AXPC/AXCD/AXCT/AXBM/optional AXCI digests for
 the final-signature-record ZIP32/ZIP64 profile. One pinned Microsoft RSA-2048/SHA-256
 APPX has been compared with CryptoAPI and independent hashes. Other SIP/signature
-profiles, bundles, publisher-certificate equality, timestamp/revocation/certificate
+profiles, bundles, broader publisher subject encodings, timestamp/revocation/certificate
 policy, Windows trust and installation eligibility remain unestablished. Name binding uses the shared conservative
 ASCII Windows path profile and requires complete, unambiguous input enumeration.
 Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and
@@ -51,7 +51,12 @@ identity; repeated properties, application IDs and dependency/device-family name
 explicit. Dependencies, device-family versions and resource metadata remain literal,
 with no installed-state, external-target or host-version resolution. Unknown namespaces,
 attributes, modern qualifiers and nested behavior remain unread issues. Schema validation,
-publisher/certificate comparison and installability are not established. The 2010 manifest
+full certificate policy and installability are not established. The separate publisher
+layer compares a unique manifest identity with a uniquely verified embedded CMS signer
+under a bounded static Windows reverse-X.500 spelling profile. Unknown OID aliases,
+unsupported legacy encodings, control characters, redaction and ambiguity remain unresolved.
+Literal comparison and signed manifest coverage are separate; neither establishes Windows
+trust. See [the publisher scope](spikes/windows-msix-publisher.md). The 2010 manifest
 namespace has constructed coverage only; four Windows 10 manifests match native readers.
 See [the manifest scope record](spikes/windows-msix-manifest.md).
 

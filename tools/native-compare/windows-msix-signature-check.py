@@ -18,7 +18,7 @@ import zipfile
 import zlib
 
 
-def native_verify(p7x):
+def native_verify(p7x, include_subject=False):
     dll = c.WinDLL("crypt32", use_last_error=True, winmode=0x800)
     dll.CryptMsgOpenToDecode.argtypes = [w.DWORD, w.DWORD, w.DWORD, c.c_void_p, c.c_void_p, c.c_void_p]
     dll.CryptMsgOpenToDecode.restype = c.c_void_p
@@ -55,7 +55,19 @@ def native_verify(p7x):
         if not certificate:
             raise c.WinError(c.get_last_error())
         passed = bool(dll.CryptMsgControl(handle, 0, 1, certificate.contents.info))
-        return {"decoded": True, "verified": passed, "error": None if passed else hex(c.get_last_error()), "trust_checked": False}
+        result = {"decoded": True, "verified": passed, "error": None if passed else hex(c.get_last_error()), "trust_checked": False}
+        if include_subject:
+            class Blob(c.Structure):
+                _fields_ = [("size", w.DWORD), ("data", c.c_void_p)]
+            class Algorithm(c.Structure):
+                _fields_ = [("oid", c.c_char_p), ("parameters", Blob)]
+            class InfoPrefix(c.Structure):
+                _fields_ = [("version", w.DWORD), ("serial", Blob), ("algorithm", Algorithm), ("issuer", Blob),
+                            ("not_before", w.FILETIME), ("not_after", w.FILETIME), ("subject", Blob)]
+            info = c.cast(certificate.contents.info, c.POINTER(InfoPrefix)).contents
+            assert 0 < info.subject.size <= 16384
+            result["subject_der"] = c.string_at(info.subject.data, info.subject.size).hex()
+        return result
     finally:
         if certificate:
             dll.CertFreeCertificateContext(certificate)
@@ -171,7 +183,10 @@ def main():
         assert binding["unresolved_digests"] == 0
         for expected, checked in zip(comparisons, binding["checks"]):
             assert expected["label"] == checked["label"] and expected["expected"] == checked["expected"] and expected["computed"] == checked["computed"]
-        assert not binding["publisher_checked"] and not binding["windows_trust_checked"]
+        assert binding["publisher_checked"] == native["verified"]
+        if native["verified"]:
+            assert binding["publisher_matches"] and binding["publisher_manifest_signed_coverage"]
+        assert not binding["windows_trust_checked"]
         assert package.read_bytes() == raw
         assert "Declared MSIX package digests match original bytes" in (destination / "report.md").read_text(encoding="utf-8")
         assert "windows.msix-signature-binding" in (destination / "report.html").read_text(encoding="utf-8")

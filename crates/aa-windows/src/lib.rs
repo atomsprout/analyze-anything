@@ -38,6 +38,7 @@ mod lnk;
 mod msi;
 mod msisig;
 mod msix_blockmap;
+mod msix_publisher;
 mod msix_signature;
 mod msix_xml;
 mod msix_zip;

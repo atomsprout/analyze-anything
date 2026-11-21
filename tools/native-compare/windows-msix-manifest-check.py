@@ -18,7 +18,7 @@ import sys
 import zipfile
 
 
-def native(path, api):
+def native(path, api, compare_publishers=None):
     ole, shell = c.WinDLL("ole32", winmode=0x800), c.WinDLL("shlwapi", winmode=0x800)
     ole.CoInitializeEx.argtypes = [c.c_void_p, w.DWORD]
     ole.CoInitializeEx.restype = c.c_long
@@ -79,8 +79,15 @@ def native(path, api):
         reader3 = c.c_void_p()
         api.checked(api.call(reader, 0, (c.POINTER(api.Guid), c.POINTER(c.c_void_p)), (c.byref(api.guid("C43825AB-69B7-400A-9709-CC37F5A72D24")), c.byref(reader3))))
         families = enumerate_rows(reader3, 14, lambda item: {"Name": text(item, 3), "MinVersion": version(number(item, 4, c.c_uint64)), "MaxVersionTested": version(number(item, 5, c.c_uint64))})
-        return {"api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3", "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "identity": identity, "dependencies": dependencies, "target_device_families": families}
+        result = {"api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3", "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                  "identity": identity, "dependencies": dependencies, "target_device_families": families}
+        if compare_publishers is not None:
+            result["publisher_comparisons"] = []
+            for other in compare_publishers:
+                same = w.BOOL()
+                status = api.call(package_id, 8, (w.LPCWSTR, c.POINTER(w.BOOL)), (other, c.byref(same)))
+                result["publisher_comparisons"].append({"other": other, "hresult": "0x%08x" % (status & 0xffffffff), "matches": bool(same.value) if status >= 0 else None})
+        return result
     finally:
         for value in [reader3, package_id, reader, stream, factory]:
             api.release(value)

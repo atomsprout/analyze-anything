@@ -12,6 +12,7 @@ const MAX_DIRECTORY: usize = 16 * 1024 * 1024;
 const MAX_ENTRIES: usize = 16384;
 
 mod blocks;
+mod publisher;
 mod signature;
 
 type Result<T> = std::result::Result<T, &'static str>;

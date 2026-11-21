@@ -25,8 +25,10 @@ bounded ZIP32/ZIP64 layer checks record correspondence and declared local-header
 Supported stored/independently decodable DEFLATE blocks are also bound to captured
 content, with measured physical extents and digest/CRC comparisons. Unsupported
 compression profiles remain explicit limitations. Supported P7X signatures receive
-separate CMS mathematics and SHA-256 package-region/footprint comparisons. Publisher,
-certificate policy and Windows trust remain unchecked; digest agreement
+separate CMS mathematics and SHA-256 package-region/footprint comparisons. A uniquely
+verified embedded signer can also be compared literally with the unique manifest
+Publisher, using a qualified Windows subject-spelling profile. Signed coverage of the
+manifest is recorded separately. Certificate policy and Windows trust remain unchecked; digest agreement
 does not authenticate a package. Unsupported or ambiguous names, missing files and exhausted budgets remain
 limitations. See [the MSIX check scope](spikes/windows-msix-integrity.md).
 
@@ -35,6 +37,8 @@ select a first value; dependencies and target-device families are preserved as l
 constraints. Unknown extensions and limited fields remain explicit issues. This is
 not full schema validation or installed-package/host compatibility resolution; see
 [the manifest scope](spikes/windows-msix-manifest.md).
+See [publisher correspondence](spikes/windows-msix-publisher.md) for supported subject
+encodings, aliases and the native comparisons.
 
 | Format | File | For |
 |---|---|---|

@@ -311,12 +311,14 @@ also retains the existing catalog regressions. All five jobs passed for this sig
 increment in run [44880651282](https://github.com/atomsprout/analyze-anything/actions/runs/44880651282).
 W6 is not complete. The next [manifest increment](windows-msix-manifest.md) establishes
 bounded namespace/path and ambiguity projections plus literal dependency/device-family
-declarations; it does not validate the whole schema or compare publisher certificates.
+declarations; it does not validate the whole schema. The subsequent
+[publisher increment](windows-msix-publisher.md) adds a qualified literal signer-subject
+comparison and independently records signed manifest coverage.
 
 ## Remaining W6 gates
 
 Broaden physical block/ZIP profiles and independent large-file coverage; establish package/bundle
-signature/bundle coverage beyond this initial profile and publisher consistency; broaden
+signature/bundle coverage and publisher subject encodings beyond this initial profile; broaden
 manifest namespace/extension/schema coverage, then model bundle architecture/resource
 coverage, supported dependency resolution, target-device relationships and appinstaller references. Add
 broader Unicode/alias, large-file, alternate-extension and independently signed/bundled

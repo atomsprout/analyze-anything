@@ -539,7 +539,7 @@ fn checked_envelope(blob: &[u8], expected_type: &str) -> Result<(Vec<u8>, Vec<Va
             Some(signer) => build_chain(signer, &data.certificates),
             None => (Vec::new(), Check::NotChecked("catalog signer certificate is absent or ambiguous".into()), false),
         };
-        signatures.push(json!({
+        let mut signature_record = json!({
             "index": index,
             "digest_algorithm": info.digest_oid,
             "signature_algorithm": info.signature_oid,
@@ -553,7 +553,13 @@ fn checked_envelope(blob: &[u8], expected_type: &str) -> Result<(Vec<u8>, Vec<Va
             "issuers": chain.iter().skip(1).map(|c| c.json()).collect::<Vec<_>>(),
             "chain_reaches_embedded_root": root,
             "unsigned_attributes_present": info.unsigned_attributes.is_some(),
-        }));
+        });
+        if expected_type == OID_SPC_INDIRECT_DATA
+            && let Some(signer) = signer
+        {
+            signature_record["msix_publisher_subject"] = crate::msix_publisher::projection(signer.raw_subject);
+        }
+        signatures.push(signature_record);
     }
     Ok((ctl, signatures))
 }

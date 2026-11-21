@@ -100,7 +100,8 @@ CLI build passed. The full workspace log is
 `out/windows-baseline/workspace-msix-manifest.log`, including 107 Windows unit tests
 passed (one fixture-generation helper intentionally ignored), 54 Windows pipeline
 tests, 45 engine integration tests and the complete damaged-fixture run. Cross-platform
-CI for this increment is the next gate. W6 remains open.
+CI for this increment passed all five jobs in [run 44883557724](https://github.com/atomsprout/analyze-anything/actions/runs/44883557724)
+at commit `398641c599384380ef9d184e619705d46a613322`. W6 remains open.
 
 References: Microsoft [Package](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-f-package),
 [Identity](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-f-identity),

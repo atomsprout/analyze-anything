@@ -52,7 +52,12 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
             assert_eq!(binding["unresolved_digests"], 0);
             assert_eq!(binding["cms_signature_verified"], true);
             assert_eq!(binding["all_declared_package_digests_agree"], true);
-            assert_eq!(binding["publisher_checked"], false);
+            assert_eq!(binding["publisher_checked"], true);
+            assert_eq!(binding["publisher_matches"], true);
+            assert_eq!(binding["publisher_manifest_signed_coverage"], true);
+            let publisher = &original_zip.facts["windows.msix-publisher"];
+            assert_eq!(publisher["manifest_signed_coverage"]["established"], true);
+            assert_eq!(publisher["matches"], true);
             assert_eq!(binding["windows_trust_checked"], false);
         }
         assert!(report.findings.iter().any(|f| f.rule == "windows.msix-block-hashes" && !f.evidence.is_empty()));
@@ -62,6 +67,72 @@ fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_auth
             serde_json::to_vec(&run(&input, &Options::default())).expect("repeat report")
         );
         assert_eq!(std::fs::read(&input).expect("original input"), original);
+    }
+}
+
+#[test]
+fn msix_publisher_correspondence_keeps_manifest_coverage_and_cms_failures_separate() {
+    use std::io::{Cursor, Read};
+    let original =
+        std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/upstream-TestAppxPackage_Win32.appx"))
+            .expect("licensed package");
+    let mut archive = zip::ZipArchive::new(Cursor::new(&original)).expect("fixture ZIP");
+    let entries: Vec<_> = (0..archive.len())
+        .map(|i| {
+            let mut entry = archive.by_index(i).expect("fixture entry");
+            let mut bytes = Vec::new();
+            entry.read_to_end(&mut bytes).expect("fixture content");
+            (entry.name().expect("fixture name").into_owned(), bytes)
+        })
+        .collect();
+    let directory = tempfile::tempdir().expect("variants");
+    for (case, matches, coverage) in [
+        ("repacked", Some(true), true),
+        ("different-publisher", Some(false), false),
+        ("alias-publisher", Some(false), false),
+        ("unsigned-manifest-change", Some(true), false),
+        ("duplicate-identity", None, false),
+        ("bad-cms", None, false),
+    ] {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in &entries {
+            let mut bytes = bytes.clone();
+            if name == "AppxManifest.xml" {
+                let mut xml = String::from_utf8(bytes).expect("fixture UTF8");
+                match case {
+                    "different-publisher" => xml = xml.replace("CN=Microsoft Corporation", "CN=Other Corporation"),
+                    "alias-publisher" => xml = xml.replace("S=Washington", "ST=Washington"),
+                    "unsigned-manifest-change" => xml.push(' '),
+                    "duplicate-identity" => {
+                        let start = xml.find("<Identity ").expect("fixture identity");
+                        let end = start + xml[start..].find("/>").expect("identity end") + 2;
+                        let identity = xml[start..end].to_string();
+                        xml.insert_str(end, &identity);
+                    }
+                    _ => {}
+                }
+                bytes = xml.into_bytes();
+            } else if name == "AppxSignature.p7x" && case == "bad-cms" {
+                *bytes.last_mut().expect("signature value") ^= 1;
+            }
+            writer
+                .start_file(name, zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated))
+                .expect("variant entry");
+            writer.write_all(&bytes).expect("variant content");
+        }
+        let bytes = writer.finish().expect("variant ZIP").into_inner();
+        let input = directory.path().join(format!("{case}.appx"));
+        std::fs::write(&input, &bytes).expect("variant input");
+        let report = run(&input, &Options::default());
+        let publisher = report.artifacts.iter().find_map(|a| a.facts.get("windows.msix-publisher")).expect("publisher result");
+        assert_eq!(publisher["publisher_checked"], matches.is_some(), "{case}: {publisher}");
+        if let Some(matches) = matches {
+            assert_eq!(publisher["matches"], matches, "{case}: {publisher}");
+            assert_eq!(publisher["manifest_signed_coverage"]["established"], coverage, "{case}: {publisher}");
+        }
+        assert_eq!(report.findings.iter().any(|f| f.rule == "windows.msix-publisher-mismatch"), matches == Some(false), "{case}");
+        assert_eq!(publisher["windows_trust_checked"], false);
+        assert_eq!(std::fs::read(&input).expect("unchanged input"), bytes);
     }
 }
 

@@ -15,7 +15,7 @@ impl Default for Budget {
     }
 }
 
-fn read(bytes: &[u8], entry: &Entry<'_>, budget: &mut Budget) -> Result<Vec<u8>> {
+pub(super) fn read(bytes: &[u8], entry: &Entry<'_>, budget: &mut Budget) -> Result<Vec<u8>> {
     let cost = entry.size.checked_add(entry.compressed as u64).ok_or("signature footprint work overflow")?;
     budget.left = budget.left.checked_sub(cost).ok_or("signature footprint work budget exhausted")?;
     map_bytes(bytes, entry)
@@ -121,7 +121,7 @@ pub(super) fn analyze(tree: &dyn Tree, parent: &Artifact, bytes: &[u8], director
             source,
         ))
     })();
-    let (fact, source) = match result {
+    let (mut fact, source) = match result {
         Ok(result) => result,
         Err(reason) => {
             out.limitation("windows.msix-signature-unbound", Some(parent), Some(reason.into()));
@@ -147,6 +147,13 @@ pub(super) fn analyze(tree: &dyn Tree, parent: &Artifact, bytes: &[u8], director
             Some(parent),
             Some("some signature footprint comparisons or coverage were not established".into()),
         );
+    }
+    let publisher = super::publisher::analyze(tree, parent, bytes, directory, budget, &fact, out);
+    fact["publisher_checked"] = publisher["publisher_checked"].clone();
+    if publisher["publisher_checked"] == true {
+        fact["publisher_matches"] = publisher["matches"].clone();
+        fact["publisher_profile"] = publisher["profile"].clone();
+        fact["publisher_manifest_signed_coverage"] = publisher["manifest_signed_coverage"]["established"].clone();
     }
     out.fact(parent, "windows.msix-signature-binding", fact);
 }

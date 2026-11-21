@@ -77,6 +77,11 @@ Test samples in crates/aa-windows/tests/data (not part of the program):
     or signature from it is installed, executed or imported into a store.
     Its *.ref.json is a project-authored read-only AppxPackaging API snapshot.
 
+  - msix-publisher-subjects.ref.json: project-authored Apache-2.0 constructed
+    DER names and read-only Windows CertNameToStrW reference strings, reproduced
+    by tools/native-compare/windows-msix-publisher-check.py. No private key or
+    certificate store is used.
+
   - native-msix-sha256.msix, native-msix-sha384.msix and native-msix-sha512.msix:
     project-authored Apache-2.0 fixtures built by tools/native-compare/
     windows-msix-fixtures.py with Windows SDK MakeAppx 10.0.26100.0. They contain
