@@ -79,6 +79,15 @@ stand-in backend. They do not establish native Windows WebView2 behavior, real-w
 CLI parity, menus, dialogs, Explorer drop/open integration, packaging or signed delivery;
 those remain W10/D6 acceptance work.
 
+A later Windows x64 check passed the production page build, 14 unit tests and all
+28 WebKit/Chromium browser tests, including retained driver source mappings. The
+MSIX content commit's CI run 44868624432 passed the three core platform jobs and
+licence check but timed out in one Chromium history test. That test counted evidence
+disclosures before its report frame had loaded. The shared evidence interaction now
+waits for a disclosure before counting; the history test also holds the report response
+until the host is visible to exercise the separate loading stages. This is browser-test
+synchronization, and does not establish any additional native Windows behavior.
+
 ### Self-check mode
 
 The macOS system WebView has no usable automation driver, so the application can check itself: when started with the environment variable `AA_DESKTOP_SELFTEST=<plan file>`, the page clicks through its own interface like a user and runs the whole flow, records what it sees, and the application writes the results to a file and exits. No dialogs appear in this mode: "Open" returns the inputs in the plan in turn, and "Save" writes into the folder the plan specifies. Without this variable, the three related commands always refuse.
