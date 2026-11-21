@@ -7,13 +7,22 @@ use aa_core::plugin::{Rule, SinkError, Unpack, UnpackSink, Unpacker};
 
 pub struct Zip;
 
-const RULES: &[Rule] = &[Rule {
-    id: "zip.entry-encrypted",
-    title_zh: "压缩包内有加密文件",
-    title_en: "Encrypted entries in archive",
-    text_zh: "压缩包里有需要密码才能解开的文件，这些文件没有分析。",
-    text_en: "The archive holds entries that need a password. They were not analyzed.",
-}];
+const RULES: &[Rule] = &[
+    Rule {
+        id: "zip.entry-encrypted",
+        title_zh: "压缩包内有加密文件",
+        title_en: "Encrypted entries in archive",
+        text_zh: "压缩包里有需要密码才能解开的文件，这些文件没有分析。",
+        text_en: "The archive holds entries that need a password. They were not analyzed.",
+    },
+    Rule {
+        id: "zip.entry-names-duplicated",
+        title_zh: "ZIP 中央目录包含同名条目",
+        title_en: "Repeated entry names in ZIP central directory",
+        text_zh: "ZIP 中央目录重复使用了条目名称。当前 ZIP 读取库没有保留这些条目的所有版本；条目枚举不完整，未据此建立名称唯一的文件关联。",
+        text_en: "The ZIP central directory repeats entry names. The ZIP reader did not retain every version of those entries. Enumeration is incomplete, so name-unique file relationships were not established.",
+    },
+];
 
 impl Unpacker for Zip {
     fn id(&self) -> &'static str {
@@ -33,6 +42,11 @@ impl Unpacker for Zip {
             Ok(archive) => archive,
             Err(error) => return Unpack::Failed { kind: "zip", detail: error.to_string() },
         };
+        // ZipArchive indexes names rather than every directory record. Do not let
+        // a collapsed duplicate make a supplied-file lookup appear unambiguous.
+        if archive.has_duplicate_names() {
+            sink.limitation("zip.entry-names-duplicated", None);
+        }
         let mut encrypted = 0u64;
         let mut failures: Vec<String> = Vec::new();
         for index in 0..archive.len() {

@@ -12,7 +12,8 @@
 //! imports grouped into capabilities (`behaviour`) and kernel-driver facts; it also reads
 //! what an installer does (`installer`), verifies the signature an MSI package carries for
 //! itself (`msisig`, over the compound-file reader `compound`) and reads `AppxManifest.xml`
-//! (`appx`). The tree pass
+//! (`appx`), Windows entry-point declarations (`lnk`, `shortcuts`, `registry`, `tasks`)
+//! and INF syntax (`inf`). The tree pass
 //! (`tree`) reports what needs several files: who signed what, vendors, capabilities across
 //! files, Electron applications and other frameworks recognised from the folder layout.
 //!
@@ -23,22 +24,46 @@
 mod appx;
 mod asar;
 mod authenticode;
+mod batch;
 mod behaviour;
 mod cab;
+mod catalog;
+mod catalog_membership;
 mod compound;
 mod der;
 mod dotnet;
+mod encoded_powershell;
+mod inf;
 mod inno;
 mod installer;
+mod lnk;
 mod msi;
 mod msisig;
+mod msix_blockmap;
+mod msix_bundle;
+mod msix_declarations;
+mod msix_publisher;
+mod msix_signature;
+mod msix_xml;
+mod msix_zip;
 mod nsis;
+mod nuspec;
 mod pe;
 mod pefile;
+mod powershell;
+mod references;
+mod registry;
 mod resources;
 mod rules;
 mod sfx;
+mod shortcuts;
+mod source_mapping;
+pub mod source_roots;
+mod tasks;
+mod text;
 mod tree;
+mod vsix;
+mod winget;
 
 use aa_core::Artifact;
 use aa_core::plugin::{Analyzer, Output, Rule, Tree, Unpacker};
@@ -99,12 +124,49 @@ impl Analyzer for Windows {
 
     fn analyze_file(&self, tree: &dyn Tree, file: &Artifact, out: &mut Output) {
         nsis::script_note(tree, file, out);
-        if file.size < 64 {
+        if file.size < 64
+            && !matches!(
+                file.extension().as_deref(),
+                Some(
+                    "url"
+                        | "lnk"
+                        | "reg"
+                        | "inf"
+                        | "cat"
+                        | "p7x"
+                        | "ps1"
+                        | "psm1"
+                        | "bat"
+                        | "cmd"
+                        | "nuspec"
+                        | "vsixmanifest"
+                        | "yaml"
+                        | "yml"
+                )
+            )
+            && !file.name().eq_ignore_ascii_case("AppxBlockMap.xml")
+            && !file.name().eq_ignore_ascii_case("AppxSignature.p7x")
+            && !file.name().eq_ignore_ascii_case("AppxBundleManifest.xml")
+        {
             return;
         }
         let Ok(bytes) = tree.read(&file.path) else { return };
+        shortcuts::analyze(file, &bytes, out);
+        lnk::analyze(file, &bytes, out);
+        registry::analyze(file, &bytes, out);
+        tasks::analyze(file, &bytes, out);
+        powershell::analyze(file, &bytes, out);
+        batch::analyze(file, &bytes, out);
+        inf::analyze(file, &bytes, out);
+        catalog::analyze(file, &bytes, out);
+        nuspec::analyze(file, &bytes, out);
+        vsix::analyze(file, &bytes, out);
+        winget::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
+        msix_bundle::analyze(file, &bytes, out);
+        msix_blockmap::analyze_file(file, &bytes, out);
+        msix_signature::analyze(file, &bytes, out);
         asar_fact(file, &bytes, out);
         let model = nsis::analyze(tree, file, &bytes, out)
             .or_else(|| inno::analyze(tree, file, &bytes, out))

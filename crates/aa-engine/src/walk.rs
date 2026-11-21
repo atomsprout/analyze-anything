@@ -23,6 +23,11 @@ pub fn list(root: &Path, max_files: u64) -> Listing {
     let mut pending = vec![(root.to_path_buf(), String::new())];
     while let Some((dir, prefix)) = pending.pop() {
         let shown = if prefix.is_empty() { None } else { Some(prefix.trim_end_matches('/').to_string()) };
+        #[cfg(windows)]
+        if let Err(error) = crate::disk::check(&dir) {
+            listing.limitations.push(Limitation::new("engine.local-content-skipped", shown.as_deref(), Some(error.to_string())));
+            continue;
+        }
         let reader = match std::fs::read_dir(&dir) {
             Ok(reader) => reader,
             Err(error) => {
@@ -46,6 +51,11 @@ pub fn list(root: &Path, max_files: u64) -> Listing {
         let mut subfolders = Vec::new();
         for (name, on_disk, file_type) in children {
             let path = format!("{prefix}{name}");
+            #[cfg(windows)]
+            if let Err(error) = crate::disk::check(&on_disk) {
+                listing.limitations.push(Limitation::new("engine.local-content-skipped", Some(&path), Some(error.to_string())));
+                continue;
+            }
             if file_type.is_symlink() {
                 listing.limitations.push(Limitation { code: "symlink_skipped".into(), artifact: Some(path), detail: None });
             } else if file_type.is_dir() {

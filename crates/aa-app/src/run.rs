@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 
 use aa_core::Report;
 use aa_engine::Event;
+pub use aa_engine::{WindowsSourceRoot, validate_windows_source_roots};
 use aa_worker::protocol::{LimitOverrides, Request, Response};
 use aa_worker::{Worker, WorkerError};
 
@@ -71,9 +72,21 @@ impl Run {
         limits: LimitOverrides,
         on_update: impl FnMut(Update) + Send + 'static,
     ) -> Result<Run, WorkerError> {
+        Self::start_with_source_roots(program, input, limits, Vec::new(), on_update)
+    }
+
+    /// Starts a run with caller-declared logical distribution roots.
+    pub fn start_with_source_roots(
+        program: &Program,
+        input: &Path,
+        limits: LimitOverrides,
+        roots: Vec<WindowsSourceRoot>,
+        on_update: impl FnMut(Update) + Send + 'static,
+    ) -> Result<Run, WorkerError> {
+        aa_engine::validate_scratch_root(input, &program.scratch_root).map_err(WorkerError::Scratch)?;
         let arguments: Vec<&str> = program.arguments.iter().map(String::as_str).collect();
         let mut worker = Worker::start(&program.path, &arguments, &program.scratch_root)?;
-        match worker.analyze(input, limits) {
+        match worker.analyze_with_source_roots(input, limits, roots) {
             // A worker that ended before it could be asked: the run's thread finds out how it
             // ended and says so, as it does for one that dies later.
             Ok(()) | Err(WorkerError::Gone(_)) => {}

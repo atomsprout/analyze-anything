@@ -1,0 +1,281 @@
+{
+  "bundle": {
+    "source_sha256": "a0d992ba7070cc159853f55c3f1ff9ba4d22d92511f420074b312412fc99819d",
+    "identity": {
+      "name": "AnalyzeAnything.BundleFixture",
+      "architecture": "neutral",
+      "publisher": "CN=Analyze Anything Fixture",
+      "version": "2.0.0.0",
+      "resource_id": "~"
+    },
+    "packages": [
+      {
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "architecture": "x86",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "resource_id": ""
+        },
+        "type": "application",
+        "file_name": "app.appx",
+        "offset": 38,
+        "size": 10038,
+        "resources": [
+          {
+            "language": "en-US",
+            "scale": null,
+            "dx_feature_level": null
+          },
+          {
+            "language": "fr-FR",
+            "scale": null,
+            "dx_feature_level": null
+          },
+          {
+            "language": null,
+            "scale": 150,
+            "dx_feature_level": null
+          },
+          {
+            "language": null,
+            "scale": null,
+            "dx_feature_level": 1
+          }
+        ],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          },
+          {
+            "Name": "Windows.Universal",
+            "MinVersion": "10.0.19041.0",
+            "MaxVersionTested": "10.0.22621.0"
+          }
+        ]
+      },
+      {
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "architecture": "neutral",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "resource_id": "language-zh"
+        },
+        "type": "resource",
+        "file_name": "resource.appx",
+        "offset": 10143,
+        "size": 2153,
+        "resources": [
+          {
+            "language": "zh-CN",
+            "scale": null,
+            "dx_feature_level": null
+          }
+        ],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          }
+        ]
+      },
+      {
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "architecture": "neutral",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "resource_id": "scale-200"
+        },
+        "type": "resource",
+        "file_name": "resource scale.appx",
+        "offset": 12371,
+        "size": 2168,
+        "resources": [
+          {
+            "language": null,
+            "scale": 200,
+            "dx_feature_level": null
+          }
+        ],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          }
+        ]
+      },
+      {
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "architecture": "neutral",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "resource_id": "dx-11"
+        },
+        "type": "resource",
+        "file_name": "resource dx.appx",
+        "offset": 14611,
+        "size": 2172,
+        "resources": [
+          {
+            "language": null,
+            "scale": null,
+            "dx_feature_level": 3
+          }
+        ],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          }
+        ]
+      }
+    ],
+    "api": "IAppxBundleManifestReader/IAppxBundleManifestPackageInfo"
+  },
+  "inner": [
+    {
+      "name": "app.appx",
+      "manifest": {
+        "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+        "source_sha256": "1c15f2257838227a1dca792473cdee93215011ca4ddad15578cc2208d7f9c64b",
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "architecture": "x86",
+          "resource_id": ""
+        },
+        "dependencies": [],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          },
+          {
+            "Name": "Windows.Universal",
+            "MinVersion": "10.0.19041.0",
+            "MaxVersionTested": "10.0.22621.0"
+          }
+        ],
+        "resources": [
+          {
+            "language": "en-US",
+            "scale": null,
+            "dx_feature_level": null
+          },
+          {
+            "language": "fr-FR",
+            "scale": null,
+            "dx_feature_level": null
+          },
+          {
+            "language": null,
+            "scale": 150,
+            "dx_feature_level": null
+          },
+          {
+            "language": null,
+            "scale": null,
+            "dx_feature_level": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "resource.appx",
+      "manifest": {
+        "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+        "source_sha256": "fd4fe17e993bbfc506ae05c177c4e6c2c0a17fa0993e5969425bc9df54a39239",
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "architecture": "neutral",
+          "resource_id": "language-zh"
+        },
+        "dependencies": [],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          }
+        ],
+        "resources": [
+          {
+            "language": "zh-CN",
+            "scale": null,
+            "dx_feature_level": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "resource%20scale.appx",
+      "manifest": {
+        "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+        "source_sha256": "92d921efb2237dd3882e3157cce9a784fc107fadf3c557c0243cd240058f1397",
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "architecture": "neutral",
+          "resource_id": "scale-200"
+        },
+        "dependencies": [],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          }
+        ],
+        "resources": [
+          {
+            "language": null,
+            "scale": 200,
+            "dx_feature_level": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "resource%20dx.appx",
+      "manifest": {
+        "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+        "source_sha256": "2f94ff619453b4ce896d898bd049f83de25f0ecdffc8abbbb1a9edde22b134c8",
+        "identity": {
+          "name": "AnalyzeAnything.BundleFixture",
+          "publisher": "CN=Analyze Anything Fixture",
+          "version": "1.0.0.0",
+          "architecture": "neutral",
+          "resource_id": "dx-11"
+        },
+        "dependencies": [],
+        "target_device_families": [
+          {
+            "Name": "Windows.Desktop",
+            "MinVersion": "10.0.17763.0",
+            "MaxVersionTested": "10.0.26100.0"
+          }
+        ],
+        "resources": [
+          {
+            "language": null,
+            "scale": null,
+            "dx_feature_level": 3
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -21,6 +21,9 @@ pub enum Request {
         /// Limits that differ from the defaults.
         #[serde(default)]
         limits: LimitOverrides,
+        /// Caller-declared logical paths; never permission to read outside the input.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        windows_source_roots: Vec<aa_engine::WindowsSourceRoot>,
     },
     /// Stop the analysis that is running. What was finished is still reported.
     Cancel,

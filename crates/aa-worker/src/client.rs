@@ -29,25 +29,46 @@ pub struct Worker {
     stdin: Option<ChildStdin>,
     responses: Receiver<Response>,
     scratch: PathBuf,
+    _ownership: std::fs::File,
 }
 
 impl Worker {
     /// Starts `program` with `arguments` as a worker. `scratch_root` is where its private
     /// scratch folder is made; the folder is removed when the worker is dropped.
     pub fn start(program: &Path, arguments: &[&str], scratch_root: &Path) -> Result<Worker, WorkerError> {
+        let arguments: Vec<std::ffi::OsString> = arguments.iter().map(std::ffi::OsString::from).collect();
+        Self::start_os(program, &arguments, scratch_root)
+    }
+
+    /// Like start, preserving native argument encoding for paths passed by the CLI.
+    pub fn start_os(program: &Path, arguments: &[std::ffi::OsString], scratch_root: &Path) -> Result<Worker, WorkerError> {
         std::fs::create_dir_all(scratch_root).map_err(WorkerError::Scratch)?;
+        crate::scratch::sweep(scratch_root);
         let scratch = unique_folder(scratch_root).map_err(WorkerError::Scratch)?;
-        let mut child = Command::new(program)
+        let ownership = crate::scratch::hold(&scratch).map_err(WorkerError::Scratch)?;
+        let mut command = Command::new(program);
+        command
             .args(arguments)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             // What a worker writes to its error output is for whoever debugs it, not for us.
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|error| {
-                let _ = std::fs::remove_dir_all(&scratch);
-                WorkerError::Start(error)
-            })?;
+            .stderr(Stdio::inherit());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            // A desktop worker communicates through pipes and needs no console window.
+            command.creation_flags(0x0800_0000);
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            // The supervisor handles terminal cancellation before asking the worker to stop.
+            command.process_group(0);
+        }
+        let mut child = command.spawn().map_err(|error| {
+            let _ = std::fs::remove_dir_all(&scratch);
+            WorkerError::Start(error)
+        })?;
         let stdin = child.stdin.take();
         let (sender, responses) = std::sync::mpsc::channel();
         if let Some(stdout) = child.stdout.take() {
@@ -63,7 +84,7 @@ impl Worker {
                 }
             });
         }
-        Ok(Worker { child, stdin, responses, scratch })
+        Ok(Worker { child, stdin, responses, scratch, _ownership: ownership })
     }
 
     /// The folder the worker is told to unpack into.
@@ -81,7 +102,16 @@ impl Worker {
 
     /// Asks for the analysis of `path`, unpacking into this worker's scratch folder.
     pub fn analyze(&mut self, path: &Path, limits: crate::protocol::LimitOverrides) -> Result<(), WorkerError> {
-        let request = Request::Analyze { path: path.to_path_buf(), scratch: self.scratch.clone(), limits };
+        self.analyze_with_source_roots(path, limits, Vec::new())
+    }
+
+    pub fn analyze_with_source_roots(
+        &mut self,
+        path: &Path,
+        limits: crate::protocol::LimitOverrides,
+        windows_source_roots: Vec<aa_engine::WindowsSourceRoot>,
+    ) -> Result<(), WorkerError> {
+        let request = Request::Analyze { path: path.to_path_buf(), scratch: self.scratch.clone(), limits, windows_source_roots };
         self.send(&request)
     }
 

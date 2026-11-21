@@ -18,6 +18,46 @@ Without `-o` the report goes into `<name of the input>.report` in the current fo
 
 Reports are in English unless you pass `--lang zh` for Chinese. `report.html` holds both languages and can switch between them; JSON, SARIF and CycloneDX are data and have no language. The desktop app is in English by default too; change it in the View menu, and the choice is remembered.
 
+MSIX/APPX inputs with a supported `AppxBlockMap.xml` also receive content-size and
+block/file-hash comparisons. These checks use supplied uncompressed files within the
+same container or extracted package directory. With original archive bytes, a separate
+bounded ZIP32/ZIP64 layer checks record correspondence and declared local-header sizes.
+Supported stored/independently decodable DEFLATE blocks are also bound to captured
+content, with measured physical extents and digest/CRC comparisons. Unsupported
+compression profiles remain explicit limitations. Supported P7X signatures receive
+separate CMS mathematics and SHA-256 package-region/footprint comparisons. A uniquely
+verified embedded signer can also be compared literally with the unique manifest
+Publisher, using a qualified Windows subject-spelling profile. Signed coverage of the
+manifest is recorded separately. Certificate policy and Windows trust remain unchecked; digest agreement
+does not authenticate a package. Unsupported or ambiguous names, missing files and exhausted budgets remain
+limitations. See [the MSIX check scope](spikes/windows-msix-integrity.md).
+
+Manifest declarations use known namespace/hierarchy paths. Duplicate identities do not
+select a first value; dependencies and target-device families are preserved as literal
+constraints. Unknown extensions and limited fields remain explicit issues. This is
+not full schema validation or installed-package/host compatibility resolution; see
+[the manifest scope](spikes/windows-msix-manifest.md).
+See [publisher correspondence](spikes/windows-msix-publisher.md) for supported subject
+encodings, aliases and the native comparisons.
+
+MSIX/APPX bundles also receive bounded bundle-manifest projections and comparisons with
+stored inner packages: original data offsets/sizes, identities, architectures and
+application/resource types. UTF-8 OPC file-name escaping is handled as a logical archive
+identifier. Qualified outer bundle CMS/digest coverage is separate from inner-package
+correspondence and does not imply a separate inner signature is required. No package is
+selected for this host. See [bundle scope](spikes/windows-msix-bundles.md) for supported
+declarations and the remaining optional/flat bundle and trust-policy limits.
+
+Bundle and inner manifests are also compared for declared language, scale, DirectX
+level and target-device-family versions. The report keeps minimum and maximum tested
+versions distinct. Missing outer target-device declarations are recorded separately
+from differences and incomplete projections.
+
+On Windows script inputs, the report identifies readable PowerShell commands
+and batch command segments with source positions. It also records supported
+literal paths, addresses and PowerShell administrator declarations. Dynamic
+syntax and unsupported command forms appear as limitations.
+
 | Format | File | For |
 |---|---|---|
 | `json` | `report.json` | The single source of truth: the whole file tree, every finding and its evidence, the limitations, the text of the rules. Every other format is rendered from it |
@@ -36,11 +76,38 @@ Limits keep a hostile or huge input from exhausting the machine. When one is rea
 --max-entry-bytes <N>      largest single entry to unpack; default 2 GiB
 --analyzer-timeout <s>     seconds one analyzer may spend on one file; default 300
 --unpack-timeout <s>       seconds unpacking one container may take; default 900
+--run-timeout <s>          optional whole-analysis deadline, followed by up to 5 seconds to obtain a partial report
 ```
+
+`analyze` runs the static analysis in a supervised child process. Ctrl+C or `--run-timeout`
+requests cancellation; the worker has up to five seconds to return a valid partial report.
+If it cannot, it is terminated and the command fails without writing a new report. Export and
+optional AI interpretation run after analysis and are outside this deadline. Individual analyzer
+timeouts still abandon threads inside the worker; they do not immediately terminate one parser.
 
 `--fail-on low|medium|high` ends with exit code 3 when a finding of that severity or higher exists, for CI.
 
 `--rules <file>` adds YARA rules of your own (repeatable). A rule's `meta: severity = "high"` (or `medium`, `low`, `info`) sets the severity of its findings; without it they are low.
+
+`--windows-source-root <INF> <ROOT>` explicitly binds an INF to a distribution root in
+the supplied input tree (repeatable). Use logical paths, not machine paths; `.` is the
+outer input root. For example:
+
+```
+analyze-anything ./driver-package -o out --windows-source-root driver.inf .
+analyze-anything ./bundle.zip -o out --windows-source-root bundle.zip/pkg/driver.inf bundle.zip/pkg
+```
+
+Without this setting, source-media roots remain unresolved. Supported loose-file media
+paths can associate supplied files and captured digests; this does not choose a Windows
+architecture, verify catalog membership or establish installation eligibility. CAB/tag
+media, unsupported aliases and incomplete listings remain limitations. The initial
+profile accepts ASCII logical paths, at most 32 assignments and 8 KiB per path. The
+engine and worker enforce the same validation. In the desktop home page, expand
+**Driver source mapping (optional)** and add the logical INF/root pairs before choosing
+or dropping the input. The settings apply to that input; returning home clears them.
+Analyzing a kept report again retains its validated mappings. See
+[the source mapping scope](spikes/windows-inf-source-mapping.md).
 
 `--font <font file>` adds a fallback font to the PDF (repeatable) for text the built-in fonts cannot show, such as Korean, Arabic or emoji. The PDF then depends on those font files too.
 

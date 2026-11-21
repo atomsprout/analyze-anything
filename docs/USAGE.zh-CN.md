@@ -2,6 +2,29 @@
 
 [English](USAGE.md)
 
+含受支持 `AppxBlockMap.xml` 的 MSIX/APPX 输入也会进行文件大小和分块/整文件摘要对照。
+检查使用同一容器或已解包目录中提供的未压缩文件。如果提供了原始归档字节，独立且有资源上限的
+ZIP32/ZIP64 层会核对记录对应关系及声明的本地头长度。受支持的未压缩块及可独立解码的 DEFLATE
+块还会绑定到捕获的文件内容，核对物理范围、摘要及 CRC。不支持的压缩形式会明确报告为限制。
+受支持的 P7X 签名会单独进行 CMS 数学检查及 SHA-256 包区域/足迹文件摘要对照。
+对唯一且已验证的嵌入式签名者，还可按限定 Windows 主题拼写格式与唯一清单 Publisher 逐字比较。
+清单内容的签名覆盖另行记录。证书策略及 Windows 信任仍未检查；
+摘要一致不等于软件包已认证。不支持或有歧义的名称、缺失文件及资源上限均以限制说明。
+详见 [MSIX 检查范围](spikes/windows-msix-integrity.md)（英文）。
+
+清单声明按已知命名空间和层级读取。重复身份不会选择第一项；依赖和目标设备族保留为字面约束。
+未知扩展和受限字段会明确记录。这不等于完整 XML Schema 验证，也不会查询已安装包或判断本机兼容性；
+详见 [清单读取范围](spikes/windows-msix-manifest.md)（英文）。
+支持的证书主题编码、别名及原生对照见 [发布者对应关系](spikes/windows-msix-publisher.md)（英文）。
+
+MSIX/APPX bundle 还会进行有资源上限的清单读取，核对未压缩内部包的原始数据偏移、大小、标识、架构及
+应用/资源包类型。UTF-8 OPC 文件名转义仅作为归档内的逻辑标识处理。外层 bundle 的 CMS/摘要字节覆盖与
+内部包对应关系分别记录，不推断内部包必须另有签名，也不为本机选择安装包。资源限定符、可选/扁平 bundle
+及信任策略等尚未支持的语义见 [bundle 检查范围](spikes/windows-msix-bundles.md)（英文）。
+
+报告还会对照 bundle 与内部清单声明的语言、缩放比例、DirectX 级别和目标设备族版本，并分别记录最低版本
+与最高已测试版本。外层未声明目标设备族、声明有差异、声明无法完整读取，分别有对应的结果。
+
 `analyze-anything` 对文件或文件夹做纯静态分析，写出一份带证据的报告。输入只会被读取，不会被执行、安装或加载。
 
 Homebrew 安装时还提供一个短名字 `aaaa`。
@@ -17,6 +40,9 @@ analyze-anything <文件或文件夹> [-o 文件夹] [--format json,html,pdf,md,
 `analyze-anything analyze <文件或文件夹>` 是同一件事的完整写法。要分析的东西恰好与某个命令同名时（比如一个叫 `diff` 的文件），写出它的路径：`analyze-anything ./diff`。
 
 报告默认是英文，加 `--lang zh` 写中文。`report.html` 里两种语言都有，打开后可以切换；JSON、SARIF、CycloneDX 是数据，不分语言。桌面版同样默认英文，在 View 菜单里切换，选择会记住。
+
+对于 Windows 脚本输入，报告会列出可读取的 PowerShell 命令和批处理命令段，并附上源位置。
+报告还会记录支持的字面路径、地址和 PowerShell 管理员声明。动态语法和暂未支持的命令形式会列在限制中。
 
 | 格式 | 文件 | 用途 |
 |---|---|---|
@@ -36,11 +62,33 @@ analyze-anything <文件或文件夹> [-o 文件夹] [--format json,html,pdf,md,
 --max-entry-bytes <N>      单个被解包文件的上限，默认 2 GiB
 --analyzer-timeout <秒>    单个分析器处理单个文件的时间上限，默认 300
 --unpack-timeout <秒>      解开单个容器的时间上限，默认 900
+--run-timeout <秒>         可选的整次分析期限；到期后最多再等 5 秒接收部分报告
 ```
+
+`analyze` 在受监督的子进程中执行静态分析。Ctrl+C 或 `--run-timeout` 会请求取消，
+子进程最多再用五秒返回有效的部分报告。如果无法返回，就终止子进程并报错，不写入新报告。
+报告导出和可选的 AI 解读在分析完成后执行，不受这个期限限制。单个分析器超时仍会放弃
+子进程内的线程，并不会立即终止某一个解析器。
 
 `--fail-on low|medium|high`：存在达到该严重度的结论时以退出码 3 结束，供 CI 使用。
 
 `--rules <文件>`：追加你自己的 YARA 规则（可重复）。规则里的 `meta: severity = "high"`（或 `medium`、`low`、`info`）决定结论的严重度，不写则为低。
+
+`--windows-source-root <INF> <ROOT>`：将 INF 显式关联到输入树中的分发根目录（可重复）。
+使用逻辑路径，不使用主机路径；`.` 表示外层输入根。例如：
+
+```
+analyze-anything ./driver-package -o out --windows-source-root driver.inf .
+analyze-anything ./bundle.zip -o out --windows-source-root bundle.zip/pkg/driver.inf bundle.zip/pkg
+```
+
+未设置时，源介质根目录保持未解析。支持的松散文件介质路径可关联输入文件及已记录的摘要，
+但不会选择 Windows 体系结构、验证目录成员关系或判断安装资格。CAB、标记文件、不支持的别名
+和不完整枚举仍以限制说明。初始规则支持 ASCII 逻辑路径、最多 32 条关联，每条路径最多 8 KiB。
+引擎和 worker 执行相同校验。在桌面主页展开“驱动源文件映射（可选）”，
+在选择或拖入输入前添加 INF/根目录逻辑路径。设置仅用于该输入，返回主页后清空；
+重新分析历史报告时保留其经过校验的映射。
+详见[源文件映射范围](spikes/windows-inf-source-mapping.md)（英文）。
 
 `--font <字体文件>`：给 PDF 追加后备字体（可重复），用于内置字体显示不了的文字，例如韩文、阿拉伯文、表情符号。使用后 PDF 的内容也取决于这些字体文件。
 

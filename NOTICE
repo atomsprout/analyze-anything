@@ -5,6 +5,39 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This product bundles the following, each under its own licence.
 
+The project-authored native-catalog-v1.cat, native-catalog-v2.cat and their -unsigned.cat
+fixtures in crates/aa-windows/tests/data were generated with Windows SDK MakeCat
+10.0.26100.0 and signed with SignTool using a temporary project-generated test key.
+They and their native reference JSON are distributed under Apache-2.0. The catalogs
+contain declarations for the existing hello.exe fixture and a project-authored text
+payload, plus the public signer certificate in the signed cases. No private key,
+PFX file, third-party payload or Windows certificate-store export is distributed.
+tools/native-compare/windows-catalog-fixture.ps1 records how to regenerate them.
+
+native-catalog-named-v1.cat and native-catalog-named-v2.cat are the same
+project-authored fixture family with repeated CAT_NAMEVALUE member attributes
+(File and OSAttr), generated using that script's -MemberAttributes switch.
+They and the CryptCAT attribute reference snapshots are Apache-2.0 test data.
+Only public certificates and declarations are included; no private key is bundled.
+
+native-sip-hashes.ref.json is project-authored Apache-2.0 test data recording native
+SHA-1/SHA-256 SIP results or errors for controlled byte layouts derived from the
+existing hello.exe, hello-signed.exe and dotnet.exe project fixtures. The recipes in
+tools/native-compare/windows-sip-fixtures.py and portable tests reproduce those layouts;
+no additional binary, private key or host certificate-store data is distributed.
+
+The project-authored native-inf-syntax.inf fixture in crates/aa-windows/tests/data and
+its read-only SetupAPI reference snapshot are distributed under Apache-2.0. It declares
+syntax examples only; no driver, installation or registry modification was performed.
+native-inf-relationships.inf and its reference snapshot use the same project license.
+They declare controlled device, service, source-file and registry relationships only;
+no referenced driver or external INF is bundled, installed or executed.
+
+The project-authored native.url and native.lnk fixtures in crates/aa-windows/tests/data are generated
+with Windows WScript.Shell by tools/native-compare/windows-shortcut-fixture.ps1, without
+opening the URL or running a target. They and their producer references are distributed under this project's
+Apache-2.0 licence. They contain no third-party program or certificate.
+
 Fonts, embedded in the program and used in the PDF and HTML reports
 (crates/aa-report/fonts):
 
@@ -33,4 +66,130 @@ by the tests only, not part of the program):
     installer package (https://nodejs.org), MIT licence: its table of contents
     and signatures, with no program code or file data.
 
+Test samples in crates/aa-windows/tests/data (not part of the program):
+
+  - upstream-TestAppxPackage_Win32.appx: unchanged src/test/testData/unpack/
+    TestAppxPackage_Win32.appx from Microsoft's msix-packaging repository at
+    commit 25a65f5c1690930813bcc10cdf1d59fa865f2bb1.
+    Source: https://github.com/microsoft/msix-packaging
+    Copyright (c) 2018 Microsoft Corporation, MIT License; see
+    LICENSE-msix-packaging.txt. Used only as static input; no package, executable
+    or signature from it is installed, executed or imported into a store.
+    Its *.ref.json is a project-authored read-only AppxPackaging API snapshot.
+
+  - msix-publisher-subjects.ref.json: project-authored Apache-2.0 constructed
+    DER names and read-only Windows CertNameToStrW reference strings, reproduced
+    by tools/native-compare/windows-msix-publisher-check.py. No private key or
+    certificate store is used.
+
+  - upstream-BundleWithIntlPackage.appxbundle, upstream-SignedUntrustedCert.appxbundle,
+    upstream-ManifestPackageHasIncorrectArchitecture.appxbundle,
+    upstream-ManifestPackageHasIncorrectSize.appxbundle,
+    upstream-ManifestPackageHasInvalidOffset.appxbundle,
+    upstream-ManifestHasExtraPackage.appxbundle,
+    upstream-PayloadPackageNotListedInManifest.appxbundle and
+    upstream-PayloadPackageIsCompressed.appxbundle: unchanged bundle test fixtures
+    from microsoft/msix-packaging, src/test/testData/unpack/bundles/, pinned at
+    25a65f5c1690930813bcc10cdf1d59fa865f2bb1. The upstream prefix was added locally;
+    SignedUntrustedCert-CERT_E_CHAINING.appxbundle was shortened to SignedUntrustedCert.
+    Copyright (C) Microsoft Corporation. MIT; see LICENSE-msix-packaging.txt.
+    Sources and hashes are recorded in docs/spikes/windows-msix-bundles.md. Nothing
+    from these packages is executed, installed or imported into a certificate store.
+    Their *.bundle.ref.json files are project-authored read-only native API snapshots.
+
+  - native-msix-bundle.appxbundle: project-authored Apache-2.0 application/resource
+    bundle built by tools/native-compare/windows-msix-bundle-fixtures.py using
+    Windows SDK MakeAppx 10.0.26100.0 and the existing owned MSIX source assets.
+    It is unsigned and contains no private key. Its *.bundle.ref.json is a
+    project-authored AppxPackaging manifest API snapshot under Apache-2.0.
+
+  - native-msix-qualifiers.appxbundle: project-authored Apache-2.0 qualifier
+    fixture generated by windows-msix-bundle-fixtures.py --qualifiers with the
+    same Windows SDK and owned assets. The *.declarations.ref.json snapshots
+    for it and the other bundle fixtures are project-authored AppxPackaging
+    API reference data under Apache-2.0.
+
+  - native-msix-sha256.msix, native-msix-sha384.msix and native-msix-sha512.msix:
+    project-authored Apache-2.0 fixtures built by tools/native-compare/
+    windows-msix-fixtures.py with Windows SDK MakeAppx 10.0.26100.0. They contain
+    the existing project hello.exe fixture, generated PNGs and deterministic data,
+    an empty file and a project manifest. They are unsigned, never installed or
+    executed, and contain no private key. Their *.ref.json files are Apache-2.0
+    snapshots from the read-only Windows AppxPackaging block-map and manifest APIs.
+
+  - upstream-echo.inf: unchanged bytes of general/echo/kmdf/driver/AutoSync/echo.inx
+    from Microsoft's Windows-driver-samples at commit
+    d49bb7d72f3651952b2b6e4ad28d14fe2247eb69, renamed to .inf for the reader.
+    Copyright (c) 1990-2000 Microsoft Corporation, as retained in the source.
+    Microsoft Public License (MS-PL); see windows-driver-samples.LICENSE, including
+    its Copyright (c) 2015 Microsoft notice. Build placeholders remain unexpanded;
+    no driver binary, catalog or installation action is included. Its *.ref.json is
+    a project-authored read-only SetupAPI field snapshot under Apache-2.0.
+
+  - upstream-nullFilter.inf: unchanged source INF from Microsoft's Windows-driver-samples,
+    filesys/miniFilter/nullFilter/nullFilter.inf at commit
+    d49bb7d72f3651952b2b6e4ad28d14fe2247eb69
+    (https://github.com/microsoft/Windows-driver-samples).
+    Copyright (c) 1999 - 2002, Microsoft Corporation, as retained in the source.
+    Microsoft Public License (MS-PL); see windows-driver-samples.LICENSE, including its
+    Copyright (c) 2015 Microsoft notice. The INF still contains build placeholders;
+    no driver binary, certificate or catalog is included. Its *.ref.json is a
+    project-authored read-only SetupAPI field snapshot under Apache-2.0.
+
+  - upstream-task.xml: task.xml from ms-azure-demos/
+    aks-windows-container-task-scheduler-powershell at commit
+    b6a430f5f6a5dd74b376f00e1b6e15127874c517, MIT licence, copyright 2022
+    ms-azure-demos. Source:
+    https://github.com/ms-azure-demos/aks-windows-container-task-scheduler-powershell
+    LICENSE-azure-task.txt preserves its licence. Only the XML definition is
+    redistributed; no script or command from the sample is run.
+
+  - upstream-test.lnk: tests/data/test.lnk from lilopkins/lnk-rs at commit
+    f9c2ca66c161c1d5fd808cfb52335ba3cdfcadf4, MIT licence, copyright 2023
+    Lily Hopkins. Source: https://github.com/lilopkins/lnk-rs
+    The accompanying LICENSE-lnk-rs.txt preserves the licence notice.
+    Only the sample is used; no parser code is copied.
+
 Every other test sample is built by scripts in this repository.
+
+native-codepages.reg and its reference JSON in crates/aa-windows/tests/data are a
+read-only export of Windows code-page metadata, made by this project's
+tools/native-compare/windows-registry-fixture.ps1. They contain code-page names,
+file-name references and integer settings, no program code or certificate.
+The fixture record and producer script are distributed under Apache-2.0.
+
+native-task.xml and its reference JSON are project-authored fixtures under
+Apache-2.0, serialized by tools/native-compare/windows-task-fixture.ps1 through
+a new Windows Task Scheduler definition that is never registered or run.
+
+The PowerShell syntax reader uses Tree-sitter and the Airbus CERT PowerShell
+grammar, both under MIT. The `powershell-ast.ref.json` and `powershell-encoded.ref.json`
+input examples and reference snapshots are project-authored under Apache-2.0.
+The snapshots record read-only PowerShell parser and representation results.
+
+The upstream-makeaosponwinx86.cmd fixture is the unchanged makeaosponwinx86.cmd
+from microsoft/msix-packaging at commit 25a65f5c1690930813bcc10cdf1d59fa865f2bb1.
+Copyright Microsoft Corporation. MIT, see LICENSE-msix-packaging.txt.
+
+The fixture crates/aa-windows/tests/data/nuget.versioning.6.11.1.nupkg is the
+unchanged NuGet.Versioning 6.11.1 package from NuGet.org
+(https://api.nuget.org/v3-flatcontainer/nuget.versioning/6.11.1/nuget.versioning.6.11.1.nupkg).
+Copyright (c) .NET Foundation and Contributors. Apache-2.0, see the root LICENSE
+and the source notice at NuGet/NuGet.Client commit
+5469bd0d9de8108f15f21644759773b85471366c. The accompanying .ref.json is a
+project-authored read-only NuGet SDK snapshot under Apache-2.0.
+
+The fixture crates/aa-windows/tests/data/upstream-markdowneditor-2.0.464.vsixmanifest
+is extension.vsixmanifest from the published Markdown Editor v2 VSIX 2.0.464,
+tagged at madskristensen/MarkdownEditor2022 commit
+1a52038fa85d46ba420df903c84a089d4ba73ff7. Copyright 2020 Mads Kristensen,
+Apache-2.0. LICENSE-markdowneditor2022.txt preserves the upstream licence.
+Only the deployment manifest is redistributed. The accompanying .ref.json is
+a project-authored read-only .NET ZIP and XML reference under Apache-2.0.
+
+The four YAML fixtures in crates/aa-windows/tests/data/winget-7zip-24.09
+are unchanged manifests for 7zip.7zip 24.09 from microsoft/winget-pkgs.
+Copyright (c) Microsoft Corporation. MIT, see LICENSE-winget-pkgs.txt.
+The immutable source blob IDs are listed in docs/spikes/windows-winget.md.
+Only manifest text is redistributed. The referenced 7-Zip installers are
+separate downloads and are never executed by the analyzer.

@@ -87,6 +87,7 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
         Err(detail) => {
             // Plain DOS programs also start with MZ; only files that claim a PE header are reported.
             if pe::looks_like_pe(bytes) {
+                out.fact(file, "windows.pe-structure-unreadable", json!(true));
                 out.limitation("windows.pe-unreadable", Some(file), Some(detail));
             }
             return;

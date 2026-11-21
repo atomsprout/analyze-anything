@@ -1,0 +1,298 @@
+{
+  "sample": "upstream-echo.inf",
+  "sha256": "3565c645713180cc91ebada8d78008482b214be3b881262e5938f3f88ebbd548",
+  "reference": "SetupOpenInfFileW/SetupEnumInfSectionsW/SetupGetStringFieldW",
+  "sections": [
+    {
+      "name": "strings",
+      "entries": [
+        {
+          "key": "SPSVCINST_ASSOCSERVICE",
+          "fields": [
+            "0x00000002"
+          ]
+        },
+        {
+          "key": "ProviderString",
+          "fields": [
+            "TODO-Set-Provider"
+          ]
+        },
+        {
+          "key": "StdMfg",
+          "fields": [
+            "(Standard system devices)"
+          ]
+        },
+        {
+          "key": "DiskId1",
+          "fields": [
+            "WDF Sample ECHO Installation Disk #1"
+          ]
+        },
+        {
+          "key": "ECHO.DeviceDesc",
+          "fields": [
+            "Sample WDF ECHO Driver"
+          ]
+        },
+        {
+          "key": "ECHO.SVCDESC",
+          "fields": [
+            "Sample WDF ECHO Service"
+          ]
+        },
+        {
+          "key": "ClassName",
+          "fields": [
+            "Sample Device"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "entries": [
+        {
+          "key": "Signature",
+          "fields": [
+            "$WINDOWS NT$"
+          ]
+        },
+        {
+          "key": "Class",
+          "fields": [
+            "Sample"
+          ]
+        },
+        {
+          "key": "ClassGuid",
+          "fields": [
+            "{78A1C341-4539-11d3-B88D-00C04FAD5171}"
+          ]
+        },
+        {
+          "key": "Provider",
+          "fields": [
+            "TODO-Set-Provider"
+          ]
+        },
+        {
+          "key": "DriverVer",
+          "fields": [
+            "03/20/2003",
+            "5.0.3788.0"
+          ]
+        },
+        {
+          "key": "CatalogFile",
+          "fields": [
+            "KmdfSamples.cat"
+          ]
+        },
+        {
+          "key": "PnpLockdown",
+          "fields": [
+            "1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "destinationdirs",
+      "entries": [
+        {
+          "key": "DefaultDestDir",
+          "fields": [
+            "13"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksnames",
+      "entries": [
+        {
+          "key": "1",
+          "fields": [
+            "WDF Sample ECHO Installation Disk #1",
+            "",
+            "",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sourcedisksfiles",
+      "entries": [
+        {
+          "key": "ECHO.sys",
+          "fields": [
+            "1",
+            "",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "name": "classinstall32",
+      "entries": [
+        {
+          "key": "Addreg",
+          "fields": [
+            "SampleClassReg"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sampleclassreg",
+      "entries": [
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "",
+            "",
+            "0",
+            "Sample Device"
+          ]
+        },
+        {
+          "key": null,
+          "fields": [
+            "HKR",
+            "",
+            "Icon",
+            "",
+            "-5"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "manufacturer",
+      "entries": [
+        {
+          "key": "(Standard system devices)",
+          "fields": [
+            "Standard",
+            "NT$ARCH$.10.0...16299"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "standard.nt$arch$.10.0...16299",
+      "entries": [
+        {
+          "key": "Sample WDF ECHO Driver",
+          "fields": [
+            "ECHO_Device",
+            "root\\ECHO"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "echo_device.nt",
+      "entries": [
+        {
+          "key": "CopyFiles",
+          "fields": [
+            "Drivers_Dir"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "drivers_dir",
+      "entries": [
+        {
+          "key": "ECHO.sys",
+          "fields": [
+            "ECHO.sys"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "echo_device.nt.services",
+      "entries": [
+        {
+          "key": "AddService",
+          "fields": [
+            "ECHO",
+            "0x00000002",
+            "ECHO_Service_Inst"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "echo_service_inst",
+      "entries": [
+        {
+          "key": "DisplayName",
+          "fields": [
+            "Sample WDF ECHO Service"
+          ]
+        },
+        {
+          "key": "ServiceType",
+          "fields": [
+            "1"
+          ]
+        },
+        {
+          "key": "StartType",
+          "fields": [
+            "3"
+          ]
+        },
+        {
+          "key": "ErrorControl",
+          "fields": [
+            "1"
+          ]
+        },
+        {
+          "key": "ServiceBinary",
+          "fields": [
+            ".\\ECHO.sys"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "echo_device.nt.wdf",
+      "entries": [
+        {
+          "key": "KmdfService",
+          "fields": [
+            "ECHO",
+            "ECHO_wdfsect"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "echo_wdfsect",
+      "entries": [
+        {
+          "key": "KmdfLibraryVersion",
+          "fields": [
+            "$KMDFVERSION$"
+          ]
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "projected_fields_equal": 43,
+    "repeated_json_identical": true,
+    "english_chinese_markdown": true
+  }
+}

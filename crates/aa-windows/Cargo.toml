@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 aa-core.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 hex.workspace = true
 sha1.workspace = true
@@ -23,6 +24,7 @@ p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"]
 p384 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
 # Manifest and AppxManifest XML (MIT OR Apache-2.0).
 roxmltree = "0.20"
+yaml-rust2 = { version = "0.13.2", default-features = false }
 # NSIS installers: header, script and embedded files (Apache-2.0).
 nsis = "0.6.1"
 # Inno Setup installers: headers, record streams and file extraction (Apache-2.0).
@@ -33,6 +35,12 @@ cfb = "0.16"
 lzxd = "0.2"
 memchr = "2"
 regex.workspace = true
+base64 = "0.22"
+crc32fast = "1"
+# PowerShell syntax is parsed in process with the generated MIT grammar.
+tree-sitter = "=0.26.9"
+tree-sitter-powershell = "=0.26.4"
 
 [dev-dependencies]
 aa-unpack.workspace = true
+zip.workspace = true

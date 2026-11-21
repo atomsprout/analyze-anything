@@ -1,0 +1,192 @@
+[
+  {
+    "der": "300f310d300b06035504031e04004f004b",
+    "windows": "CN=OK",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c0603550403130576616c7565",
+    "windows": "CN=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c0603550403140576616c7565",
+    "windows": "CN=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c0603550403160576616c7565",
+    "windows": "CN=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504030c0576616c7565",
+    "windows": "CN=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504040c0576616c7565",
+    "windows": "SN=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504050c0576616c7565",
+    "windows": "SERIALNUMBER=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504060c0576616c7565",
+    "windows": "C=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504070c0576616c7565",
+    "windows": "L=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504080c0576616c7565",
+    "windows": "S=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c06035504090c0576616c7565",
+    "windows": "STREET=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355040a0c0576616c7565",
+    "windows": "O=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355040b0c0576616c7565",
+    "windows": "OU=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355040c0c0576616c7565",
+    "windows": "T=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355040d0c0576616c7565",
+    "windows": "Description=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355040f0c0576616c7565",
+    "windows": "OID.2.5.4.15=value",
+    "supported": false
+  },
+  {
+    "der": "3010310e300c06035504110c0576616c7565",
+    "windows": "PostalCode=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355042a0c0576616c7565",
+    "windows": "G=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355042b0c0576616c7565",
+    "windows": "I=value",
+    "supported": true
+  },
+  {
+    "der": "3010310e300c060355042c0c0576616c7565",
+    "windows": "OID.2.5.4.44=value",
+    "supported": false
+  },
+  {
+    "der": "300e310c300a06035504030c03612c62",
+    "windows": "CN=\"a,b\"",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03612b62",
+    "windows": "CN=\"a+b\"",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03613d62",
+    "windows": "CN=\"a=b\"",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03612262",
+    "windows": "CN=\"a\"\"b\"",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03615c62",
+    "windows": "CN=a\\b",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03612f62",
+    "windows": "CN=a/b",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03612362",
+    "windows": "CN=\"a#b\"",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03613b62",
+    "windows": "CN=\"a;b\"",
+    "supported": true
+  },
+  {
+    "der": "300d310b300906035504030c022061",
+    "windows": "CN=\" a\"",
+    "supported": true
+  },
+  {
+    "der": "300d310b300906035504030c026120",
+    "windows": "CN=\"a \"",
+    "supported": true
+  },
+  {
+    "der": "300f310d300b06035504030c0461202062",
+    "windows": "CN=a  b",
+    "supported": true
+  },
+  {
+    "der": "300b3109300706035504030c00",
+    "windows": "CN=\"\"",
+    "supported": true
+  },
+  {
+    "der": "300d310b300906035504030c02c3a9",
+    "windows": "CN=é",
+    "supported": true
+  },
+  {
+    "der": "300f310d300b06035504030c04f09f9880",
+    "windows": "CN=😀",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03610a62",
+    "windows": "CN=\"a\nb\"",
+    "supported": false
+  },
+  {
+    "der": "300e310c300a06035504030c03613c62",
+    "windows": "CN=\"a<b\"",
+    "supported": true
+  },
+  {
+    "der": "300e310c300a06035504030c03613e62",
+    "windows": "CN=\"a>b\"",
+    "supported": true
+  },
+  {
+    "der": "3027310b30090603550406130255533118300a06035504030c034f6e65300a060355040b0c0354776f",
+    "windows": "CN=One + OU=Two, C=US",
+    "supported": true
+  }
+]

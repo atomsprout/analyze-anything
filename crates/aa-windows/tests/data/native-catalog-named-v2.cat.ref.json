@@ -1,0 +1,123 @@
+{
+  "sample": "native-catalog-named-v2.cat",
+  "sha256": "e749404c941594f6b87b419f1407c86889ccbc62bf38d401e8034f76fe282ac9",
+  "reference": "CryptCATOpen/CryptCATEnumerateMember",
+  "public_version": 2,
+  "members": [
+    {
+      "reference_tag": "E207E59287F06B56469189B112205FEB9E4D179145E23144DA77BD4BB948D37F",
+      "sip_guid": "{C689AAB8-8E78-11D0-8C47-00C04FC295EE}",
+      "data_oid": "1.3.6.1.4.1.311.2.1.15",
+      "digest_algorithm": "2.16.840.1.101.3.4.2.1",
+      "digest": "e207e59287f06b56469189b112205feb9e4d179145e23144da77bd4bb948d37f",
+      "attributes": [
+        {
+          "name": "File",
+          "flags": 268500993,
+          "value_bytes": 20,
+          "value_sha256": "218a5157c3dc735204aed89be7b1d1449b04c0cf7374849a857590fb493ed9e1",
+          "text": "hello.exe"
+        },
+        {
+          "name": "OSAttr",
+          "flags": 268500993,
+          "value_bytes": 14,
+          "value_sha256": "1480ef183e7cdf49c324e874bbc9e004de2353768f834d5413a36d8af6380554",
+          "text": "2:10.0"
+        }
+      ]
+    },
+    {
+      "reference_tag": "D80E294747AC1B47AD1E59CA1FABB468416C2CE0ED9C4A9210C4369A213AAFC1",
+      "sip_guid": "{DE351A42-8E59-11D0-8C47-00C04FC295EE}",
+      "data_oid": "1.3.6.1.4.1.311.2.1.25",
+      "digest_algorithm": "2.16.840.1.101.3.4.2.1",
+      "digest": "d80e294747ac1b47ad1e59ca1fabb468416c2ce0ed9c4a9210c4369a213aafc1",
+      "attributes": [
+        {
+          "name": "File",
+          "flags": 268500993,
+          "value_bytes": 40,
+          "value_sha256": "01d4c27cc50f9a0132052295fbd9de40fc9418965f84649704652e6337d5b558",
+          "text": "catalog-payload.txt"
+        },
+        {
+          "name": "OSAttr",
+          "flags": 268500993,
+          "value_bytes": 14,
+          "value_sha256": "1480ef183e7cdf49c324e874bbc9e004de2353768f834d5413a36d8af6380554",
+          "text": "2:10.0"
+        }
+      ]
+    },
+    {
+      "reference_tag": "791605E224943855956CDDBBC8B9AF25A8BE376B",
+      "sip_guid": "{DE351A42-8E59-11D0-8C47-00C04FC295EE}",
+      "data_oid": "1.3.6.1.4.1.311.2.1.25",
+      "digest_algorithm": "1.3.14.3.2.26",
+      "digest": "791605e224943855956cddbbc8b9af25a8be376b",
+      "attributes": [
+        {
+          "name": "File",
+          "flags": 268500993,
+          "value_bytes": 40,
+          "value_sha256": "01d4c27cc50f9a0132052295fbd9de40fc9418965f84649704652e6337d5b558",
+          "text": "catalog-payload.txt"
+        },
+        {
+          "name": "OSAttr",
+          "flags": 268500993,
+          "value_bytes": 14,
+          "value_sha256": "1480ef183e7cdf49c324e874bbc9e004de2353768f834d5413a36d8af6380554",
+          "text": "2:10.0"
+        }
+      ]
+    },
+    {
+      "reference_tag": "4041AEBF1556781887299754C8CC0F101B3C74E0",
+      "sip_guid": "{C689AAB8-8E78-11D0-8C47-00C04FC295EE}",
+      "data_oid": "1.3.6.1.4.1.311.2.1.25",
+      "digest_algorithm": "1.3.14.3.2.26",
+      "digest": "4041aebf1556781887299754c8cc0f101b3c74e0",
+      "attributes": [
+        {
+          "name": "File",
+          "flags": 268500993,
+          "value_bytes": 20,
+          "value_sha256": "218a5157c3dc735204aed89be7b1d1449b04c0cf7374849a857590fb493ed9e1",
+          "text": "hello.exe"
+        },
+        {
+          "name": "OSAttr",
+          "flags": 268500993,
+          "value_bytes": 14,
+          "value_sha256": "1480ef183e7cdf49c324e874bbc9e004de2353768f834d5413a36d8af6380554",
+          "text": "2:10.0"
+        }
+      ]
+    }
+  ],
+  "cms_signature_only": {
+    "signatures": [
+      {
+        "signer_sha256": "9b8d1401103a27430d6af1c06ce8055733e7a5252370a70e399a50cecc40e79b",
+        "combined_content_and_signature": "passed"
+      }
+    ],
+    "content_type": "1.3.6.1.4.1.311.10.1"
+  },
+  "cli_cases": [
+    {
+      "case": "original",
+      "repeated_json_identical": true
+    },
+    {
+      "case": "changed-signature",
+      "repeated_json_identical": true
+    },
+    {
+      "case": "changed-content",
+      "repeated_json_identical": true
+    }
+  ]
+}

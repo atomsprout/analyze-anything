@@ -1,43 +1,45 @@
 """Compares the analyzer with Windows's own Authenticode check and cabinet maker."""
 import glob
+import argparse
 import hashlib
 import json
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
+import platform
 
-from common import analyze, check, finish, limitation_codes
+from common import analyze, check, finish, limitation_codes, sha256_file, FAILURES, PASSED
+from windows_tools import find_signtool, native_signature
 
-AA = os.path.abspath(sys.argv[1])
-WORK = tempfile.mkdtemp(prefix="aa-native-")
+AA = None
+WORK = None
+RECORDS = []
 CHECKS = ("content_digest", "file_digest", "signature", "chain")
-
-
-def native_signature(path):
-    """What Get-AuthenticodeSignature reports for `path`."""
-    script = (
-        f"$s = Get-AuthenticodeSignature -LiteralPath '{path}'; "
-        "@{ Status = $s.Status.ToString(); Type = $s.SignatureType.ToString(); "
-        "Thumbprint = $s.SignerCertificate.Thumbprint; Subject = $s.SignerCertificate.Subject } | ConvertTo-Json -Compress"
-    )
-    done = subprocess.run(["pwsh", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True, text=True)
-    return json.loads(done.stdout.strip().splitlines()[-1])
 
 
 def our_signature(path):
     report = analyze(AA, path)
     root = next(a for a in report["artifacts"] if a["parent"] is None)
-    return root["facts"].get("windows.authenticode"), report
+    return root["facts"].get("windows.authenticode") or root["facts"].get("windows.msi-signature"), report
 
 
-def compare(path):
+def compare(path, signtool=None):
     name = os.path.basename(path)
     native = native_signature(path)
     fact, _report = our_signature(path)
+    record = {"path": os.path.abspath(path), "sha256": sha256_file(path), "native": native,
+              "ours": fact, "limitations": dict(limitation_codes(_report))}
+    if signtool:
+        result = subprocess.run([signtool, "verify", "/pa", "/all", "/v", path],
+                                capture_output=True, timeout=120)
+        # This is a native policy result, not an assertion that offline crypto must match trust.
+        record["signtool"] = {"exit_code": result.returncode,
+                               "stdout": result.stdout.decode("utf-8", errors="replace"),
+                               "stderr": result.stderr.decode("utf-8", errors="replace")}
+    RECORDS.append(record)
     if fact is None:
-        check(f"{name}: recognised as a Windows program", False)
+        check(f"{name}: recognised as a signature subject", False)
         return None
     signatures = fact.get("signatures") or []
     if native["Type"] == "None":
@@ -93,9 +95,19 @@ def candidates():
 
 
 def main():
+    global AA
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("analyzer")
+    parser.add_argument("--sample", action="append", help="Explicit PE or MSI input; repeat to replace automatic discovery")
+    parser.add_argument("--record", help="Development JSON record, outside the analyzed input")
+    parser.add_argument("--signtool", help="SDK SignTool executable; otherwise discovered")
+    args = parser.parse_args()
+    AA = os.path.abspath(args.analyzer)
+    signtool = args.signtool or find_signtool()
+    print("SignTool: " + (signtool or "not found; native PowerShell comparisons only"), flush=True)
     embedded = None
-    for path in candidates():
-        native = compare(path)
+    for path in args.sample or candidates():
+        native = compare(os.path.abspath(path), signtool)
         if native and native["Type"] == "Authenticode" and native["Status"] == "Valid" and embedded is None:
             embedded = path
     check("at least one file with a valid embedded signature was compared", embedded is not None)
@@ -132,7 +144,19 @@ def main():
         ours = [a["digests"]["sha256"] for a in report["artifacts"] if a["parent"] and a["digests"]]
         check(f"{label} cabinet: the file inside is byte-identical", ours == [expected], (ours, dict(limitation_codes(report))))
 
+    if args.record:
+        version = subprocess.run([AA, "--version"], capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+        record = {"schema_version": 1, "platform": platform.platform(), "architecture": platform.machine(),
+                  "analyzer": version, "analyzer_sha256": sha256_file(AA), "signtool": signtool,
+                  "signtool_sha256": sha256_file(signtool) if signtool else None,
+                  "samples": RECORDS, "checks_passed": PASSED[0], "failures": FAILURES,
+                  "policy": "Native trust results are contextual; not proof of offline analysis or catalog verification."}
+        with open(args.record, "w", encoding="utf-8") as handle:
+            json.dump(record, handle, ensure_ascii=False, sort_keys=True, indent=2)
+            handle.write("\n")
     finish()
 
 
-main()
+if __name__ == "__main__":
+    with tempfile.TemporaryDirectory(prefix="aa-native-") as WORK:
+        main()

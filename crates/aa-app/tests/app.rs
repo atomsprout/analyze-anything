@@ -69,6 +69,33 @@ fn entries(dir: &Path) -> usize {
 }
 
 #[test]
+fn source_root_settings_survive_the_app_worker_channel() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let input = dir.path().join("drivers");
+    std::fs::create_dir(&input).expect("input folder");
+    std::fs::write(
+        input.join("driver.inf"),
+        b"[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksNames]\n1=Disk\n[SourceDisksFiles]\npayload.bin=1\n",
+    )
+    .expect("INF");
+    std::fs::write(input.join("payload.bin"), b"payload").expect("payload");
+    let roots = vec![aa_app::run::WindowsSourceRoot { inf: "DRIVER.INF".into(), root: ".".into() }];
+    let (sender, updates) = channel();
+    let run = Run::start_with_source_roots(&program(dir.path()), &input, LimitOverrides::default(), roots.clone(), move |update| {
+        let _ = sender.send(update);
+    })
+    .expect("start configured run");
+    let (last, _) = outcome(&updates);
+    let Update::Done(report) = last else { panic!("expected a report, got {last:?}") };
+    let options = Options { windows_source_roots: roots, ..Options::default() };
+    let expected = aa_engine::analyze_with(&Registry::standard(), &input, &options, &mut NoProgress).expect("direct report");
+    assert_eq!(*report, expected);
+    assert_eq!(report.summary["engine.windows-source-roots"][0]["inf"], "driver.inf");
+    assert!(report.findings.iter().any(|finding| finding.rule == "windows.inf-source-files"));
+    drop(run);
+}
+
+#[test]
 fn a_run_reports_like_the_engine_then_serves_bytes_until_dropped() {
     let dir = tempfile::tempdir().expect("temp dir");
     let (path, big) = sample(dir.path());

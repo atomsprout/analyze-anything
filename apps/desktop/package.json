@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && vite build",
     "test": "vitest run",
     "tauri": "tauri",
-    "fixture": "cargo run -q --release -p aa-cli -- analyze ../../crates/aa-apple/tests/data/tiny.dmg -o tests/fixtures/out -f html && cp tests/fixtures/out/report.html tests/fixtures/sample-report.html",
+    "fixture": "node tools/fixture.mjs",
     "test:browser": "playwright test"
   },
   "dependencies": {

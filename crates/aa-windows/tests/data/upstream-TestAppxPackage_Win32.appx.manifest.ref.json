@@ -1,0 +1,25 @@
+{
+  "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+  "source_sha256": "3f48220562f3eac7ecb3c2998e34c9ebfd231298b6e3e08f467a237f6c82e9c3",
+  "identity": {
+    "name": "20477fca-282d-49fb-b03e-371dca074f0f",
+    "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+    "version": "1.0.0.0",
+    "architecture": "x86",
+    "resource_id": ""
+  },
+  "dependencies": [
+    {
+      "Name": "Microsoft.VCLibs.140.00",
+      "Publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+      "MinVersion": "14.0.24123.0"
+    }
+  ],
+  "target_device_families": [
+    {
+      "Name": "Windows.Universal",
+      "MinVersion": "10.0.10586.0",
+      "MaxVersionTested": "10.0.16172.0"
+    }
+  ]
+}

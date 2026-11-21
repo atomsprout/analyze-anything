@@ -57,8 +57,8 @@ const RULES: &[Rule] = &[
         id: "content.hosts",
         title_zh: "文件中出现的网络地址",
         title_en: "Hosts mentioned in the files",
-        text_zh: "在 {files} 个文件中找到 {urls} 个不同的 URL，指向 {hosts} 个主机。这些是文件里写着的地址，不代表程序一定会访问它们。",
-        text_en: "{urls} distinct URLs pointing at {hosts} hosts were found in {files} files. These are addresses written in the files; the program does not necessarily contact them.",
+        text_zh: "在 {files} 个文件中找到脱敏后 {urls} 个不同的 URL 表示，指向 {hosts} 个主机。已隐藏可识别的凭据；这些地址不代表程序一定会访问它们。",
+        text_en: "{urls} distinct URL representations after redaction, pointing at {hosts} hosts, were found in {files} files. Recognizable credentials are hidden; the program does not necessarily contact these addresses.",
     },
     Rule {
         id: "content.secret",

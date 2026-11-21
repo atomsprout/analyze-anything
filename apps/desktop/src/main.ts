@@ -6,7 +6,7 @@ import { applyTheme, confirmer, remember, remembered, toaster, type App } from "
 import { insideApp, selftest, tauriBackend } from "./backend";
 import { clear, el } from "./dom";
 import { word } from "./i18n";
-import type { Backend, Lang, Theme } from "./types";
+import type { Backend, Lang, Theme, WindowsSourceRoot } from "./types";
 import { compareView } from "./views/compare";
 import { homeView, type HomeView } from "./views/home";
 import { progressView, type ProgressView } from "./views/progress";
@@ -45,7 +45,8 @@ async function start(): Promise<void> {
     clear(stage).appendChild(element);
   };
 
-  const goHome = async () => {
+  const goHome = async (preserve = false) => {
+    const roots = preserve && screen?.name === "home" ? screen.view.sourceRootDraft() : [];
     const entries = await backend.historyList();
     const view = homeView(
       app,
@@ -55,17 +56,21 @@ async function start(): Promise<void> {
         open: (id) => void openReport(id),
         compare: (before, after) => void openCompare(before, after),
       },
-      () => void goHome(),
+      () => void goHome(true),
+      roots,
     );
     show({ name: "home", view }, view.element);
   };
 
-  const analyze = async (path: string) => {
+  const analyze = async (path: string, savedRoots?: WindowsSourceRoot[]) => {
+    let roots: WindowsSourceRoot[];
+    try { roots = savedRoots ?? (screen?.name === "home" ? screen.view.sourceRoots() : []); }
+    catch { app.toast(app.t("source_root_error"), true); return; }
     const name = path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
     const view = progressView(app, name, () => void backend.cancelAnalysis());
     show({ name: "progress", view }, view.element);
     try {
-      await backend.startAnalysis(path);
+      await backend.startAnalysis(path, roots);
     } catch (error) {
       app.toast(app.t("failed", { message: String(error) }), true);
       await goHome();
@@ -86,7 +91,7 @@ async function start(): Promise<void> {
   const openReport = async (id: string) => {
     try {
       const opened = await backend.openReport(id);
-      const view = reportView(app, opened, { home: () => void goHome(), reanalyze: (path) => void analyze(path) });
+      const view = reportView(app, opened, { home: () => void goHome(), reanalyze: (path) => void analyze(path, opened.windows_source_roots ?? []) });
       show({ name: "report", view, id }, view.element);
     } catch (error) {
       app.toast(String(error), true);
@@ -106,7 +111,7 @@ async function start(): Promise<void> {
   /** Draws the current screen again, after the language changed. */
   const redraw = async () => {
     if (!screen) return;
-    if (screen.name === "home") await goHome();
+    if (screen.name === "home") await goHome(true);
     else if (screen.name === "compare") await openCompare(screen.before, screen.after);
     else if (screen.name === "report") await openReport(screen.id);
     // The progress screen keeps its words until it ends; redrawing it would lose its counts.

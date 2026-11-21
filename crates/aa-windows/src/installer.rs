@@ -120,7 +120,7 @@ impl Tag {
         }
     }
 
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Tag::Autostart => "autostart",
             Tag::Service => "service",

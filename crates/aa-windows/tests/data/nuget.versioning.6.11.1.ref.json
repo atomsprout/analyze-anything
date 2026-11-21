@@ -1,0 +1,24 @@
+{
+  "sdk": "10.0.401",
+  "package_sha256": "7e5f25c8284c8d5ed2a7c91e00fec2757661ec044dfe6537f53de01bbe230d66",
+  "manifest": "NuGet.Versioning.nuspec",
+  "name": "NuGet.Versioning",
+  "version": "6.11.1",
+  "license_kind": "expression",
+  "license_value": "Apache-2.0",
+  "dependency_frameworks": [
+    "net472",
+    "netstandard2.0"
+  ],
+  "dependency_counts": [
+    0,
+    0
+  ],
+  "dependencies": [],
+  "assets": [
+    "lib/net472/NuGet.Versioning.dll",
+    "lib/netstandard2.0/NuGet.Versioning.dll"
+  ],
+  "exact_normalized": true,
+  "minimum_accepts_later": true
+}

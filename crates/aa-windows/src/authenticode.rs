@@ -477,6 +477,301 @@ pub fn analyze_blob(blob: &[u8], file_digest_of: &FileDigest) -> Authenticode {
     out
 }
 
+/// Catalog CMS verification reuses the cryptographic primitives, not PE file hashing.
+/// The caller bounds and validates the ASN.1 tree before entering this function.
+pub(super) fn catalog_envelope(blob: &[u8]) -> Result<(Vec<u8>, Vec<Value>), String> {
+    const CTL: &str = "1.3.6.1.4.1.311.10.1";
+    checked_envelope(blob, CTL)
+}
+
+/// The caller preflights the same bounded DER profile as catalogs; no package digest is assumed.
+pub(super) fn msix_envelope(blob: &[u8]) -> Result<(Vec<u8>, Vec<Value>), String> {
+    checked_envelope(blob, OID_SPC_INDIRECT_DATA).map_err(|reason| reason.replace("catalog", "MSIX CMS"))
+}
+
+fn checked_envelope(blob: &[u8], expected_type: &str) -> Result<(Vec<u8>, Vec<Value>), String> {
+    let (outer, rest) = der::parse_prefix(blob)?;
+    if !rest.is_empty() {
+        return Err("bytes follow the catalog ContentInfo".into());
+    }
+    let declared_hashes = catalog_shape(outer)?;
+    let data = parse_signed_data(outer)?;
+    if data.content_type != expected_type {
+        return Err("signed envelope content type differs from the requested profile".into());
+    }
+    if data.signer_infos.len() > MAX_SIGNATURES {
+        return Err("catalog signer count exceeds the budget".into());
+    }
+    let content = data.content.ok_or("catalog content is missing")?;
+    let ctl = match content.tag {
+        TAG_SEQUENCE => content.raw.to_vec(),
+        TAG_OCTET_STRING => content.content.to_vec(),
+        _ => return Err("catalog content is neither a sequence nor a primitive octet string".into()),
+    };
+    let signed_bytes = signed_content(&content);
+    let mut signatures = Vec::new();
+    for (index, element) in data.signer_infos.iter().enumerate() {
+        let info = match parse_signer_info(*element) {
+            Ok(info) => info,
+            Err(reason) => {
+                signatures.push(json!({"index": index, "unreadable": reason}));
+                continue;
+            }
+        };
+        let (signer, candidates) = catalog_find_signer(&info, &data.certificates);
+        let attributes = envelope_attributes(&info, expected_type);
+        let claimed_digest = if attributes.passed() { attributes_list_message_digest(&info).map(hex::encode) } else { None };
+        let computed_digest = Hash::from_oid(&info.digest_oid).map(|hash| hex::encode(hash.digest(&signed_bytes)));
+        let algorithms = if candidates > 1 {
+            Check::NotChecked("catalog signer certificate identifier is ambiguous".into())
+        } else if declared_hashes.contains(&info.digest_oid) {
+            catalog_algorithm(&info, signer)
+        } else {
+            Check::NotChecked("catalog signer digest is absent from digestAlgorithms".into())
+        };
+        let (digest, signature) = if attributes.passed() && algorithms.passed() {
+            check_signer_info(&info, signer, Some(&signed_bytes))
+        } else {
+            let why = "catalog signed attributes or algorithms were not established".to_string();
+            (Check::NotChecked(why.clone()), Check::NotChecked(why))
+        };
+        let (chain, chain_check, root) = match signer {
+            Some(signer) => build_chain(signer, &data.certificates),
+            None => (Vec::new(), Check::NotChecked("catalog signer certificate is absent or ambiguous".into()), false),
+        };
+        let mut signature_record = json!({
+            "index": index,
+            "digest_algorithm": info.digest_oid,
+            "signature_algorithm": info.signature_oid,
+            "message_digest_claimed": claimed_digest,
+            "content_digest_computed": computed_digest,
+            "signature_sha256": hex::encode(Sha256::digest(&info.signature)),
+            "checks": {"signed_attributes": attributes.json(), "algorithms": algorithms.json(),
+                "content_digest": digest.json(), "signature": signature.json(), "embedded_chain": chain_check.json()},
+            "signer": signer.map(Certificate::json),
+            "signer_certificate_candidates": candidates,
+            "issuers": chain.iter().skip(1).map(|c| c.json()).collect::<Vec<_>>(),
+            "chain_reaches_embedded_root": root,
+            "unsigned_attributes_present": info.unsigned_attributes.is_some(),
+        });
+        if expected_type == OID_SPC_INDIRECT_DATA
+            && let Some(signer) = signer
+        {
+            signature_record["msix_publisher_subject"] = crate::msix_publisher::projection(signer.raw_subject);
+        }
+        signatures.push(signature_record);
+    }
+    Ok((ctl, signatures))
+}
+
+fn attributes_list_message_digest(info: &SignerInfo) -> Option<Vec<u8>> {
+    attributes(info.signed_attributes)
+        .iter()
+        .find(|(oid, _)| oid == OID_MESSAGE_DIGEST)
+        .and_then(|(_, values)| values.children().any().ok())
+        .and_then(|value| value.octet_string())
+}
+
+fn catalog_find_signer<'c, 'a>(info: &SignerInfo, certificates: &'c [Certificate<'a>]) -> (Option<&'c Certificate<'a>>, usize) {
+    let mut candidates = std::collections::BTreeMap::new();
+    for certificate in certificates {
+        let matches = match (info.issuer, info.serial, info.key_id) {
+            (Some(issuer), Some(serial), _) => certificate.raw_issuer == issuer && certificate.raw_serial == serial,
+            (_, _, Some(key)) => certificate.subject_key_id.as_deref() == Some(key),
+            _ => false,
+        };
+        if matches {
+            candidates.entry(&certificate.sha256).or_insert(certificate);
+        }
+    }
+    let count = candidates.len();
+    (if count == 1 { candidates.values().next().copied() } else { None }, count)
+}
+
+fn catalog_shape(outer: Tlv<'_>) -> Result<std::collections::BTreeSet<String>, String> {
+    let finish = |mut fields: Reader<'_>| -> Result<(), String> {
+        if fields.next().is_some() { Err("extra catalog CMS fields".into()) } else { Ok(()) }
+    };
+    if outer.tag != TAG_SEQUENCE {
+        return Err("catalog ContentInfo is not a sequence".into());
+    }
+    let mut ci = outer.children();
+    if ci.expect(TAG_OID)?.oid().as_deref() != Some(OID_SIGNED_DATA) {
+        return Err("catalog is not SignedData".into());
+    }
+    let mut wrapper = ci.expect(0xa0)?.children();
+    finish(ci)?;
+    let mut body = wrapper.expect(TAG_SEQUENCE)?.children();
+    finish(wrapper)?;
+    if !matches!(body.expect(TAG_INTEGER)?.integer_bytes(), Some([1] | [3])) {
+        return Err("unsupported catalog SignedData version".into());
+    }
+    let mut hashes = std::collections::BTreeSet::new();
+    for (index, algorithm) in body.expect(TAG_SET)?.children().enumerate() {
+        if index >= MAX_SIGNATURES {
+            return Err("catalog digest algorithm count exceeds the budget".into());
+        }
+        hashes.insert(catalog_hash_identifier(algorithm?)?);
+    }
+    let mut encapsulated = body.expect(TAG_SEQUENCE)?.children();
+    encapsulated.expect(TAG_OID)?;
+    let mut content = encapsulated.expect(0xa0)?.children();
+    content.any()?;
+    finish(content)?;
+    finish(encapsulated)?;
+    if let Some(certificates) = body.optional(0xa0) {
+        if certificates.content.len() > 1024 * 1024 {
+            return Err("catalog certificate bag exceeds the byte budget".into());
+        }
+        for (index, certificate) in certificates.children().enumerate() {
+            let certificate = certificate?;
+            if index >= MAX_CERTIFICATES || certificate.raw.len() > 64 * 1024 {
+                return Err("catalog certificate count or size exceeds the budget".into());
+            }
+            parse_certificate(certificate)?;
+        }
+    }
+    body.optional(0xa1);
+    for (index, signer) in body.expect(TAG_SET)?.children().enumerate() {
+        if index >= MAX_SIGNATURES {
+            return Err("catalog signer count exceeds the budget".into());
+        }
+        let signer = signer?;
+        if signer.tag != TAG_SEQUENCE {
+            return Err("catalog SignerInfo is not a sequence".into());
+        }
+        let mut fields = signer.children();
+        let version = fields.expect(TAG_INTEGER)?;
+        let identifier = fields.any()?;
+        match (version.integer_bytes(), identifier.tag) {
+            (Some([1]), TAG_SEQUENCE) => {
+                let mut issuer = identifier.children();
+                issuer.expect(TAG_SEQUENCE)?;
+                let serial = issuer.expect(TAG_INTEGER)?;
+                if serial.content.is_empty() || serial.content.len() > 64 {
+                    return Err("catalog signer serial is unsupported".into());
+                }
+                finish(issuer)?;
+            }
+            (Some([3]), 0x80) if !identifier.content.is_empty() && identifier.content.len() <= 64 => {}
+            _ => return Err("catalog signer version or identifier form is unsupported".into()),
+        }
+        catalog_hash_identifier(fields.expect(TAG_SEQUENCE)?)?;
+        fields.optional(0xa0);
+        let mut algorithm = fields.expect(TAG_SEQUENCE)?.children();
+        let oid = algorithm.expect(TAG_OID)?.oid().ok_or("invalid catalog signature OID")?;
+        if let Some(parameter) = algorithm.next() {
+            let parameter = parameter?;
+            if parameter.tag != 0x05 || !parameter.content.is_empty() || oid.starts_with("1.2.840.10045.") {
+                return Err("catalog signature parameters are unsupported".into());
+            }
+        }
+        finish(algorithm)?;
+        fields.expect(TAG_OCTET_STRING)?;
+        fields.optional(0xa1);
+        finish(fields)?;
+    }
+    finish(body)?;
+    Ok(hashes)
+}
+
+fn catalog_hash_identifier(node: Tlv<'_>) -> Result<String, String> {
+    if node.tag != TAG_SEQUENCE {
+        return Err("catalog hash identifier is not a sequence".into());
+    }
+    let mut fields = node.children();
+    let oid = fields.expect(TAG_OID)?.oid().ok_or("invalid catalog hash OID")?;
+    if let Some(parameter) = fields.next() {
+        let parameter = parameter?;
+        if parameter.tag != 0x05 || !parameter.content.is_empty() {
+            return Err("catalog hash parameters are unsupported".into());
+        }
+    }
+    if fields.next().is_some() {
+        return Err("extra catalog hash identifier fields".into());
+    }
+    Ok(oid)
+}
+
+#[cfg(test)]
+fn catalog_attributes(info: &SignerInfo) -> Check {
+    envelope_attributes(info, "1.3.6.1.4.1.311.10.1")
+}
+
+fn envelope_attributes(info: &SignerInfo, expected_type: &str) -> Check {
+    let verify = || -> Result<(), String> {
+        let set = info.signed_attributes.ok_or("catalog signed attributes are absent")?;
+        let mut seen = std::collections::BTreeSet::new();
+        let mut content_type = false;
+        let mut digest = false;
+        let mut previous = None;
+        for (index, attribute) in set.children().enumerate() {
+            if index >= 64 {
+                return Err("catalog signed attribute count exceeds the budget".into());
+            }
+            let attribute = attribute?;
+            if previous.is_some_and(|raw: &[u8]| raw > attribute.raw) {
+                return Err("catalog signed attributes are not DER ordered".into());
+            }
+            previous = Some(attribute.raw);
+            if attribute.tag != TAG_SEQUENCE {
+                return Err("signed attribute is not a sequence".into());
+            }
+            let mut fields = attribute.children();
+            let oid = fields.expect(TAG_OID)?.oid().ok_or("invalid signed attribute OID")?;
+            if !seen.insert(oid.clone()) {
+                return Err("duplicate catalog signed attribute".into());
+            }
+            let values = fields.expect(TAG_SET)?;
+            if fields.next().is_some() {
+                return Err("extra signed attribute fields".into());
+            }
+            if matches!(oid.as_str(), "1.2.840.113549.1.9.3" | OID_MESSAGE_DIGEST) {
+                let mut values = values.children();
+                let value = values.any()?;
+                if values.next().is_some() {
+                    return Err("ambiguous catalog signed attribute values".into());
+                }
+                if oid == OID_MESSAGE_DIGEST {
+                    if value.tag != TAG_OCTET_STRING || value.content.len() > 64 {
+                        return Err("invalid catalog messageDigest".into());
+                    }
+                    digest = true;
+                } else {
+                    if value.oid().as_deref() != Some(expected_type) {
+                        return Err("catalog signed contentType differs".into());
+                    }
+                    content_type = true;
+                }
+            }
+        }
+        if !content_type || !digest {
+            return Err("catalog contentType or messageDigest is absent".into());
+        }
+        Ok(())
+    };
+    match verify() {
+        Ok(()) => Check::Passed,
+        Err(reason) => Check::NotChecked(reason),
+    }
+}
+
+fn catalog_algorithm(info: &SignerInfo, signer: Option<&Certificate>) -> Check {
+    let Some(hash) = Hash::from_oid(&info.digest_oid) else {
+        return Check::NotChecked("unsupported catalog digest algorithm".into());
+    };
+    let Some(signer) = signer else {
+        return Check::NotChecked("catalog signer certificate is absent".into());
+    };
+    let oid = info.signature_oid.as_str();
+    let compatible = match &signer.key {
+        Key::Rsa { .. } => oid == OID_RSA || (oid.starts_with("1.2.840.113549.1.1.") && Hash::from_signature_oid(oid) == Some(hash)),
+        Key::P256(_) | Key::P384(_) => oid.starts_with("1.2.840.10045.4.") && Hash::from_signature_oid(oid) == Some(hash),
+        Key::Other(_) => false,
+    };
+    if compatible { Check::Passed } else { Check::NotChecked("unsupported or inconsistent catalog signature algorithm".into()) }
+}
+
 struct SignedData<'a> {
     content_type: String,
     /// The element inside `[0] EXPLICIT`, when content is present.
@@ -1047,4 +1342,105 @@ fn parse_certificate<'a>(certificate: Tlv<'a>) -> Result<Certificate<'a>, String
         key,
         subject_key_id,
     })
+}
+
+#[cfg(test)]
+mod catalog_tests {
+    use super::*;
+
+    fn tlv(tag: u8, bytes: &[u8]) -> Vec<u8> {
+        let mut result = vec![tag];
+        if bytes.len() < 128 {
+            result.push(bytes.len() as u8);
+        } else {
+            let length = bytes.len().to_be_bytes();
+            let length = &length[length.iter().position(|b| *b != 0).expect("nonzero length")..];
+            result.push(0x80 | length.len() as u8);
+            result.extend_from_slice(length);
+        }
+        result.extend_from_slice(bytes);
+        result
+    }
+
+    fn root() -> Tlv<'static> {
+        der::parse_prefix(include_bytes!("../tests/data/native-catalog-v2.cat")).expect("native catalog").0
+    }
+
+    fn replace_body(index: usize, replacement: &[u8]) -> Vec<u8> {
+        let outer = root().children().collect::<Result<Vec<_>, _>>().expect("ContentInfo");
+        let body = outer[1].children().expect(TAG_SEQUENCE).expect("SignedData");
+        let fields = body.children().collect::<Result<Vec<_>, _>>().expect("SignedData fields");
+        let mut content = Vec::new();
+        for (at, field) in fields.iter().enumerate() {
+            content.extend_from_slice(if at == index { replacement } else { field.raw });
+        }
+        tlv(TAG_SEQUENCE, &[outer[0].raw, &tlv(0xa0, &tlv(TAG_SEQUENCE, &content))].concat())
+    }
+
+    #[test]
+    fn catalog_signed_attribute_ambiguity_and_missing_algorithm_declarations_do_not_pass() {
+        let data = parse_signed_data(root()).expect("native envelope");
+        let mut info = parse_signer_info(data.signer_infos[0]).expect("native signer");
+        assert!(catalog_attributes(&info).passed());
+        let attrs = info.signed_attributes.expect("native signed attributes");
+        let mut values = attrs.children().map(|v| v.expect("attribute").raw.to_vec()).collect::<Vec<_>>();
+        values.push(values[0].clone());
+        values.sort();
+        let bytes = tlv(0xa0, &values.concat());
+        info.signed_attributes = Some(der::parse_prefix(&bytes).expect("duplicate attribute set").0);
+        assert!(matches!(catalog_attributes(&info), Check::NotChecked(reason) if reason.contains("duplicate")));
+        info.signed_attributes = None;
+        assert!(!catalog_attributes(&info).passed());
+        let mut attrs = Vec::new();
+        for index in 0..65u8 {
+            attrs.extend(tlv(TAG_SEQUENCE, &[tlv(TAG_OID, &[42, 3, index]), tlv(TAG_SET, &tlv(0x05, &[]))].concat()));
+        }
+        let bytes = tlv(0xa0, &attrs);
+        info.signed_attributes = Some(der::parse_prefix(&bytes).expect("attribute budget").0);
+        assert!(matches!(catalog_attributes(&info), Check::NotChecked(reason) if reason.contains("budget")));
+        let bytes = replace_body(1, &tlv(TAG_SET, &[]));
+        let (_, signatures) = catalog_envelope(&bytes).expect("missing declared hash remains an explicit check");
+        assert!(signatures[0]["checks"]["algorithms"]["not_checked"].as_str().expect("reason").contains("digestAlgorithms"));
+    }
+
+    #[test]
+    fn catalog_signer_and_certificate_caps_are_checked_before_verification() {
+        let outer = root().children().collect::<Result<Vec<_>, _>>().expect("ContentInfo");
+        let fields =
+            outer[1].children().expect(TAG_SEQUENCE).expect("SignedData").children().collect::<Result<Vec<_>, _>>().expect("fields");
+        let signer = fields.last().expect("signer set").children().any().expect("signer");
+        let oversized = tlv(TAG_SET, &signer.raw.repeat(MAX_SIGNATURES + 1));
+        assert!(catalog_envelope(&replace_body(fields.len() - 1, &oversized)).is_err());
+        let signer_fields = signer.children().collect::<Result<Vec<_>, _>>().expect("signer fields");
+        let mut changed = tlv(TAG_INTEGER, &[2]);
+        for field in signer_fields.iter().skip(1) {
+            changed.extend_from_slice(field.raw);
+        }
+        let changed = tlv(TAG_SET, &tlv(TAG_SEQUENCE, &changed));
+        assert!(catalog_envelope(&replace_body(fields.len() - 1, &changed)).is_err(), "unknown signer version is unsupported");
+        let bag = fields.iter().position(|f| f.tag == 0xa0).expect("certificate bag");
+        let certificate = fields[bag].children().any().expect("certificate");
+        let oversized = tlv(0xa0, &certificate.raw.repeat(MAX_CERTIFICATES + 1));
+        assert!(catalog_envelope(&replace_body(bag, &oversized)).is_err());
+    }
+
+    #[test]
+    fn catalog_signer_certificate_identity_is_not_chosen_from_ambiguous_candidates() {
+        let outer = root().children().collect::<Result<Vec<_>, _>>().expect("ContentInfo");
+        let fields =
+            outer[1].children().expect(TAG_SEQUENCE).expect("SignedData").children().collect::<Result<Vec<_>, _>>().expect("fields");
+        let bag = fields.iter().position(|f| f.tag == 0xa0).expect("certificate bag");
+        let certificate = fields[bag].children().any().expect("certificate");
+        let duplicated = tlv(0xa0, &certificate.raw.repeat(2));
+        let (_, signatures) = catalog_envelope(&replace_body(bag, &duplicated)).expect("identical embedded certificates");
+        assert_eq!(signatures[0]["signer_certificate_candidates"], 1);
+        assert_eq!(signatures[0]["checks"]["signature"], "passed");
+        let mut changed = certificate.raw.to_vec();
+        *changed.last_mut().expect("certificate signature") ^= 1;
+        let ambiguous = tlv(0xa0, &[certificate.raw, &changed].concat());
+        let (_, signatures) = catalog_envelope(&replace_body(bag, &ambiguous)).expect("ambiguous embedded certificate identity");
+        assert_eq!(signatures[0]["signer_certificate_candidates"], 2);
+        assert!(signatures[0]["signer"].is_null());
+        assert!(signatures[0]["checks"]["algorithms"]["not_checked"].as_str().expect("ambiguity reason").contains("ambiguous"));
+    }
 }

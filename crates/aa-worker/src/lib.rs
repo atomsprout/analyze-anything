@@ -14,7 +14,9 @@
 
 mod client;
 pub mod protocol;
+mod scratch;
 mod server;
 
 pub use client::{Worker, WorkerError};
-pub use server::serve;
+pub use scratch::sweep as sweep_stale_workers;
+pub use server::{serve, serve_process, serve_process_with_registry, serve_with_registry};

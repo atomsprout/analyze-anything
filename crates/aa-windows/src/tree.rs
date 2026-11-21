@@ -23,6 +23,15 @@ const MAX_SCRIPTS: usize = 3000;
 const MAX_JSON: u64 = 32 * 1024 * 1024;
 
 pub fn analyze(tree: &dyn Tree, out: &mut Output) {
+    crate::nuspec::analyze_tree(tree, out);
+    crate::vsix::analyze_tree(tree, out);
+    crate::winget::analyze_tree(tree, out);
+    crate::references::analyze(tree, out);
+    crate::source_mapping::analyze(tree, out);
+    crate::catalog_membership::analyze(tree, out);
+    crate::msix_blockmap::analyze_tree(tree, out);
+    crate::msix_zip::analyze(tree, out);
+    crate::msix_zip::bundle::analyze(tree, out);
     // Folder -> the files directly inside it. Containers count as folders.
     let mut folders: BTreeMap<&str, Vec<&Artifact>> = BTreeMap::new();
     for artifact in tree.artifacts() {

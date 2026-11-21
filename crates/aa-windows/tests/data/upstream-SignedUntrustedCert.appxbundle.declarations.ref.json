@@ -1,0 +1,107 @@
+{
+  "bundle": {
+    "source_sha256": "ee9fd9c8527c9781d886a2178cec3b6d33becc45e3faa3c8bce43b0b635743fe",
+    "identity": {
+      "name": "Microsoft.Help",
+      "architecture": "neutral",
+      "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+      "version": "2013.318.2234.3407",
+      "resource_id": "~"
+    },
+    "packages": [
+      {
+        "identity": {
+          "name": "Microsoft.Help",
+          "architecture": "x86",
+          "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+          "version": "1.0.0.0",
+          "resource_id": "neutral"
+        },
+        "type": "application",
+        "file_name": "Basic.appx",
+        "offset": 40,
+        "size": 9683,
+        "resources": [
+          {
+            "language": "en-us",
+            "scale": null,
+            "dx_feature_level": null
+          }
+        ],
+        "target_device_families": []
+      },
+      {
+        "identity": {
+          "name": "Microsoft.Help",
+          "architecture": "x64",
+          "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+          "version": "1.0.0.0",
+          "resource_id": "neutral"
+        },
+        "type": "application",
+        "file_name": "BasicWithPE.appx",
+        "offset": 9793,
+        "size": 82280,
+        "resources": [
+          {
+            "language": "en-us",
+            "scale": null,
+            "dx_feature_level": null
+          }
+        ],
+        "target_device_families": []
+      }
+    ],
+    "api": "IAppxBundleManifestReader/IAppxBundleManifestPackageInfo"
+  },
+  "inner": [
+    {
+      "name": "Basic.appx",
+      "manifest": {
+        "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+        "source_sha256": "cc10ae5054378eb86a64d4fcb0c6b2520b0ea701281f6707067c6118a4831346",
+        "identity": {
+          "name": "Microsoft.Help",
+          "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+          "version": "1.0.0.0",
+          "architecture": "x86",
+          "resource_id": "neutral"
+        },
+        "dependencies": [],
+        "target_device_families": null,
+        "target_device_families_error": "AppxPackaging HRESULT 0x80070490",
+        "resources": [
+          {
+            "language": "en-us",
+            "scale": null,
+            "dx_feature_level": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "BasicWithPE.appx",
+      "manifest": {
+        "api": "IAppxManifestReader/IAppxManifestPackageId/IAppxManifestReader3",
+        "source_sha256": "c8000def16afca58502e93dd7800ef975559f342c17692c4c6dbf9100e596264",
+        "identity": {
+          "name": "Microsoft.Help",
+          "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+          "version": "1.0.0.0",
+          "architecture": "x64",
+          "resource_id": "neutral"
+        },
+        "dependencies": [],
+        "target_device_families": null,
+        "target_device_families_error": "AppxPackaging HRESULT 0x80070490",
+        "resources": [
+          {
+            "language": "en-us",
+            "scale": null,
+            "dx_feature_level": null
+          }
+        ]
+      }
+    }
+  ]
+}

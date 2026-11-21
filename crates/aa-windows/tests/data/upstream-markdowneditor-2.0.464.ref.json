@@ -1,0 +1,45 @@
+{
+  "package_sha256": "ccfa1464c695a63b5252eee84806df2bd2df47cd642317ffa6112bdb877fe38c",
+  "source_sha256": "6588a04b0491df6879138952e8db4cd0f6577cdcdfd9c472281513300b8fd29b",
+  "id": "MarkdownEditor2022.2347dc70-1875-4775-bf48-f2b9fdfee8d4",
+  "version": "2.0.464",
+  "publisher": "Mads Kristensen",
+  "name": "Markdown Editor v2",
+  "license_path": "Resources\\LICENSE",
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Community",
+      "range": "[17.0, 19.0)",
+      "architecture": "amd64"
+    },
+    {
+      "id": "Microsoft.VisualStudio.Community",
+      "range": "[17.0,19.0)",
+      "architecture": "arm64"
+    }
+  ],
+  "prerequisites": [
+    {
+      "id": "Microsoft.VisualStudio.Component.CoreEditor",
+      "range": "[17.0,)",
+      "display_name": "Visual Studio core editor"
+    }
+  ],
+  "assets": [
+    {
+      "type": "Microsoft.VisualStudio.VsPackage",
+      "path": "MarkdownEditor2022.pkgdef",
+      "sha256": "54121c14d5bad256aed80ab5e5adbb17611439e40a27a4d87ae43c6fed4c82f2"
+    },
+    {
+      "type": "Microsoft.VisualStudio.MefComponent",
+      "path": "MarkdownEditor2022.dll",
+      "sha256": "156a48379a7281881223598ad9f631cf8fbeb169db17e5bbb1f6ce0328a491f2"
+    },
+    {
+      "type": "Microsoft.VisualStudio.VsPackage",
+      "path": "Registry.pkgdef",
+      "sha256": "42ca6ea0230c57874ddbdb62f99f0143cd2dbb461855bbc4cebc18063cbbba75"
+    }
+  ]
+}
