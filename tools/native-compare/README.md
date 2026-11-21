@@ -52,6 +52,13 @@ directory-ID expansion is never copied into the graph. `upstream-echo.inf` and
 `native-inf-relationships.inf` add Models and shared-list cases. This is read-only field
 evidence, not installation or host-platform selection. See [the graph profile](../../docs/spikes/windows-inf-relationships.md).
 
+Strict comparison requires the native section set to equal the parsed source set. If
+an explicitly selected installed INF has native-only sections, use
+`--allow-native-added-sections` with --cli/--output to record the difference and compare
+all source sections. Native additions are never copied into the product report. The
+BasicDisplay observation adds `Strings.0409` natively; its cause remains unestablished.
+This optional development scope does not change analysis or native-policy claims.
+
 Generate controlled v1/v2 catalogs with SDK MakeCat/SignTool (PowerShell 7):
 
     pwsh -NoProfile -File tools/native-compare/windows-catalog-fixture.ps1 -OutputDirectory D:\github\analyze-anything\out\windows-baseline\catalogs

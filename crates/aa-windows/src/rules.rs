@@ -28,6 +28,48 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.inf-model-declaration",
+        title_en: "Declared device model",
+        title_zh: "声明的设备型号",
+        text_en: "Section {section} names hardware ID {hardware} and installation-section base {install}, with {count} compatible identifiers. These are source declarations; no device match or applicable installation section was selected.",
+        text_zh: "节 {section} 声明硬件 ID {hardware}、安装节基本名 {install} 及 {count} 个兼容标识。这些是来源声明；没有选择匹配设备或适用的安装节。",
+    },
+    Rule {
+        id: "windows.inf-service-declaration",
+        title_en: "Declared service association",
+        title_zh: "声明的服务关联",
+        text_en: "Section {section} declares service name {name}, service-install section {install} and flags {flags}. The supported NULL-associated-driver form is {null_driver}. Blank optional fields remain blank. This does not establish an installed or running service.",
+        text_zh: "节 {section} 声明服务名 {name}、服务安装节 {install} 和标志 {flags}。是否为支持的空关联驱动形式：{null_driver}。省略的可选字段保持为空。这不表示服务已安装或正在运行。",
+    },
+    Rule {
+        id: "windows.inf-service-property",
+        title_en: "Declared service property",
+        title_zh: "声明的服务属性",
+        text_en: "Referenced service-install section {section} declares {name} = {value}. Evidence distinguishes literal values from neutral string projections. Directory IDs, startup applicability and runtime effects remain unresolved.",
+        text_zh: "被引用的服务安装节 {section} 声明 {name} = {value}。证据区分原始值与中性字符串投影。目录 ID、启动适用性和运行时效果仍未确认。",
+    },
+    Rule {
+        id: "windows.inf-copy-declaration",
+        title_en: "Declared file copy source",
+        title_zh: "声明的文件复制源",
+        text_en: "Section {section} declares source filename {source}, destination filename {destination} and flags {flags}. This retains a copy declaration; no copy was performed and no supplied source path or destination directory was established.",
+        text_zh: "节 {section} 声明源文件名 {source}、目标文件名 {destination} 和标志 {flags}。这是复制声明记录；没有执行复制，也没有确认输入中的源路径或目标目录。",
+    },
+    Rule {
+        id: "windows.inf-source-declaration",
+        title_en: "Declared source media file",
+        title_zh: "声明的源介质文件",
+        text_en: "Section {section} declares source filename {name}, disk identifier {disk} and subdirectory {directory}. Architecture alternatives and source-media roots were not selected; the declaration alone does not associate supplied bytes.",
+        text_zh: "节 {section} 声明源文件名 {name}、磁盘标识 {disk} 和子目录 {directory}。没有选择体系结构候选或源介质根目录；仅此声明不能关联输入中的文件内容。",
+    },
+    Rule {
+        id: "windows.inf-registry-declaration",
+        title_en: "Declared registry location",
+        title_zh: "声明的注册表位置",
+        text_en: "Section {section} contains root {root}, subkey {subkey}, value name {name} and flags {flags}. Referencing contexts remain in the source graph. HKR has no resolved absolute root here; flags may describe conditional or deletion operations. No registry change was performed.",
+        text_zh: "节 {section} 包含根 {root}、子键 {subkey}、值名 {name} 和标志 {flags}。来源图保留引用上下文。这里没有为 HKR 确认绝对根位置；标志可能描述条件操作或删除操作。没有执行注册表修改。",
+    },
+    Rule {
         id: "windows.inf-declarations",
         title_en: "INF device, service and file declarations",
         title_zh: "INF 设备、服务及文件声明",
@@ -38,8 +80,8 @@ pub const RULES: &[Rule] = &[
         id: "windows.inf-declarations-limit",
         title_en: "INF declaration graph reached a budget",
         title_zh: "INF 声明图达到预算上限",
-        text_en: "Declaration records, section references, candidate details or serialized output reached a budget. Omitted relationships remain unresolved; retained candidates do not establish uniqueness or Windows installation selection.",
-        text_zh: "声明记录、节引用、候选详情或序列化输出达到预算上限。省略的关联保持未确认；保留的候选不表示唯一匹配或 Windows 安装选择。",
+        text_en: "Declaration records, section references, candidate details, report details or serialized output reached a budget. Omitted relationships remain unresolved; retained candidates do not establish uniqueness or Windows installation selection.",
+        text_zh: "声明记录、节引用、候选详情、报告详情或序列化输出达到预算上限。省略的关联保持未确认；保留的候选不表示唯一匹配或 Windows 安装选择。",
     },
     Rule {
         id: "windows.inf-declarations-unresolved",

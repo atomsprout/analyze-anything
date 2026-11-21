@@ -256,6 +256,59 @@ fn independent_inf_sources_have_evidenced_declaration_graphs_without_installatio
 }
 
 #[test]
+fn inf_report_details_surface_values_with_literal_and_projection_evidence() {
+    let run = analyze(&[
+        ("native-inf-relationships.inf", data("native-inf-relationships.inf")),
+        ("upstream-echo.inf", data("upstream-echo.inf")),
+    ]);
+    let model = run.findings("windows.inf-model-declaration");
+    assert!(model.iter().any(|f| f.params["hardware"] == r"ROOT\SAMPLE"));
+    let copy = run.findings("windows.inf-copy-declaration");
+    assert!(copy.iter().any(|f| f.params["source"] == "original.sys" && f.params["destination"] == "renamed.sys"));
+    let property = run.findings("windows.inf-service-property");
+    assert!(property.iter().any(|f| f.params["name"] == "ServiceBinary" && f.params["value"] == r"%13%\renamed.sys"));
+    let service = run.findings("windows.inf-service-declaration");
+    let projected = service.iter().find(|f| f.params["name"] == "ECHO").expect("ECHO declaration");
+    assert!(projected.evidence.iter().any(|e| e.value == serde_json::json!("%SPSVCINST_ASSOCSERVICE%")));
+    assert!(projected.evidence.iter().any(|e| e.value == serde_json::json!("0x00000002")));
+    assert!(service.iter().any(|f| f.params["null_driver"] == true));
+    for rule in [
+        "windows.inf-model-declaration",
+        "windows.inf-service-declaration",
+        "windows.inf-service-property",
+        "windows.inf-copy-declaration",
+        "windows.inf-source-declaration",
+        "windows.inf-registry-declaration",
+    ] {
+        let findings = run.findings(rule);
+        assert!(!findings.is_empty());
+        assert!(
+            findings
+                .iter()
+                .all(|f| f.severity == aa_core::Severity::Info && f.confidence == aa_core::Confidence::Derived && !f.evidence.is_empty())
+        );
+    }
+}
+
+#[test]
+fn inf_report_details_have_count_and_byte_budgets_without_discarding_the_graph() {
+    for (rows, width) in [(80, 8), (40, 4000)] {
+        let mut text = String::from("[Version]\nSignature=\"$Windows NT$\"\n[SourceDisksFiles]\n");
+        for index in 0..rows {
+            text.push_str(&format!("{index}{}.sys=1,,\n", "a".repeat(width)));
+        }
+        let run = analyze(&[("budget.inf", text.into_bytes())]);
+        let graph = run.fact("budget.inf", "windows.inf-declarations");
+        assert_eq!(graph["omitted"], 0);
+        assert!(graph["report_details_omitted"].as_u64().expect("omission count") > 0);
+        let details = run.findings("windows.inf-source-declaration");
+        assert!(!details.is_empty() && details.len() <= 64);
+        assert!(details.iter().map(|f| serde_json::to_vec(f).expect("finding JSON").len()).sum::<usize>() <= 256 * 1024);
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.inf-declarations-limit"));
+    }
+}
+
+#[test]
 fn independent_shell_link_relative_path_can_name_a_supplied_sibling() {
     let run = analyze(&[("upstream-test.lnk", data("upstream-test.lnk")), ("a.txt", b"supplied text".to_vec())]);
     let refs = run.fact("upstream-test.lnk", "windows.input-references")["references"].as_array().expect("reference declarations");

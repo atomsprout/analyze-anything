@@ -96,11 +96,15 @@ def main():
     parser.add_argument("--reference", required=True, type=Path)
     parser.add_argument("--cli", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--allow-native-added-sections", action="store_true",
+                        help="record native-only section names and compare all source sections; never copy native additions into the report")
     args = parser.parse_args()
     if sys.platform != "win32":
         parser.error("the SetupAPI reference requires Windows")
     if bool(args.cli) != bool(args.output):
         parser.error("--cli and --output must be supplied together")
+    if args.allow_native_added_sections and not args.cli:
+        parser.error("--allow-native-added-sections requires --cli and --output")
     before = args.sample.read_bytes()
     sections = native_fields(args.sample)
     record = {"sample": args.sample.name, "sha256": hashlib.sha256(before).hexdigest(),
@@ -122,7 +126,12 @@ def main():
         # This reference compares files with unique section names. Repeated INF sections
         # are merged by SetupAPI; the analyzer deliberately preserves their source occurrences.
         assert len({s["name"].lower() for s in fact["sections"]}) == len(fact["sections"])
-        assert len(fact["sections"]) == len(sections)
+        source_names = {s["name"].lower() for s in fact["sections"]}
+        native_names = {s["name"].lower() for s in sections}
+        assert source_names <= native_names, "native reference omitted source sections"
+        native_added = sorted(native_names - source_names)
+        if not args.allow_native_added_sections:
+            assert not native_added, "native-only sections require an explicit recorded comparison scope"
         checked = 0
         by_name = {s["name"].lower(): s for s in sections}
         for actual in fact["sections"]:
@@ -189,8 +198,27 @@ def main():
             assert "windows.inf-declarations" in (args.output / "report.html").read_text(encoding="utf-8")
             assert "INF device, service and file declarations" in (args.output / "report.md").read_text(encoding="utf-8")
             assert "INF 设备、服务及文件声明" in (chinese / "report.md").read_text(encoding="utf-8")
+            details = {
+                "device-model": ("windows.inf-model-declaration", "Declared device model", "声明的设备型号"),
+                "service-addition": ("windows.inf-service-declaration", "Declared service association", "声明的服务关联"),
+                "service-property": ("windows.inf-service-property", "Declared service property", "声明的服务属性"),
+                "copy-file": ("windows.inf-copy-declaration", "Declared file copy source", "声明的文件复制源"),
+                "direct-copy-source": ("windows.inf-copy-declaration", "Declared file copy source", "声明的文件复制源"),
+                "source-file": ("windows.inf-source-declaration", "Declared source media file", "声明的源介质文件"),
+                "registry-row": ("windows.inf-registry-declaration", "Declared registry location", "声明的注册表位置"),
+            }
+            if "report_details_omitted" in graph:
+                assert graph["report_details_omitted"] == 0, "these controlled sources fit the detail budget"
+                for kind in {row["kind"] for row in graph["records"]} & details.keys():
+                    rule, english, translated = details[kind]
+                    findings = [finding for finding in report["findings"] if finding["rule"] == rule]
+                    assert findings and all(finding["evidence"] for finding in findings)
+                    assert english in (args.output / "report.md").read_text(encoding="utf-8")
+                    assert translated in (chinese / "report.md").read_text(encoding="utf-8")
         record["comparison"] = {"projected_fields_equal": checked, "repeated_json_identical": True,
-                                "english_chinese_markdown": True, "graph_source_rows_checked": graph_checked}
+                                "english_chinese_markdown": True, "graph_source_rows_checked": graph_checked,
+                                "native_added_sections": native_added,
+                                "native_added_sections_allowed": args.allow_native_added_sections}
         print(f"matched {checked} projected fields against SetupAPI")
     assert args.sample.read_bytes() == before, "input was modified"
     args.reference.parent.mkdir(parents=True, exist_ok=True)

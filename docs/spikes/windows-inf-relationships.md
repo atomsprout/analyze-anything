@@ -63,6 +63,59 @@ are under `out/windows-baseline/inf/{echo,nullfilter,relationships}-graph`.
 
 ## Representation
 
+The report also emits bounded Info/Derived details for device models, service associations
+and properties, copy source/destination names, source-media files and registry locations.
+Their bilingual rule texts show actual declaration values in Markdown/plain-text and
+HTML reports, rather than requiring a reader to inspect the JSON graph. Source literal
+fields and differing neutral projections are separate evidence. ServiceBinary directory
+IDs, HKR context, copy effects and platform selection remain explicitly unresolved.
+
+These details retain at most 64 findings per INF, 16 KiB per finding and 256 KiB in total
+compact serialized finding content, reserving the final 64-character finding identifier.
+Oversized or excess details are counted in `report_details_omitted` and produce the
+existing bilingual graph-limit limitation. The graph is retained independently; skipping
+a report detail does not discard its declaration node. Details follow deterministic graph
+order and do not claim that retained records are the complete package or highest-priority
+installation choices. Service-property text above 8 KiB is omitted rather than silently
+cut off. Compatibility-ID counts in a model detail do not replace the graph's full list.
+
+Two pipeline tests verify literal/projected evidence, hardware and startup declarations,
+source renaming, fixed Info severity and count/byte bounds. The native INF helper now
+checks the six detail families in both report languages on the ECHO, NullFilter and
+controlled relationship sources (43 + 91 + 51 native projected fields). Their new output
+records are under `out/windows-baseline/inf/{echo,nullfilter,relationships}-details`.
+Format, workspace Clippy, the no-default-feature CLI build and full workspace regression
+passed. The complete local log is `out/windows-baseline/workspace-inf-details.log`,
+including the damaged-fixture run and all 51 Windows pipeline tests. No report templates or
+desktop code changed for these details.
+
+### One installed Windows source observation
+
+An explicitly selected BasicDisplay INF on the available Windows host adds a real
+inbox-package source observation. Source SHA-256:
+`47f995bd0aef38d1a22c05f39ead1a2914fc61fb458a77c9ec5d23dca0a867e1`.
+The source contains 13 sections; read-only SetupAPI enumerates a fourteenth,
+`Strings.0409`, absent from those input bytes. The cause of that native-only addition
+has not been established. The analyzer does not invent it or select its strings.
+
+The native helper's default strict comparison rejects that difference. An explicit
+`--allow-native-added-sections` mode records native-only names and still compares every
+source section, entry count and available neutral projection. In that scoped comparison,
+34 projected fields and 18 graph rows agree; repeated JSON, bilingual details and HTML
+checks pass. This does not qualify SetupAPI's complete host-context behavior or every
+localization policy. Microsoft's [SetupOpenInfFileW contract](https://learn.microsoft.com/en-us/windows/win32/api/setupapi/nf-setupapi-setupopeninffilew)
+documents full-path handling, but does not establish the cause of this observation.
+
+The explicitly supplied installed folder contains two files, the INF and BasicDisplay.sys
+(SYS SHA-256 `75ab8fd5c899616e70b6252b6c7291463f7750de5866fbb5b6f8b0d21daf3eea`).
+CLI analysis retains 19 graph records and six section references, with no report-detail
+omissions. Two runs give identical JSON and both input file hashes remain unchanged.
+No CAT was supplied; the analyzer does not consult the host catalog database to fill
+that gap. These files are not redistributed or committed as fixtures. This observation
+does not close the licensed built-package corpus or catalog coverage acceptance work.
+Local development records are `out/windows-baseline/inf/basicdisplay-details.json` and
+`out/windows-baseline/basicdisplay-package/checks.json`.
+
 Keep `windows.inf` as the source record. Add a bounded declaration graph whose nodes
 refer to section occurrences and entry start/end lines. Preserve literal fields and
 identify any optional neutral projection explicitly. A source declaration, a candidate
@@ -174,6 +227,12 @@ Cross-platform CI for that source-fixture increment passed at
 [run 44849942411](https://github.com/atomsprout/analyze-anything/actions/runs/44849942411).
 Linux/macOS/Windows core checks, macOS desktop and licenses all passed. This precedes
 the graph implementation described above; the graph needs its own CI run.
+
+The initial graph implementation subsequently passed CI at
+`61cf30f155cdceddc61c7db391c4ae841bd3fe4a`:
+[run 44851805081](https://github.com/atomsprout/analyze-anything/actions/runs/44851805081).
+Linux/macOS/Windows core checks, macOS desktop and licenses all passed. This precedes
+the report-detail additions, which need their own CI run.
 
 For package relationships, extend the existing six-layout catalog check with source
 declarations and explicit supplied paths. Only a proven filename/source association

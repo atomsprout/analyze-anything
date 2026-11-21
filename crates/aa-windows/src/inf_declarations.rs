@@ -13,6 +13,91 @@ const MAX_RECORDS: usize = 4096;
 const MAX_EDGES: usize = 8192;
 const MAX_OUTPUT_BYTES: usize = 4 * 1024 * 1024;
 const MAX_TARGETS: usize = 16;
+const MAX_DETAIL_FINDINGS: usize = 64;
+const MAX_DETAIL_BYTES: usize = 256 * 1024;
+
+fn detail_findings(file: &Artifact, graph: &Graph<'_>, out: &mut Output) -> usize {
+    let mut emitted = 0;
+    let mut bytes = 0usize;
+    let mut omitted = 0;
+    for record in &graph.records {
+        let kind = record["kind"].as_str().unwrap_or("");
+        let rule = match kind {
+            "device-model" => "windows.inf-model-declaration",
+            "service-addition" => "windows.inf-service-declaration",
+            "service-property" => "windows.inf-service-property",
+            "copy-file" | "direct-copy-source" => "windows.inf-copy-declaration",
+            "source-file" => "windows.inf-source-declaration",
+            "registry-row" => "windows.inf-registry-declaration",
+            _ => continue,
+        };
+        if emitted >= MAX_DETAIL_FINDINGS || bytes >= MAX_DETAIL_BYTES {
+            omitted += 1;
+            continue;
+        }
+        let source = record["section"].as_u64().and_then(|v| usize::try_from(v).ok()).and_then(|i| graph.inf.sections.get(i));
+        let entry = record["entry"].as_u64().and_then(|v| usize::try_from(v).ok()).and_then(|i| source.and_then(|s| s.entries.get(i)));
+        let (Some(section), Some(entry)) = (source, entry) else {
+            omitted += 1;
+            continue;
+        };
+        let details = &record["details"];
+        let mut finding =
+            Finding::new(Section::Structure, "windows", rule, Confidence::Derived, Severity::Info).param("section", section.name.as_str());
+        let text = |name: &str| details[name].as_str().unwrap_or("");
+        finding = match kind {
+            "device-model" => finding
+                .param("install", text("install_base"))
+                .param("hardware", text("hardware_id"))
+                .param("count", details["compatible_ids"].as_array().map_or(0, Vec::len)),
+            "service-addition" => finding
+                .param("name", text("service_name"))
+                .param("install", text("service_install_section"))
+                .param("flags", text("flags_literal"))
+                .param("null_driver", details["null_associated_service"].as_bool().unwrap_or(false)),
+            "service-property" => {
+                if fields(entry).iter().map(String::len).sum::<usize>().saturating_add(fields(entry).len()) > 8192 {
+                    omitted += 1;
+                    continue;
+                }
+                finding.param("name", entry.key.as_deref().unwrap_or("")).param("value", fields(entry).join(", "))
+            }
+            "copy-file" => finding
+                .param("source", text("source_filename"))
+                .param("destination", text("destination_filename"))
+                .param("flags", text("flags_literal")),
+            "direct-copy-source" => finding.param("source", text("filename")).param("destination", text("filename")).param("flags", ""),
+            "source-file" => {
+                finding.param("name", text("filename_literal")).param("disk", text("disk_id")).param("directory", text("subdirectory"))
+            }
+            _ => finding
+                .param("root", text("root"))
+                .param("subkey", text("subkey"))
+                .param("name", text("value_name"))
+                .param("flags", text("flags_literal")),
+        };
+        if let Some(key) = &entry.key {
+            finding = finding.evidence(Evidence::field(file, format!("INF/[{}]/line {}/key", section.name, entry.line), key.as_str()));
+        }
+        for (index, literal) in entry.fields.iter().enumerate().take(4) {
+            let place = format!("INF/[{}]/line {}/field {index}", section.name, entry.line);
+            finding = finding.evidence(Evidence::field(file, &place, literal.as_str()));
+            if let Some(projected) = entry.neutral_fields.as_ref().and_then(|f| f.get(index)).filter(|v| *v != literal) {
+                finding = finding.evidence(Evidence::field(file, format!("{place}/neutral-projection"), projected.as_str()));
+            }
+        }
+        // The engine adds a 64-character finding identifier when it seals the report.
+        let size = serde_json::to_vec(&finding).map_or(MAX_DETAIL_BYTES + 1, |value| value.len().saturating_add(64));
+        if size > 16 * 1024 || bytes.saturating_add(size) > MAX_DETAIL_BYTES {
+            omitted += 1;
+            continue;
+        }
+        bytes += size;
+        emitted += 1;
+        out.finding(finding);
+    }
+    omitted
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -431,6 +516,7 @@ impl<'a> Graph<'a> {
 pub(super) fn analyze(file: &Artifact, inf: &Inf, out: &mut Output) {
     let mut graph = Graph::new(inf);
     graph.build();
+    let detail_omitted = detail_findings(file, &graph, out);
     if !graph.records.is_empty() {
         let mut finding = Finding::new(Section::Structure, "windows", "windows.inf-declarations", Confidence::Derived, Severity::Info)
             .param("count", graph.records.len())
@@ -445,11 +531,11 @@ pub(super) fn analyze(file: &Artifact, inf: &Inf, out: &mut Output) {
         }
         out.finding(finding);
     }
-    if graph.omitted > 0 {
+    if graph.omitted > 0 || detail_omitted > 0 {
         out.limitation(
             "windows.inf-declarations-limit",
             Some(file),
-            Some(aa_core::counted(graph.omitted as u64, "records or candidate details were omitted")),
+            Some(format!("Graph records/candidate details omitted: {}; report details omitted: {detail_omitted}", graph.omitted)),
         );
     }
     if graph.unresolved > 0 || !graph.namespace_complete {
@@ -460,7 +546,7 @@ pub(super) fn analyze(file: &Artifact, inf: &Inf, out: &mut Output) {
         );
     }
     out.fact(file,"windows.inf-declarations",json!({"profile":"bounded-source-declarations-no-installation-selection","records":graph.records,"references":graph.edges,
-        "omitted":graph.omitted,"unresolved":graph.unresolved,"section_namespace_complete":graph.namespace_complete,"platform_selected":false,
+        "omitted":graph.omitted,"report_details_omitted":detail_omitted,"unresolved":graph.unresolved,"section_namespace_complete":graph.namespace_complete,"platform_selected":false,
         "installed":false,"external_infs_followed":false,"host_registry_consulted":false}));
 }
 
