@@ -1,6 +1,7 @@
 # Creates controlled catalog fixtures. No certificate is added to a system store.
 param(
-    [Parameter(Mandatory=$true)][string]$OutputDirectory
+    [Parameter(Mandatory=$true)][string]$OutputDirectory,
+    [switch]$MemberAttributes
 )
 $ErrorActionPreference = 'Stop'
 $repository = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
@@ -37,8 +38,15 @@ try {
     try {
         foreach ($version in @(1, 2)) {
             $hash = if ($version -eq 1) { 'SHA1' } else { 'SHA256' }
-            $name = "native-catalog-v$version"
-            $cdf = "[CatalogHeader]`r`nName=$name.cat`r`nCatalogVersion=$version`r`nHashAlgorithms=$hash`r`nPageHashes=false`r`n[CatalogFiles]`r`n<HASH>catalog-payload.txt=catalog-payload.txt`r`n<HASH>hello.exe=hello.exe`r`n"
+            $variant = if ($MemberAttributes) { '-named' } else { '' }
+            $name = "native-catalog$variant-v$version"
+            $cdf = "[CatalogHeader]`r`nName=$name.cat`r`nCatalogVersion=$version`r`nHashAlgorithms=$hash`r`nPageHashes=false`r`n[CatalogFiles]`r`n"
+            foreach ($member in @('catalog-payload.txt', 'hello.exe')) {
+                $cdf += "<HASH>$member=$member`r`n"
+                if ($MemberAttributes) {
+                    $cdf += "<HASH>${member}ATTR1=0x10010001:File:$member`r`n<HASH>${member}ATTR2=0x10010001:OSAttr:2:10.0`r`n"
+                }
+            }
             [IO.File]::WriteAllText((Join-Path $destination "$name.cdf"), $cdf, [Text.Encoding]::ASCII)
             & $sdk.FullName -r "$name.cdf"
             if ($LASTEXITCODE -ne 0) { throw "MakeCat failed for $name." }

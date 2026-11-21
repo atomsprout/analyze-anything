@@ -14,6 +14,12 @@ payload, plus the public signer certificate in the signed cases. No private key,
 PFX file, third-party payload or Windows certificate-store export is distributed.
 tools/native-compare/windows-catalog-fixture.ps1 records how to regenerate them.
 
+native-catalog-named-v1.cat and native-catalog-named-v2.cat are the same
+project-authored fixture family with repeated CAT_NAMEVALUE member attributes
+(File and OSAttr), generated using that script's -MemberAttributes switch.
+They and the CryptCAT attribute reference snapshots are Apache-2.0 test data.
+Only public certificates and declarations are included; no private key is bundled.
+
 native-sip-hashes.ref.json is project-authored Apache-2.0 test data recording native
 SHA-1/SHA-256 SIP results or errors for controlled byte layouts derived from the
 existing hello.exe, hello-signed.exe and dotnet.exe project fixtures. The recipes in

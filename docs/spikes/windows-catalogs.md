@@ -14,9 +14,14 @@ signer records. It distinguishes catalog-list v1/v2 subject identifiers. Version
 hexadecimal UTF-16 reference tags can be decoded; v2 binary identifiers remain hex.
 
 Supported member-info GUID forms and indirect-data attributes retain the literal SIP
-subject GUID, data OID, digest algorithm and digest. Other attributes retain their OID,
-encoded length and SHA-256 with an explicit partial-reading limitation. Duplicate
-member attributes prevent their digest from being used as an unambiguous declaration.
+subject GUID, data OID, digest algorithm and digest. Bounded CAT_NAMEVALUE attributes
+also retain their name, unsigned flags and value length/digest. The checked
+`0x10010001` profile exposes well-formed terminated UTF-16LE values as text.
+Other flags/encodings remain opaque with a limitation. File and OSAttr legitimately
+repeat the same CAT_NAMEVALUE OID; those repetitions do not invalidate an independent
+member digest. Duplicate indirect-data or member-info declarations (including mixed
+legacy/compact member-info types) still prevent an unambiguous digest binding.
+Other attributes retain their OID, encoded length and SHA-256 with a partial-reading limitation.
 Unknown source data is never interpreted as an executable, path or instruction.
 Declared member digests are not described as verified payload coverage.
 
@@ -152,3 +157,31 @@ References: Microsoft's [MakeCat](https://learn.microsoft.com/en-us/windows/win3
 [CryptCATOpen](https://learn.microsoft.com/en-us/windows/win32/api/mscat/nf-mscat-cryptcatopen),
 [catalog members](https://learn.microsoft.com/en-us/windows/win32/api/mscat/ns-mscat-cryptcatmember)
 and [SIP-dependent hashing](https://learn.microsoft.com/en-us/windows/win32/secbp/understanding-pe-signatures).
+
+## Repeated name/value attributes and independent driver input
+
+The named v1/v2 MakeCat fixtures add two member attributes, File and OSAttr, using
+`windows-catalog-fixture.ps1 -MemberAttributes`. Their checked-in reference snapshots
+come from `CryptCATEnumerateAttr`; tests compare names, flags, value lengths/digests
+and decoded text. Both signed profiles pass original/content/signature mutation checks
+through the CLI and signature-only SignedCms, including repeated reports and bilingual
+output. Constructed cases additionally cover duplicate hash/subject declarations,
+bad encodings, unsigned-DWORD flags and name/value byte budgets. Names are limited to
+1 KiB of BMPString content and values to 8 KiB, within the existing 32-attribute,
+16 MiB input and ASN.1 node/depth limits. No attribute action is performed.
+
+The independent pinned usbipd-win snapshot exposed the original repeated-OID problem.
+Its attributes now agree with CryptCAT and its SYS digest agrees with the native SIP;
+five supplied layouts are recorded in [the driver-corpus record](windows-driver-corpus.md).
+Filename attributes are declarations only: this increment does not resolve a File
+attribute into a missing/changed named member or choose installation paths. Compatibility
+entries without explicit indirect digests remain unexpanded. Broader catalog metadata,
+CTL extensions, flags, timestamp and trust profiles remain open.
+
+Local format, workspace Clippy, the no-default-feature CLI build and full workspace
+tests passed for this increment (including 78 Windows unit tests, 52 pipeline tests
+and the complete damaged-fixture run). The full log is
+`out/windows-baseline/workspace-catalog-name-values.log`. The two named native profiles'
+CLI mutation records are under `out/windows-baseline/catalog-named-native`;
+the independent package records are under `out/windows-baseline/usbipd-package-final`.
+Cross-platform CI remains the next gate for this increment.

@@ -15,6 +15,7 @@ const MAX_ENTRIES: usize = 16_384;
 const INDIRECT: &str = "1.3.6.1.4.1.311.2.1.4";
 const INFO: &str = "1.3.6.1.4.1.311.12.2.2";
 const INFO2: &str = "1.3.6.1.4.1.311.12.2.3";
+const NAME_VALUE: &str = "1.3.6.1.4.1.311.12.2.1";
 const PE_GUID: &str = "{C689AAB8-8E78-11D0-8C47-00C04FC295EE}";
 const FLAT_GUID: &str = "{DE351A42-8E59-11D0-8C47-00C04FC295EE}";
 type Result<T> = std::result::Result<T, String>;
@@ -180,6 +181,46 @@ fn indirect(value: Tlv<'_>, member: &mut Member) -> Result<()> {
     Ok(())
 }
 
+fn name_value(value: Tlv<'_>) -> Result<Value> {
+    let fields = exact(value, TAG_SEQUENCE, 3)?;
+    if fields.len() != 3
+        || fields[0].tag != 0x1e
+        || fields[0].content.is_empty()
+        || fields[0].content.len() > 1024
+        || !fields[0].content.len().is_multiple_of(2)
+        || fields[2].tag != TAG_OCTET_STRING
+        || fields[2].content.len() > 8192
+    {
+        return Err("unsupported catalog name/value structure".into());
+    }
+    let units: Vec<u16> = fields[0].content.chunks_exact(2).map(|b| u16::from_be_bytes([b[0], b[1]])).collect();
+    if units.iter().any(|u| (0xd800..=0xdfff).contains(u)) {
+        return Err("catalog BMPString attribute name contains a surrogate".into());
+    }
+    let name = String::from_utf16(&units).map_err(|_| "invalid catalog attribute name")?;
+    if name.contains('\0') {
+        return Err("catalog attribute name contains a null".into());
+    }
+    if fields[1].tag != TAG_INTEGER {
+        return Err("invalid catalog attribute flags".into());
+    }
+    let integer = fields[1].content;
+    if integer.is_empty() || integer.len() > 5 || integer[0] & 0x80 != 0 || (integer.len() == 5 && integer[0] != 0) {
+        return Err("catalog attribute flags exceed the unsigned 32-bit profile".into());
+    }
+    let flags = integer.iter().fold(0u64, |value, byte| (value << 8) | u64::from(*byte));
+    let bytes = fields[2].content;
+    // CryptCAT's ordinary authenticated name/data attributes use terminated UTF-16LE
+    // values. Preserve other flag/encoding profiles as opaque declarations.
+    let text = if flags == 0x1001_0001 && bytes.len().is_multiple_of(2) && bytes.ends_with(&[0, 0]) {
+        let units: Vec<u16> = bytes[..bytes.len() - 2].chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
+        String::from_utf16(&units).ok().filter(|s| !s.contains('\0'))
+    } else {
+        None
+    };
+    Ok(json!({"name":name,"flags":flags,"value_bytes":bytes.len(),"value_sha256":aa_core::sha256_hex(bytes),"text":text}))
+}
+
 fn read_member(node: Tlv<'_>, index: usize, legacy: bool) -> Result<Member> {
     let fields = exact(node, TAG_SEQUENCE, 2)?;
     if fields.len() != 2 || fields[0].tag != TAG_OCTET_STRING || fields[0].content.len() > 512 {
@@ -195,29 +236,45 @@ fn read_member(node: Tlv<'_>, index: usize, legacy: bool) -> Result<Member> {
     };
     let mut member = Member { index, subject_identifier: hex::encode(id), reference_tag, ..Member::default() };
     let mut seen = BTreeSet::new();
+    let mut identity_conflict = false;
     for attr in exact(fields[1], TAG_SET, 32)? {
         let fields = exact(attr, TAG_SEQUENCE, 2)?;
         if fields.len() != 2 {
             return Err("invalid catalog attribute".into());
         }
         let name = oid(fields[0])?;
-        member
-            .attributes
-            .push(json!({"oid": name, "value_bytes": fields[1].raw.len(), "value_sha256": aa_core::sha256_hex(fields[1].raw)}));
-        if !seen.insert(name.clone()) {
-            member.issues.push("duplicate catalog member attribute".into());
+        let mut attribute = json!({"oid": name, "value_bytes": fields[1].raw.len(), "value_sha256": aa_core::sha256_hex(fields[1].raw)});
+        // CAT_NAMEVALUE is a repeatable attribute type: File and OSAttr, for example,
+        // use the same OID. Only conflicting identity/hash declarations invalidate
+        // the supported SIP binding; unrelated opaque attributes remain limitations.
+        let identity = match name.as_str() {
+            INDIRECT => Some(INDIRECT),
+            INFO | INFO2 => Some(INFO),
+            _ => None,
+        };
+        if identity.is_some_and(|key| !seen.insert(key)) {
+            identity_conflict = true;
+            member.issues.push("duplicate catalog member identity attribute".into());
+            member.attributes.push(attribute);
             continue;
         }
         let result = match name.as_str() {
             INDIRECT => one(fields[1]).and_then(|v| indirect(v, &mut member)),
             INFO | INFO2 => one(fields[1]).and_then(|v| member_info(v, name == INFO2)).map(|guid| member.sip_guid = Some(guid)),
+            NAME_VALUE => one(fields[1]).and_then(name_value).map(|value| {
+                if value["text"].is_null() {
+                    member.issues.push("opaque catalog name/value data profile".into());
+                }
+                attribute["name_value"] = value;
+            }),
             _ => Err("opaque catalog member attribute".into()),
         };
+        member.attributes.push(attribute);
         if let Err(reason) = result {
             member.issues.push(reason);
         }
     }
-    if member.issues.iter().any(|i| i == "duplicate catalog member attribute") {
+    if identity_conflict {
         // Conflicting declarations cannot later become verified coverage.
         member.digest = None;
         member.sip_guid = None;
@@ -428,6 +485,48 @@ mod tests {
     }
 
     #[test]
+    fn native_named_catalogs_agree_with_cryptcat_attribute_values() {
+        for (bytes, reference) in [
+            (
+                include_bytes!("../tests/data/native-catalog-named-v1.cat").as_slice(),
+                include_str!("../tests/data/native-catalog-named-v1.cat.ref.json"),
+            ),
+            (
+                include_bytes!("../tests/data/native-catalog-named-v2.cat").as_slice(),
+                include_str!("../tests/data/native-catalog-named-v2.cat.ref.json"),
+            ),
+        ] {
+            let reference: Value = serde_json::from_str(reference).expect("native reference");
+            assert_eq!(aa_core::sha256_hex(bytes), reference["sha256"]);
+            let parsed = parse(bytes).expect("native catalog with File and OSAttr attributes");
+            assert!(parsed.issues.is_empty());
+            assert!(parsed.members.iter().all(|m| m.issues.is_empty()));
+            assert_eq!(parsed.members.iter().filter(|m| m.digest.is_some()).count(), 2);
+            for member in &parsed.members {
+                let tag = member.reference_tag.as_deref().unwrap_or(&member.subject_identifier);
+                let native = reference["members"]
+                    .as_array()
+                    .expect("native members")
+                    .iter()
+                    .find(|m| m["reference_tag"].as_str().is_some_and(|value| value.eq_ignore_ascii_case(tag)))
+                    .expect("same member");
+                let mut attributes: Vec<_> = member.attributes.iter().filter_map(|a| a.get("name_value")).cloned().collect();
+                let mut expected = native["attributes"].as_array().expect("native attributes").clone();
+                attributes.sort_by_key(|a| a["name"].to_string());
+                expected.sort_by_key(|a| a["name"].to_string());
+                assert_eq!(attributes, expected);
+                if let Some(digest) = &member.digest {
+                    assert_eq!(digest, &native["digest"]);
+                    assert_eq!(member.sip_guid.as_deref(), native["sip_guid"].as_str());
+                }
+            }
+            assert_eq!(parsed.signatures.len(), 1);
+            assert_eq!(parsed.signatures[0]["checks"]["signature"], "passed");
+            assert_eq!(parsed.signatures[0]["checks"]["content_digest"], "passed");
+        }
+    }
+
+    #[test]
     fn catalog_content_and_signature_corruption_fail_different_checks() {
         let bytes = fixture(2, false);
         let mut damaged = bytes.to_vec();
@@ -490,6 +589,102 @@ mod tests {
         }
         result.extend_from_slice(content);
         result
+    }
+
+    fn named_attribute(name: &str, flags: &[u8], value: &[u8]) -> Vec<u8> {
+        let mut fields = tlv(0x1e, &name.encode_utf16().flat_map(u16::to_be_bytes).collect::<Vec<_>>());
+        fields.extend(tlv(TAG_INTEGER, flags));
+        fields.extend(tlv(TAG_OCTET_STRING, value));
+        let mut attribute = hex::decode("060a2b0601040182370c0201").expect("CAT_NAMEVALUE OID");
+        attribute.extend(tlv(TAG_SET, &tlv(TAG_SEQUENCE, &fields)));
+        tlv(TAG_SEQUENCE, &attribute)
+    }
+
+    fn extended_member(extra: &[Vec<u8>], duplicate_indirect: bool, mixed_info: bool) -> Member {
+        let (ctl, _) = crate::authenticode::catalog_envelope(fixture(2, true)).expect("catalog envelope");
+        let root = der::parse_prefix(&ctl).expect("CTL").0;
+        let entries = root
+            .children()
+            .map(|n| n.expect("CTL field"))
+            .find(|n| n.tag == TAG_SEQUENCE && n.children().any().is_ok_and(|n| n.tag == TAG_SEQUENCE))
+            .expect("member list");
+        let member = entries
+            .children()
+            .map(|n| n.expect("member"))
+            .find(|n| read_member(*n, 0, false).expect("native member").digest.is_some())
+            .expect("explicit member");
+        let fields = exact(member, TAG_SEQUENCE, 2).expect("member fields");
+        let mut attributes: Vec<_> = exact(fields[1], TAG_SET, 32).expect("attributes").iter().map(|n| n.raw.to_vec()).collect();
+        if duplicate_indirect {
+            let indirect = attributes
+                .iter()
+                .find(|bytes| {
+                    let n = der::parse_prefix(bytes).expect("attribute").0;
+                    n.children().any().expect("OID").oid().as_deref() == Some(INDIRECT)
+                })
+                .expect("indirect data")
+                .clone();
+            attributes.push(indirect);
+        }
+        if mixed_info {
+            let mut body = tlv(0x1e, &PE_GUID.encode_utf16().flat_map(u16::to_be_bytes).collect::<Vec<_>>());
+            body.extend(tlv(TAG_INTEGER, &[2, 0]));
+            let mut info = hex::decode("060a2b0601040182370c0202").expect("CAT_MEMBERINFO OID");
+            info.extend(tlv(TAG_SET, &tlv(TAG_SEQUENCE, &body)));
+            attributes.push(tlv(TAG_SEQUENCE, &info));
+        }
+        attributes.extend_from_slice(extra);
+        attributes.sort();
+        let mut body = fields[0].raw.to_vec();
+        body.extend(tlv(TAG_SET, &attributes.concat()));
+        let bytes = tlv(TAG_SEQUENCE, &body);
+        bounded_asn1(&bytes).expect("constructed DER member");
+        read_member(der::parse_prefix(&bytes).expect("member").0, 0, false).expect("read extended member")
+    }
+
+    #[test]
+    fn repeated_name_value_attributes_preserve_independent_member_hash_declarations() {
+        let file = "payload.txt\0".encode_utf16().flat_map(u16::to_le_bytes).collect::<Vec<_>>();
+        let os = "2:10.0\0".encode_utf16().flat_map(u16::to_le_bytes).collect::<Vec<_>>();
+        let attributes = [named_attribute("File", &[0x10, 1, 0, 1], &file), named_attribute("OSAttr", &[0x10, 1, 0, 1], &os)];
+        let member = extended_member(&attributes, false, false);
+        let original = extended_member(&[], false, false);
+        assert_eq!(member.digest, original.digest);
+        assert_eq!(member.sip_guid, original.sip_guid);
+        assert_eq!(member.sip_hash_profile, original.sip_hash_profile);
+        assert!(member.issues.is_empty());
+        let names: Vec<_> = member.attributes.iter().filter_map(|a| a.get("name_value")).collect();
+        assert_eq!(names.len(), 2);
+        assert!(names.iter().any(|v| v["name"] == "File" && v["text"] == "payload.txt" && v["flags"] == 0x1001_0001u32));
+        assert!(names.iter().any(|v| v["name"] == "OSAttr" && v["text"] == "2:10.0"));
+        for member in [extended_member(&attributes, true, false), extended_member(&attributes, false, true)] {
+            assert!(member.digest.is_none() && member.sip_guid.is_none() && member.sip_hash_profile.is_none());
+            assert!(member.issues.iter().any(|s| s.contains("duplicate catalog member identity")));
+        }
+    }
+
+    #[test]
+    fn name_value_encoding_and_budgets_remain_explicit_without_erasing_hash_evidence() {
+        let read = |name: &str, flags: &[u8], bytes: &[u8]| {
+            let attribute = named_attribute(name, flags, bytes);
+            let n = der::parse_prefix(&attribute).expect("attribute").0;
+            let value = n.children().nth(1).expect("value set").expect("set");
+            name_value(one(value).expect("one value"))
+        };
+        for flags in [&[0xff][..], &[0x01, 0, 0, 0, 0][..]] {
+            assert!(read("File", flags, b"x\0\0\0").is_err());
+        }
+        assert!(read("", &[0], &[]).is_err());
+        assert!(read("x\0y", &[0], &[]).is_err());
+        assert!(read(&"x".repeat(513), &[0], &[]).is_err());
+        assert!(read("File", &[0], &vec![0; 8193]).is_err());
+        assert_eq!(read("File", &[0, 0xff, 0xff, 0xff, 0xff], &[]).expect("unsigned DWORD")["flags"], u32::MAX);
+        for value in [b"x".as_slice(), b"x\0", b"\0\xd8\0\0", b"x\0\0\0y\0\0\0"] {
+            let attribute = named_attribute("File", &[0x10, 1, 0, 1], value);
+            let member = extended_member(&[attribute], false, false);
+            assert!(member.digest.is_some());
+            assert!(member.issues.iter().any(|s| s == "opaque catalog name/value data profile"));
+        }
     }
 
     #[test]

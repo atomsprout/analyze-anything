@@ -142,7 +142,7 @@ direct API/worker/CLI parity, invalid and conflicting settings,
 root/subfolder/ZIP/nested-container layouts, root-relative media notation, cabinet cases,
 renames, duplicate/case/Unicode aliases, incomplete input, absent/changed payloads,
 unchanged inputs and repeated reports. Connecting an expected catalog digest to a changed
-named file additionally needs supported catalog filename attributes; a digest-only no-match
+named file additionally needs filename-attribute relationship semantics; a digest-only no-match
 must continue to leave missing versus modified unresolved. Broader independently licensed
 built-driver packages remain a separate acceptance gap.
 
@@ -163,9 +163,19 @@ passed Linux/macOS/Windows core checks, macOS desktop and licenses at
 [run 44858583291](https://github.com/atomsprout/analyze-anything/actions/runs/44858583291).
 The desktop control is a later increment and needs its own CI run.
 
+That control subsequently passed all Linux/macOS/Windows core, macOS desktop and license
+jobs for `220b25e7332ea676b7385a1071e5e4b34bebc81f`:
+[run 44860043389](https://github.com/atomsprout/analyze-anything/actions/runs/44860043389).
+
 For that increment, local format, workspace Clippy, the no-default-feature CLI build
 and full workspace tests passed, including the configured `aa-app`/worker/direct-engine
 parity test. The log is `out/windows-baseline/workspace-desktop-source-roots.log`.
 The page also passed its TypeScript/Vite build, 14 unit tests and 28 browser checks
 across WebKit and Chromium. These checks cover the stand-in backend, not a native
 Windows WebView2 window or delivery qualification.
+
+A later independent [usbipd-win snapshot check](windows-driver-corpus.md) adds original,
+changed, missing, renamed and ZIP layouts. Caller-root source lookup intentionally
+remains separate from digest membership: a renamed file can agree with the CAT while
+being absent at the INF's declared source candidate. CAT name/value attributes are
+preserved, but do not yet resolve named missing-versus-changed relationships.

@@ -111,6 +111,13 @@ Typed INF installation/device/service/source-file relationships, broader member/
 and CMS profiles, independent licensed built-driver packages and their native reference
 matrix remain open. Native-generated fixtures alone do not close W5.
 
+Subsequent increments add bounded INF declaration/source-root relationships and the
+[independent usbipd-win snapshot](windows-driver-corpus.md). Its five layouts distinguish
+changed, missing and renamed supplied SYS files; the catalog's File/OSAttr attributes
+now remain readable without invalidating unrelated digests. This is one x64 snapshot,
+not the broader independent package matrix. Named missing-versus-changed member
+relationships are still open; digest-only no-match remains unresolved.
+
 References: Microsoft [catalog hashing API](https://learn.microsoft.com/en-us/windows/win32/api/mscat/nf-mscat-cryptcatadmincalchashfromfilehandle2),
 [INF Version section](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/inf-version-section)
 and [SIP-dependent PE signatures](https://learn.microsoft.com/en-us/windows/win32/secbp/understanding-pe-signatures).

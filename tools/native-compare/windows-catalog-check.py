@@ -38,6 +38,11 @@ class Member(c.Structure):
                 ("encoded_indirect", Blob), ("encoded_member", Blob)]
 
 
+class Attribute(c.Structure):
+    _fields_ = [("size", w.DWORD), ("tag", w.LPWSTR), ("flags", w.DWORD),
+                ("length", w.DWORD), ("data", c.POINTER(c.c_ubyte)), ("reserved", w.DWORD)]
+
+
 def native_catalog(path, version):
     api = c.WinDLL("wintrust", use_last_error=True, winmode=0x800)
     api.CryptCATOpen.argtypes = [w.LPWSTR, w.DWORD, c.c_void_p, w.DWORD, w.DWORD]
@@ -46,6 +51,8 @@ def native_catalog(path, version):
     api.CryptCATClose.restype = w.BOOL
     api.CryptCATEnumerateMember.argtypes = [w.HANDLE, c.POINTER(Member)]
     api.CryptCATEnumerateMember.restype = c.POINTER(Member)
+    api.CryptCATEnumerateAttr.argtypes = [w.HANDLE, c.POINTER(Member), c.POINTER(Attribute)]
+    api.CryptCATEnumerateAttr.restype = c.POINTER(Attribute)
     handle = api.CryptCATOpen(str(path.resolve()), 0, None, version * 0x100, 0)
     if handle == c.c_void_p(-1).value or not handle:
         raise c.WinError(c.get_last_error())
@@ -65,6 +72,31 @@ def native_catalog(path, version):
                 record.update(data_oid=indirect.data.oid.decode("ascii"),
                               digest_algorithm=indirect.algorithm.oid.decode("ascii"),
                               digest=c.string_at(indirect.digest.data, indirect.digest.size).hex())
+            attributes = []
+            attribute = None
+            for _ in range(33):
+                attribute = api.CryptCATEnumerateAttr(handle, previous, attribute)
+                if not attribute:
+                    break
+                if len(attributes) == 32:
+                    raise ValueError("native catalog attribute count exceeded the reference budget")
+                item = attribute.contents
+                if item.length > 8192:
+                    raise ValueError("native catalog attribute exceeded the reference byte budget")
+                raw = c.string_at(item.data, item.length)
+                text = None
+                if item.flags == 0x10010001 and len(raw) % 2 == 0 and raw.endswith(b"\0\0"):
+                    try:
+                        text = raw[:-2].decode("utf-16le")
+                        if "\0" in text:
+                            text = None
+                    except UnicodeDecodeError:
+                        pass
+                attributes.append({"name": item.tag, "flags": item.flags, "value_bytes": len(raw),
+                                   "value_sha256": hashlib.sha256(raw).hexdigest(), "text": text})
+            else:
+                raise ValueError("native catalog attribute count exceeded the reference budget")
+            record["attributes"] = attributes
             records.append(record)
         else:
             raise ValueError("native catalog member count exceeded the reference budget")
@@ -128,6 +160,9 @@ def compare_cli(cli, sample, output, native, before, version):
                 tag = entry["reference_tag"] or entry["subject_identifier"]
                 expected = next(m for m in native if m["reference_tag"].lower() == tag.lower())
                 assert entry["sip_guid"] == expected["sip_guid"]
+                named = [a["name_value"] for a in entry["attributes"] if "name_value" in a]
+                key = lambda a: (a["name"], a["flags"], a["value_sha256"])
+                assert sorted(named, key=key) == sorted(expected["attributes"], key=key)
                 if entry["digest"] is not None:
                     for key in ("digest", "digest_algorithm", "data_oid"):
                         assert entry[key] == expected[key]

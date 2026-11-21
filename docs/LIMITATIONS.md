@@ -31,12 +31,15 @@ the separate tree pass compares explicit SHA-1/SHA-256 declarations for supporte
 and default-PE SIP parameter profiles with supplied bytes in the same container.
 CatalogFile declarations can link to unique supplied CAT siblings. This is neither
 complete package coverage nor platform selection. Custom tags, other SIP/parameter
-profiles and broader INF package relationships remain unresolved. Unknown attributes
-remain length/digest records with limitations. Windows
+profiles and broader INF package relationships remain unresolved. Bounded CAT_NAMEVALUE
+attributes preserve names, flags and supported text values; they do not resolve named
+missing-versus-changed members. Unknown attributes remain length/digest records with limitations. Windows
 trust, revocation, timestamps, WHQL and installation eligibility remain unverified.
-Native MakeCat/SignTool v1/v2 fixtures and signature-only references are checked, while
-an independent real driver-package corpus remains open; see [the catalog scope](spikes/windows-catalogs.md)
-and [membership/native comparison record](spikes/windows-catalog-membership.md).
+Native MakeCat/SignTool v1/v2 fixtures and signature-only references are checked, along
+with five supplied layouts of one pinned usbipd-win x64 driver snapshot. Broader independent
+packages remain open; see [the catalog scope](spikes/windows-catalogs.md),
+[membership/native comparison record](spikes/windows-catalog-membership.md) and
+[independent driver input](spikes/windows-driver-corpus.md).
 
 The initial INF reader records syntax, ordered section occurrences, literal fields and
 source lines under explicit input/count/field/projection budgets. Its optional neutral
@@ -54,8 +57,9 @@ profile is ASCII-only, rejects ambiguous directories and leaves CAB/tag media un
 the desktop's optional logical-root control still needs native Windows window qualification.
 See [the source-mapping record](spikes/windows-inf-source-mapping.md).
 The sibling-CAT association remains separate. Read-only SetupAPI comparisons cover pinned Microsoft
-source INF (still containing build placeholders) and a controlled syntax fixture; they
-do not qualify a built driver package. See [the INF scope record](spikes/windows-inf.md)
+source INF (still containing build placeholders), a controlled syntax fixture and the
+pinned usbipd-win INF. Source-field agreement alone does not qualify a built package.
+See [the INF scope record](spikes/windows-inf.md)
 and [source graph profile and budgets](spikes/windows-inf-relationships.md).
 
 The automated tests pass on Linux, macOS and Windows (GitHub Actions). Release builds were run successfully on Linux x64 / arm64, macOS arm64 / x64 and Windows x64 and passed the self-check. The large-scale comparison using release packages of open source projects was done on Linux.

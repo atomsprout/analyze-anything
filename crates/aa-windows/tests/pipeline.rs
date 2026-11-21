@@ -22,7 +22,9 @@ fn membership_entry<'a>(fact: &'a Value, profile: &str) -> &'a Value {
 #[test]
 fn catalog_digest_agreement_is_separate_from_signature_binding_and_embedded_signatures() {
     for payload in ["hello.exe", "hello-signed.exe"] {
-        for catalog in ["native-catalog-v2.cat", "native-catalog-v2-unsigned.cat"] {
+        for catalog in
+            ["native-catalog-v2.cat", "native-catalog-v2-unsigned.cat", "native-catalog-named-v1.cat", "native-catalog-named-v2.cat"]
+        {
             let run = analyze(&[
                 (catalog, data(catalog)),
                 (payload, data(payload)),
