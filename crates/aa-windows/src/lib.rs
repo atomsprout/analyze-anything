@@ -27,6 +27,7 @@ mod authenticode;
 mod behaviour;
 mod cab;
 mod catalog;
+mod catalog_membership;
 mod compound;
 mod der;
 mod dotnet;

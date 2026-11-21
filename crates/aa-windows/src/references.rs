@@ -17,6 +17,7 @@ const MAX_TEXT: usize = 8192;
 #[serde(rename_all = "kebab-case")]
 enum Basis {
     ShortcutDirectory,
+    InfDirectory,
     HostContext,
     CommandLine,
     Uri,
@@ -32,12 +33,15 @@ struct Reference<'a> {
     reason: Option<&'static str>,
     target: Option<&'a str>,
     target_sha256: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source_literal: Option<&'a str>,
 }
 
 struct Pending<'a> {
     field: String,
     text: &'a str,
     basis: Basis,
+    source_literal: Option<&'a str>,
 }
 
 #[derive(Default)]
@@ -49,7 +53,7 @@ struct Collected<'a> {
 impl<'a> Collected<'a> {
     fn add(&mut self, field: String, text: &'a str, basis: Basis) {
         if self.pending.len() < MAX_REFERENCES {
-            self.pending.push(Pending { field, text, basis });
+            self.pending.push(Pending { field, text, basis, source_literal: None });
         } else {
             self.truncated = true;
         }
@@ -66,6 +70,42 @@ fn children(node: &Value) -> impl Iterator<Item = &Value> {
 
 fn collect(file: &Artifact) -> Collected<'_> {
     let mut result = Collected::default();
+    if let Some(sections) = file.facts.get("windows.inf").and_then(|f| f.get("sections")).and_then(Value::as_array) {
+        for (section_index, section) in sections.iter().enumerate() {
+            if !section["name"].as_str().is_some_and(|s| s.eq_ignore_ascii_case("version")) {
+                continue;
+            }
+            for entry in section["entries"].as_array().into_iter().flatten() {
+                let Some(key) = entry["key"].as_str() else {
+                    continue;
+                };
+                if !matches!(
+                    key.to_ascii_lowercase().as_str(),
+                    "catalogfile"
+                        | "catalogfile.nt"
+                        | "catalogfile.ntx86"
+                        | "catalogfile.ntia64"
+                        | "catalogfile.ntamd64"
+                        | "catalogfile.ntarm"
+                        | "catalogfile.ntarm64"
+                ) {
+                    continue;
+                }
+                let Some(fields) = entry["fields"].as_array().filter(|v| v.len() == 1) else {
+                    continue;
+                };
+                let Some(literal) = fields[0].as_str() else {
+                    continue;
+                };
+                let text = entry["neutral_fields"].as_array().and_then(|v| v.first()).and_then(Value::as_str).unwrap_or(literal);
+                let before = result.pending.len();
+                result.add(format!("Version[{section_index}]/line {}/{key}", entry["line"]), text, Basis::InfDirectory);
+                if result.pending.len() > before {
+                    result.pending.last_mut().expect("reference was appended").source_literal = Some(literal);
+                }
+            }
+        }
+    }
     if let Some(fields) = file.facts.get("windows.shell-link").and_then(|f| f.get("declarations")).and_then(Value::as_array) {
         for field in fields {
             let (Some(name), Some(value)) = (field.get("field").and_then(Value::as_str), field.get("value").and_then(Value::as_str)) else {
@@ -245,6 +285,9 @@ impl<'a> Index<'a> {
         if text.contains('%') {
             return Err("variables-or-escaped-uri-not-expanded");
         }
+        if matches!(pending.basis, Basis::InfDirectory) && text.contains(['/', '\\']) {
+            return Err("inf-catalog-declaration-is-not-a-sibling-name");
+        }
         if matches!(pending.basis, Basis::Uri) {
             return Err("uri-not-resolved");
         }
@@ -254,7 +297,7 @@ impl<'a> Index<'a> {
         if text.starts_with(['/', '\\']) || text.contains(':') {
             return Err("absolute-or-device-path-not-anchored");
         }
-        if !matches!(pending.basis, Basis::ShortcutDirectory) {
+        if !matches!(pending.basis, Basis::ShortcutDirectory | Basis::InfDirectory) {
             return Err("host-relative-base-not-established");
         }
         if name_changed(source) {
@@ -326,7 +369,7 @@ impl<'a> Index<'a> {
 }
 
 fn is_source(file: &Artifact) -> bool {
-    ["windows.shell-link", "windows.internet-shortcut", "windows.registry", "windows.scheduled-task"]
+    ["windows.shell-link", "windows.internet-shortcut", "windows.registry", "windows.scheduled-task", "windows.inf"]
         .iter()
         .any(|key| file.facts.contains_key(*key))
 }
@@ -376,6 +419,7 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
                 reason,
                 target: target.map(|t| t.path.as_str()),
                 target_sha256: target.and_then(|t| t.digests.as_ref().map(|d| d.sha256.as_str())),
+                source_literal: pending.source_literal,
             });
         }
         out.fact(source, "windows.input-references", json!({"profile": "ascii-relative-paths-within-container", "references": references, "truncated": collected.truncated, "runtime_target_resolved": false}));
@@ -384,8 +428,12 @@ pub fn analyze(tree: &dyn Tree, out: &mut Output) {
                 .param("count", matches.len());
             for (pending, target) in matches.iter().take(12) {
                 finding = finding
-                    .evidence(Evidence::field(source, &pending.field, pending.text))
+                    .evidence(Evidence::field(source, &pending.field, pending.source_literal.unwrap_or(pending.text)))
                     .evidence(Evidence::whole(target, target.digests.as_ref().map(|d| d.sha256.as_str())));
+                if pending.source_literal.is_some_and(|literal| literal != pending.text) {
+                    finding =
+                        finding.evidence(Evidence::field(source, format!("{}/neutral-strings-projection", pending.field), pending.text));
+                }
             }
             out.finding(finding);
         }

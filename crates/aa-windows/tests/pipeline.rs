@@ -8,10 +8,105 @@ use std::io::Read;
 use aa_core::plugin::{Bytes, Output, SinkError, Tree, Unpack, UnpackSink};
 use aa_core::{Artifact, Digests, Finding, fill, sha256_hex};
 use serde_json::Value;
+use sha1::{Digest, Sha1};
 
 fn data(name: &str) -> Vec<u8> {
     let path = format!("{}/tests/data/{name}", env!("CARGO_MANIFEST_DIR"));
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+fn membership_entry<'a>(fact: &'a Value, profile: &str) -> &'a Value {
+    fact["entries"].as_array().expect("membership comparisons").iter().find(|e| e["sip_hash_profile"] == profile).expect("supported member")
+}
+
+#[test]
+fn catalog_digest_agreement_is_separate_from_signature_binding_and_embedded_signatures() {
+    for payload in ["hello.exe", "hello-signed.exe"] {
+        for catalog in ["native-catalog-v2.cat", "native-catalog-v2-unsigned.cat"] {
+            let run = analyze(&[
+                (catalog, data(catalog)),
+                (payload, data(payload)),
+                ("payload.txt", b"Analyze Anything catalog fixture.\r\n".to_vec()),
+            ]);
+            let fact = run.fact(catalog, "windows.catalog-membership");
+            assert_eq!(membership_entry(fact, "pe-default")["status"], "digest-agreement");
+            assert_eq!(membership_entry(fact, "flat-file")["status"], "digest-agreement");
+            assert_eq!(membership_entry(fact, "pe-default")["matches"][0]["path"], payload);
+            assert_eq!(membership_entry(fact, "pe-default")["matches"][0]["sha256"], sha256_hex(&data(payload)));
+            assert_eq!(
+                fact["signed_content_binding_signers"].as_array().expect("binding indices").len(),
+                usize::from(!catalog.contains("unsigned"))
+            );
+            assert_eq!(fact["windows_trust_checked"], false);
+            if payload == "hello-signed.exe" {
+                assert_eq!(run.fact(payload, "windows.authenticode")["signatures"][0]["checks"]["signature"], "passed");
+            }
+            let findings = run.findings("windows.catalog-digest-agreement");
+            assert_eq!(findings.len(), 1);
+            assert!(!findings[0].evidence.is_empty());
+        }
+    }
+}
+
+#[test]
+fn unmatched_catalog_digest_does_not_claim_missing_instead_of_modified() {
+    for payload in [None, Some(data("hello.exe"))] {
+        let mut files = vec![("native-catalog-v2.cat", data("native-catalog-v2.cat"))];
+        if let Some(mut changed) = payload {
+            changed[100] ^= 1;
+            files.push(("hello.exe", changed));
+        }
+        let run = analyze(&files);
+        let entry = membership_entry(run.fact("native-catalog-v2.cat", "windows.catalog-membership"), "pe-default");
+        assert_eq!(entry["status"], "no-matching-checked-artifact");
+        assert_eq!(entry["search_complete"], true);
+        assert!(run.out.limitations.iter().any(|l| l.code == "windows.catalog-membership-unresolved"));
+        assert!(run.findings("windows.catalog-integrity-failed").is_empty());
+    }
+}
+
+#[test]
+fn pe_membership_never_substitutes_an_ordinary_file_hash() {
+    let reference: Value = serde_json::from_slice(&data("native-catalog-v2.cat.ref.json")).expect("catalog oracle");
+    let declared = reference["members"]
+        .as_array()
+        .expect("native members")
+        .iter()
+        .find(|m| m["data_oid"] == "1.3.6.1.4.1.311.2.1.15")
+        .expect("PE member")["digest"]
+        .as_str()
+        .expect("digest");
+    let old = hex::decode(declared).expect("old digest");
+    let ordinary = hex::decode(sha256_hex(&data("hello.exe"))).expect("ordinary digest");
+    let mut catalog = data("native-catalog-v2-unsigned.cat");
+    let positions: Vec<_> = catalog.windows(old.len()).enumerate().filter_map(|(at, b)| (b == old).then_some(at)).collect();
+    assert_eq!(positions.len(), 2, "identifier and indirect digest");
+    for at in positions {
+        catalog[at..at + old.len()].copy_from_slice(&ordinary);
+    }
+    let run = analyze(&[("changed.cat", catalog), ("hello.exe", data("hello.exe"))]);
+    let entry = membership_entry(run.fact("changed.cat", "windows.catalog-membership"), "pe-default");
+    assert_eq!(entry["status"], "no-matching-checked-artifact");
+    assert!(run.findings("windows.catalog-digest-agreement").is_empty());
+}
+
+#[test]
+fn inf_catalog_declarations_use_only_the_supplied_relative_namespace_and_keep_literal_evidence() {
+    let inf = b"[Version]\nSignature=\"$Windows NT$\"\nCatalogFile.NTamd64=%Catalog%\nCatalogFile.NTarm64=missing.cat\nCatalogFile.NTx86=../native.cat\n[Strings]\nCatalog=native.cat\n".to_vec();
+    let run = analyze(&[
+        ("sub/driver.inf", inf),
+        ("sub/native.cat", data("native-catalog-v2.cat")),
+        ("native.cat", data("native-catalog-v2.cat")),
+    ]);
+    let fact = run.fact("sub/driver.inf", "windows.input-references");
+    let references = fact["references"].as_array().expect("INF catalog references");
+    assert_eq!(references.len(), 3);
+    assert_eq!(references[0]["target"], "sub/native.cat");
+    assert_eq!(references[0]["basis"], "inf-directory");
+    assert_eq!(references[0]["source_literal"], "%Catalog%");
+    assert_eq!(references[1]["status"], "unresolved");
+    assert_eq!(references[2]["reason"], "inf-catalog-declaration-is-not-a-sibling-name");
+    assert!(run.findings("windows.input-reference").iter().flat_map(|f| &f.evidence).any(|e| e.value.to_string().contains("%Catalog%")));
 }
 
 #[test]
@@ -388,7 +483,7 @@ fn analyze(files: &[(&str, Vec<u8>)]) -> Run {
             path: path.clone(),
             parent,
             size: bytes.len() as u64,
-            digests: Some(Digests { md5: String::new(), sha1: String::new(), sha256: sha256_hex(&bytes) }),
+            digests: Some(Digests { md5: String::new(), sha1: hex::encode(Sha1::digest(&bytes)), sha256: sha256_hex(&bytes) }),
             detected: None,
             kind: None,
             entropy: None,

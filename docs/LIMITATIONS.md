@@ -27,17 +27,22 @@ The initial Windows catalog reader supports a bounded, definite/minimal DER CMS/
 profile. It distinguishes CTL entries from digest declarations and does not invent
 digests for v2 compatibility entries. Catalog content digests, signature values and
 embedded certificate-link signatures are checked using the shared offline primitives;
-payload membership, INF/package relationships and member data parameters are not yet
-verified. Unknown attributes remain length/digest records with limitations. Windows
+the separate tree pass compares explicit SHA-1/SHA-256 declarations for supported flat
+and default-PE SIP parameter profiles with supplied bytes in the same container.
+CatalogFile declarations can link to unique supplied CAT siblings. This is neither
+complete package coverage nor platform selection. Custom tags, other SIP/parameter
+profiles and broader INF package relationships remain unresolved. Unknown attributes
+remain length/digest records with limitations. Windows
 trust, revocation, timestamps, WHQL and installation eligibility remain unverified.
 Native MakeCat/SignTool v1/v2 fixtures and signature-only references are checked, while
-an independent real driver-package corpus remains open; see [the catalog scope](spikes/windows-catalogs.md).
+an independent real driver-package corpus remains open; see [the catalog scope](spikes/windows-catalogs.md)
+and [membership/native comparison record](spikes/windows-catalog-membership.md).
 
 The initial INF reader records syntax, ordered section occurrences, literal fields and
 source lines under explicit input/count/field/projection budgets. Its optional neutral
 string projection does not select a platform or locale, resolve directory IDs or follow
-Include/Needs. Device/service/payload relationships, catalog integrity and installation
-semantics remain unimplemented. Read-only SetupAPI comparisons cover a pinned Microsoft
+Include/Needs. The separate sibling-CAT association does not implement device/service/
+source-file relationships or installation semantics. Read-only SetupAPI comparisons cover a pinned Microsoft
 source INF (still containing build placeholders) and a controlled syntax fixture; they
 do not qualify a built driver package. See [the INF scope record](spikes/windows-inf.md).
 

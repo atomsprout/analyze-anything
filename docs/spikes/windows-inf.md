@@ -113,9 +113,11 @@ The previously recorded `413e05e` CI success covers the earlier entry-point/refe
 ## Still needed for W5
 
 Typed device/model, service and registry declarations; decorated-section applicability
-and reference relationships; source/destination payload mapping; supplied-catalog links;
-catalog parsing, signature integrity and the correct member subject hashing; missing and
-modified member comparisons with explicit-catalog SignTool. Broader real built packages,
+and reference relationships; source/destination payload mapping. The later
+[catalog reader](windows-catalogs.md) and [membership increment](windows-catalog-membership.md)
+add supported signature checks, flat/default-PE digest comparisons, sibling-CAT
+declarations and six controlled layouts with explicit-catalog SignTool observations.
+These do not select a platform or implement installation semantics. Broader real built packages,
 code-page variants and parser corner cases remain separate coverage work. Windows trust,
 revocation, WHQL acceptance and installation eligibility remain outside the conclusion.
 

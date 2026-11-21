@@ -2,7 +2,8 @@
 
 Initial catalog increment of W5, 2026-11-20. W5 is still open. This reader establishes
 what the supplied catalog declares and which supported cryptographic checks can be
-made on it; it does not yet establish coverage of supplied payloads.
+made on it. The later [membership pass](windows-catalog-membership.md) records bounded
+comparisons with supplied payloads separately, without claiming package completeness.
 
 ## Representation and boundary
 
@@ -49,8 +50,10 @@ the file safe, trusted or eligible for installation. A malformed catalog is unre
 not classified as unsigned. Readable catalogs without signer records keep that absence
 explicit in the fact and summary count.
 
-`payloads_checked`, `windows_trust_checked` and `timestamps_verified` remain false.
-Unsigned CMS attributes are presence-marked but not interpreted. Member data parameters,
+`payloads_checked` remains false for this file pass; supplied-byte comparisons are in
+the separate `windows.catalog-membership` tree fact. `windows_trust_checked` and
+`timestamps_verified` remain false. Unsigned CMS attributes are presence-marked but
+not interpreted. Member data parameters outside the two supported hash profiles,
 timestamps, nested-signature semantics, root trust, revocation, current validity, WHQL
 policy and installation eligibility remain outside the conclusion. No host catalog
 database, certificate store, registry or Driver Store is consulted by analysis. Native
@@ -114,9 +117,10 @@ their corruption assumptions do not describe arbitrary third-party CMS layouts.
 
 ## Still open
 
-Correct SIP hashing and supplied-payload membership; catalog-only/embedded/dual coverage;
-missing and modified payload comparisons with explicit-catalog SignTool; INF-to-catalog
-and file associations; richer member attributes/data parameters; broader CMS variants;
+The [membership increment](windows-catalog-membership.md) adds initial flat/default-PE
+hash comparisons, six package layouts with explicit-catalog SignTool observations and
+INF sibling-CAT associations. Still open are typed INF device/service/source-file
+relationships; richer member attributes/data parameters and SIPs; broader CMS variants;
 an independently distributed, licensed real driver-package corpus. These native-generated
 fixtures are not an independent vendor package and do not close W5 or qualify Windows trust.
 
@@ -131,8 +135,11 @@ The local records are `out/windows-baseline/catalogs/v1-final-checks.json`,
 `v2-final-checks.json` and `v2-unsigned-checks.json`.
 `cargo fmt --all --check` and the final `cargo test --workspace` passed as well;
 the complete local log is `out/windows-baseline/workspace-catalog-final.log`.
-Cross-platform CI for this catalog increment is the next gate. The recorded
-`b35f16d` CI success covers the preceding INF implementation, not this new reader.
+Cross-platform CI passed for catalog-reader commit
+`f17729152445ab0abdcd9f3c738b73e1486173be`:
+[run 44844928822](https://github.com/atomsprout/analyze-anything/actions/runs/44844928822).
+The license job, Linux/macOS/Windows core checks and macOS desktop job all passed.
+This precedes the separate supplied-member comparison increment.
 
 The desktop sample was regenerated and 22 WebKit/Chromium cases passed three consecutive
 runs (66 executions). A WebKit startup race in the drag/drop test was fixed by waiting

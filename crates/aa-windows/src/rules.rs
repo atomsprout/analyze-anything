@@ -28,11 +28,39 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.catalog-digest-agreement",
+        title_en: "Catalog digests agree with supplied artifacts",
+        title_zh: "目录摘要与输入中的文件一致",
+        text_en: "{count} member digest declarations match checked artifacts in the same parent container under supported flat-file or PE SIP profiles. The CTL content has {signers} supported signer records with matching content and signature checks. Evidence identifies the declaration, comparison profile and supplied artifact digest. This does not select an installation path or establish Windows trust or eligibility.",
+        text_zh: "在支持的完整文件或 PE SIP 摘要规则下，{count} 条成员摘要声明与同一父容器内已检查的文件一致。有 {signers} 条支持的目录签名者记录绑定了 CTL 内容。证据包含声明、比较规则和输入文件的摘要。这不表示已选择安装路径，也不表示 Windows 信任或具备安装资格。",
+    },
+    Rule {
+        id: "windows.catalog-membership-unresolved",
+        title_en: "Catalog member comparison unresolved",
+        title_zh: "目录成员比较未确认",
+        text_en: "Some member digests have no matching checked artifact or use an unsupported hash profile. A digest alone cannot distinguish a missing file from a changed file. The facts record scope completeness; no host file or catalog store was searched.",
+        text_zh: "部分成员摘要没有匹配到已检查的文件，或使用了不支持的摘要规则。仅凭摘要无法区分文件缺失和内容已改变。事实中记录了检查范围是否完整；没有搜索主机文件或目录存储。",
+    },
+    Rule {
+        id: "windows.catalog-membership-limit",
+        title_en: "Catalog comparison budget reached",
+        title_zh: "目录比较达到预算上限",
+        text_en: "The artifact index, catalog/entry count or match-detail output reached its budget. Omitted comparisons remain unresolved; a partial search is never described as proof that a member is absent.",
+        text_zh: "文件索引、目录或条目数、匹配详情输出达到预算上限。省略的比较保持未确认状态；不会把不完整的搜索当作成员不存在的证据。",
+    },
+    Rule {
+        id: "windows.catalog-payload-unchecked",
+        title_en: "Payload SIP digest not checked",
+        title_zh: "未检查载荷 SIP 摘要",
+        text_en: "A supplied PE could not be snapshotted within the byte budget, differed from its reported digest or used an unsupported layout. Its namespace's PE search is incomplete. No plain whole-file hash is substituted for the PE SIP hash.",
+        text_zh: "输入中的 PE 无法在字节预算内取得副本、内容与报告摘要不一致，或采用了不支持的布局。其所在命名空间的 PE 搜索不完整。不会用普通完整文件哈希代替 PE SIP 摘要。",
+    },
+    Rule {
         id: "windows.catalog",
         title_en: "Windows catalog declarations and signature checks",
         title_zh: "Windows 目录声明与签名检查",
-        text_en: "The catalog contains {entries} CTL entries and {signatures} signer records. Entry subject identifiers, supported member digests and cryptographic check results are recorded separately. Compatibility entries are not counted as additional payloads. No supplied payload coverage or Windows trust decision is established here.",
-        text_zh: "目录包含 {entries} 条 CTL 记录和 {signatures} 条签名者记录。分别记录条目主体标识、支持的成员摘要及密码学检查结果。兼容记录不作为额外载荷计数。这里没有确认输入载荷的覆盖情况，也没有判断 Windows 信任状态。",
+        text_en: "The catalog contains {entries} CTL entries and {signatures} signer records. Entry identifiers, member digests and cryptographic checks are recorded separately. Compatibility entries are not additional payloads. This file pass alone does not establish payload coverage; separate supplied-artifact comparisons may add evidence. No Windows trust decision is made.",
+        text_zh: "目录包含 {entries} 条 CTL 记录和 {signatures} 条签名者记录。分别记录条目标识、成员摘要和密码学检查。兼容记录不作为额外载荷。仅此文件读取步骤不表示已确认载荷覆盖；单独的输入文件比较可能提供更多证据。没有判断 Windows 信任状态。",
     },
     Rule {
         id: "windows.catalog-integrity-failed",
@@ -59,8 +87,8 @@ pub const RULES: &[Rule] = &[
         id: "windows.catalog-scope",
         title_en: "Catalog coverage and trust remain separate",
         title_zh: "目录覆盖与信任需要分别检查",
-        text_en: "Catalog signature checks concern the supplied CTL, not every referenced payload. Payload membership, member data parameters and unsigned CMS attributes have not been fully interpreted by this reader. Windows root trust, revocation, current validity, timestamps, WHQL policy and installation eligibility were not verified; no host catalog store was searched.",
-        text_zh: "目录签名检查针对输入中的 CTL，不等于检查所有引用载荷。此读取器尚未完整解释载荷成员关系、成员数据参数和未签名 CMS 属性。没有验证 Windows 根信任、吊销、当前有效期、时间戳、WHQL 策略或安装资格，也没有搜索主机目录存储。",
+        text_en: "Catalog-file signature checks concern the supplied CTL. Separate tree-level comparisons, when available, describe supported payload digest agreement; they do not select installation paths. Other member parameters and unsigned CMS attributes remain uninterpreted. Windows trust, revocation, current validity, timestamps, WHQL and installation eligibility were not verified; no host catalog store was searched.",
+        text_zh: "目录文件签名检查针对输入中的 CTL。若有单独的输入树比较，会说明支持的载荷摘要一致性，但不会选择安装路径。其他成员参数和未签名 CMS 属性仍未解释。没有验证 Windows 信任、吊销、当前有效期、时间戳、WHQL 或安装资格，也没有搜索主机目录存储。",
     },
     Rule {
         id: "windows.inf",

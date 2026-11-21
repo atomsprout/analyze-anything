@@ -53,6 +53,15 @@ target and target/icon environment strings; Internet Shortcut URL/icon declarati
 registry autostart/service command or ServiceDll values and default Classes open commands;
 and Task Scheduler Exec Command fields. Other literal fields stay in their reader facts.
 
+The W5 extension also collects known Version-section INF CatalogFile decorations.
+A unique sibling basename can link to a supplied CAT in the same namespace, using a
+literal field or conservative neutral-Strings projection while retaining the source
+literal in evidence. Slash-containing paths are unresolved because this directive
+names a same-directory catalog. No decoration is selected for the host platform.
+See [the membership record](windows-catalog-membership.md) for supported spellings,
+native package layouts and the separate digest-comparison pass, which does read PE
+snapshots. The no-target-read statement above applies to this reference pass only.
+
 URL resolution, command-line interpretation, host-relative bases and absolute host paths
 are not guessed. A task's XML location is not its executable search directory. A REG file's
 location does not anchor Run values or protocol commands. Even a same-named artifact beside

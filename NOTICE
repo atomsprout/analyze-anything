@@ -14,6 +14,12 @@ payload, plus the public signer certificate in the signed cases. No private key,
 PFX file, third-party payload or Windows certificate-store export is distributed.
 tools/native-compare/windows-catalog-fixture.ps1 records how to regenerate them.
 
+native-sip-hashes.ref.json is project-authored Apache-2.0 test data recording native
+SHA-1/SHA-256 SIP results or errors for controlled byte layouts derived from the
+existing hello.exe, hello-signed.exe and dotnet.exe project fixtures. The recipes in
+tools/native-compare/windows-sip-fixtures.py and portable tests reproduce those layouts;
+no additional binary, private key or host certificate-store data is distributed.
+
 The project-authored native-inf-syntax.inf fixture in crates/aa-windows/tests/data and
 its read-only SetupAPI reference snapshot are distributed under Apache-2.0. It declares
 syntax examples only; no driver, installation or registry modification was performed.

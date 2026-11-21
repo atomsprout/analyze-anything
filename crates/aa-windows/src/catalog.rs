@@ -28,6 +28,9 @@ struct Member {
     data_oid: Option<String>,
     digest_algorithm: Option<String>,
     digest: Option<String>,
+    sip_hash_profile: Option<&'static str>,
+    #[serde(skip)]
+    parameters: Option<&'static str>,
     attributes: Vec<Value>,
     issues: Vec<String>,
 }
@@ -167,6 +170,11 @@ fn indirect(value: Tlv<'_>, member: &mut Member) -> Result<()> {
         return Err("invalid catalog member digest".into());
     }
     member.data_oid = Some(oid(*data.first().ok_or("member data OID is absent")?)?);
+    member.parameters = data.get(1).and_then(|value| match value.raw {
+        [0xa2, 2, 0x80, 0] => Some("flat-default"),
+        [0x30, 10, 3, 2, 5, 0xa0, 0xa0, 4, 0xa2, 2, 0x80, 0] => Some("pe-default"),
+        _ => None,
+    });
     member.digest_algorithm = Some(algorithm(digest[0])?);
     member.digest = Some(hex::encode(digest[1].content));
     Ok(())
@@ -214,6 +222,11 @@ fn read_member(node: Tlv<'_>, index: usize, legacy: bool) -> Result<Member> {
         member.digest = None;
         member.sip_guid = None;
     }
+    member.sip_hash_profile = match (member.sip_guid.as_deref(), member.data_oid.as_deref(), member.parameters) {
+        (Some(FLAT_GUID), Some("1.3.6.1.4.1.311.2.1.25"), Some("flat-default")) => Some("flat-file"),
+        (Some(PE_GUID), Some("1.3.6.1.4.1.311.2.1.15"), Some("pe-default")) => Some("pe-default"),
+        _ => None,
+    };
     Ok(member)
 }
 

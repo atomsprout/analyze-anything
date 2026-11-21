@@ -65,3 +65,26 @@ verification disabled. The controlled CLI comparison also checks changed-content
 changed-signature copies, repeated reports, unchanged source bytes and bilingual output.
 These checks do not establish supplied payload membership or Windows trust. See
 [the catalog record](../../docs/spikes/windows-catalogs.md) for the native v2 alias caveat.
+
+Record native SHA-1/SHA-256 SIP hashes for explicit controlled files, without executing them:
+
+    python tools/native-compare/windows-sip-hash.py crates/aa-windows/tests/data/hello.exe --output out/windows-baseline/sip.json
+
+Regenerate the 17 controlled SIP layout observations (Windows only):
+
+    python tools/native-compare/windows-sip-fixtures.py --output out/windows-baseline/sip-fixtures --reference out/windows-baseline/native-sip-hashes.ref.json
+
+The golden reference in crates/aa-windows/tests/data records input hashes and native
+results/errors for portable Rust comparison. Review regenerated observations before
+replacing it. These tests use existing project fixtures, not vendor packages.
+
+Compare six supplied-package layouts with native SIP hashing and explicit-catalog
+SignTool, then check CLI associations, unchanged input, determinism and rendered output:
+
+    python tools/native-compare/windows-catalog-package-check.py --cli target/debug/analyze-anything.exe --output out/windows-baseline/catalog-package-checks
+
+The layouts are catalog-only, dual signatures, modified, missing, embedded-only and ZIP.
+Native SignTool policy failures are retained separately: the controlled certificate is
+self-issued, and mathematical digest agreement does not establish Windows trust.
+Nothing is installed or added to the catalog/certificate stores. Generated copies and
+native policy logs remain under out; see [the scope record](../../docs/spikes/windows-catalog-membership.md).
