@@ -166,3 +166,7 @@ The PowerShell syntax reader uses Tree-sitter and the Airbus CERT PowerShell
 grammar, both under MIT. The `powershell-ast.ref.json` input examples and reference
 snapshot are project-authored under Apache-2.0. The snapshot records read-only
 PowerShell parser results.
+
+The upstream-makeaosponwinx86.cmd fixture is the unchanged makeaosponwinx86.cmd
+from microsoft/msix-packaging at commit 25a65f5c1690930813bcc10cdf1d59fa865f2bb1.
+Copyright Microsoft Corporation. MIT, see LICENSE-msix-packaging.txt.

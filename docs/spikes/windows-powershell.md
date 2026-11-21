@@ -40,5 +40,25 @@ The comparison parsed their text through native `ParseFile` and the offline
 CLI using `windows-powershell-ast-check.ps1 -Cli <no-AI CLI>`. The reference
 check reads the generators as inputs.
 
-Batch syntax, encoded command provenance and further declaration forms remain
+## Batch literal segments
+
+The separate `.bat` and `.cmd` reader handles double-quote boundaries and
+simple `&`, `&&`, `|` and `||` segments. It records declared commands
+with source positions, selected literal paths and URLs, and exact-name tool
+labels. Literal `echo` text does not produce a second command. Standalone
+comments and labels are ignored. Lines with percent or delayed expansion,
+caret escapes or continuations, grouping or redirection receive unresolved
+records. Control flow and nested command dispatch also have explicit limits.
+The same text decoder, input budget and digest binding apply as for PowerShell.
+See Microsoft’s [cmd reference](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd)
+and [echo quoting examples](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/echo).
+
+The pinned MSIX Packaging build script `makeaosponwinx86.cmd` is a real
+redistributable batch sample. The test checks the literal `mkdir`, `cd` and
+`ninja` lines and confirms that the nine-line caret continuation stays
+unresolved. Synthetic cases exercise comments, operators, quoting, variable
+expansion and resumption after unsupported lines. The reference uses source
+bytes and documented cmd syntax. It does not invoke the build script.
+
+Encoded command provenance and broader script declaration semantics remain
 open under W4.

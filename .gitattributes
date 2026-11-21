@@ -6,3 +6,4 @@ crates/aa-windows/tests/data/upstream-echo.inf -text whitespace=-blank-at-eol
 crates/aa-windows/tests/data/native-inf-syntax.inf -text
 crates/aa-windows/tests/data/native-inf-relationships.inf -text
 crates/aa-windows/tests/data/native-catalog-*.cat -text
+crates/aa-windows/tests/data/upstream-makeaosponwinx86.cmd -text whitespace=cr-at-eol

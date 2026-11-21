@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-batch-script",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 Windows 批处理脚本，报告记录可读取的字面命令段。",
+        text_en: "This is a Windows batch script. The report records readable literal command segments.",
+    },
+    Rule {
         id: "overview.kind-powershell-script",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -437,6 +444,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("msix-bundle-manifest", _) => finding("overview.kind-msix-bundle-manifest", Confidence::Verified),
         ("msix-bundle", _) => finding("overview.kind-msix-bundle", Confidence::Verified),
         ("powershell-script", _) => finding("overview.kind-powershell-script", Confidence::Verified),
+        ("batch-script", _) => finding("overview.kind-batch-script", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

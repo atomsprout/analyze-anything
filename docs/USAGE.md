@@ -53,6 +53,11 @@ level and target-device-family versions. The report keeps minimum and maximum te
 versions distinct. Missing outer target-device declarations are recorded separately
 from differences and incomplete projections.
 
+On Windows script inputs, the report identifies readable PowerShell commands
+and batch command segments with source positions. It also records supported
+literal paths, addresses and PowerShell administrator declarations. Dynamic
+syntax and unsupported command forms appear as limitations.
+
 | Format | File | For |
 |---|---|---|
 | `json` | `report.json` | The single source of truth: the whole file tree, every finding and its evidence, the limitations, the text of the rules. Every other format is rendered from it |

@@ -41,6 +41,9 @@ analyze-anything <文件或文件夹> [-o 文件夹] [--format json,html,pdf,md,
 
 报告默认是英文，加 `--lang zh` 写中文。`report.html` 里两种语言都有，打开后可以切换；JSON、SARIF、CycloneDX 是数据，不分语言。桌面版同样默认英文，在 View 菜单里切换，选择会记住。
 
+对于 Windows 脚本输入，报告会列出可读取的 PowerShell 命令和批处理命令段，并附上源位置。
+报告还会记录支持的字面路径、地址和 PowerShell 管理员声明。动态语法和暂未支持的命令形式会列在限制中。
+
 | 格式 | 文件 | 用途 |
 |---|---|---|
 | `json` | `report.json` | 唯一事实来源：完整的文件树、全部结论和证据、局限、规则文案。其他格式都由它渲染 |

@@ -74,9 +74,11 @@ bundles and eight upstream positive/negative fixtures are recorded in
 
 PowerShell syntax inspection covers qualified literal commands in PS1 and PSM1
 files. Grammar errors are reported and dynamic arguments may be unresolved.
-The syntax inventory leaves alias resolution, command binding, execution flow,
-encoded commands and batch scripts outside this increment. Native reference
-coverage is recorded in [the PowerShell scope](spikes/windows-powershell.md).
+The syntax inventory leaves alias resolution, command binding, execution flow
+and encoded commands unresolved. Batch inspection covers simple literal command
+segments in CMD and BAT files. Expansion, redirects, continuations, grouped
+syntax and nested dispatch remain unresolved. Reference coverage is recorded
+in [the Windows script scope](spikes/windows-powershell.md).
 
 ZIP archives whose central directory repeats names receive an explicit limitation:
 the current ZIP library collapses those records, so not every version is retained.

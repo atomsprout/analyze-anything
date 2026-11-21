@@ -24,6 +24,7 @@
 mod appx;
 mod asar;
 mod authenticode;
+mod batch;
 mod behaviour;
 mod cab;
 mod catalog;
@@ -120,7 +121,7 @@ impl Analyzer for Windows {
     fn analyze_file(&self, tree: &dyn Tree, file: &Artifact, out: &mut Output) {
         nsis::script_note(tree, file, out);
         if file.size < 64
-            && !matches!(file.extension().as_deref(), Some("url" | "lnk" | "reg" | "inf" | "cat" | "p7x" | "ps1" | "psm1"))
+            && !matches!(file.extension().as_deref(), Some("url" | "lnk" | "reg" | "inf" | "cat" | "p7x" | "ps1" | "psm1" | "bat" | "cmd"))
             && !file.name().eq_ignore_ascii_case("AppxBlockMap.xml")
             && !file.name().eq_ignore_ascii_case("AppxSignature.p7x")
             && !file.name().eq_ignore_ascii_case("AppxBundleManifest.xml")
@@ -133,6 +134,7 @@ impl Analyzer for Windows {
         registry::analyze(file, &bytes, out);
         tasks::analyze(file, &bytes, out);
         powershell::analyze(file, &bytes, out);
+        batch::analyze(file, &bytes, out);
         inf::analyze(file, &bytes, out);
         catalog::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);

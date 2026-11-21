@@ -18,6 +18,29 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn batch_script_reports_literal_segments_without_expanding_input() {
+    let directory = tempfile::tempdir().expect("batch input");
+    let input = directory.path().join("example.bat");
+    let source = b"@echo off\r\nREM dir ignored\r\necho %TEMP%\r\ndir \"C:\\Report Folder\" && echo done\r\n";
+    std::fs::write(&input, source).expect("script fixture");
+    let report = run(&input, &Options::default());
+    let file = report.artifacts.iter().find(|a| a.name() == "example.bat").expect("batch artifact");
+    assert_eq!(file.kind.as_deref(), Some("batch-script"));
+    let fact = &file.facts["windows.batch"];
+    assert_eq!(fact["source_sha256"], aa_core::sha256_hex(source));
+    assert_eq!(fact["commands"].as_array().expect("commands").len(), 3);
+    assert_eq!(fact["commands"][1]["name"], "dir");
+    assert_eq!(fact["commands"][1]["line"], 4);
+    assert_eq!(fact["commands"][1]["literal_arguments"][0]["value"], r"C:\Report Folder");
+    assert_eq!(fact["commands"][2]["preceding_operator"], "&&");
+    assert_eq!(fact["issues"][0]["line"], 3);
+    assert_eq!(fact["evaluated"], false);
+    assert!(report.limitations.iter().any(|l| l.code == "windows.batch-incomplete"));
+    assert!(report.findings.iter().any(|f| f.rule == "windows.batch-commands" && !f.evidence.is_empty()));
+    assert_eq!(std::fs::read(input).expect("input remains readable"), source);
+}
+
+#[test]
 fn powershell_script_reports_bound_syntax_and_preserves_input() {
     let directory = tempfile::tempdir().expect("script input");
     let input = directory.path().join("example.psm1");
