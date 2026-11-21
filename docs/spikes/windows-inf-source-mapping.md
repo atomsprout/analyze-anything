@@ -81,7 +81,11 @@ limitation and enables no root mapping. Invalid machine paths are not echoed int
 The worker client retains its existing default method and adds an explicit-root method.
 Omitted protocol fields default to empty and empty fields are not serialized, preserving
 existing requests. Empty settings retain unresolved-base behavior and no mapping fact.
-The desktop currently uses that default; its root-selection UI remains open under W10.
+The desktop home page has a collapsed optional logical-root control. Its settings travel
+through `aa-app` and the same worker protocol; native command validation happens before
+replacing a live run. Returning home clears the draft, while reanalysis of a kept report
+uses its validated `engine.windows-source-roots` settings. Browser checks use the stand-in
+backend; native Windows window qualification remains open under W10.
 The shared engine boundary validates callers independently of CLI parsing.
 
 With an established root, the mapper combines supported media paths, source subdirectories and
@@ -153,4 +157,15 @@ The preceding declaration-link increment passed CI for
 `da795908d3c8211d36819391fd81fccd2d7e1669`:
 [run 44854420385](https://github.com/atomsprout/analyze-anything/actions/runs/44854420385).
 Linux/macOS/Windows core checks, macOS desktop and licenses all passed. This does not
-cover the explicit-root implementation, whose cross-platform CI is the next gate.
+cover the explicit-root implementation by itself. That implementation subsequently
+passed Linux/macOS/Windows core checks, macOS desktop and licenses at
+`f242307cc0b3b209d97319be04d511ef1f7216c1`:
+[run 44858583291](https://github.com/atomsprout/analyze-anything/actions/runs/44858583291).
+The desktop control is a later increment and needs its own CI run.
+
+For that increment, local format, workspace Clippy, the no-default-feature CLI build
+and full workspace tests passed, including the configured `aa-app`/worker/direct-engine
+parity test. The log is `out/windows-baseline/workspace-desktop-source-roots.log`.
+The page also passed its TypeScript/Vite build, 14 unit tests and 28 browser checks
+across WebKit and Chromium. These checks cover the stand-in backend, not a native
+Windows WebView2 window or delivery qualification.

@@ -63,8 +63,11 @@ paths can associate supplied files and captured digests; this does not choose a 
 architecture, verify catalog membership or establish installation eligibility. CAB/tag
 media, unsupported aliases and incomplete listings remain limitations. The initial
 profile accepts ASCII logical paths, at most 32 assignments and 8 KiB per path. The
-engine and worker enforce the same validation; the desktop currently keeps the default
-unconfigured-root behavior. See [the source mapping scope](spikes/windows-inf-source-mapping.md).
+engine and worker enforce the same validation. In the desktop home page, expand
+**Driver source mapping (optional)** and add the logical INF/root pairs before choosing
+or dropping the input. The settings apply to that input; returning home clears them.
+Analyzing a kept report again retains its validated mappings. See
+[the source mapping scope](spikes/windows-inf-source-mapping.md).
 
 `--font <font file>` adds a fallback font to the PDF (repeatable) for text the built-in fonts cannot show, such as Korean, Arabic or emoji. The PDF then depends on those font files too.
 

@@ -5,7 +5,7 @@
 // from tests/fixtures, and makes up bytes for the hex view. `window.__mock` lets a test drive
 // what the real app would: dropping a file, choosing a menu item, the dialogs' answers.
 
-import type { Backend, Chunk, Diff, Entry, Handlers, Interpretation, Lang, Step } from "./types";
+import type { Backend, Chunk, Diff, Entry, Handlers, Interpretation, Lang, Step, WindowsSourceRoot } from "./types";
 
 export interface MockControl {
   /** What the next "open" or "save" dialog answers; `null` is the user cancelling. */
@@ -67,6 +67,7 @@ export function mockBackend(): Backend {
   let live: string | null = null;
   let timers: number[] = [];
   const interpretations = new Map<string, Interpretation>();
+  const sourceRoots = new Map<string, WindowsSourceRoot[]>();
   const control: MockControl = {
     dialogAnswer: "/Users/me/Downloads/Sample.dmg",
     stepDelay: 30,
@@ -93,8 +94,9 @@ export function mockBackend(): Backend {
       called("pickInput", folder);
       return control.dialogAnswer;
     },
-    async startAnalysis(path) {
-      called("startAnalysis", path);
+    async startAnalysis(path, roots = []) {
+      if (roots.length) called("startAnalysis", path, roots);
+      else called("startAnalysis", path);
       const name = path.split("/").pop() ?? path;
       const steps: Step[] = [{ event: "listed", files: 1 }, { event: "reading", index: 1, total: 1, path: name }, { event: "unpacked", path: name, children: 40 }, { event: "analyzing", artifacts: 41 }];
       for (let i = 1; i <= 41; i += 4) steps.push({ event: "analyzed", index: i, total: 41, path: `${name}/Contents/file-${i}.bin` });
@@ -112,6 +114,7 @@ export function mockBackend(): Backend {
             }
             const made = entry(`20261119-12${String(entries.length).padStart(4, "0")}`, name, 1795090000 + entries.length, [0, 1, 2, 300]);
             made.source = path;
+            sourceRoots.set(made.id, roots.map((row) => ({ ...row })));
             entries = [made, ...entries];
             live = made.id;
             handlers?.done(made);
@@ -143,7 +146,7 @@ export function mockBackend(): Backend {
       called("openReport", id);
       const found = entries.find((e) => e.id === id);
       if (!found) throw new Error(`no report is kept under the name ${id}`);
-      return { entry: found, live: live === id, source_present: found.source !== null };
+      return { entry: found, live: live === id, source_present: found.source !== null, windows_source_roots: sourceRoots.get(id) ?? [] };
     },
     async readBytes(id, path, offset, length): Promise<Chunk> {
       called("readBytes", id, path, offset, length);

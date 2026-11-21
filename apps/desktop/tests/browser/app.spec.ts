@@ -26,6 +26,68 @@ async function openSample(page: Page) {
   await expect(page.locator(".report")).toBeVisible();
 }
 
+test("source mapping is optional, validated and scoped to the chosen input", async ({ page }) => {
+  await page.goto("/");
+  const panel = page.locator(".source-root-options");
+  await expect(panel).not.toHaveAttribute("open", "");
+  await panel.locator("summary").click();
+  await page.getByRole("button", { name: "Add source root", exact: true }).click();
+  await page.getByRole("textbox", { name: "Logical INF path", exact: true }).fill("Pkg/DRIVER.INF");
+  const root = page.getByRole("textbox", { name: "Logical distribution root", exact: true });
+  await root.fill("C:/drivers");
+  await page.getByRole("button", { name: "Open File…" }).click();
+  await expect(page.locator(".toast")).toContainText("Check the source roots");
+  expect(await mock(page, (m) => m.calls.filter((c) => c.startsWith("startAnalysis")))).toEqual([]);
+  await expect(root).toHaveValue("C:/drivers");
+  await root.fill("PKG");
+  await page.getByRole("button", { name: "Open File…" }).click();
+  await expect(page.locator(".report")).toBeVisible();
+  expect(await mock(page, (m) => m.calls.filter((c) => c.startsWith("startAnalysis")))).toEqual([
+    'startAnalysis("/Users/me/Downloads/Sample.dmg",[{"inf":"pkg/driver.inf","root":"pkg"}])',
+  ]);
+  await page.getByRole("button", { name: "‹ Home" }).click();
+  await expect(page.locator(".source-root-row")).toHaveCount(0);
+  await page.getByRole("button", { name: "Open File…" }).click();
+  await expect(page.locator(".report")).toBeVisible();
+  expect(await mock(page, (m) => m.calls.filter((c) => c.startsWith("startAnalysis")).at(-1))).toBe('startAnalysis("/Users/me/Downloads/Sample.dmg")');
+});
+
+test("language changes retain source-mapping drafts", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".source-root-options summary").click();
+  await page.getByRole("button", { name: "Add source root", exact: true }).click();
+  await page.getByRole("textbox", { name: "Logical INF path", exact: true }).fill("driver.inf");
+  await page.getByRole("textbox", { name: "Logical distribution root", exact: true }).fill(".");
+  await mock(page, (m) => m.menu("lang:zh"));
+  await page.locator(".source-root-options summary").click();
+  await expect(page.getByRole("textbox", { name: "INF 逻辑路径", exact: true })).toHaveValue("driver.inf");
+  await expect(page.getByRole("textbox", { name: "逻辑分发根目录", exact: true })).toHaveValue(".");
+});
+
+test("reanalyzing a kept report retains its source mappings", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".source-root-options summary").click();
+  await page.getByRole("button", { name: "Add source root", exact: true }).click();
+  await page.getByRole("textbox", { name: "Logical INF path", exact: true }).fill("driver.inf");
+  await page.getByRole("textbox", { name: "Logical distribution root", exact: true }).fill(".");
+  await mock(page, (m) => m.offer("/drivers.zip"));
+  await expect(page.locator(".report")).toBeVisible();
+  await page.getByRole("button", { name: "‹ Home" }).click();
+  await mock(page, (m) => m.offer("/other.zip"));
+  await expect(page.locator(".report")).toBeVisible();
+  await page.getByRole("button", { name: "‹ Home" }).click();
+  await page.locator(".entry").filter({ hasText: "drivers.zip" }).locator(".entry-main").click();
+  const report = page.frameLocator("iframe.report-frame");
+  const button = report.getByRole("button", { name: "View bytes", exact: true }).first();
+  const summaries = report.locator("details.evidence > summary");
+  const count = await summaries.count();
+  for (let i = 0; i < count && !(await button.isVisible()); i += 1) await summaries.nth(i).click();
+  await button.click();
+  await page.getByRole("button", { name: "Analyze again", exact: true }).click();
+  await expect(page.locator(".report")).toBeVisible();
+  expect(await mock(page, (m) => m.calls.filter((c) => c.startsWith("startAnalysis")).at(-1))).toBe('startAnalysis("/drivers.zip",[{"inf":"driver.inf","root":"."}])');
+});
+
 test("the report page, on its own, has its own controls and no host buttons", async ({ page }) => {
   await page.goto("/sample-report");
   await expect(page.locator("header.top .tools")).toBeVisible();

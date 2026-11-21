@@ -8,7 +8,7 @@ export function tauriBackend(): Backend {
     appInfo: () => invoke<AppInfo>("app_info"),
     initialInput: () => invoke<string | null>("initial_input"),
     pickInput: (folder) => invoke<string | null>("pick_input", { folder }),
-    startAnalysis: (path) => invoke<void>("start_analysis", { path }),
+    startAnalysis: (path, roots = []) => invoke<void>("start_analysis", { path, windowsSourceRoots: roots }),
     cancelAnalysis: () => invoke<void>("cancel_analysis"),
     historyList: () => invoke<Entry[]>("history_list"),
     historyRemove: (id) => invoke<void>("history_remove", { id }),

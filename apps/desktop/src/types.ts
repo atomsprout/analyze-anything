@@ -35,7 +35,10 @@ export interface Opened {
   entry: Entry;
   live: boolean;
   source_present: boolean;
+  windows_source_roots?: WindowsSourceRoot[];
 }
+
+export interface WindowsSourceRoot { inf: string; root: string; }
 
 export interface Chunk {
   hex: string;
@@ -139,7 +142,7 @@ export interface Backend {
   appInfo(): Promise<AppInfo>;
   initialInput(): Promise<string | null>;
   pickInput(folder: boolean): Promise<string | null>;
-  startAnalysis(path: string): Promise<void>;
+  startAnalysis(path: string, roots?: WindowsSourceRoot[]): Promise<void>;
   cancelAnalysis(): Promise<void>;
   historyList(): Promise<Entry[]>;
   historyRemove(id: string): Promise<void>;

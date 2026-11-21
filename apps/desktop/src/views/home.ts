@@ -1,7 +1,8 @@
 import type { App } from "../app";
 import { clear, el } from "../dom";
 import { group } from "../format";
-import type { Entry } from "../types";
+import type { Entry, WindowsSourceRoot } from "../types";
+import { sourceRootPanel } from "./source-roots";
 
 export interface HomeActions {
   pick(folder: boolean): void;
@@ -13,14 +14,17 @@ export interface HomeView {
   element: HTMLElement;
   /** Shows that something is being dragged over the window. */
   setDragging(over: boolean): void;
+  sourceRoots(): WindowsSourceRoot[];
+  sourceRootDraft(): WindowsSourceRoot[];
 }
 
 function when(entry: Entry, lang: string): string {
   return new Date(entry.analyzed_at * 1000).toLocaleString(lang === "zh" ? "zh-CN" : "en", { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function homeView(app: App, entries: Entry[], actions: HomeActions, refresh: () => void): HomeView {
+export function homeView(app: App, entries: Entry[], actions: HomeActions, refresh: () => void, initialRoots: WindowsSourceRoot[] = []): HomeView {
   const { t } = app;
+  const roots = sourceRootPanel(app, initialRoots);
   const dropTitle = el("h2", null, t("drop_here"));
   const drop = el(
     "section",
@@ -125,11 +129,14 @@ export function homeView(app: App, entries: Entry[], actions: HomeActions, refre
     { class: "home" },
     el("header", { class: "home-head" }, el("h1", null, "Analyze Anything"), el("p", { class: "muted" }, t("tagline"))),
     drop,
+    roots.element,
     history,
     el("footer", { class: "muted small" }, t("version", { version: app.info.version })),
   );
   return {
     element,
+    sourceRoots: roots.values,
+    sourceRootDraft: roots.draft,
     setDragging(over) {
       drop.classList.toggle("over", over);
       clear(dropTitle).appendChild(document.createTextNode(t(over ? "drop_release" : "drop_here")));

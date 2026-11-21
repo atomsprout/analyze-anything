@@ -13,6 +13,12 @@ brew install atomsprout/tap/analyze-anything                  # command line, in
 
 Neither depends on the other; you can install just one.
 
+For driver-package inputs, the home page offers **Driver source mapping (optional)**.
+Add logical INF/distribution-root pairs before selecting or dropping the input; the
+same limits and interpretation as `--windows-source-root` apply (see [USAGE.md](USAGE.md)).
+The default is no assignments. Returning home clears the draft; language changes keep
+it, and analyzing a kept report again uses that report's validated assignments.
+
 ## Structure
 
 | Location | Contents |
@@ -46,6 +52,14 @@ npm run test:browser       # test the page in WebKit and Chromium (Playwright, b
 The workspace's default members do not include the desktop app, so `cargo build` / `cargo test` do not compile it; use `-p aa-desktop` when needed.
 
 ## Test layers
+
+The logical-root control passed the 14 page unit tests, TypeScript/Vite build and
+28 WebKit/Chromium browser tests on the Windows x64 development host. These include
+invalid-path refusal, canonical assignments, clearing new-input settings, preserving
+drafts across language changes and retaining mappings when reanalyzing history.
+The browser backend is a stand-in; a separate `aa-app` test compares the configured
+worker's complete report with a direct engine run on a constructed INF/payload folder.
+This does not qualify the control in a native Windows window.
 
 | Layer | Where |
 |---|---|
