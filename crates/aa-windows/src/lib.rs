@@ -47,6 +47,7 @@ mod msix_signature;
 mod msix_xml;
 mod msix_zip;
 mod nsis;
+mod nuspec;
 mod pe;
 mod pefile;
 mod powershell;
@@ -122,7 +123,10 @@ impl Analyzer for Windows {
     fn analyze_file(&self, tree: &dyn Tree, file: &Artifact, out: &mut Output) {
         nsis::script_note(tree, file, out);
         if file.size < 64
-            && !matches!(file.extension().as_deref(), Some("url" | "lnk" | "reg" | "inf" | "cat" | "p7x" | "ps1" | "psm1" | "bat" | "cmd"))
+            && !matches!(
+                file.extension().as_deref(),
+                Some("url" | "lnk" | "reg" | "inf" | "cat" | "p7x" | "ps1" | "psm1" | "bat" | "cmd" | "nuspec")
+            )
             && !file.name().eq_ignore_ascii_case("AppxBlockMap.xml")
             && !file.name().eq_ignore_ascii_case("AppxSignature.p7x")
             && !file.name().eq_ignore_ascii_case("AppxBundleManifest.xml")
@@ -138,6 +142,7 @@ impl Analyzer for Windows {
         batch::analyze(file, &bytes, out);
         inf::analyze(file, &bytes, out);
         catalog::analyze(file, &bytes, out);
+        nuspec::analyze(file, &bytes, out);
         pefile::analyze(file, &bytes, out);
         appx::analyze(file, &bytes, out);
         msix_bundle::analyze(file, &bytes, out);

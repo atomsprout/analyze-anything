@@ -205,7 +205,7 @@ fn local_path(file: &Artifact) -> Option<&str> {
     }
 }
 
-fn name_changed(file: &Artifact) -> bool {
+pub(super) fn name_changed(file: &Artifact) -> bool {
     file.facts.get("engine.entry-name").is_some_and(|f| {
         f.get("normalized").and_then(Value::as_bool) == Some(true) || f.get("colliding").and_then(Value::as_bool) == Some(true)
     })

@@ -170,3 +170,11 @@ The snapshots record read-only PowerShell parser and representation results.
 The upstream-makeaosponwinx86.cmd fixture is the unchanged makeaosponwinx86.cmd
 from microsoft/msix-packaging at commit 25a65f5c1690930813bcc10cdf1d59fa865f2bb1.
 Copyright Microsoft Corporation. MIT, see LICENSE-msix-packaging.txt.
+
+The fixture crates/aa-windows/tests/data/nuget.versioning.6.11.1.nupkg is the
+unchanged NuGet.Versioning 6.11.1 package from NuGet.org
+(https://api.nuget.org/v3-flatcontainer/nuget.versioning/6.11.1/nuget.versioning.6.11.1.nupkg).
+Copyright (c) .NET Foundation and Contributors. Apache-2.0, see the root LICENSE
+and the source notice at NuGet/NuGet.Client commit
+5469bd0d9de8108f15f21644759773b85471366c. The accompanying .ref.json is a
+project-authored read-only NuGet SDK snapshot under Apache-2.0.

@@ -14,6 +14,12 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 
 ## Parts not verified on real samples
 
+The NuGet reader has been compared with the Windows .NET SDK on the published
+NuGet.Versioning and NuGet.Configuration 6.11.1 packages. Ambiguous sibling
+packages and incomplete listings have constructed coverage. Only exact stable
+ranges can link to supplied packages. Framework choice, package signatures and
+package restore are outside this profile. See [the NuGet record](spikes/windows-nuget.md).
+
 The following features have only been tested with data we constructed ourselves, and have not been compared against reference tools on real samples:
 
 - **Apple**: APFS snapshots and multiple volumes, ECDSA signatures. An encrypted DMG is identified but cannot be read. FairPlay-encrypted IPAs downloaded from the App Store have been verified on real samples: the encryption is identified, metadata, signatures and resources are analyzed as usual, and the encrypted code cannot be read.

@@ -1340,4 +1340,32 @@ pub const RULES: &[Rule] = &[
         text_zh: "AppxManifest.xml 的编码、XML、根命名空间或资源使用超出已检查范围，未发布清单投影。",
         text_en: "AppxManifest.xml encoding, XML, root namespace or resource use is outside the checked profile; no manifest projection was published.",
     },
+    Rule {
+        id: "windows.nuspec-identity",
+        title_zh: "NuGet 清单中的包身份",
+        title_en: "Package identity declared by a NuGet manifest",
+        text_zh: "NuGet 清单声明包 {name}，版本 {version}。",
+        text_en: "The NuGet manifest declares package {name}, version {version}.",
+    },
+    Rule {
+        id: "windows.nuspec-unreadable",
+        title_zh: "NuGet 清单无法读取",
+        title_en: "NuGet manifest could not be read",
+        text_zh: "清单编码、结构、标识、版本或输入大小超出可读取范围，或清单与采集的文件不一致。",
+        text_en: "The manifest encoding, structure, identity, version or input size is outside the supported profile, or the manifest differs from the captured file.",
+    },
+    Rule {
+        id: "windows.nuspec-incomplete",
+        title_zh: "NuGet 清单读取不完整",
+        title_en: "NuGet manifest partially read",
+        text_zh: "清单中的部分许可或依赖声明无法读取。详细原因和位置见清单数据。",
+        text_en: "Some license or dependency declarations could not be read. The manifest data records reasons and locations.",
+    },
+    Rule {
+        id: "windows.nupkg-unresolved",
+        title_zh: "NuGet 包读取不完整",
+        title_en: "NuGet package partially read",
+        text_zh: "无法建立包和根清单的唯一对应关系，或部分包内资产超出输出限制。",
+        text_en: "The package could not be associated with a unique root manifest, or some package assets exceeded output limits.",
+    },
 ];

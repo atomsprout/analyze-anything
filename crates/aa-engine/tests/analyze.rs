@@ -18,6 +18,120 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn nuget_published_package_matches_sdk_metadata() {
+    let data = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data");
+    let package = data.join("nuget.versioning.6.11.1.nupkg");
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("../../aa-windows/tests/data/nuget.versioning.6.11.1.ref.json")).expect("SDK reference");
+    let report = run(&package, &Options::default());
+    let packaged = report.artifacts.iter().find(|a| a.is("nuget-package")).expect("qualified package");
+    let manifest = report.artifacts.iter().find(|a| a.is("nuget-manifest")).expect("root manifest");
+    let package_fact = &packaged.facts["windows.nupkg"];
+    let metadata = &manifest.facts["windows.nuspec"];
+    assert_eq!(manifest.name(), reference["manifest"].as_str().expect("SDK manifest name"));
+    assert_eq!(package_fact["source_manifest"], manifest.path);
+    assert_eq!(package_fact["package_sha256"], reference["package_sha256"]);
+    assert_eq!(package_fact["source_sha256"], manifest.digests.as_ref().expect("manifest digest").sha256);
+    assert_eq!(metadata["name"], reference["name"]);
+    assert_eq!(metadata["version"], reference["version"]);
+    assert_eq!(metadata["license"]["kind"], reference["license_kind"]);
+    assert_eq!(metadata["license"]["value"], reference["license_value"]);
+    let groups = metadata["dependency_groups"].as_array().expect("framework groups");
+    assert_eq!(groups.len(), reference["dependency_frameworks"].as_array().expect("SDK frameworks").len());
+    assert_eq!(groups[0]["target_framework"], ".NETFramework4.7.2");
+    assert_eq!(groups[1]["target_framework"], ".NETStandard2.0");
+    for (index, group) in groups.iter().enumerate() {
+        assert_eq!(
+            group["dependencies"].as_array().expect("dependency rows").len(),
+            reference["dependency_counts"][index].as_u64().expect("SDK count") as usize
+        );
+    }
+    let assets = package_fact["assets"].as_array().expect("package assets");
+    assert_eq!(assets.iter().map(|row| row["path"].clone()).collect::<Vec<_>>(), *reference["assets"].as_array().expect("SDK assets"));
+    for row in assets {
+        let path = format!("{}/{}", packaged.path, row["path"].as_str().expect("asset path"));
+        let artifact = report.artifacts.iter().find(|a| a.path == path).expect("captured asset");
+        assert_eq!(row["sha256"], artifact.digests.as_ref().expect("asset digest").sha256);
+    }
+    let components = report.summary["composition.components"]["components"].as_array().expect("shared inventory");
+    assert_eq!(components.len(), 1);
+    assert_eq!(components[0]["purl"], "pkg:nuget/NuGet.Versioning@6.11.1");
+    assert_eq!(components[0]["manifest"]["path"], manifest.path);
+    assert_eq!(
+        serde_json::to_vec(&report).expect("first report"),
+        serde_json::to_vec(&run(&package, &Options::default())).expect("repeat report")
+    );
+}
+
+#[test]
+fn nuget_dependency_relationships_need_captured_unique_package_identities() {
+    use serde_json::json;
+
+    let directory = tempfile::tempdir().expect("package directory");
+    let write_package = |file: &str, manifest: &str| {
+        let mut zip = zip::ZipWriter::new(std::fs::File::create(directory.path().join(file)).expect("package file"));
+        zip.start_file("package.nuspec", zip::write::SimpleFileOptions::default()).expect("manifest member");
+        zip.write_all(manifest.as_bytes()).expect("write manifest");
+        if file == "source.nupkg" {
+            for path in ["build/Source.targets", "runtimes/win-x64/native/asset.bin"] {
+                zip.start_file(path, zip::write::SimpleFileOptions::default()).expect("asset member");
+                zip.write_all(b"fixture asset").expect("write asset");
+            }
+        }
+        zip.finish().expect("finish package");
+    };
+    let target = "<package><metadata><id>Target</id><version>1.0.0.0</version></metadata></package>";
+    write_package("arbitrary-name.nupkg", target);
+    write_package(
+        "source.nupkg",
+        r#"<package><metadata><id>Source</id><version>2.0</version>
+        <dependencies><dependency id="target" version="[1.0]"/><dependency id="Target" version="1.0"/>
+        <dependency id="Missing" version="[1.0]"/></dependencies></metadata></package>"#,
+    );
+    write_package(
+        "grouped.nupkg",
+        r#"<package><metadata><id>Grouped</id><version>2.0</version>
+        <dependencies><group targetFramework="net8.0"><dependency id="Target" version="[1.0]"/></group></dependencies>
+        </metadata></package>"#,
+    );
+
+    let report = run(directory.path(), &Options::default());
+    let source = report.artifacts.iter().find(|a| a.path == "source.nupkg").expect("source archive");
+    let assets = source.facts["windows.nupkg"]["assets"].as_array().expect("captured assets");
+    assert_eq!(assets.len(), 2);
+    assert_eq!(assets[0]["kind"], "build");
+    assert_eq!(assets[1]["kind"], "runtime");
+    assert_eq!(assets[1]["sha256"], aa_core::sha256_hex(b"fixture asset"));
+    let rows = report.summary["composition.components"]["nuget_dependencies"].as_array().expect("declared dependency rows");
+    assert_eq!(rows[0]["target_framework"], "net8.0");
+    assert_eq!(rows[0]["status"], "present");
+    assert!(rows[0].get("components").is_none());
+    assert_eq!(rows[1]["target"], "arbitrary-name.nupkg");
+    assert_eq!(rows[1]["components"], json!([1, 2]));
+    assert_eq!(rows[2]["status"], "unresolved-range");
+    assert_eq!(rows[3]["status"], "not-supplied");
+
+    write_package("duplicate.nupkg", target);
+    let report = run(directory.path(), &Options::default());
+    let row = &report.summary["composition.components"]["nuget_dependencies"][1];
+    assert_eq!(row["status"], "ambiguous");
+    assert!(row.get("components").is_none());
+
+    std::fs::write(directory.path().join("broken.nupkg"), b"unreadable package").expect("broken package");
+    std::fs::write(
+        directory.path().join("broken.nuspec"),
+        b"<package><metadata><id>First</id><id>Second</id><version>1.0</version></metadata></package>",
+    )
+    .expect("ambiguous standalone manifest");
+    let report = run(directory.path(), &Options::default());
+    assert_eq!(report.summary["composition.components"]["nuget_dependencies"][1]["status"], "incomplete-input");
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.nupkg-unresolved"));
+    assert!(report.limitations.iter().any(|entry| entry.code == "windows.nuspec-unreadable"));
+    let malformed = report.artifacts.iter().find(|a| a.path == "broken.nuspec").expect("ambiguous manifest");
+    assert!(!malformed.facts.contains_key("windows.nuspec"));
+}
+
+#[test]
 fn script_hosts_report_encoded_powershell_operand_provenance() {
     let directory = tempfile::tempdir().expect("script inputs");
     let fixture: serde_json::Value =
