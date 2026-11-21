@@ -17,6 +17,116 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
     Options { limits, ..Options::default() }
 }
 
+#[test]
+fn msix_block_checks_use_captured_archive_children_and_remain_separate_from_authentication() {
+    let directory = tempfile::tempdir().expect("package inputs");
+    for name in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"] {
+        let original =
+            std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data").join(name)).expect("native fixture");
+        let input = directory.path().join(name);
+        std::fs::write(&input, &original).expect("package input");
+        let report = run(&input, &Options::default());
+        let map = report.artifacts.iter().find(|a| a.path.ends_with("/AppxBlockMap.xml")).expect("block map");
+        let checks = &map.facts["windows.msix-blockmap-checks"];
+        assert_eq!(checks["files_unresolved"], 0);
+        assert_eq!(checks["files_with_mismatches"], 0);
+        assert_eq!(checks["files_with_matching_hashes"], if name.starts_with("upstream") { 11 } else { 6 });
+        assert_eq!(checks["package_signature_checked"], false);
+        assert_eq!(checks["zip_structure_checked"], false);
+        assert!(report.findings.iter().any(|f| f.rule == "windows.msix-block-hashes" && !f.evidence.is_empty()));
+        assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
+        assert_eq!(
+            serde_json::to_vec(&report).expect("report"),
+            serde_json::to_vec(&run(&input, &Options::default())).expect("repeat report")
+        );
+        assert_eq!(std::fs::read(&input).expect("original input"), original);
+    }
+}
+
+#[test]
+fn msix_tampering_missing_files_and_archive_name_ambiguity_have_distinct_results() {
+    use std::io::Read;
+    let bytes = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/native-msix-sha256.msix"))
+        .expect("native package");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes)).expect("fixture ZIP");
+    let mut original = Vec::new();
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).expect("fixture entry");
+        if file.is_dir() {
+            continue;
+        }
+        let name = file.name().expect("fixture name").into_owned();
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).expect("fixture bytes");
+        original.push((name, bytes));
+    }
+    let directory = tempfile::tempdir().expect("case inputs");
+    for case in ["changed-payload", "changed-block-hash", "changed-file-hash", "missing", "duplicate", "directory-alias"] {
+        let mut files = original.clone();
+        if case == "changed-payload" {
+            files.iter_mut().find(|(n, _)| n == "payload.bin").expect("payload").1[65536] ^= 1;
+        } else if case == "changed-block-hash" || case == "changed-file-hash" {
+            let map = &mut files.iter_mut().find(|(n, _)| n == "AppxBlockMap.xml").expect("map").1;
+            let xml = std::str::from_utf8(map).expect("UTF-8 map");
+            let marker = if case == "changed-block-hash" { "<Block Hash=\"" } else { "<b4:FileHash Hash=\"" };
+            let hash = xml.split_once(marker).expect("hash declaration").1.split('"').next().expect("hash");
+            *map = xml.replace(hash, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=").into_bytes();
+        } else if case == "missing" {
+            files.retain(|(n, _)| n != "payload.bin");
+        } else if case == "duplicate" {
+            let mut duplicate = files.iter().find(|(n, _)| n == "payload.bin").expect("payload").clone();
+            duplicate.0 = "payload.tmp".into();
+            files.push(duplicate);
+        } else {
+            files.push(("assets/unlisted.txt".into(), b"directory alias".to_vec()));
+        }
+        let entries: Vec<_> = files.iter().map(|(n, b)| (n.as_str(), b.as_slice())).collect();
+        let path = directory.path().join(format!("{case}.msix"));
+        let mut bytes = zip_of(&entries);
+        if case == "duplicate" {
+            // The writer refuses duplicate names. Give the two headers the same
+            // equal-length name after building this otherwise ordinary fixture.
+            let positions: Vec<_> = bytes.windows(11).enumerate().filter_map(|(i, b)| (b == b"payload.tmp").then_some(i)).collect();
+            assert_eq!(positions.len(), 2, "local and central filename fields");
+            for i in positions {
+                bytes[i..i + 11].copy_from_slice(b"payload.bin");
+            }
+        }
+        std::fs::write(&path, bytes).expect("controlled case");
+        let report = run(&path, &Options::default());
+        let source = report.artifacts.iter().find(|a| a.path.ends_with("/AppxBlockMap.xml")).expect("map");
+        let checks = &source.facts["windows.msix-blockmap-checks"];
+        if case == "duplicate" {
+            assert!(report.limitations.iter().any(|l| l.code == "zip.entry-names-duplicated"));
+            assert_eq!(
+                report.artifacts.iter().find(|a| a.path == format!("{case}.msix")).expect("container").facts["engine.container-listing"]["complete"],
+                false
+            );
+        }
+        let tampered = case.starts_with("changed");
+        assert_eq!(report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"), tampered, "{case}: {checks}");
+        if tampered {
+            assert_eq!(checks["files_with_mismatches"], 1);
+        } else {
+            assert!(checks["files_unresolved"].as_u64().expect("count") > 0, "{case}: {checks}");
+        }
+        assert_eq!(checks["package_signature_checked"], false);
+        assert_eq!(checks["zip_structure_checked"], false);
+    }
+    let map = original.iter().find(|(n, _)| n == "AppxBlockMap.xml").expect("map");
+    let standalone = directory.path().join("AppxBlockMap.xml");
+    std::fs::write(&standalone, &map.1).expect("standalone map");
+    let report = run(&standalone, &Options::default());
+    assert!(report.findings.iter().any(|f| f.rule == "overview.kind-msix-block-map"));
+    assert!(!report.findings.iter().any(|f| f.rule == "windows.msix-content-hash-mismatch"));
+    let only_map = directory.path().join("isolated.msix");
+    std::fs::write(&only_map, zip_of(&[("AppxBlockMap.xml", &map.1)])).expect("isolated map");
+    std::fs::write(directory.path().join("payload.bin"), b"unrelated outer bytes").expect("outer file");
+    let report = run(directory.path(), &Options::default());
+    let map = report.artifacts.iter().find(|a| a.path == "isolated.msix/AppxBlockMap.xml").expect("isolated map");
+    assert_eq!(map.facts["windows.msix-blockmap-checks"]["files_with_matching_hashes"], 0);
+}
+
 const ROOT_INF: &[u8] = br#"[Version]
 Signature="$Windows NT$"
 [SourceDisksFiles]

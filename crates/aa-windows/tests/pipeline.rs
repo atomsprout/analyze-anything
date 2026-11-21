@@ -20,6 +20,65 @@ fn membership_entry<'a>(fact: &'a Value, profile: &str) -> &'a Value {
 }
 
 #[test]
+fn msix_content_declarations_and_checks_match_native_appxpackaging_references() {
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD;
+    for package in ["native-msix-sha256.msix", "native-msix-sha384.msix", "native-msix-sha512.msix", "upstream-TestAppxPackage_Win32.appx"]
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data(package))).expect("fixture ZIP");
+        let mut files = Vec::new();
+        for position in 0..archive.len() {
+            let mut file = archive.by_index(position).expect("fixture entry");
+            if file.is_dir() {
+                continue;
+            }
+            let name = file.name().expect("valid fixture entry name").into_owned();
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).expect("fixture content");
+            files.push((name, bytes));
+        }
+        let input: Vec<_> = files.iter().map(|(n, b)| (n.as_str(), b.clone())).collect();
+        let run = analyze(&input);
+        let declaration = run.fact("AppxBlockMap.xml", "windows.msix-blockmap");
+        let check = run.fact("AppxBlockMap.xml", "windows.msix-blockmap-checks");
+        let reference: Value = serde_json::from_slice(&data(&format!("{package}.ref.json"))).expect("native block-map reference");
+        assert_eq!(declaration["source_sha256"], reference["sha256"]);
+        assert_eq!(declaration["hash_method"], reference["hash_method_declared"]);
+        let native = reference["files"].as_array().expect("native files");
+        assert_eq!(declaration["files"].as_array().expect("file declarations").len(), native.len());
+        assert_eq!(check["files_with_matching_hashes"], native.len());
+        assert_eq!(check["files_with_mismatches"], 0);
+        assert_eq!(check["files_unresolved"], 0);
+        assert_eq!(check["package_signature_checked"], false);
+        for row in declaration["files"].as_array().expect("declarations") {
+            let expected = native.iter().find(|r| r["name"] == row["name"]).expect("same native file");
+            assert_eq!(row["size"], expected["size"]);
+            assert_eq!(row["local_file_header_size"], expected["local_file_header_size"]);
+            assert_eq!(expected["native_block_size"], 65536);
+            assert_eq!(expected["content_matches"], true);
+            let blocks = row["blocks"].as_array().expect("block declarations");
+            assert_eq!(blocks.len(), expected["blocks"].as_array().expect("native blocks").len());
+            for (block, native) in blocks.iter().zip(expected["blocks"].as_array().expect("native blocks")) {
+                assert_eq!(block["digest"], native["digest"]);
+                if !block["compressed_size"].is_null() {
+                    assert_eq!(block["compressed_size"], native["native_compressed_size"]);
+                }
+            }
+            if let Some(value) = expected["file_hash_base64_declared"].as_str() {
+                assert_eq!(row["file_digest"], hex::encode(STANDARD.decode(value).expect("native declared file hash")));
+            } else {
+                assert_eq!(row["file_digest"], Value::Null);
+            }
+        }
+        let finding = run.findings("windows.msix-block-hashes");
+        assert_eq!(finding.len(), 1);
+        assert!(!finding[0].evidence.is_empty());
+        assert!(run.findings("windows.msix-content-hash-mismatch").is_empty());
+        assert_eq!(check, analyze(&input).fact("AppxBlockMap.xml", "windows.msix-blockmap-checks"));
+    }
+}
+
+#[test]
 fn catalog_digest_agreement_is_separate_from_signature_binding_and_embedded_signatures() {
     for payload in ["hello.exe", "hello-signed.exe"] {
         for catalog in

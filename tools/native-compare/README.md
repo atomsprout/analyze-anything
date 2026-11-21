@@ -107,3 +107,18 @@ Native SignTool policy failures are retained separately: the controlled certific
 self-issued, and mathematical digest agreement does not establish Windows trust.
 Nothing is installed or added to the catalog/certificate stores. Generated copies and
 native policy logs remain under out; see [the scope record](../../docs/spikes/windows-catalog-membership.md).
+
+Create unsigned project MSIX fixtures with SDK MakeAppx, then compare declared hashes
+and captured content with read-only AppxPackaging APIs (Windows only):
+
+    python tools/native-compare/windows-msix-fixtures.py --output out/windows-baseline/msix-fixtures
+    python tools/native-compare/windows-msix-blockmap.py --blockmap <AppxBlockMap.xml> --content <extracted content directory> --output out/windows-baseline/msix-native.json
+    python tools/native-compare/windows-msix-content-check.py --sample crates/aa-windows/tests/data/native-msix-sha256.msix --cli target/debug/analyze-anything.exe --output out/windows-baseline/msix-check
+
+The last helper records original, changed-content, changed-block-hash, missing and
+duplicate-name cases, plus changed FileHash when present. It preserves the native
+ValidateFileHash result separately from a check of every native block declaration:
+on the checked modern SDK inputs, a matching whole-file hash can make that API accept
+an altered block declaration. The analyzer reports both block and file-hash checks.
+These are content checks, not package deployment, signature authentication or ZIP-layout
+validation. Repacked negative cases are not claimed to be valid MSIX packages.

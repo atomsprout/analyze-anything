@@ -18,6 +18,13 @@ Without `-o` the report goes into `<name of the input>.report` in the current fo
 
 Reports are in English unless you pass `--lang zh` for Chinese. `report.html` holds both languages and can switch between them; JSON, SARIF and CycloneDX are data and have no language. The desktop app is in English by default too; change it in the View menu, and the choice is remembered.
 
+MSIX/APPX inputs with a supported `AppxBlockMap.xml` also receive content-size and
+block/file-hash comparisons. These checks use supplied uncompressed files within the
+same container or extracted package directory. Package signature and ZIP-structure
+validation remain separate, unchecked work; digest agreement does not authenticate a
+package. Unsupported or ambiguous names, missing files and exhausted budgets remain
+limitations. See [the MSIX check scope](spikes/windows-msix-integrity.md).
+
 | Format | File | For |
 |---|---|---|
 | `json` | `report.json` | The single source of truth: the whole file tree, every finding and its evidence, the limitations, the text of the rules. Every other format is rendered from it |

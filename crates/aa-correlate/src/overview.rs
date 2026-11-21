@@ -10,6 +10,13 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-msix-block-map",
+        title_zh: "输入类型",
+        title_en: "Kind of input",
+        text_zh: "这是一个 MSIX/APPX 分块映射，记录文件大小和内容摘要。内容与声明一致不等于确认软件包的认证状态。",
+        text_en: "This is an MSIX/APPX block map of declared file sizes and content digests. Agreement with those declarations does not authenticate the package.",
+    },
+    Rule {
         id: "overview.kind-windows-catalog",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -397,6 +404,7 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
         ("scheduled-task", _) => finding("overview.kind-scheduled-task", Confidence::Verified),
         ("windows-inf", _) => finding("overview.kind-windows-inf", Confidence::Verified),
         ("windows-catalog", _) => finding("overview.kind-windows-catalog", Confidence::Verified),
+        ("msix-block-map", _) => finding("overview.kind-msix-block-map", Confidence::Verified),
         ("apk", _) => finding("overview.kind-apk", Confidence::Derived),
         ("aab", _) => finding("overview.kind-aab", Confidence::Derived),
         ("xapk" | "apks" | "apkm" | "apk-set", _) => finding("overview.kind-apk-set", Confidence::Derived).param("kind", kind),

@@ -68,6 +68,23 @@ by the tests only, not part of the program):
 
 Test samples in crates/aa-windows/tests/data (not part of the program):
 
+  - upstream-TestAppxPackage_Win32.appx: unchanged src/test/testData/unpack/
+    TestAppxPackage_Win32.appx from Microsoft's msix-packaging repository at
+    commit 25a65f5c1690930813bcc10cdf1d59fa865f2bb1.
+    Source: https://github.com/microsoft/msix-packaging
+    Copyright (c) 2018 Microsoft Corporation, MIT License; see
+    LICENSE-msix-packaging.txt. Used only as static input; no package, executable
+    or signature from it is installed, executed or imported into a store.
+    Its *.ref.json is a project-authored read-only AppxPackaging API snapshot.
+
+  - native-msix-sha256.msix, native-msix-sha384.msix and native-msix-sha512.msix:
+    project-authored Apache-2.0 fixtures built by tools/native-compare/
+    windows-msix-fixtures.py with Windows SDK MakeAppx 10.0.26100.0. They contain
+    the existing project hello.exe fixture, generated PNGs and deterministic data,
+    an empty file and a project manifest. They are unsigned, never installed or
+    executed, and contain no private key. Their *.ref.json files are Apache-2.0
+    snapshots from the read-only Windows AppxPackaging block-map APIs.
+
   - upstream-echo.inf: unchanged bytes of general/echo/kmdf/driver/AutoSync/echo.inx
     from Microsoft's Windows-driver-samples at commit
     d49bb7d72f3651952b2b6e4ad28d14fe2247eb69, renamed to .inf for the reader.

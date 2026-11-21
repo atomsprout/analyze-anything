@@ -91,8 +91,11 @@ pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) {
             "capabilities": capabilities,
             "applications": applications,
             "extensions": extensions,
+            "package_signature_checked": false,
+            "zip_structure_checked": false,
         }),
     );
+    out.limitation("windows.msix-package-scope", Some(file), None);
     let finding = |section, rule: &str, severity| Finding::new(section, ID, rule, Confidence::Verified, severity);
     if let Some(name) = attribute("Name") {
         out.finding(

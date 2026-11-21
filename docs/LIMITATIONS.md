@@ -23,6 +23,22 @@ The following features have only been tested with data we constructed ourselves,
 
 ## Systems it has been verified on
 
+The initial MSIX/APPX content checks read bounded block maps and compare supported
+SHA-256/384/512 blocks and the checked 2021 FileHash extension with captured uncompressed
+bytes. They do not authenticate the block map or verify ZIP physical structure,
+compressed block sizes, package/bundle signatures, publisher-certificate equality,
+Windows trust or installation eligibility. Name binding uses the shared conservative
+ASCII Windows path profile and requires complete, unambiguous input enumeration.
+Three SDK-built profiles and Microsoft's pinned test APPX have native declaration and
+content comparisons; broader profiles and W6 acceptance remain open. See
+[the MSIX scope record](spikes/windows-msix-integrity.md).
+
+ZIP archives whose central directory repeats names receive an explicit limitation:
+the current ZIP library collapses those records, so not every version is retained.
+Their container listing is incomplete and cannot establish name-unique relationships.
+This differs from ASCII-case aliases and duplicate names in formats whose entries are
+all exposed to the engine; those retain their existing ambiguity/name-provenance checks.
+
 The initial Windows catalog reader supports a bounded, definite/minimal DER CMS/CTL
 profile. It distinguishes CTL entries from digest declarations and does not invent
 digests for v2 compatibility entries. Catalog content digests, signature values and

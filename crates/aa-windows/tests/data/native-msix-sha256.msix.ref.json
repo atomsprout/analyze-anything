@@ -1,0 +1,102 @@
+{
+  "reference": "IAppxBlockMapReader/IAppxBlockMapFile/IAppxBlockMapBlock",
+  "sha256": "789b9f806664149d62fd68876e04e13cdceef48f95f5fd6137880babe0a03648",
+  "hash_method_declared": "http://www.w3.org/2001/04/xmlenc#sha256",
+  "files": [
+    {
+      "name": "AppxManifest.xml",
+      "size": 1221,
+      "local_file_header_size": 46,
+      "blocks": [
+        {
+          "digest": "3c733fda9540f520e21c74b1c0f3ff6ee17cd59b6c8cf38a87f76e7adc502348",
+          "native_compressed_size": 594
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "3c733fda9540f520e21c74b1c0f3ff6ee17cd59b6c8cf38a87f76e7adc502348",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\Logo150.png",
+      "size": 467,
+      "local_file_header_size": 48,
+      "blocks": [
+        {
+          "digest": "feb64ce7baf0ac813ce53bb25cc8910a36aa07c625ef05df71bda409e0e12a0d",
+          "native_compressed_size": 467
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "feb64ce7baf0ac813ce53bb25cc8910a36aa07c625ef05df71bda409e0e12a0d",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "Assets\\Logo44.png",
+      "size": 124,
+      "local_file_header_size": 47,
+      "blocks": [
+        {
+          "digest": "095c658dece0ae189ab87d7c68b69c265832f8dfada3ca5d3689d5491da2f555",
+          "native_compressed_size": 124
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "095c658dece0ae189ab87d7c68b69c265832f8dfada3ca5d3689d5491da2f555",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "empty.dat",
+      "size": 0,
+      "local_file_header_size": 39,
+      "blocks": [],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "hello.exe",
+      "size": 18432,
+      "local_file_header_size": 39,
+      "blocks": [
+        {
+          "digest": "afa842ca77436006bf1376f7f2ba7dadb6f13a317c9f061d10c646eb3db03a38",
+          "native_compressed_size": 7039
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "afa842ca77436006bf1376f7f2ba7dadb6f13a317c9f061d10c646eb3db03a38",
+      "file_hash_base64_declared": null
+    },
+    {
+      "name": "payload.bin",
+      "size": 65543,
+      "local_file_header_size": 41,
+      "blocks": [
+        {
+          "digest": "008de4b87f36ee29bda9db6a969bd47dcb1a9c86d071ee5144c3a8755c29d0f6",
+          "native_compressed_size": 584
+        },
+        {
+          "digest": "2d8047d4ec505d5a935e7cf0611823541621ae1d1a9eac32f669544d0ed53973",
+          "native_compressed_size": 13
+        }
+      ],
+      "native_block_size": 65536,
+      "validation_hresult": "0x00000000",
+      "content_matches": true,
+      "sha256": "7ea6d3c1a915c888ae0075220eccf27bc2d7dfe2176faa181ee61b8f4840de7d",
+      "file_hash_base64_declared": "fqbTwakVyIiuAHUiDszye8LX3+IXb6oYHuYbj0hA3n0="
+    }
+  ]
+}

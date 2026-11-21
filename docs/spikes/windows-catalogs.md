@@ -185,3 +185,8 @@ and the complete damaged-fixture run). The full log is
 CLI mutation records are under `out/windows-baseline/catalog-named-native`;
 the independent package records are under `out/windows-baseline/usbipd-package-final`.
 Cross-platform CI remains the next gate for this increment.
+
+That increment subsequently passed Linux/macOS/Windows core checks, macOS desktop
+and licenses for `f38c64e276d71b409b2e4fcafbd9cf6c3796e6ae`:
+[run 44864454071](https://github.com/atomsprout/analyze-anything/actions/runs/44864454071).
+The MSIX content layer is a later, separately checked increment.

@@ -34,6 +34,8 @@ cfb = "0.16"
 lzxd = "0.2"
 memchr = "2"
 regex.workspace = true
+base64 = "0.22"
 
 [dev-dependencies]
 aa-unpack.workspace = true
+zip.workspace = true
