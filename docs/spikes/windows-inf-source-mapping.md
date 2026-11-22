@@ -85,7 +85,9 @@ The desktop home page has a collapsed optional logical-root control. Its setting
 through `aa-app` and the same worker protocol; native command validation happens before
 replacing a live run. Returning home clears the draft, while reanalysis of a kept report
 uses its validated `engine.windows-source-roots` settings. Browser checks use the stand-in
-backend; native Windows window qualification remains open under W10.
+backend. A native Windows WebView2 check entered `meta/driver.inf` and root `.` in
+the control for a loose-file fixture. It associated `dist/amd64/a.sys` and produced
+byte-for-byte CLI JSON. See [the desktop validation record](../DESKTOP.md).
 The shared engine boundary validates callers independently of CLI parsing.
 
 With an established root, the mapper combines supported media paths, source subdirectories and

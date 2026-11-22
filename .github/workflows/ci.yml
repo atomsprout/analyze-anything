@@ -28,10 +28,13 @@ jobs:
       # The command line without its optional parts must still build.
       - run: cargo build -p aa-cli --no-default-features
 
-  # The desktop app: its page in real browser engines, and its Rust side on the one system it
-  # is released for. `cargo test` above does not build it (see default-members in Cargo.toml).
+  # The desktop app is outside the workspace's default members.
   desktop:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: apps/desktop
@@ -51,6 +54,18 @@ jobs:
       - run: npm run fixture
       - run: npm run test:browser
       - run: cargo clippy -p aa-desktop --all-targets -- -D warnings
+      - name: Compare Windows WebView2 desktop exports with the CLI
+        if: runner.os == 'Windows'
+        working-directory: .
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo build --locked -p aa-desktop -p aa-cli -F tauri/custom-protocol
+          $slow = Join-Path $env:RUNNER_TEMP 'aa-desktop-slow.bin'
+          $file = [IO.File]::Create($slow)
+          try { $file.SetLength(1GB) } finally { $file.Dispose() }
+          python -u tools/desktop-check/check.py target/debug/analyze-anything-desktop.exe target/debug/analyze-anything.exe crates/aa-unpack/tests/data/sample.zip crates/aa-unpack/tests/data/sample.tar.gz --slow $slow --timeout 300
 
   licenses:
     runs-on: ubuntu-latest

@@ -2,17 +2,16 @@
 
 Phase one (the command line) and the macOS desktop app of phase two (D0–D5) are done, and so is the optional AI interpretation of phase three. This file lists what is not finished, item by item; the direction and the order of the larger work are in [ROADMAP.md](ROADMAP.md). Known limits of what the program does are in [LIMITATIONS.md](LIMITATIONS.md); the desktop app is described in [DESKTOP.md](DESKTOP.md).
 
-## Next (planned 2026-11-20, after 0.1.1)
+## Next after 0.2.0-preview.1
 
-A Windows x64 development machine is now available, including SDK SignTool executables. Initial native comparisons and foundation/entry-point implementations are recorded below; the full validation matrix remains open. [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the feature research, priorities W0–W12, dependencies and acceptance gates. An initial implementation does not close its milestone.
+The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
 
-1. Establish a Windows CLI baseline on real installers and application folders, comparing embedded and MSI signatures with the system's tools (W0).
-2. Finish the shared foundation: verify Windows file and extraction boundaries (W1); design worker supervision and precise timeout semantics (W2). Input-name comparison normalization is done. A child process for the whole run does not by itself make an individual analyzer killable.
-3. Add the first Windows entry-point readers: LNK, URL, REG and exported scheduled tasks (W3).
-4. Add driver-package/catalog relationships and MSIX integrity as independently releasable features (W5, W6), then bounded script analysis and package relationships (W4, W7). Modern executable bundles and installer extensions follow their own feasibility checks (W8, W9).
-5. Deliver the Windows part of D6 after the foundation and native checks; it need not wait for every new parser (W10).
+1. Run hosted Windows desktop CI and qualify the Windows CLI on a clean system. The local full-featured CLI build requires `VCRUNTIME140.dll`. Check the published archive for the same dependency and document how it is delivered.
+2. Extend Windows native CLI comparisons (W0), file-access coverage (W1) and worker isolation (W2).
+3. Qualify the Windows and Linux CLI previews on clean systems. Expand coverage for entry points, scripts, drivers and package metadata (W3–W5, W7). MSIX follow-up work remains deferred (W6).
+4. Scope modern executable bundles and installer relationships separately (W8, W9). Office and disk images remain separate projects (W11, W12).
 
-Alongside this work: fix the Xcode pkg CMS parsing limitation, try and release the Linux CLI builds, and obtain real samples for the formats below. Intel Macs are not supported, and no build is made for them. The Linux desktop app and signed release build in CI retain their separate work. Documents and disk images are later, separately scoped projects (W11, W12).
+Also investigate the Xcode pkg CMS parsing limitation and obtain real samples for the formats below. Linux desktop verification and signed release automation have their own acceptance criteria.
 
 ## Windows expansion
 
@@ -126,8 +125,8 @@ These formats were tested with constructed data only:
 ## After phase two
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
-  Windows x64 page build, 10 unit tests, portable fixture generation and 22 WebKit/Chromium tests with the stand-in backend passed on 2026-11-20. Native WebView2, real-window parity, system interactions and packaging remain open; see [DESKTOP.md](DESKTOP.md).
-- [ ] Released builds of the command line for Linux and Windows. They are built in CI on a version tag but have not been tried by hand.
+  Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows desktop CI, signed delivery and Linux desktop verification remain open. See [DESKTOP.md](DESKTOP.md).
+- [ ] Qualify Linux and Windows CLI builds for formal distribution. The published preview passed the release workflow self-checks. The downloaded Windows x64 ZIP also passed its self-check on the development machine.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 

@@ -1,92 +1,62 @@
-# Where it stands and where it is going
+# Roadmap
 
-Version 0.1 is the first release line; 0.1.1 is current. This page says what it can do today, what "anything" means, and what comes next. The itemized list of open work is [TODO.md](TODO.md); what the program cannot do, or has not been checked to do, is in [LIMITATIONS.md](LIMITATIONS.md).
+The latest stable release is [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1) for Apple silicon Macs. [v0.2.0-preview.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.1) adds unsigned CLI archives for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. The release workflow ran tests and self-checks for all four targets. The downloaded Windows ZIP also passed its self-check on the development machine.
 
-## What it does today
+The Windows x64 desktop app has passed local W10 acceptance, including offline NSIS installation. The next work is **hosted Windows desktop CI and clean-system CLI qualification**. The [Windows plan](PLAN-WINDOWS.md) defines feature scope and acceptance gates. [TODO.md](TODO.md) tracks the remaining tasks, and [LIMITATIONS.md](LIMITATIONS.md) records supported profiles and verification gaps.
 
-**One command, any input.** `analyze-anything <file or folder>` writes a report. Nothing is run, installed or sent anywhere, and the same input gives the same report byte for byte.
+## Available today
 
-**A report you can check.** Every finding names the file it came from, the place in it, and the value that was read there, with a confidence (verified, derived, heuristic). What could not be read is listed under coverage and limitations, so "nothing found" is never confused with "not looked at". There is no verdict and no score.
+`analyze-anything <file or folder>` builds an evidence-linked report. Ordinary analysis runs offline and produces the same report for the same input, version and options. It inventories unfamiliar inputs through file detection, digests, nested contents and observable strings. Format-specific readers add findings about areas such as signatures, configuration and dependencies.
 
-**What it understands in depth**
-
-| | |
+| Input | Selected coverage |
 |---|---|
-| Apple | `.app` and other bundles, IPA, DMG (HFS+ and APFS), pkg. Code signatures down to each page hash, certificate chains, sealed resources, entitlements, provisioning profiles, privacy manifests, FairPlay encryption |
-| Android | APK, AAB, XAPK / APKS / APKM. Manifest and resources, signature schemes v1 to v3.1, DEX, permissions, network security configuration, SDKs and packers |
-| Windows | PE, Authenticode, .NET, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
-| Any file | Mach-O, ELF and PE hardening; zip, tar, gzip, bzip2, xz, zstd and 7z, nested to any depth; URLs and hosts, likely credentials, entropy, duplicate files |
+| Apple | App bundles, IPA, DMG with HFS+ or APFS, and pkg. Code signatures, sealed resources, entitlements, provisioning profiles and privacy manifests. |
+| Android | APK, AAB, and selected XAPK, APKS and APKM profiles. Signing schemes from v1 through v3.1, manifest and resources, DEX, permissions and network configuration. |
+| Windows | PE, Authenticode, .NET, MSI, NSIS, Inno Setup, CAB, Electron, and selected MSIX profiles. The preview adds Windows entry-point and script readers, INF and catalog relationships, and NuGet, VSIX and WinGet package metadata. |
+| Other files and archives | Mach-O, ELF and PE hardening, nested ZIP, TAR, 7z and supported compressed streams, URLs and hosts, likely credentials, entropy and duplicate files. |
 
-**Seven outputs from one report.** HTML (interactive, self-contained), PDF, Markdown, plain text, JSON, SARIF and a CycloneDX bill of materials. `diff` compares two versions, `explain` shows one finding with all its evidence, `verify` tells whether a report folder was changed, and `--fail-on` makes a build fail.
+Reports are available as HTML, PDF, Markdown, text, JSON, SARIF and CycloneDX. The CLI can explain a finding, compare reports and verify exported files. The macOS desktop app adds a report and evidence viewer, history and comparison. A read-only MCP server serves finished reports. Optional deep analysis uses [Ghidra or Hopper](DEEP.md). Optional [AI interpretation](AI.md) works from findings in a finished report.
 
-**Three ways in.** The command line; a desktop app for macOS (drop a file, read the report, click evidence to see the bytes, keep a history, compare two versions); and a read-only MCP server through which an AI agent looks things up in a report.
+## Windows x64 desktop acceptance
 
-**An optional deeper look.** Off unless asked for. With `--deep`, the program files are handed to Ghidra or Hopper, which say which functions call the APIs that matter and which use the addresses found in the file. See [DEEP.md](DEEP.md).
+The portable and NSIS-installed builds passed real-window WebView2 checks with byte-for-byte CLI export comparisons. Local checks covered Unicode and long paths, a locked input, cancellation and cleanup, native dialogs, keyboard navigation and driver source mapping. A disconnected Windows 10 x64 guest qualified offline WebView2 installation, Explorer drag and drop and 100% and 125% display scaling. Hosted Windows desktop CI and signing remain release work. [Desktop validation](DESKTOP.md) · [W10 acceptance criteria](PLAN-WINDOWS.md#w10-windows-desktop-delivery)
 
-**An optional AI reading.** Off unless set up. A model explains a finished report in plain words: through an API key, Claude Code, Codex, a model in Ollama, or a program of your own. It sees the report, never the files, and a statement that cites no finding of the report is dropped.
+### Windows foundation work
 
-**How far it has been checked.** 400 and more automated tests on Linux, macOS and Windows. Signature results agree with `codesign` on 332 points across real apps, and with Windows' own tools on 132. The desktop app checks itself in its real window (67 checks). Run over all 52 apps in the Applications folder of one Mac (677,000 files) without a failure, with the results that looked wrong checked against `codesign`. Used by hand on one Apple silicon Mac only; released for Apple silicon Macs only. [LIMITATIONS.md](LIMITATIONS.md) has the exact list.
+- **W0 — Native comparisons.** Expand the recorded comparisons with real signed PE and MSI distributions and installed program folders. Keep signature evidence and Windows trust-policy results distinct. [Windows CLI baseline](spikes/windows-baseline.md)
+- **W1 — File access.** Resolve or document the remaining cases around ancestor replacement, mapped network drives, cloud files and EFS. [File-access coverage](spikes/windows-file-access.md)
+- **W2 — Worker supervision.** The CLI can terminate an entire run. Define and test per-analyzer hard timeouts, descendant-process cleanup and the rules for returning partial reports. [CLI supervision](spikes/cli-supervision.md)
 
-## What "anything" means
+## Qualify releases and deepen existing Windows coverage
 
-It is a promise about the floor, and a direction for the ceiling.
+| Area | Remaining work |
+|---|---|
+| Cross-platform delivery | Qualify the Windows and Linux CLI previews on clean systems for formal distribution. Verify the Linux desktop app in a real window. Move the signed and notarized macOS release into CI when signing material is available. Desktop automatic updates are a separate delivery milestone. |
+| Entry points and scripts (W3–W4) | Broaden Unicode path and alias coverage for shortcut relationships. Extend bounded PowerShell and batch syntax coverage with real samples and native references where available. |
+| Driver packages (W5) | Add independent built INF/CAT packages, CAB and tag-media cases, and broader signature and catalog-member coverage. |
+| MSIX (W6, deferred follow-up) | Cover dependency and AppInstaller relationships, and extend manifest, signature and bundle profiles. |
+| Package metadata (W7) | Extend the version matching and relationship profiles behind the shared component inventory. The preview contains initial NuGet, VSIX and WinGet support. |
+| Existing coverage gaps | Obtain representative packed APK, XAPK, encrypted DMG and Inno Setup 6.4 samples. Investigate the Xcode pkg CMS issue and the partially read device-support DMGs. |
 
-**The floor holds today.** Any file or folder gets a report: what kind of thing it is, its digests, what is packed inside it layer by layer, the strings worth noticing, and, where it holds programs, how they were built. An unknown format is never an error; the report says what was recognized and what was not.
+## Later input formats and workflows
 
-**The ceiling is raised one format at a time.** Understanding a format in depth (its signatures, its manifest, its permissions) takes an analyzer that knows it. There are three families now. Each new one is a crate that implements two small traits ([ANALYZERS.md](ANALYZERS.md)); nothing else in the program has to change, and every output format, the comparison, the desktop app and the AI reading get it at once.
+- **Executable bundles and installers.** Start separate feasibility work for .NET single-file and PyInstaller contents (W8), MSI action conditions and explicitly supplied payloads, and Burn (W9).
+- **Linux and language packages.** Add deb, rpm, AppImage, Flatpak, snap, Python wheels, npm tarballs and Java archives. Reuse the component inventory for dependency and package metadata.
+- **Containers, platforms and documents.** Add OCI and Docker archives with layer provenance, HarmonyOS HAP, browser and VS Code extensions, Office macro and embedded-object analysis (W11), and PDF scripts and attachments.
+- **Disk images and firmware.** Evaluate ISO, WIM and virtual disks separately (W12). Expand filesystem coverage to ext4, squashfs and FAT where it enables useful, bounded readers.
+- **Deeper analysis and policy.** Add offline advisory matching, broader API and call-flow analysis, IDA and desktop deep-analysis integration, configurable rules and CI policy files.
+- **Integration and report workflows.** Define a versioned JSON report contract, add GitHub Action recipes, extend the agent tools to request analysis, and make optional AI interpretation easier to configure, query and include in reports.
 
-So the work toward "anything" has four directions, and the order below is the order of priority.
+A new format is ready when it has reproducible evidence from constructed and redistributable real samples, a native comparison where a reference tool exists, and tested output for unsupported or partially read inputs. See [Adding an analyzer](ANALYZERS.md).
 
-### 1. The same thing on every system
+## Analysis guarantees
 
-What exists should work where people are before it grows.
-
-- Released builds of the command line for Linux and Windows. They build and pass their tests in CI; nobody has used them by hand. Intel Macs are not supported: on a Mac the program is for Apple silicon.
-- A first real run on a Windows machine, with the signature findings compared against `signtool`. A Windows x64 development environment and SDK tools are available as of 2026-11-20; native validation is pending.
-- The desktop app for Windows and Linux.
-- The signed release built in CI instead of on a developer's Mac; automatic updates for the desktop app.
-
-[PLAN-WINDOWS.md](PLAN-WINDOWS.md) develops this direction into a proposed feature sequence: establish the native baseline and file/process boundaries, add Windows entry-point readers, deepen driver/catalog and MSIX integrity, and deliver the Windows desktop app. It separates existing features from extensions and gives each increment its own real-sample and reference-tool gate.
-
-### 2. More kinds of input
-
-Chosen by how often people meet them and how much a reader gains from depth.
-
-- **Linux software**: deb, rpm, AppImage, Flatpak and snap. Maintainer scripts, dependencies, signatures.
-- **Container images**: OCI and Docker archives, layer by layer, with what each layer added.
-- **Packages of language ecosystems**: Python wheels and PyInstaller bundles, npm tarballs, Java jars and wars, NuGet packages. This is where a bill of materials earns its keep.
-- **More app platforms**: HarmonyOS HAP, browser extensions (crx, xpi), VS Code extensions.
-- **Documents that carry code**: Office files with macros, PDFs with scripts and attachments.
-- **Firmware and disk images**: more file systems (ext4, squashfs, FAT), so that an image is a container like any other.
-
-The Windows plan also scopes shortcuts, scripts, REG and task exports, INF driver packages, NuGet/VSIX/WinGet metadata, .NET single-file bundles and PyInstaller contents. Office and ISO/WIM/virtual-disk work follow as separate projects. These readers should remain portable; Windows supplies native comparisons rather than becoming a runtime requirement for analysis.
-
-Formats that already exist but were only tried on constructed data (packed APKs, XAPK, encrypted DMGs, Inno Setup 6.4) get real samples first.
-
-### 3. Deeper where it matters
-
-- **Known vulnerabilities**: match the components of the bill of materials against an advisory database kept on disk, so the analysis stays offline and repeatable.
-- **More from the deep level.** It exists now, with Ghidra and Hopper ([DEEP.md](DEEP.md)): which functions call which APIs, and which use which addresses. Next: IDA as a third tool, a longer and configurable list of APIs, strings other than addresses, what a function reaches through the functions it calls, and the level in the desktop app.
-- **Rules as data**: let a team add its own checks without writing Rust.
-- **Policies**: a file that says what a release must or must not have, turned into an exit code for CI.
-
-### 4. Easier to use and to build on
-
-- A GitHub Action and ready-made CI recipes for "report on every build, fail on a new high finding, comment the diff".
-- The AI reading as a chapter of the HTML and PDF reports, marked as a model's; follow-up questions about a report (`analyze-anything ask`); setting it up from inside the desktop app.
-- For agents: a skill, and a tool server that can also ask for an analysis, not only read a finished one.
-- A stable `report.json` schema with versioning rules, so that other tools can rely on it.
-
-## What will not change
-
-These are what make a report worth trusting, and no feature is worth losing them.
-
-- **Static only.** The input is read. It is never run, installed, loaded or decrypted.
-- **Offline analysis.** The analysis connects to nothing. Only the optional AI reading sends anything, only when asked, and only findings.
-- **Deterministic.** The same input and version give the same report.
-- **Evidence for every finding**, and an honest list of what was not read.
-- **No verdict.** The report shows what is there. Deciding what it means for you stays with you.
+- Analysis reads inputs as data. It executes, installs, loads and decrypts none of them.
+- Ordinary analysis is offline. Optional AI interpretation receives only findings from a finished report.
+- The same input, options and version produce the same report.
+- Findings carry evidence and confidence. Coverage and limitations record what could not be established.
+- Reports describe observations and leave the verdict to the reader.
 
 ## How to help
 
-Reports of wrong or missing findings are the most useful thing, with the one finding from `report.json` that shows it (not the file, unless you may share it). A format you need is worth an issue even without code. To add one, start with [ANALYZERS.md](ANALYZERS.md) and [AGENTS.md](../AGENTS.md).
+When reporting a wrong or missing finding, include the relevant fragment of `report.json`. Share the input only if you can redistribute it. For contribution and test requirements, see [AGENTS.md](../AGENTS.md).

@@ -141,6 +141,7 @@ dependencies = [
  "aa-interpret",
  "aa-report",
  "aa-worker",
+ "rfd",
  "serde",
  "serde_json",
  "tauri",

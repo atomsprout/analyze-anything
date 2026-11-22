@@ -88,6 +88,41 @@ waits for a disclosure before counting; the history test also holds the report r
 until the host is visible to exercise the separate loading stages. This is browser-test
 synchronization, and does not establish any additional native Windows behavior.
 
+### Windows x64
+
+The Windows desktop build uses WebView2. Its report iframe uses Tauri's
+`http://report.localhost` protocol mapping. The Windows content security policy
+permits that origin for the sandboxed iframe. The packaged application and
+worker use the same executable.
+
+On Windows 11 Home x64 build 26200 with WebView2 157.0.4341.60, the extracted
+portable build and the NSIS-installed build each passed 67 real-window
+self-checks. The inputs used Unicode paths 318 characters long. All seven
+export formats and the folder manifest matched the CLI byte for byte.
+A separate installed-window run produced the same partial report as the CLI
+on a folder containing a file held open with exclusive sharing. Closing the
+window removed the worker scratch directories.
+
+Native checks also covered Tab focus, Ctrl+O, Ctrl+Shift+O and Ctrl+E, the
+Windows file and folder pickers, the PDF save dialog, and normal and maximized
+window sizes. The saved PDF matched the CLI. A logical driver source-root
+assignment entered in the native window associated the supplied driver payload
+and produced the same JSON as the equivalent CLI command.
+
+In the Windows 10 x64 guest, dropping `sample.zip` from Explorer onto the
+installed app produced a report. Windows display scaling was exercised at
+100% and 125% on a 1024 × 768 display. During a change from 100% to 125%, an
+ordinary window could grow past the display edge. The updated release build
+fits the window to the monitor work area after a DPI change. The report and
+export controls stayed visible when scaling with the window open, and the
+home view stayed within the display when scaling while minimized and restoring
+the window.
+
+The desktop CI matrix includes a Windows WebView2 job that launches the actual
+desktop window, runs the self-check with a cancellation input and compares the
+exports with the CLI. The CI build command passed locally. A hosted run with
+the new Windows desktop job remains pending. See [CI](../.github/workflows/ci.yml).
+
 ### Self-check mode
 
 The macOS system WebView has no usable automation driver, so the application can check itself: when started with the environment variable `AA_DESKTOP_SELFTEST=<plan file>`, the page clicks through its own interface like a user and runs the whole flow, records what it sees, and the application writes the results to a file and exits. No dialogs appear in this mode: "Open" returns the inputs in the plan in turn, and "Save" writes into the folder the plan specifies. Without this variable, the three related commands always refuse.
@@ -98,7 +133,13 @@ python3 tools/desktop-check/check.py \
     target/release/analyze-anything  old-version.ipa new-version.ipa --slow a-very-large.dmg
 ```
 
-The self-check uses a separate data folder and does not touch the real history; the interface language is recorded in the WebView's storage, which is shared with the normally installed application, and the self-check changes it back to the original language when it ends (the 0.1.0 release package does not have this step yet; after running the self-check against it the interface stays in English, and you can change it back in the "View" menu).
+The self-check keeps its history in a separate data folder. On macOS the
+WebView shares language settings with the installed application, so the
+self-check restores the original language before it exits. The 0.1.0 package
+predates that behavior. Its language can be changed in the View menu.
+
+On Windows, the runner also gives WebView2 a separate user-data folder. Supply
+a slow fixture that remains busy long enough for the cancellation test.
 
 It checks: the page's content security policy is in effect (an injected script does not run, text cannot be executed as code, the network cannot be reached), analysis and progress, the report loads in the frame, the bytes shown in the hex view match the file and the evidence range is marked, jumping to an offset, refusing paths that are not in the report, export in 7 formats and "all formats to a folder", switching language and appearance, opening and deleting history, a history report explaining why the bytes cannot be viewed, the diff numbers, returning to the home page after cancellation without leaving a record, the AI interpretation (with a stand-in program for the model, so nothing leaves the machine: the panel says who is asked, the statements and their findings are shown and kept, a folder exported afterwards holds `ai.json` and `ai.md`, and they go when the report is deleted); after exit no worker process or temporary file is left behind; every exported file is byte-for-byte identical to the file `analyze-anything` writes for the same input, and `analyze-anything verify` accepts the exported folder.
 
@@ -113,6 +154,35 @@ The self-check goes through the page. The three places below go through system U
 - The system open and save dialogs (a file was chosen and analyzed; a PDF was exported through the save dialog), and opening a file with the app from Finder ("Open With").
 
 ## Release
+
+### Windows x64
+
+```powershell
+./tools/release/windows.ps1
+```
+
+Run with PowerShell 7 on a Windows x64 MSVC Rust host. The script writes a
+portable ZIP, a per-user NSIS installer and SHA-256 sums to
+`dist/release/windows-<version>`. The ZIP needs an available Microsoft Edge
+WebView2 Runtime. The installer embeds Microsoft's standalone WebView2 runtime
+installer so it can provide the runtime offline. File associations are deferred
+for the Windows installer. [Tauri WebView2 installer options](https://v2.tauri.app/distribute/windows-installer/#webview2-installation-options)
+
+The local packages were built without code signing. On the development host,
+the NSIS installer installed and uninstalled successfully in a separate test
+directory. An isolated process pointed at an empty WebView2 runtime directory
+showed the native runtime-unavailable notice and exited after acknowledgment.
+The host's installed runtime was available for the NSIS test. A separate
+Windows 10 Enterprise LTSC Evaluation x64 guest (build 19044) had zero active
+network adapters, zero default routes and no registered WebView2 runtime.
+The per-user NSIS installer completed under an unelevated account and
+registered WebView2 158.0.4370.33 for that user. The installed app passed all
+40 native self-checks in the guest. Its seven export formats and folder
+manifest matched the CLI outputs byte for byte. The comparison used the
+development host's CLI because the local release CLI build imports
+`VCRUNTIME140.dll`, which was absent in the baseline guest.
+
+### Apple silicon macOS
 
 ```
 tools/release/macos.sh

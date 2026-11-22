@@ -85,7 +85,7 @@ export function mockBackend(): Backend {
 
   return {
     async appInfo() {
-      return { version: "0.1.0", formats: ["json", "html", "pdf", "md", "txt", "sarif", "sbom"] };
+      return { version: "0.1.0", formats: ["json", "html", "pdf", "md", "txt", "sarif", "sbom"], platform: "browser" };
     },
     async initialInput() {
       return null;

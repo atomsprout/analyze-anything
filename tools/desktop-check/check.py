@@ -11,6 +11,25 @@ FAILURES = []
 PASSED = [0]
 
 
+def worker_pids(app):
+    if os.name == "nt":
+        command = (
+            "$ErrorActionPreference = 'Stop'; "
+            "Get-CimInstance Win32_Process | "
+            r"Where-Object { $_.ExecutablePath -eq $env:AA_CHECK_APP -and $_.CommandLine -match '(?:^|\s)--worker(?:\s|$)' } | "
+            "ForEach-Object { $_.ProcessId }"
+        )
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+            env=dict(os.environ, AA_CHECK_APP=app), capture_output=True, text=True, check=True,
+        )
+    else:
+        result = subprocess.run(["pgrep", "-f", app + " --worker"], capture_output=True, text=True)
+        if result.returncode not in (0, 1):
+            result.check_returncode()
+    return result.stdout.split()
+
+
 def check(name, held, detail=""):
     print(("ok   " if held else "FAIL ") + name + ("" if held or not detail else "\n       " + str(detail)[:1500]), flush=True)
     if held:
@@ -36,26 +55,30 @@ def main():
     with open(plan_path, "w", encoding="utf-8") as handle:
         json.dump(plan, handle)
     # The AI interpretation is checked with a stand-in for the model: a program on this machine
-    # that answers with one statement citing the first finding it was shown. Nothing leaves the
+    # that answers with one statement citing the first finding of the finished report. Nothing leaves the
     # machine, and the user's own settings are not read.
     agent = os.path.join(work, "agent.py")
     with open(agent, "w", encoding="utf-8") as handle:
         handle.write(
-            "import json, re, sys\n"
-            "found = re.search(r'\"id\"\\s*:\\s*\"([0-9a-f]{8,64})\"', sys.stdin.read())\n"
-            "cites = [found.group(1)] if found else []\n"
+            "import json, sys\n"
+            "from pathlib import Path\n"
+            "sys.stdin.buffer.read()\n"
+            "findings = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))['findings']\n"
+            "cites = [findings[0]['id']] if findings else []\n"
             "print(json.dumps({'summary': [{'text': 'A stand-in said this.', 'cites': cites}], 'notable': [], 'next_steps': []}))\n"
         )
     config = os.path.join(work, "config.toml")
     with open(config, "w", encoding="utf-8") as handle:
-        handle.write("[ai]\nengine = \"command\"\ncommand = " + json.dumps([sys.executable, agent]) + "\n")
+        handle.write("[ai]\nengine = \"command\"\ncommand = " + json.dumps([sys.executable, agent, "{report}"]) + "\n")
     stand_in = args.ai_config is None
     if not stand_in:
         config = os.path.abspath(args.ai_config)
     environment = dict(os.environ, AA_DESKTOP_SELFTEST=plan_path, AA_DESKTOP_DATA_DIR=os.path.join(work, "data"), AA_CONFIG=config)
+    if os.name == "nt":
+        environment["WEBVIEW2_USER_DATA_FOLDER"] = os.path.join(work, "webview")
     print(f"running the app's self-check (its window will appear); working in {work}", flush=True)
     try:
-        done = subprocess.run([os.path.abspath(args.app)], env=environment, timeout=args.timeout, capture_output=True, text=True)
+        done = subprocess.run([os.path.abspath(args.app)], env=environment, timeout=args.timeout, capture_output=True, text=True, errors="replace")
         check("the app ran its self-check and quit", done.returncode == 0, f"exit {done.returncode}: {done.stderr[-800:]}")
     except subprocess.TimeoutExpired:
         check("the app ran its self-check and quit", False, f"still running after {args.timeout} seconds")
@@ -73,14 +96,23 @@ def main():
     scratch = os.path.join(work, "data", "scratch")
     left = os.listdir(scratch) if os.path.isdir(scratch) else []
     check("no scratch files are left after the app quit", not left, left)
-    workers = subprocess.run(["pgrep", "-f", os.path.abspath(args.app) + " --worker"], capture_output=True, text=True).stdout.split()
-    check("no worker process is left after the app quit", not workers, workers)
+    try:
+        workers = worker_pids(os.path.abspath(args.app))
+        check("no worker process is left after the app quit", not workers, workers)
+    except (OSError, subprocess.SubprocessError) as error:
+        check("no worker process is left after the app quit", False, error)
 
     # The exports of the first input against the command line's, byte for byte.
     lang = result.get("notes", {}).get("export_lang", "zh")
     reference = os.path.join(work, "cli")
-    made = subprocess.run([os.path.abspath(args.aa), "analyze", plan["inputs"][0], "-o", reference, "--lang", lang, "--format", "json,html,pdf,md,txt,sarif,sbom"], capture_output=True, text=True)
+    cli_environment = dict(os.environ, AA_CONFIG=os.path.join(work, "cli.toml"))
+    made = subprocess.run(
+        [os.path.abspath(args.aa), "analyze", plan["inputs"][0], "-o", reference, "--lang", lang, "--format", "json,html,pdf,md,txt,sarif,sbom"],
+        env=cli_environment, capture_output=True, text=True, errors="replace",
+    )
     check("the command line analyzed the same input", os.path.exists(os.path.join(reference, "report.json")), made.stderr[-500:])
+    if not os.path.isdir(reference):
+        return finish()
     exports = os.path.join(out, "exports")
     stem = os.path.basename(plan["inputs"][0])
     singles = {"json": "report.json", "html": "report.html", "pdf": "report.pdf", "md": "report.md", "txt": "report.txt", "sarif": "report.sarif"}
@@ -107,9 +139,10 @@ def main():
         if have:
             _, different, errors = filecmp.cmpfiles(with_ai, reference, [n for n in names if n != "manifest.json"], shallow=False)
             check("the report files in that folder are still byte for byte what `analyze-anything` writes", not different and not errors, different + errors)
-            with open(os.path.join(with_ai, "ai.json"), encoding="utf-8") as handle:
-                made = json.load(handle)
-            check("ai.json is marked as AI-generated and names the engine", made.get("ai_generated") is True and (made.get("engine") == "command" or not stand_in), {k: made.get(k) for k in ("ai_generated", "engine", "model")})
+            if "ai.json" in have:
+                with open(os.path.join(with_ai, "ai.json"), encoding="utf-8") as handle:
+                    made = json.load(handle)
+                check("ai.json is marked as AI-generated and names the engine", made.get("ai_generated") is True and (made.get("engine") == "command" or not stand_in), {k: made.get(k) for k in ("ai_generated", "engine", "model")})
             verified = subprocess.run([os.path.abspath(args.aa), "verify", with_ai], capture_output=True, text=True)
             check("`analyze-anything verify` accepts the folder with the interpretation", verified.returncode == 0, verified.stdout[-500:])
     left = os.listdir(os.path.join(work, "data", "ai", "work")) if os.path.isdir(os.path.join(work, "data", "ai", "work")) else []

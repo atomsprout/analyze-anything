@@ -1,0 +1,21 @@
+{
+  "app": {
+    "security": {
+      "csp": {
+        "frame-src": "http://report.localhost"
+      }
+    }
+  },
+  "bundle": {
+    "targets": ["nsis"],
+    "fileAssociations": [],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      },
+      "webviewInstallMode": {
+        "type": "offlineInstaller"
+      }
+    }
+  }
+}

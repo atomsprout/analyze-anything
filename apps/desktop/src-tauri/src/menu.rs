@@ -8,6 +8,12 @@ use tauri::{AppHandle, Wry};
 pub fn build(app: &AppHandle, english: bool) -> tauri::Result<Menu<Wry>> {
     let word = |chinese: &'static str, english_word: &'static str| if english { english_word } else { chinese };
     let item = |id: &str, text: &str, keys: Option<&str>| {
+        // WebView2 owns focus inside the page. One handler there prevents duplicate commands.
+        if cfg!(windows)
+            && let Some(keys) = keys
+        {
+            return MenuItemBuilder::with_id(id, format!("{text}\t{}", keys.replace("CmdOrCtrl", "Ctrl"))).build(app);
+        }
         let builder = MenuItemBuilder::with_id(id, text);
         match keys {
             Some(keys) => builder.accelerator(keys).build(app),

@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { AiStatus, AppInfo, Backend, Chunk, Diff, Entry, Handlers, Interpretation, Lang, Opened, Step } from "./types";
 
@@ -22,9 +22,8 @@ export function tauriBackend(): Backend {
     aiStatus: () => invoke<AiStatus>("ai_status"),
     aiGet: (id, lang) => invoke<Interpretation | null>("ai_get", { id, lang }),
     aiInterpret: (id, lang) => invoke<Interpretation>("ai_interpret", { id, lang }),
-    // The id is made of digits and dashes by the app itself; it is still encoded, as any part
-    // of an address should be.
-    reportUrl: (id, lang: Lang) => `report://localhost/${encodeURIComponent(id)}?lang=${lang}&host=1`,
+    // Tauri encodes the ID and maps the report scheme to its WebView2 origin on Windows.
+    reportUrl: (id, lang: Lang) => `${convertFileSrc(id, "report")}?lang=${lang}&host=1`,
     async on(handlers: Handlers) {
       await listen<Step>("run-progress", (event) => handlers.progress(event.payload));
       await listen<Entry>("run-done", (event) => handlers.done(event.payload));

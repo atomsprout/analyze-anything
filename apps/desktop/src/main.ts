@@ -133,6 +133,17 @@ async function start(): Promise<void> {
     if (screen?.name === "report") screen.view.sync();
   };
 
+  const menu = (id: string) => {
+    if (id === "open-file") void pick(false);
+    else if (id === "open-folder") void pick(true);
+    else if (id === "home") {
+      if (screen?.name !== "progress") void goHome();
+    } else if (id === "lang:zh" || id === "lang:en") void setLang(id === "lang:zh" ? "zh" : "en");
+    else if (id === "theme:system" || id === "theme:light" || id === "theme:dark") setTheme(id.slice(6) as Theme);
+    else if (id.startsWith("export:") && screen?.name === "report") screen.view.export(id.slice(7));
+    else if (id === "ai" && screen?.name === "report") screen.view.toggleAi();
+  };
+
   await backend.on({
     progress: (step) => {
       if (screen?.name === "progress") screen.view.step(step);
@@ -152,16 +163,7 @@ async function start(): Promise<void> {
     drag: (over) => {
       if (screen?.name === "home") screen.view.setDragging(over);
     },
-    menu: (id) => {
-      if (id === "open-file") void pick(false);
-      else if (id === "open-folder") void pick(true);
-      else if (id === "home") {
-        if (screen?.name !== "progress") void goHome();
-      } else if (id === "lang:zh" || id === "lang:en") void setLang(id === "lang:zh" ? "zh" : "en");
-      else if (id === "theme:system" || id === "theme:light" || id === "theme:dark") setTheme(id.slice(6) as Theme);
-      else if (id.startsWith("export:") && screen?.name === "report") screen.view.export(id.slice(7));
-      else if (id === "ai" && screen?.name === "report") screen.view.toggleAi();
-    },
+    menu,
     aiStep: (text) => {
       if (screen?.name === "report") screen.view.aiStep(text);
     },
@@ -172,6 +174,14 @@ async function start(): Promise<void> {
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && screen?.name === "report") screen.view.dismiss();
+    if (app.info.platform !== "windows" || !event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
+    const keys: Readonly<Record<string, string>> = event.shiftKey
+      ? { o: "open-folder", e: "export:folder", h: "home" }
+      : { o: "open-file", e: "export:pdf", i: "ai" };
+    const action = keys[event.key.toLowerCase()];
+    if (!action) return;
+    event.preventDefault();
+    if (!event.repeat) menu(action);
   });
   // A file dropped on the page itself must not replace the app with that file.
   for (const type of ["dragover", "drop"]) document.addEventListener(type, (event) => event.preventDefault());

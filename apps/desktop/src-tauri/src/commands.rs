@@ -31,11 +31,16 @@ struct AppInfo {
     version: &'static str,
     /// Output formats this build can write, by their short names.
     formats: Vec<&'static str>,
+    platform: &'static str,
 }
 
 #[tauri::command]
 fn app_info() -> AppInfo {
-    AppInfo { version: env!("CARGO_PKG_VERSION"), formats: Kind::ALL.into_iter().filter(|k| k.available()).map(Kind::id).collect() }
+    AppInfo {
+        version: env!("CARGO_PKG_VERSION"),
+        formats: Kind::ALL.into_iter().filter(|k| k.available()).map(Kind::id).collect(),
+        platform: std::env::consts::OS,
+    }
 }
 
 /// The input the app was started with, once.
@@ -329,6 +334,39 @@ fn data_folders(app: &tauri::App) -> Result<(PathBuf, PathBuf, PathBuf), Box<dyn
 }
 
 /// Opens the window and runs until the app quits.
+#[cfg(windows)]
+fn fit_window_after_scaling(window: tauri::Window) {
+    // Queue this after Windows applies the suggested rectangle for the DPI change.
+    tauri::async_runtime::spawn(async move {
+        let target = window.clone();
+        let _ = window.run_on_main_thread(move || {
+            if target.is_maximized().unwrap_or(true) || target.is_minimized().unwrap_or(true) {
+                return;
+            }
+            let (Ok(Some(monitor)), Ok(outer), Ok(inner), Ok(position)) =
+                (target.current_monitor(), target.outer_size(), target.inner_size(), target.outer_position())
+            else {
+                return;
+            };
+            let area = monitor.work_area();
+            let width = outer.width.min(area.size.width);
+            let height = outer.height.min(area.size.height);
+            if width != outer.width || height != outer.height {
+                let frame_width = outer.width.saturating_sub(inner.width);
+                let frame_height = outer.height.saturating_sub(inner.height);
+                let size = tauri::PhysicalSize::new(width.saturating_sub(frame_width).max(1), height.saturating_sub(frame_height).max(1));
+                let _ = target.set_size(size);
+            }
+            let right = area.position.x.saturating_add((area.size.width - width) as i32);
+            let bottom = area.position.y.saturating_add((area.size.height - height) as i32);
+            let fitted = tauri::PhysicalPosition::new(position.x.clamp(area.position.x, right), position.y.clamp(area.position.y, bottom));
+            if fitted != position {
+                let _ = target.set_position(fitted);
+            }
+        });
+    });
+}
+
 pub fn run(initial: Option<PathBuf>) {
     let built = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -351,6 +389,10 @@ pub fn run(initial: Option<PathBuf>) {
             let _ = app.emit("menu", event.id().as_ref());
         })
         .on_window_event(|window, event| {
+            #[cfg(windows)]
+            if matches!(event, WindowEvent::ScaleFactorChanged { .. }) {
+                fit_window_after_scaling(window.clone());
+            }
             if let WindowEvent::DragDrop(drag) = event {
                 let app = window.app_handle();
                 match drag {

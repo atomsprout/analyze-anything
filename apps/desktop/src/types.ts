@@ -77,6 +77,7 @@ export interface Interpretation {
 export interface AppInfo {
   version: string;
   formats: string[];
+  platform: string;
 }
 
 export interface RuleText {

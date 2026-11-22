@@ -35,6 +35,17 @@ fn main() {
         }
         return;
     }
+    #[cfg(windows)]
+    if tauri::webview_version().is_err() {
+        let _ = rfd::MessageDialog::new()
+            .set_title("Analyze Anything")
+            .set_level(rfd::MessageLevel::Error)
+            .set_description(
+                "Microsoft Edge WebView2 Runtime is unavailable. Run the Analyze Anything offline installer to install it, then try again.",
+            )
+            .show();
+        std::process::exit(1);
+    }
     // A file or folder named on the command line is opened at once, like one dropped on the window.
     let initial = first.map(std::path::PathBuf::from).filter(|path| path.exists());
     commands::run(initial);

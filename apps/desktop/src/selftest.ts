@@ -63,22 +63,16 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
     await waitFor("the home screen", () => one(".home"));
   };
   const entries = () => all(".history .entry");
+  const saveToast = () => {
+    const shown = one(".toast span")?.textContent ?? "";
+    return one(".toast.error") || /[\\/]/.test(shown) ? shown : null;
+  };
   /** Chooses "Open File…", which the plan answers, and waits for the report. */
   const analyzeNext = async () => {
     const before = framesReady;
     click("Open File", one(".drop-actions .btn.primary"));
-    await waitFor("the progress screen", () => one(".progress"));
-    let moved = false;
-    await waitFor(
-      "the report",
-      () => {
-        moved = moved || Number.parseFloat(one(".bar-fill")?.style.width || "0") > 0;
-        return one(".report");
-      },
-      180_000,
-    );
+    await waitFor("the report", () => one(".report"), 180_000);
     await waitFor("the report page to load in its frame", () => framesReady > before, 60_000);
-    return moved;
   };
 
   await part("start", async () => {
@@ -110,8 +104,7 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
   let firstId = "";
   let firstName = "";
   await part("analysis", async () => {
-    const moved = await analyzeNext();
-    check("analysis: the progress bar moved", moved);
+    await analyzeNext();
     check("analysis: the report is shown in its frame", framesReady >= 1);
     firstName = text(".toolbar-name");
     const list = await app.backend.historyList();
@@ -177,10 +170,7 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
       click("Export", one(".menu-anchor > .btn"));
       await waitFor("the export menu", () => one(".menu")?.hidden === false, 3000);
       pick();
-      const toast = await waitFor(`the export of ${label}`, () => {
-        const shown = one(".toast span")?.textContent ?? "";
-        return one(".toast.error") ? shown : shown.includes("/") ? shown : null;
-      }, 120_000);
+      const toast = await waitFor(`the export of ${label}`, saveToast, 120_000);
       saved[label] = toast;
       check(`export: ${label}`, !one(".toast.error"), toast);
       click("dismiss the message", one(".toast .plain"));
@@ -207,7 +197,7 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
       check("ai: the panel says who is asked before anything is sent", text(".ai-sends").includes(status.who ?? "?"), text(".ai-sends"));
       click("Interpret", one(".ai-panel .btn.primary"));
       await waitFor("the interpretation", () => one(".ai-statement") || one(".ai-problem"), 120_000);
-      check("ai: the statements of the model are shown", all(".ai-statement").length > 0 && one(".ai-problem") === null, text(".ai-body").slice(0, 300));
+      check("ai: the statements of the model are shown", all(".ai-statement").length > 0 && one(".ai-problem") === null, text(".ai-problem"));
       const kept = await app.backend.aiGet(firstId, app.lang);
       const cited = kept?.summary[0]?.findings[0] ?? "";
       check("ai: the interpretation is kept, marked as a model's, and cites a finding", kept !== null && /^[0-9a-f]{64}$/.test(cited) && text(".ai-banner") !== "", cited);
@@ -217,10 +207,7 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
       click("Export", one(".menu-anchor > .btn"));
       await waitFor("the export menu", () => one(".menu")?.hidden === false, 3000);
       click("the folder item", all(".menu button").at(-1));
-      const toast = await waitFor("the export", () => {
-        const shown = one(".toast span")?.textContent ?? "";
-        return one(".toast.error") ? shown : shown.includes("/") ? shown : null;
-      }, 120_000);
+      const toast = await waitFor("the export", saveToast, 120_000);
       check("ai: a folder exported afterwards is written", !one(".toast.error"), toast);
       notes.ai_folder = toast;
       click("dismiss the message", one(".toast .plain"));
@@ -319,6 +306,8 @@ export async function runSelftest(app: App, report: () => ReportView | null): Pr
     await goHome();
     click("Open File", one(".drop-actions .btn.primary"));
     await waitFor("the progress screen", () => one(".progress"));
+    await waitFor("the progress bar to move", () => Number.parseFloat(one(".bar-fill")?.style.width || "0") > 0);
+    check("analysis: the progress bar moved during a longer run", true);
     await sleep(400);
     const started = Date.now();
     click("Cancel", one(".progress .btn"));
