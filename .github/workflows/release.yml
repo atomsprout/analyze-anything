@@ -1,9 +1,8 @@
 name: Release
 
-# Builds the `analyze-anything` binary for each platform, on request, and attaches the archives
-# and their SHA-256 sums to a draft release for a person to review and publish. These builds are
-# not signed. The signed and notarized builds for Apple silicon Macs, which are what is released
-# today, are made with tools/release/macos.sh.
+# Builds the CLI for each platform and the Windows x64 desktop packages. The workflow attaches
+# the unsigned archives and their SHA-256 sums to a draft release. Signed and notarized macOS
+# packages are built with tools/release/macos.sh.
 on:
   # A run without a version builds and packages every target and stops: a rehearsal.
   # With a version it also creates the draft release, tagging the commit it ran on.
@@ -38,6 +37,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }} -p aa-cli
+        env:
+          # The Windows CLI ZIP must run without a separate Visual C++ runtime installation.
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS: '-C target-feature=+crt-static'
       - name: Self-test the built program
         run: target/${{ matrix.target }}/release/analyze-anything selftest
       - name: Package (Unix)
@@ -64,6 +66,25 @@ jobs:
             analyze-anything-*.tar.gz
             analyze-anything-*.zip
             analyze-anything-*.sha256
+      - uses: actions/setup-node@v4
+        if: runner.os == 'Windows'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - name: Build Windows desktop packages
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tools/release/windows.ps1
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: analyze-anything-desktop-windows-x64
+          if-no-files-found: error
+          path: |
+            dist/release/windows-*/*.zip
+            dist/release/windows-*/*.exe
+            dist/release/windows-*/SHA256SUMS
 
   release:
     needs: build
@@ -78,4 +99,6 @@ jobs:
           draft: true
           tag_name: ${{ inputs.version || github.ref_name }}
           target_commitish: ${{ github.sha }}
-          files: analyze-anything-*
+          files: |
+            **/analyze-anything-*
+            **/SHA256SUMS
