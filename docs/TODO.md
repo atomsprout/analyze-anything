@@ -17,11 +17,12 @@ The implementation is being collected in one pull request, in the order defined 
   - [ ] Verify final hosted CI and release rehearsal and record supported runtime baselines.
     The dbdfd79 Windows desktop job passed 67 real-window checks and seven-format CLI
     parity on the hosted runner; the current report changes and new Linux window job
-    passed their hosted qualification at 2caf6d4; final combined-head regression remains required.
+    passed their hosted qualification at 2caf6d4. Combined-source CI 45382506185 at
+    d047df8 passed all seven jobs; packaged-artifact qualification remains below.
   - [x] Compare a real signed MSI and installed directory; 127 native checks passed,
     including independent digests for 107 installed files. See [the record](spikes/windows-baseline.md).
   - [x] Resolve the url/cookie advisory gate through patched lockfile versions;
-    the hosted advisory/license job passed for dbdfd79. Final-head qualification remains open.
+    the hosted advisory/license job passed again for the combined d047df8 source.
 - [x] **0.3 — Understand the supplied software:** evidence-linked relationships,
   report orientation and attributable coverage, with ambiguous and unresolved cases.
   - [x] Add bilingual opening questions that cite existing findings and confidence,
@@ -32,19 +33,19 @@ The implementation is being collected in one pull request, in the order defined 
     expose artifact-specific versus run-wide limitation counts.
   - [x] Pass 24 rendering regressions, the multi-file engine-to-renderer test and 32
     browser checks. English/Chinese PDF pages were visually inspected; see
-    [the acceptance record](spikes/report-understanding.md). Hosted CI passed at 2caf6d4;
-    the final combined head will be checked again after the remaining milestones.
+    [the acceptance record](spikes/report-understanding.md). Combined-source CI
+    45382506185 passed, including the expanded 38-check browser suite.
 - [x] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
   profiles, each with real samples, native comparisons and tested limitations.
   Hosted CI 45374182266 passed all three core and desktop platforms and the license
-  gate at 52bb060; the final combined head remains subject to regression checks.
+  gate at 52bb060; combined-source CI 45382506185 passed again at d047df8.
   - [x] Add bounded .NET single-file and PyInstaller CArchive readers, with original
     metadata evidence, native fixtures and published WinSW/yt-dlp comparisons. See
     [the profiles](spikes/executable-bundles.md).
   - [x] Implement and qualify deb/rpm metadata, payloads and declared installation scripts.
     The readers and 17 local tests pass; native run 45374169192 passed 125 checks,
     including source text and trigger declarations. See [the supported profiles](spikes/linux-packages.md).
-- [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,
+- [x] **0.5 — Find and reuse answers:** offline report queries, report navigation,
   JSON compatibility and explicit agent analysis requests.
   - [x] Share offline bounded finding/evidence/file/coverage queries between the CLI,
     optional interpretation and read-only MCP, including the no-AI build. See [queries](QUERY.md).
@@ -54,13 +55,13 @@ The implementation is being collected in one pull request, in the order defined 
     stable fragments, keyboard focus and filter retention; 38 browser checks passed.
   - [x] Add explicit rooted agent analysis separately from finished-report queries,
     with snapshot IDs, cancellation, deadlines and private worker cleanup. Windows
-    process tests passed; hosted Unix path checks and final combined CI remain open.
+    process tests passed, as did hosted Unix path checks and combined CI 45382506185.
 
 ## Release qualification after 0.2.0-preview.1
 
 The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
 
-1. Finish hosted Windows desktop CI and the release rehearsal. A fresh, disconnected Windows 10 x64 guest without `VCRUNTIME140.dll` reproduced the launch failure with the published preview.1 CLI. The statically linked preview.2 candidate ran its full CLI self-test in the same guest and exited successfully.
+1. Hosted Windows desktop CI passed; final packaged-artifact qualification is tracked above. A fresh, disconnected Windows 10 x64 guest without `VCRUNTIME140.dll` reproduced the launch failure with the published preview.1 CLI. The statically linked preview.2 candidate ran its full CLI self-test in the same guest and exited successfully.
 2. Extend Windows native CLI comparisons (W0), file-access coverage (W1) and worker isolation (W2).
 3. Qualify the Windows and Linux CLI previews on clean systems. Expand coverage for entry points, scripts, drivers and package metadata (W3–W5, W7). MSIX follow-up work remains deferred (W6).
 4. Scope modern executable bundles and installer relationships separately (W8, W9). Office and disk images remain separate projects (W11, W12).
@@ -137,7 +138,8 @@ Left from that run, both honest limitations rather than wrong findings:
 - [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
 - [x] Offer it in the desktop app: a panel beside the report, with the same settings file. Setting it up from inside the app, and stopping an interpretation that is under way, are not there yet.
 - [ ] Follow-up questions about a report: `analyze-anything ask out/ "which hosts does it mention?"`.
-- [ ] A SKILL.md, and a tool-server mode in which an agent can also ask for an analysis.
+- [x] A separate rooted tool-server mode in which an agent can explicitly request analysis; see [AGENT-SERVER.md](AGENT-SERVER.md).
+- [ ] A SKILL.md for agents using the program.
 
 ## The deep level
 
@@ -179,12 +181,12 @@ These formats were tested with constructed data only:
 ## After phase two
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
-  Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows desktop CI, signed delivery and Linux desktop verification remain open. See [DESKTOP.md](DESKTOP.md).
+  Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows WebView2 and Ubuntu 24.04 x64 WebKitGTK checks each passed 67 checks at d047df8. Linux physical-display acceptance, broader packaging and signed delivery remain open. See [DESKTOP.md](DESKTOP.md).
 - [ ] Qualify Linux and Windows CLI builds for formal distribution. The published preview passed the release workflow self-checks. The statically linked Windows x64 preview.2 candidate passed its clean-system self-test. Linux clean-system checks and verification of the hosted release artifacts remain open.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 
 ## Phase three: the ecosystem
 
-- [ ] More inputs: Linux packages (deb, rpm, AppImage), HarmonyOS HAP, PyInstaller and similar bundles.
+- [ ] More inputs: broaden the qualified initial deb/rpm and PyInstaller profiles; add AppImage, HarmonyOS HAP and similar bundles.
 - [x] A `deep` level: done with Ghidra and Hopper; what is left of it is under "The deep level" above.

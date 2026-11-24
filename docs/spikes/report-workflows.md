@@ -33,7 +33,7 @@ replacement, rejected path/tool/limit syntax, partial file-budget coverage, canc
 responsiveness and EOF cleanup. A separate trusted test child that ignores requests
 verified cancellation and forced termination at a controlled grace deadline, including
 scratch cleanup. Its intentionally ignored helper test is only a subprocess fixture,
-not an unverified production case. The Unix external-symlink test awaits hosted CI.
+not an unverified production case. The Unix external-symlink test passed in hosted CI.
 
 Nine query tests, the optional interpretation regression and targeted Clippy also
 passed after sharing stdio parsing/response bounds. No live model was invoked.
@@ -41,6 +41,8 @@ The root preflight reuses the platform file policy before canonicalization; it i
 not an OS sandbox against concurrent filesystem changes. Existing W1 gaps remain.
 See [the explicit server contract](../AGENT-SERVER.md).
 
-Hosted CI for the preceding query state (88a4c29, run 45377846711) passed all core,
-desktop and license jobs. The combined navigation/agent head still requires hosted
-platform checks, full workspace validation and a packaged-artifact release rehearsal.
+Hosted [CI 45382506185](https://github.com/atomsprout/analyze-anything/actions/runs/45382506185)
+at the combined d047df8 source passed all three core and desktop platforms and the
+advisory/license gate. Local full-workspace tests, Clippy, formatting, the no-AI CLI
+build and production page build also passed. Packaged-artifact qualification is
+recorded separately in [delivery qualification](delivery-qualification.md).

@@ -27,9 +27,11 @@ Local Windows checks passed:
 
 A local full-workspace run started before the module migration finished its runtime
 tests, then its aa-interpret doc step encountered the old dependency graph after the
-source files were changed. That run is not counted as a pass. Complete workspace
-checks must be repeated on the final stable source state. The separate hosted
-52bb060 CI run qualified the preceding 0.4 state on all platforms.
+source files were changed. That run is not counted as a pass. A subsequent full
+workspace test run on the stable combined d047df8 source passed, together with
+workspace Clippy, formatting and the no-AI CLI build. Hosted
+[CI 45382506185](https://github.com/atomsprout/analyze-anything/actions/runs/45382506185)
+passed all three core and desktop platforms and the advisory/license gate.
 
 The subsequent navigation and explicit-analysis work is recorded in
 [the 0.5 workflow qualification](report-workflows.md). These query tests alone do

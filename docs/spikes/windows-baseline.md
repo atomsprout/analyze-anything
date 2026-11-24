@@ -1,8 +1,10 @@
 # Windows baseline checks
 
 2026-11-20, Windows x64 version 10.0.26200.0, Rust 1.100.0. Initial W0 results for
-[the Windows plan](../PLAN-WINDOWS.md). The milestone remains open: these checks do not cover
-a real signed installer distribution, an application folder or the Windows desktop app.
+[the Windows plan](../PLAN-WINDOWS.md). The initial checks below did not cover a real
+signed installer distribution or an application folder; the later 2026-11-24 record
+adds those samples. W0 remains open for broader profiles. Desktop qualification is
+recorded separately in [DESKTOP.md](../DESKTOP.md).
 
 ## Build and native comparison
 

@@ -44,8 +44,10 @@ in WebKit and Chromium. The final production page build, 14 page unit tests and 
 tests passed locally. The final report checks passed: 24 rendering regressions, including
 PDF, and one end-to-end unique/missing/ambiguous-target test. Workspace Clippy with warnings
 denied and formatting passed. Hosted [CI at 2caf6d4](https://github.com/atomsprout/analyze-anything/actions/runs/45360964209)
-passed all three core and desktop platform jobs plus the advisory/license gate. Final
-combined-head checks remain required after the other milestones are added.
+passed all three core and desktop platform jobs plus the advisory/license gate. The
+combined d047df8 source subsequently passed local full-workspace validation and hosted
+[CI 45382506185](https://github.com/atomsprout/analyze-anything/actions/runs/45382506185),
+including the expanded 38-check browser suite on all three desktop platforms.
 
 A PDF generated from a ZIP of the existing native Shell Link and INF relationship fixtures
 was rendered with Poppler. The opening pages and relationship/coverage page were inspected

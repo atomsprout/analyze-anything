@@ -2,7 +2,7 @@
 
 The latest stable release is [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1) for Apple silicon Macs. [v0.2.0-preview.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.1) adds unsigned CLI archives for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. The release workflow ran tests and self-checks for all four targets. The downloaded Windows ZIP also passed its self-check on the development machine.
 
-The Windows x64 desktop app has passed local W10 acceptance, including offline NSIS installation. The immediate work is **hosted Windows desktop CI and clean-system CLI qualification**. The [delivery plan](PLAN-VERSIONS.md) defines the next four product milestones; the [Windows plan](PLAN-WINDOWS.md) retains format-specific scope and acceptance gates. [TODO.md](TODO.md) tracks implementation, and [LIMITATIONS.md](LIMITATIONS.md) records supported profiles and verification gaps.
+The Windows x64 desktop app has passed local W10 acceptance, including offline NSIS installation. Hosted Windows and Ubuntu 24.04 x64 Linux desktop checks have also passed. The immediate work is **final combined 0.2–0.5 regression and packaged-artifact qualification**. The [delivery plan](PLAN-VERSIONS.md) defines the four product milestones; the [Windows plan](PLAN-WINDOWS.md) retains format-specific scope and acceptance gates. [TODO.md](TODO.md) tracks implementation, and [LIMITATIONS.md](LIMITATIONS.md) records supported profiles and verification gaps.
 
 ## Product milestones
 
@@ -39,7 +39,7 @@ Reports are available as HTML, PDF, Markdown, text, JSON, SARIF and CycloneDX. T
 
 ## Windows x64 desktop acceptance
 
-The portable and NSIS-installed builds passed real-window WebView2 checks with byte-for-byte CLI export comparisons. Local checks covered Unicode and long paths, a locked input, cancellation and cleanup, native dialogs, keyboard navigation and driver source mapping. A disconnected Windows 10 x64 guest qualified offline WebView2 installation, Explorer drag and drop and 100% and 125% display scaling. Hosted Windows desktop CI and signing remain release work. [Desktop validation](DESKTOP.md) · [W10 acceptance criteria](PLAN-WINDOWS.md#w10-windows-desktop-delivery)
+The portable and NSIS-installed builds passed real-window WebView2 checks with byte-for-byte CLI export comparisons. Local checks covered Unicode and long paths, a locked input, cancellation and cleanup, native dialogs, keyboard navigation and driver source mapping. A disconnected Windows 10 x64 guest qualified offline WebView2 installation, Explorer drag and drop and 100% and 125% display scaling. Hosted Windows desktop CI has passed; final combined regression and signing remain release work. [Desktop validation](DESKTOP.md) · [W10 acceptance criteria](PLAN-WINDOWS.md#w10-windows-desktop-delivery)
 
 ### Windows foundation work
 

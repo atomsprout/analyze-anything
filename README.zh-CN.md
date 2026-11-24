@@ -20,7 +20,7 @@ analyze-anything App.ipa
 有两种用法，共用同一套引擎，同一个输入得到相同的报告：
 
 - **命令行** `analyze-anything`（短名字 `aaaa`）；
-- macOS 的**桌面版**：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史并对比两个版本；设置好之后，还可以让模型在报告旁边解读它。
+- macOS 的**桌面版**：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史；设置好之后，还可以让模型在报告旁边解读它。
 
 报告默认是英文，加 `--lang zh` 写中文。
 
@@ -59,14 +59,14 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-签名的稳定版面向 Apple 芯片 Mac。[GitHub releases](https://github.com/atomsprout/analyze-anything/releases) 另有 Windows x64 和 Linux x64/ARM64 的未签名 CLI 预览版。Windows x64 桌面版已通过本地验收，包括 Windows 10 离线安装；Linux 桌面验收仍待完成。已发布的 preview.1 Windows CLI 依赖 Visual C++ 运行库；静态链接的 preview.2 候选已通过干净系统自测。具体范围见[平台验收记录](docs/LIMITATIONS.md)。
+签名的稳定版面向 Apple 芯片 Mac。[GitHub releases](https://github.com/atomsprout/analyze-anything/releases) 另有 Windows x64 和 Linux x64/ARM64 的未签名 CLI 预览版。Windows x64 桌面版已通过本地验收，包括 Windows 10 离线安装；托管环境的 Windows 与 Ubuntu 24.04 x64 Linux 桌面检查也已通过。已发布的 preview.1 Windows CLI 依赖 Visual C++ 运行库；静态链接的 preview.2 候选已通过干净系统自测。具体范围见[平台验收记录](docs/LIMITATIONS.md)。
 
 ## 使用
 
 ```
 analyze-anything <文件或文件夹>                    # 分析；报告写到 <名字>.report/
 analyze-anything App.ipa -o out --lang zh         # 指定文件夹；用中文写报告
-analyze-anything diff 旧/report.json 新/report.json     # 两个版本之间变了什么
+analyze-anything query out/report.json evidence --args '{}' # 离线查询证据，无需 AI
 analyze-anything explain out/report.json <结论 ID>      # 一条结论和它的全部证据
 analyze-anything verify out/                      # 输出文件有没有被改动
 ```

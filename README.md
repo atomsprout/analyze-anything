@@ -20,7 +20,7 @@ That writes `App.ipa.report/` with the report as HTML, PDF, Markdown, plain text
 There are two ways to use it, on the same engine, giving the same report for the same input:
 
 - the **command line**, `analyze-anything` (short name `aaaa`);
-- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history and compare two versions, and, if you set it up, have a model explain the report beside it.
+- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history, and, if you set it up, have a model explain the report beside it.
 
 ## What it looks like
 
@@ -57,14 +57,14 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed stable release is available for Apple silicon Macs. Unsigned CLI previews are also available for Windows x64 and Linux x64/ARM64 from [GitHub releases](https://github.com/atomsprout/analyze-anything/releases). Windows x64 desktop builds have passed local acceptance, including an offline Windows 10 installation; Linux desktop verification remains open. The published preview.1 Windows CLI requires the Visual C++ runtime; the statically linked preview.2 candidate passed a clean-system self-test. See [platform qualification](docs/LIMITATIONS.md) for the exact scope.
+The signed stable release is available for Apple silicon Macs. Unsigned CLI previews are also available for Windows x64 and Linux x64/ARM64 from [GitHub releases](https://github.com/atomsprout/analyze-anything/releases). Windows x64 desktop builds have passed local acceptance, including an offline Windows 10 installation; hosted Windows and Ubuntu 24.04 x64 Linux desktop checks have also passed. The published preview.1 Windows CLI requires the Visual C++ runtime; the statically linked preview.2 candidate passed a clean-system self-test. See [platform qualification](docs/LIMITATIONS.md) for the exact scope.
 
 ## Use
 
 ```
 analyze-anything <file or folder>                 # analyze; the report goes to <name>.report/
 analyze-anything App.ipa -o out --lang zh         # choose the folder; write the report in Chinese
-analyze-anything diff old/report.json new/report.json    # what changed between two versions
+analyze-anything query out/report.json evidence --args '{}' # offline evidence queries, without AI
 analyze-anything explain out/report.json <finding id>    # one finding with all its evidence
 analyze-anything verify out/                      # are the files still what was written?
 ```

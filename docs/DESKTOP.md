@@ -1,8 +1,8 @@
 # Desktop app
 
-A graphical interface for the same analysis engine: drop a file in → watch progress → read the report → look at the evidence bytes → export → history and diff. It adds no analysis capability; the same input produces byte-identical reports in the desktop app and in `analyze-anything`. The plan is in [PLAN-DESKTOP.md](PLAN-DESKTOP.md).
+A graphical interface for the same analysis engine: drop a file in → watch progress → read the report → look at the evidence bytes → export → history. It adds no analysis capability; the same input produces byte-identical reports in the desktop app and in `analyze-anything`. The plan is in [PLAN-DESKTOP.md](PLAN-DESKTOP.md).
 
-Only a macOS (Apple silicon) build exists for now.
+The signed stable desktop release is for macOS (Apple silicon). Windows x64 portable and NSIS builds have passed local and hosted acceptance; Ubuntu 24.04 x64 WebKitGTK passed hosted real-window checks under Xvfb/D-Bus. Those checks do not establish physical-display behavior on every Linux distribution. See the qualification and packaging sections below for exact scope.
 
 ## Install
 

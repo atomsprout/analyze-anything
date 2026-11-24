@@ -103,7 +103,7 @@ Two things differ from a terminal. An app started from the Dock or the Finder is
 The report, and only the report. The analyzed files are not sent and cannot be asked for.
 
 - **The brief**, sent first: the input's name and kind, coverage, limitations, how many findings there are in each chapter and at each severity, and every finding above severity "info".
-- **Three read-only tools** for the rest: `list_findings` (filter by chapter, severity or words), `get_finding` (one finding with its evidence: which file, where in it, the value that was read there, cut to 400 characters), and `list_files` (paths, sizes and types of the files of the input).
+- **Seven read-only tools** for the rest: `list_findings`, `get_finding`, `list_files`, `get_file`, `list_evidence`, `list_limitations` and `get_coverage`. They return bounded pages of findings, captured file facts, evidence and coverage from the finished report. They cannot read the source artifacts. Preview clipping and continuation offsets are explicit; see [the query contract](QUERY.md).
 
 Findings about secrets are already redacted in the report, and that is what the model sees. Even so, the report holds file paths, addresses, identifiers and strings read from the analyzed files. **If what you analyze must not be seen by a third party, use the `ollama` engine, or do not use this.** `analyze-anything interpret out/ --dry-run` prints the instructions and the brief and sends nothing.
 
