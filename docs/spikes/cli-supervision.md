@@ -69,3 +69,18 @@ open. No claim of complete W2 coverage is made by these checks.
 The full Windows workspace test run after these recovery changes completed successfully
 (`cargo test --workspace`, recorded locally in `out/windows-baseline/workspace-after-recovery.log`).
 That run covers the committed recovery changes, before the subsequent W3 shortcut work.
+
+## Spill cleanup and persistent worker roots
+
+Final preview.2 artifact checks found that the legacy engine spill sweep could remove
+the persistent `analyze-anything-workers` root once it was older than ten minutes:
+it shares the spill prefix but has no engine `.lock` marker. A newly launched worker
+then failed to acquire its own marker because its directory had disappeared.
+
+Spill recovery now requires an engine marker, a direct child of the resolved cleanup
+root, and ordinary directory/marker metadata. It leaves unmarked folders and reparse
+points alone even when old. Empty unmarked folders left by a crash before marker
+creation require manual cleanup; age alone is no longer treated as ownership proof.
+Regression cases preserve an aged shared worker root with live nested ownership and
+an external directory reached through a Windows junction, while existing tests retain
+recovery of unlocked marked spills and preservation of live sessions.

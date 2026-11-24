@@ -1854,6 +1854,49 @@ fn folders_left_by_a_killed_run_are_swept() {
 }
 
 #[test]
+fn old_worker_roots_without_a_spill_marker_are_preserved() {
+    let root = tempfile::tempdir().expect("private cleanup root");
+    let workers = root.path().join("analyze-anything-workers");
+    let worker = workers.join("worker-123-abc-0");
+    std::fs::create_dir_all(&worker).expect("worker folder");
+    let owner = std::fs::File::create(worker.join(".owner.lock")).expect("worker owner");
+    owner.try_lock_shared().expect("live worker ownership");
+    std::fs::write(worker.join("payload"), b"in use").expect("worker payload");
+    #[cfg(windows)]
+    let directory = {
+        use std::os::windows::fs::OpenOptionsExt;
+        // Directory timestamps need an attribute handle rather than ordinary file access.
+        std::fs::OpenOptions::new().access_mode(0x100).custom_flags(0x0200_0000).open(&workers).expect("directory attributes")
+    };
+    #[cfg(not(windows))]
+    let directory = std::fs::File::open(&workers).expect("directory attributes");
+    directory.set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1)).expect("old root timestamp");
+    assert_eq!(sweep_stale(Some(root.path())), 0, "age is not proof of spill ownership");
+    assert_eq!(std::fs::read(worker.join("payload")).expect("live worker data"), b"in use");
+}
+
+#[test]
+#[cfg(windows)]
+fn spill_recovery_does_not_follow_a_junction_outside_its_root() {
+    let private = tempfile::tempdir().expect("private cleanup fixture");
+    let root = private.path().join("spills");
+    let outside = private.path().join("outside");
+    std::fs::create_dir(&root).expect("spill root");
+    std::fs::create_dir(&outside).expect("external fixture");
+    std::fs::write(outside.join(".lock"), b"").expect("external marker");
+    std::fs::write(outside.join("payload"), b"must remain").expect("external payload");
+    let result = std::process::Command::new("cmd")
+        .args(["/d", "/c", "mklink", "/J"])
+        .arg(root.join("analyze-anything-junction"))
+        .arg(&outside)
+        .output()
+        .expect("junction fixture command");
+    assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
+    assert_eq!(sweep_stale(Some(&root)), 0);
+    assert_eq!(std::fs::read(outside.join("payload")).expect("external data preserved"), b"must remain");
+}
+
+#[test]
 fn progress_names_every_file_in_both_passes_and_survives_json() {
     let dir = folder();
     let mut recorder = Recorder(Vec::new());

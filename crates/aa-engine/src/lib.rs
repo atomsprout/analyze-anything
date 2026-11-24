@@ -337,29 +337,46 @@ pub fn analyze_session(registry: &Registry, input: &Path, options: &Options, sin
 /// while the process that made it is alive. Returns how many were removed.
 pub fn sweep_stale(root: Option<&Path>) -> usize {
     let root = root.map(Path::to_path_buf).unwrap_or_else(std::env::temp_dir);
+    let Ok(root) = root.canonicalize() else { return 0 };
     let Ok(entries) = std::fs::read_dir(&root) else { return 0 };
     let mut removed = 0;
     for entry in entries.flatten() {
         let is_ours = entry.file_name().to_string_lossy().starts_with(tree::SPILL_PREFIX);
-        if !is_ours || !entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+        if !is_ours {
             continue;
         }
         let dir = entry.path();
-        // The owner holds the lock file locked for as long as it lives, so a lock that can be
-        // taken means the owner is gone. A folder without a lock file is one being created right
-        // now, unless it is old.
-        let abandoned = match std::fs::File::open(dir.join(tree::LOCK_NAME)) {
-            Ok(lock) => lock.try_lock().is_ok(),
-            Err(_) => {
-                let age = entry.metadata().and_then(|m| m.modified()).ok().and_then(|at| at.elapsed().ok());
-                age.is_some_and(|age| age > Duration::from_secs(600))
-            }
-        };
-        if abandoned && std::fs::remove_dir_all(&dir).is_ok() {
+        let Ok(metadata) = std::fs::symlink_metadata(&dir) else { continue };
+        if !metadata.is_dir() || cleanup_indirect(&metadata) {
+            continue;
+        }
+        let Ok(resolved) = dir.canonicalize() else { continue };
+        if resolved.parent() != Some(root.as_path()) {
+            continue;
+        }
+        // A shared worker root has the same prefix and may be old while its children are live.
+        // Only a spill's own marker establishes ownership; age alone must not authorize removal.
+        let marker = resolved.join(tree::LOCK_NAME);
+        let Ok(metadata) = std::fs::symlink_metadata(&marker) else { continue };
+        if !metadata.is_file() || cleanup_indirect(&metadata) {
+            continue;
+        }
+        let Ok(lock) = std::fs::File::open(&marker) else { continue };
+        if lock.try_lock().is_ok() && std::fs::remove_dir_all(&resolved).is_ok() {
             removed += 1;
         }
     }
     removed
+}
+
+fn cleanup_indirect(metadata: &std::fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        metadata.file_attributes() & 0x400 != 0
+    }
+    #[cfg(not(windows))]
+    metadata.file_type().is_symlink()
 }
 
 /// Analyzes a single file held in memory, named `name`. Nothing is read from disk.
