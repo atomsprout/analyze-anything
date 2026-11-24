@@ -12,6 +12,27 @@ pub struct Deb;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "deb.triggers",
+        title_en: "Declared Debian triggers",
+        title_zh: "Debian 触发器声明",
+        text_en: "The control archive contains trigger declarations. Their source text is retained as data; activation, ordering and effects were not evaluated.",
+        text_zh: "控制归档包含触发器声明。原文作为数据保留，没有求值其激活、顺序或效果。",
+    },
+    Rule {
+        id: "deb.action-unread",
+        title_en: "Debian installation declaration text could not be retained",
+        title_zh: "Debian 安装声明文本无法保留",
+        text_en: "An installation declaration was captured as bytes, but its text could not be retained unambiguously within the supported profile.",
+        text_zh: "已捕获安装声明的字节，但无法在支持范围内唯一确定并保留其文本。",
+    },
+    Rule {
+        id: "deb.trigger-semantics",
+        title_en: "Debian trigger behavior remains unresolved",
+        title_zh: "Debian 触发器行为未确定",
+        text_en: "Trigger declarations are source data. Their runtime activation, ordering and resulting system changes were not established.",
+        text_zh: "触发器声明是源数据，没有确定其运行时激活、顺序或最终系统变化。",
+    },
+    Rule {
         id: "deb.archive-semantics",
         title_en: "Debian archive semantics remain unresolved",
         title_zh: "Debian 归档语义未确定",
@@ -342,15 +363,43 @@ impl Analyzer for Deb {
             } else {
                 out.limitation("deb.control-unread", Some(package), Some("missing or colliding control file".into()));
             }
-            for name in ["preinst", "postinst", "prerm", "postrm", "config"] {
+            for name in ["preinst", "postinst", "prerm", "postrm", "config", "triggers"] {
                 let path = format!("{}/{name}", tar.path);
                 if let Some(script) = tree.get(&path).filter(|file| file.parent.as_deref() == Some(&tar.path)) {
+                    if !clean(script) {
+                        out.limitation("deb.action-unread", Some(script), Some("colliding installation declaration names".into()));
+                        continue;
+                    }
+                    let source = tree.read(&script.path).map_err(|error| error.to_string()).and_then(|bytes| {
+                        if bytes.len() > 256 * 1024 {
+                            return Err("installation declaration exceeds the 256 KiB text profile".into());
+                        }
+                        let text = std::str::from_utf8(&bytes).map_err(|_| "installation declaration is not UTF-8")?;
+                        aa_core::text::redact_sensitive_text(text).map_err(str::to_string)
+                    });
+                    let evidence = match source {
+                        Ok(text) => {
+                            out.fact(script, "deb.installation-declaration", json!({"package": package.path, "role": name, "text": text}));
+                            Evidence::bytes(script, 0, script.size, json!({"role": name, "text": text}))
+                        }
+                        Err(detail) => {
+                            out.limitation("deb.action-unread", Some(script), Some(detail));
+                            Evidence::whole(script, json!({"role": name, "size": script.size, "text_retained": false}))
+                        }
+                    };
+                    let trigger = name == "triggers";
                     out.finding(
-                        Finding::new(Section::Capabilities, "deb", "deb.install-script", Confidence::Verified, Severity::Info)
-                            .param("name", name)
-                            .evidence(Evidence::whole(script, json!({"role": name, "size": script.size}))),
+                        Finding::new(
+                            Section::Capabilities,
+                            "deb",
+                            if trigger { "deb.triggers" } else { "deb.install-script" },
+                            Confidence::Verified,
+                            Severity::Info,
+                        )
+                        .param("name", name)
+                        .evidence(evidence),
                     );
-                    out.limitation("deb.script-semantics", Some(script), None);
+                    out.limitation(if trigger { "deb.trigger-semantics" } else { "deb.script-semantics" }, Some(script), None);
                 }
             }
         }

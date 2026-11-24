@@ -147,3 +147,103 @@ fn package_metadata_redacts_named_credentials_and_script_assignments() {
     assert!(!root.facts["rpm.package"].to_string().contains("fixture-script-credential"));
     assert!(root.facts["rpm.package"].to_string().contains("[redacted]"));
 }
+
+#[test]
+fn deb_installer_text_is_bounded_redacted_and_distinguishes_triggers_from_scripts() {
+    let oversized = vec![b'x'; 256 * 1024 + 1];
+    let control = support::tar(&[
+        ("control", support::CONTROL),
+        ("postinst", b"#!/bin/sh\ntoken=fixture-install-secret\n"),
+        ("preinst", &oversized),
+        ("triggers", b"interest-noawait /usr/share/fixture\n"),
+    ]);
+    let data = support::tar(&[("data", b"data")]);
+    let bytes = support::ar(&[("debian-binary", b"2.0\n"), ("control.tar", &control), ("data.tar", &data)]);
+    let report = analyze_bytes(&Registry::standard(), "sample.deb", bytes, &Options::default(), &mut NoProgress);
+    let postinst = report.artifacts.iter().find(|file| file.path.ends_with("control.tar/postinst")).expect("script");
+    assert!(postinst.facts["deb.installation-declaration"]["text"].as_str().expect("text").contains("token=[redacted]"));
+    assert!(!serde_json::to_string(&postinst.facts).expect("serialize script facts").contains("fixture-install-secret"));
+    assert!(report.findings.iter().any(|finding| finding.rule == "deb.triggers"));
+    assert!(
+        report
+            .limitations
+            .iter()
+            .any(|limit| limit.code == "deb.action-unread" && limit.artifact.as_deref().is_some_and(|path| path.ends_with("preinst")))
+    );
+}
+
+#[test]
+fn pinned_linux_packages_match_recorded_native_values_and_every_regular_file_digest() {
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("../../../docs/spikes/linux-packages-native.json")).expect("native records");
+    for (name, bytes) in [
+        ("native-script.deb", &include_bytes!("../../aa-linux/tests/data/native-script.deb")[..]),
+        ("native-script.rpm", &include_bytes!("../../aa-linux/tests/data/native-script.rpm")[..]),
+        ("node-isarray_2.0.5-1_all.deb", &include_bytes!("../../aa-linux/tests/data/node-isarray_2.0.5-1_all.deb")[..]),
+        ("xxhash-libs-0.8.4-2.fc43.x86_64.rpm", &include_bytes!("../../aa-linux/tests/data/xxhash-libs-0.8.4-2.fc43.x86_64.rpm")[..]),
+    ] {
+        let digest = aa_core::sha256_hex(bytes);
+        let recorded = reference["records"]
+            .as_array()
+            .expect("records")
+            .iter()
+            .find(|record| record["pinned_fixture"] == true && record["sha256"] == digest)
+            .expect("hash-bound native record");
+        assert!(recorded["checks"].as_array().expect("checks").iter().all(|check| check["matches"] == true));
+        let report = analyze_bytes(&Registry::standard(), name, bytes.to_vec(), &Options::default(), &mut NoProgress);
+        let root = report.artifacts.iter().find(|file| file.parent.is_none()).expect("package root");
+        let native = &recorded["native"];
+        let check_member = |container: &aa_core::Artifact, entry: &serde_json::Value| {
+            if let Some(hash) = entry["sha256"].as_str() {
+                let name = entry["path"].as_str().expect("entry name").trim_start_matches('/').trim_start_matches("./");
+                let path = format!("{}/{name}", container.path);
+                let artifact = report.artifacts.iter().find(|file| file.path == path).expect("captured native member");
+                assert_eq!(artifact.digests.as_ref().expect("member digest").sha256, hash, "{path}");
+            }
+        };
+        if name.ends_with("deb") {
+            for key in ["name", "version", "architecture"] {
+                assert_eq!(root.facts["deb.control"][key], native[key]);
+            }
+            for archive in native["archives"].as_array().expect("native TARs") {
+                let member = archive["member"].as_str().expect("archive name");
+                let prefix = format!("{}/{member}", root.path);
+                let tar = report
+                    .artifacts
+                    .iter()
+                    .find(|file| {
+                        file.facts.contains_key("deb.archive-entries") && (file.path == prefix || file.parent.as_deref() == Some(&prefix))
+                    })
+                    .expect("captured TAR metadata");
+                assert_eq!(
+                    tar.facts["deb.archive-entries"]["entries"].as_array().expect("entries").len(),
+                    archive["entries"].as_array().expect("native entries").len()
+                );
+                for entry in archive["entries"].as_array().expect("native entries") {
+                    check_member(tar, entry);
+                }
+            }
+        } else {
+            for key in ["name", "version", "release", "architecture"] {
+                assert_eq!(root.facts["rpm.package"][key], native[key]);
+            }
+            for tag in native["tags"].as_array().expect("native tags") {
+                let row = root.facts["rpm.package"]["tags"]
+                    .as_array()
+                    .expect("tags")
+                    .iter()
+                    .find(|row| row["tag"] == tag["tag"])
+                    .expect("captured tag");
+                assert_eq!(row["value"], tag["value"]);
+            }
+            let cpio = report.artifacts.iter().find(|file| file.facts.contains_key("cpio.directory")).expect("captured CPIO");
+            assert_eq!(
+                cpio.facts["cpio.directory"]["entries"].as_array().expect("entries").len(),
+                native["entries"].as_array().expect("native entries").len()
+            );
+            for entry in native["entries"].as_array().expect("native entries") {
+                check_member(cpio, entry);
+            }
+        }
+    }
+}

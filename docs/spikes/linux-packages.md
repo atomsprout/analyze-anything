@@ -1,7 +1,8 @@
 # Linux package readers
 
 The 0.4 package work reads declarations and payload bytes; no input is installed,
-loaded, executed or decrypted. This profile is still undergoing native qualification.
+loaded, executed or decrypted. Initial native qualification passed; final combined-head
+checks remain required.
 
 ## Supported scope
 
@@ -13,6 +14,8 @@ loaded, executed or decrypted. This profile is still undergoing native qualifica
   Identity, relationships and maintainer-script findings cite captured control
   contents, never a similarly named file in the payload. Both TAR indexes retain
   paths, original offsets, permissions, sizes, entry types and link targets.
+  Captured scripts and triggers retain redacted UTF-8 source text up to 256 KiB;
+  ambiguous names, larger declarations and undecodable text are explicit gaps.
 - RPM: 96-byte 3.0 lead with header-style signature records; checked and ordered
   signature/header index structures. Header stores are at most 16 MiB, indexes and
   decoded values at most 100,000; a shared string-scan budget prevents overlapping
@@ -40,15 +43,17 @@ the Apple odc and pbzx readers remain available.
 
 ## Evidence so far
 
-Seven constructed unpacker tests and eight engine tests passed on Windows, including
+Seven constructed unpacker tests and ten engine tests passed on Windows, including
 malformed lengths, all short prefixes, unsupported payloads, CPIO checksums and
 hardlinks, ambiguous control metadata, source attribution, repeated-report equality
-and engine budgets. Two published package fixtures exercise real compression and
-link declarations. Targeted Clippy passed with warnings denied.
+and engine budgets. Published and native-built fixtures exercise real compression,
+link declarations, scalar/array interpreters and bounded script text. Targeted
+Clippy passed with warnings denied. The engine/correlation/Apple/Linux regression
+suites passed, including the damaged-fixture corpus in 274.69 seconds.
 
 Local no-AI CLI runs read Debian node-isarray 2.0.5-1 (xz control and data TAR)
 and Fedora xxhash-libs 0.8.4-2.fc43 (zstd CPIO). They are redistributable fixtures
-with source and license notices. **Native tool agreement is not yet established.**
+with source and license notices.
 
 The Linux Native comparison job uses dpkg-deb, librpm, rpm2cpio and bsdtar to check
 identity, selected header values, regular-file SHA-256, TAR metadata, CPIO paths,
@@ -59,7 +64,13 @@ The first Linux run (45372596833 at be39b11) found a real profile gap: rpmbuild
 stored a single script interpreter as STRING rather than STRING_ARRAY. The reader
 now accepts both representations for interpreter tags, preserving the original
 type, count and value. The generated script packages are pinned regression inputs.
-The Linux reference job must pass again before native acceptance is recorded.
+Run [45373345565](https://github.com/atomsprout/analyze-anything/actions/runs/45373345565)
+at 425b6b6 then passed all 112 checks with dpkg-deb 1.22.6 and RPM 4.18.2.
+[The native record](linux-packages-native.json) binds every result to its input hash.
+It covers the four pinned packages plus two freshly built script packages. A
+cross-platform engine test checks these native identities, tag values and regular
+member digests. Bounded script-text display was added after that run; its explicit
+native text check and the final combined-head qualification remain pending.
 
 ```
 python3 tools/native-compare/linux-package-fixtures.py out/native-linux

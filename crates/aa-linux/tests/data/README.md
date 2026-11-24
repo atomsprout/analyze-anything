@@ -13,4 +13,8 @@ licenses are recorded in the repository's `NOTICE`; no package is installed or r
 rpm2cpio and libarchive. `linux-package-fixtures.py` builds separate project-owned
 script-declaration packages with dpkg-deb/rpmbuild, never running those scripts.
 The Native comparison workflow's Linux job records and uploads the reference
-results. Its first run for this implementation is pending.
+results. Run 45373345565 at 425b6b6 passed 112 checks over the four pinned packages
+and two freshly built script packages. The hash-bound native values and member
+digests are recorded in docs/spikes/linux-packages-native.json and checked by
+cross-platform engine tests. Script-text display was added after that run and
+will receive its own native check before final acceptance.

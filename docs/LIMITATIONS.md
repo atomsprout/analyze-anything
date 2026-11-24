@@ -14,8 +14,8 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 
 ## Parts not verified on real samples
 
-The initial Linux package readers have local runs on Debian node-isarray 2.0.5-1
-and Fedora xxhash-libs 0.8.4-2.fc43. Native Linux qualification is pending. Debian
+The initial Linux package readers have native Linux references for Debian node-isarray
+2.0.5-1, Fedora xxhash-libs 0.8.4-2.fc43 and project-authored script packages. Debian
 metadata is read only from its captured control archive; dependency alternatives
 and constraints remain literal. TAR link declarations are retained without
 following targets. The RPM profile reads 3.0 leads, v4 headers and declared

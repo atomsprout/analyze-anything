@@ -23,6 +23,7 @@ def main():
             "Depends: alternative-a (>= 1) | alternative-b\n")
         (deb / "DEBIAN/postinst").write_text("#!/bin/sh\nprintf 'not executed by these checks\\n'\n")
         (deb / "DEBIAN/postinst").chmod(0o755)
+        (deb / "DEBIAN/triggers").write_text("interest-noawait /usr/share/aa-fixture\n")
         subprocess.run(["dpkg-deb", "--root-owner-group", "--build", str(deb), str(args.out.resolve() / "native-script.deb")], check=True)
         rpm = folder / "rpm"
         for name in ("BUILD", "BUILDROOT", "RPMS", "SOURCES", "SPECS", "SRPMS"):
@@ -44,6 +45,8 @@ printf 'https://example.invalid/native-fixture\\n' > %{buildroot}/usr/share/aa-f
 printf 'not executed by these checks\\n'
 %preun
 printf 'not executed by these checks\\n'
+%triggerin -- aa-native-fixture
+printf 'trigger not executed by these checks\\n'
 %files
 /usr/share/aa-fixture/data.txt
 """)

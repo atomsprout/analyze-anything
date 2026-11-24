@@ -22,6 +22,7 @@ A static analyzer for software artifacts, in Rust. It reads a file or folder and
 | `crates/aa-content` | Any file: strings, URLs, likely credentials, entropy. The smallest complete analyzer |
 | `crates/aa-binary` | Mach-O, ELF, PE: structure and hardening |
 | `crates/aa-apple`, `aa-android`, `aa-windows` | The three platform families |
+| `crates/aa-linux` | Debian/RPM package declarations, payloads and bounded CPIO |
 | `crates/aa-correlate` | Findings that need several files: the overview, structure, cross-references |
 | `crates/aa-report` | HTML, PDF, Markdown and plain text, and the words of both languages |
 | `crates/aa-export` | SARIF, CycloneDX, the manifest, the comparison of two reports |

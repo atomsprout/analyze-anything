@@ -46,6 +46,8 @@ def verify(cli, sample):
         path = container["path"] + "/" + logical(name)
         found = next((file for file in report["artifacts"] if file["path"] == path), None)
         check("member SHA-256: " + path, None if found is None else found["digests"]["sha256"], sha(data))
+        if found is not None and "deb.installation-declaration" in found["facts"]:
+            check("installation declaration text: " + path, found["facts"]["deb.installation-declaration"]["text"], data.decode())
 
     native = {}
     if sample.suffix == ".deb":
@@ -83,6 +85,8 @@ def verify(cli, sample):
                    if logical(row["path"]) in ("preinst", "postinst", "prerm", "postrm", "config")]
         check("maintainer script declarations", sorted(finding["params"]["name"] for finding in report["findings"]
               if finding["rule"] == "deb.install-script"), sorted(logical(name) for name in scripts))
+        check("trigger declarations", sum(finding["rule"] == "deb.triggers" for finding in report["findings"]),
+              sum(logical(row["path"]) == "triggers" for row in native["archives"][0]["entries"]))
     else:
         import rpm
         native["tool"] = run(["rpm", "--version"]).decode().strip()
