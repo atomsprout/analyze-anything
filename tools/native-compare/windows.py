@@ -15,6 +15,7 @@ from windows_tools import find_signtool, native_signature
 AA = None
 WORK = None
 RECORDS = []
+FOLDERS = []
 CHECKS = ("content_digest", "file_digest", "signature", "chain")
 
 
@@ -24,10 +25,14 @@ def our_signature(path):
     return root["facts"].get("windows.authenticode") or root["facts"].get("windows.msi-signature"), report
 
 
-def compare(path, signtool=None):
+def compare(path, signtool=None, report=None, artifact=None):
     name = os.path.basename(path)
     native = native_signature(path)
-    fact, _report = our_signature(path)
+    if report is None:
+        fact, _report = our_signature(path)
+    else:
+        _report = report
+        fact = artifact["facts"].get("windows.authenticode") or artifact["facts"].get("windows.msi-signature")
     record = {"path": os.path.abspath(path), "sha256": sha256_file(path), "native": native,
               "ours": fact, "limitations": dict(limitation_codes(_report))}
     if signtool:
@@ -70,6 +75,31 @@ def compare(path, signtool=None):
     return native
 
 
+def compare_folder(folder, signtool):
+    """Compare one whole supplied directory without invoking any installed program in it."""
+    folder = os.path.abspath(folder)
+    report = analyze(AA, folder)
+    supplied = {a["path"]: a for a in report["artifacts"] if a["parent"] is None}
+    inventory = []
+    for base, dirs, files in os.walk(folder, followlinks=False):
+        dirs[:] = sorted(d for d in dirs if not os.path.islink(os.path.join(base, d)))
+        for name in sorted(files):
+            path = os.path.join(base, name)
+            if os.path.islink(path) or not os.path.isfile(path):
+                continue
+            relative = os.path.relpath(path, folder).replace(os.sep, "/")
+            digest = sha256_file(path)
+            artifact = supplied.get(relative)
+            actual = (artifact.get("digests") or {}).get("sha256") if artifact else None
+            check(f"{relative}: supplied file digest agrees with independent SHA-256", actual == digest, actual)
+            inventory.append({"path": relative, "sha256": digest, "analyzer_sha256": actual})
+            if artifact and name.lower().endswith((".exe", ".dll", ".sys", ".msi")):
+                compare(path, signtool, report, artifact)
+    check("installed directory: at least one regular file compared", bool(inventory))
+    check("installed directory: no unexplained loose artifacts", set(supplied) == {a["path"] for a in inventory})
+    FOLDERS.append({"path": folder, "files": inventory, "limitations": dict(limitation_codes(report))})
+
+
 def candidates():
     patterns = [
         r"C:\Program Files\PowerShell\7\*.exe",
@@ -99,6 +129,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("analyzer")
     parser.add_argument("--sample", action="append", help="Explicit PE or MSI input; repeat to replace automatic discovery")
+    parser.add_argument("--folder", action="append", default=[], help="Installed directory to analyze as a whole; repeatable")
     parser.add_argument("--record", help="Development JSON record, outside the analyzed input")
     parser.add_argument("--signtool", help="SDK SignTool executable; otherwise discovered")
     args = parser.parse_args()
@@ -111,6 +142,8 @@ def main():
         if native and native["Type"] == "Authenticode" and native["Status"] == "Valid" and embedded is None:
             embedded = path
     check("at least one file with a valid embedded signature was compared", embedded is not None)
+    for folder in args.folder:
+        compare_folder(folder, signtool)
 
     # The same file with one byte changed: both must report the mismatch.
     if embedded:
@@ -149,7 +182,7 @@ def main():
         record = {"schema_version": 1, "platform": platform.platform(), "architecture": platform.machine(),
                   "analyzer": version, "analyzer_sha256": sha256_file(AA), "signtool": signtool,
                   "signtool_sha256": sha256_file(signtool) if signtool else None,
-                  "samples": RECORDS, "checks_passed": PASSED[0], "failures": FAILURES,
+                  "samples": RECORDS, "folders": FOLDERS, "checks_passed": PASSED[0], "failures": FAILURES,
                   "policy": "Native trust results are contextual; not proof of offline analysis or catalog verification."}
         with open(args.record, "w", encoding="utf-8") as handle:
             json.dump(record, handle, ensure_ascii=False, sort_keys=True, indent=2)

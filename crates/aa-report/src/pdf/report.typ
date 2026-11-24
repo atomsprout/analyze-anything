@@ -121,6 +121,19 @@
 
 #text(fill: muted, w.scope)
 
+#heading(level: 2, numbering: none, outlined: false, d.questions_title)
+#d.questions_note
+#for question in d.questions {
+  block(above: 8pt, strong-text(question.title + " (" + str(question.total) + ")"))
+  if question.samples.len() == 0 {
+    block(text(fill: muted, question.empty))
+  }
+  for sample in question.samples {
+    block(above: 4pt, anywhere(sample))
+  }
+}
+#block(above: 8pt, text(fill: muted, d.questions_coverage))
+
 #heading(numbering: none, outlined: false, w.contents)
 #outline(title: none, depth: 1)
 
@@ -237,6 +250,23 @@
 
 // ---- File inventory -------------------------------------------------------------------------
 
+#heading(d.relationships.title)
+#d.relationships.note
+#if d.relationships.source_note != none { block(d.relationships.source_note) }
+#if d.relationships.rows.len() == 0 {
+  block(d.relationships.empty)
+} else {
+  set text(size: 7pt)
+  table(
+    columns: (40%, 25%, 35%),
+    inset: 4pt,
+    stroke: (bottom: 0.4pt + faint),
+    table.header(..d.relationships.head.map(cell => table.cell(fill: wash, cell))),
+    ..d.relationships.rows.map(row => row.map(cell => anywhere(cell))).flatten(),
+  )
+  block(d.relationships.count)
+}
+
 #heading(w.inventory)
 
 #{
@@ -264,6 +294,10 @@
 // ---- Coverage and limitations ---------------------------------------------------------------
 
 #heading(w.coverage)
+
+#for item in d.coverage.items {
+  block(above: 4pt, item.at(0) + ": " + anywhere(item.at(1)))
+}
 
 #if d.coverage.truncated {
   block(width: 100%, inset: 8pt, fill: wash, stroke: (left: 2.5pt + severity-colour.medium), d.coverage.status)

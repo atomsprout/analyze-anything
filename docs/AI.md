@@ -103,11 +103,11 @@ Two things differ from a terminal. An app started from the Dock or the Finder is
 The report, and only the report. The analyzed files are not sent and cannot be asked for.
 
 - **The brief**, sent first: the input's name and kind, coverage, limitations, how many findings there are in each chapter and at each severity, and every finding above severity "info".
-- **Three read-only tools** for the rest: `list_findings` (filter by chapter, severity or words), `get_finding` (one finding with its evidence: which file, where in it, the value that was read there, cut to 400 characters), and `list_files` (paths, sizes and types of the files of the input).
+- **Seven read-only tools** for the rest: `list_findings`, `get_finding`, `list_files`, `get_file`, `list_evidence`, `list_limitations` and `get_coverage`. They return bounded pages of findings, captured file facts, evidence and coverage from the finished report. They cannot read the source artifacts. Preview clipping and continuation offsets are explicit; see [the query contract](QUERY.md).
 
 Findings about secrets are already redacted in the report, and that is what the model sees. Even so, the report holds file paths, addresses, identifiers and strings read from the analyzed files. **If what you analyze must not be seen by a third party, use the `ollama` engine, or do not use this.** `analyze-anything interpret out/ --dry-run` prints the instructions and the brief and sends nothing.
 
-With the `claude`, `codex` and `command` engines the conversation is run by that program, which talks to whatever service it is signed in to, on that account's terms. This program starts it with only the report's tools allowed: no file access, no commands, no other tool servers. For Claude Code that is `--tools ""`, `--strict-mcp-config` and an allow-list of the three tools; for Codex, its read-only sandbox.
+With the `claude`, `codex` and `command` engines the conversation is run by that program, which talks to whatever service it is signed in to, on that account's terms. This program starts it with only the report's tools allowed: no file access, no commands, no other tool servers. For Claude Code that is `--tools ""`, `--strict-mcp-config` and an allow-list of the seven read-only report tools; for Codex, its read-only sandbox.
 
 ## How it stays honest
 
@@ -134,7 +134,9 @@ A model or service that does not support tools is noticed on the first request, 
 
 ## For agents: the tool server
 
-`analyze-anything mcp out/report.json` serves the same three read-only tools over the Model Context Protocol on standard input and output. Any agent that speaks MCP can use it to read a report on its own initiative, apart from the interpretation described here.
+`analyze-anything mcp out/report.json` serves the same seven read-only report tools over the Model Context Protocol on standard input and output. Any agent that speaks MCP can use it to read a report on its own initiative, apart from the interpretation described here.
+
+The offline queries and this read-only server are available without the AI feature. See [query filters and pagination](QUERY.md).
 
 ## Without it
 

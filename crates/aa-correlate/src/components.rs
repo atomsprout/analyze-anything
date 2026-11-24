@@ -151,6 +151,27 @@ impl Analyzer for Components {
         }
         electron(tree, &mut found);
         android(tree, &mut found);
+        for artifact in tree.artifacts() {
+            for (key, ecosystem) in [("deb.control", "deb"), ("rpm.package", "rpm")] {
+                if let Some(package) = artifact.facts.get(key)
+                    && let (Some(name), Some(version)) = (text(package, "name"), text(package, "version"))
+                {
+                    let version = if ecosystem == "rpm" {
+                        text(package, "release").map(|release| format!("{version}-{release}")).unwrap_or_else(|| version.to_string())
+                    } else {
+                        version.to_string()
+                    };
+                    found.push(Component {
+                        ecosystem,
+                        name: name.to_string(),
+                        version: Some(version),
+                        kind: "application",
+                        declared_range: None,
+                        source: artifact.path.clone(),
+                    });
+                }
+            }
+        }
         let extensions: BTreeMap<_, _> = tree
             .artifacts()
             .iter()

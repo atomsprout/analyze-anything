@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, archive: tar.gz }
+          - { os: ubuntu-24.04, target: x86_64-unknown-linux-gnu, archive: tar.gz }
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, archive: tar.gz }
           - { os: macos-latest, target: aarch64-apple-darwin, archive: tar.gz }
           - { os: windows-latest, target: x86_64-pc-windows-msvc, archive: zip }
@@ -59,6 +59,33 @@ jobs:
           Copy-Item "target/${{ matrix.target }}/release/analyze-anything.exe", "README.md", "LICENSE", "NOTICE" $name
           Compress-Archive $name "$name.zip"
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File "$name.zip.sha256" -Encoding ascii
+      - name: Self-test the packaged Unix CLI
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="analyze-anything-${RELEASE_NAME//\//-}-${{ matrix.target }}"
+          stage="$RUNNER_TEMP/aa-packaged-cli"
+          mkdir -p "$stage"
+          tar xzf "$name.tar.gz" -C "$stage"
+          cmp "target/${{ matrix.target }}/release/analyze-anything" "$stage/$name/analyze-anything"
+          "$stage/$name/analyze-anything" selftest
+      - name: Self-test the packaged Windows CLI
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $name = "analyze-anything-$($env:RELEASE_NAME -replace '/', '-')-${{ matrix.target }}"
+          $expected = (Get-Content "$name.zip.sha256").Split(' ')[0]
+          if ((Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() -ne $expected) {
+            throw 'Packaged CLI checksum mismatch'
+          }
+          $unpacked = Join-Path $env:RUNNER_TEMP 'aa-packaged-cli'
+          Expand-Archive -LiteralPath "$name.zip" -DestinationPath $unpacked
+          $program = Join-Path $unpacked "$name/analyze-anything.exe"
+          & $program selftest
+          ./tools/release/check-windows-runtime.ps1 -Program $program
       - uses: actions/upload-artifact@v4
         with:
           name: analyze-anything-${{ matrix.target }}
@@ -86,8 +113,34 @@ jobs:
             dist/release/windows-*/*.exe
             dist/release/windows-*/SHA256SUMS
 
-  release:
+  linux-runtime:
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: analyze-anything-${{ matrix.target }}
+      # These containers have no Rust toolchain or runner libraries. Test the archive users receive.
+      - name: Verify and self-test in clean Linux userspaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c ./*.sha256
+          mkdir unpacked
+          tar xzf ./*.tar.gz -C unpacked --strip-components=1
+          for image in ubuntu:24.04 debian:trixie-slim; do
+            docker run --rm --network none --read-only --tmpfs /tmp:rw,nosuid,nodev \
+              -v "$PWD/unpacked:/opt/aa:ro" "$image" /opt/aa/analyze-anything selftest
+          done
+
+  release:
+    needs: [build, linux-runtime]
     if: inputs.version != ''
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,1383 @@
+{
+  "commit": "52bb060",
+  "records": [
+    {
+      "checks": [
+        {
+          "check": "control identity: Package",
+          "matches": true
+        },
+        {
+          "check": "control identity: Version",
+          "matches": true
+        },
+        {
+          "check": "control identity: Architecture",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/control.tar.zst/control.tar/control",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/control.tar.zst/control.tar/postinst",
+          "matches": true
+        },
+        {
+          "check": "installation declaration text: native-script.deb/control.tar.zst/control.tar/postinst",
+          "matches": true
+        },
+        {
+          "check": "native TAR metadata: control.tar.zst",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/data.tar.zst/data.tar/usr/share/aa-fixture/data.txt",
+          "matches": true
+        },
+        {
+          "check": "native TAR metadata: data.tar.zst",
+          "matches": true
+        },
+        {
+          "check": "maintainer script declarations",
+          "matches": true
+        },
+        {
+          "check": "trigger declarations",
+          "matches": true
+        }
+      ],
+      "limitations": [
+        {
+          "artifact": "native-script.deb",
+          "code": "deb.integrity-unverified"
+        },
+        {
+          "artifact": "native-script.deb/control.tar.zst/control.tar/postinst",
+          "code": "deb.script-semantics"
+        }
+      ],
+      "native": {
+        "architecture": "all",
+        "archives": [
+          {
+            "entries": [
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": ".",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./control",
+                "sha256": "57283ff156911cc67284c348682c45fca777712107ef17080a1e7b0b060b5fc4",
+                "size": 206,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./postinst",
+                "sha256": "664dafcaaf2450efc2c75ea870b0caaac50c70fa832d70f26263b357bd371ecc",
+                "size": 50,
+                "type": 48
+              }
+            ],
+            "member": "control.tar.zst"
+          },
+          {
+            "entries": [
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": ".",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share/aa-fixture",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/aa-fixture/data.txt",
+                "sha256": "ab0b200cd9648260da4da0399ae041181fb583374bd07bc76465c1b90ee2b6c1",
+                "size": 39,
+                "type": 48
+              }
+            ],
+            "member": "data.tar.zst"
+          }
+        ],
+        "name": "aa-native-fixture",
+        "tool": "Debian 'dpkg-deb' package archive backend version 1.22.6 (amd64).",
+        "version": "1.2-3"
+      },
+      "pinned_fixture": true,
+      "sample": "native-script.deb",
+      "sha256": "ff1f0f24fb09213dafb44a0394a15d9721d0f08fcf60022e72351e3de350faef",
+      "source": "tools/native-compare/linux-package-fixtures.py"
+    },
+    {
+      "checks": [
+        {
+          "check": "control identity: Package",
+          "matches": true
+        },
+        {
+          "check": "control identity: Version",
+          "matches": true
+        },
+        {
+          "check": "control identity: Architecture",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/control.tar.xz/control.tar/control",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/control.tar.xz/control.tar/md5sums",
+          "matches": true
+        },
+        {
+          "check": "native TAR metadata: control.tar.xz",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/data.tar.xz/data.tar/usr/share/doc/node-isarray/README.md",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/data.tar.xz/data.tar/usr/share/doc/node-isarray/changelog.Debian.gz",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/data.tar.xz/data.tar/usr/share/doc/node-isarray/copyright",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/data.tar.xz/data.tar/usr/share/nodejs/isarray/index.js",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: node-isarray_2.0.5-1_all.deb/data.tar.xz/data.tar/usr/share/nodejs/isarray/package.json",
+          "matches": true
+        },
+        {
+          "check": "native TAR metadata: data.tar.xz",
+          "matches": true
+        },
+        {
+          "check": "maintainer script declarations",
+          "matches": true
+        },
+        {
+          "check": "trigger declarations",
+          "matches": true
+        }
+      ],
+      "limitations": [
+        {
+          "artifact": "node-isarray_2.0.5-1_all.deb",
+          "code": "deb.integrity-unverified"
+        }
+      ],
+      "native": {
+        "architecture": "all",
+        "archives": [
+          {
+            "entries": [
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": ".",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./control",
+                "sha256": "9242572baf0cc80393b78134d8f4a5d22b0976dd50319cb7f1f4614c0d554526",
+                "size": 499,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./md5sums",
+                "sha256": "66a01a8d8d7e8fd6d56efc1bf9732fcf21a1bc99e41b8c5872f9e7ec4e50f14a",
+                "size": 363,
+                "type": 48
+              }
+            ],
+            "member": "control.tar.xz"
+          },
+          {
+            "entries": [
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": ".",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share/doc",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share/doc/node-isarray",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/doc/node-isarray/README.md",
+                "sha256": "a262a04ce7a41ff46a2dc873aa6b5c93e6397ebd7ee620d711b8d4e24467d5ac",
+                "size": 1211,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/doc/node-isarray/changelog.Debian.gz",
+                "sha256": "ae9944ddbc6ec5f39f75bf74e4cdfe157de6ef6f873511bfa741ed58985f4be0",
+                "size": 597,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/doc/node-isarray/copyright",
+                "sha256": "10f1398ab3a9c5e05ac5043cb88a13fb10cab44bb23530e6c40e4190506e4611",
+                "size": 1531,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share/nodejs",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share/nodejs/isarray",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/nodejs/isarray/index.js",
+                "sha256": "9b8c691372802da788c9c5f4e1ca2f1ed0b88ab8722176c2aea15e38ec86d249",
+                "size": 132,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/nodejs/isarray/package.json",
+                "sha256": "b0802c09bce6bf067d3e5f52390ea26972e11c88bb6ae38991316ac83ca14127",
+                "size": 991,
+                "type": 48
+              }
+            ],
+            "member": "data.tar.xz"
+          }
+        ],
+        "name": "node-isarray",
+        "tool": "Debian 'dpkg-deb' package archive backend version 1.22.6 (amd64).",
+        "version": "2.0.5-1"
+      },
+      "pinned_fixture": true,
+      "sample": "node-isarray_2.0.5-1_all.deb",
+      "sha256": "41b6b84a05e30d35b2ac224c5f4600b2a4e976d19f7d0bfdf0565dd729962d84",
+      "source": "https://deb.debian.org/debian/pool/main/n/node-isarray/node-isarray_2.0.5-1_all.deb"
+    },
+    {
+      "checks": [
+        {
+          "check": "header identity: name",
+          "matches": true
+        },
+        {
+          "check": "header identity: version",
+          "matches": true
+        },
+        {
+          "check": "header identity: release",
+          "matches": true
+        },
+        {
+          "check": "header identity: architecture",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1000",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1001",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1002",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1014",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1021",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1022",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1024",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1025",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1047",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1048",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1049",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1050",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1086",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1087",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1112",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1113",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1124",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1125",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1126",
+          "matches": true
+        },
+        {
+          "check": "native file size: /usr/share/aa-fixture/data.txt",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.rpm/[payload].cpio.gz/[payload].cpio/usr/share/aa-fixture/data.txt",
+          "matches": true
+        },
+        {
+          "check": "native CPIO paths",
+          "matches": true
+        }
+      ],
+      "limitations": [
+        {
+          "artifact": "native-script.rpm",
+          "code": "rpm.integrity-unverified"
+        },
+        {
+          "artifact": "native-script.rpm",
+          "code": "rpm.metadata-scope"
+        },
+        {
+          "artifact": "native-script.rpm",
+          "code": "rpm.script-semantics"
+        }
+      ],
+      "native": {
+        "architecture": "noarch",
+        "entries": [
+          {
+            "link_target": null,
+            "mode": 33188,
+            "path": "/usr/share/aa-fixture/data.txt",
+            "sha256": "ab0b200cd9648260da4da0399ae041181fb583374bd07bc76465c1b90ee2b6c1",
+            "size": 39
+          }
+        ],
+        "name": "aa-native-fixture",
+        "release": "3",
+        "tags": [
+          {
+            "tag": 1000,
+            "value": "aa-native-fixture"
+          },
+          {
+            "tag": 1001,
+            "value": "1.2"
+          },
+          {
+            "tag": 1002,
+            "value": "3"
+          },
+          {
+            "tag": 1014,
+            "value": "Apache-2.0"
+          },
+          {
+            "tag": 1021,
+            "value": "linux"
+          },
+          {
+            "tag": 1022,
+            "value": "noarch"
+          },
+          {
+            "tag": 1024,
+            "value": "printf 'not executed by these checks\\n'"
+          },
+          {
+            "tag": 1025,
+            "value": "printf 'not executed by these checks\\n'"
+          },
+          {
+            "tag": 1047,
+            "value": [
+              "aa-native-fixture"
+            ]
+          },
+          {
+            "tag": 1048,
+            "value": [
+              0,
+              1280,
+              2304,
+              16777226,
+              16777226,
+              16777226
+            ]
+          },
+          {
+            "tag": 1049,
+            "value": [
+              "/bin/sh",
+              "/bin/sh",
+              "/bin/sh",
+              "rpmlib(CompressedFileNames)",
+              "rpmlib(FileDigests)",
+              "rpmlib(PayloadFilesHavePrefix)"
+            ]
+          },
+          {
+            "tag": 1050,
+            "value": [
+              "",
+              "",
+              "",
+              "3.0.4-1",
+              "4.6.0-1",
+              "4.0-1"
+            ]
+          },
+          {
+            "tag": 1086,
+            "value": "/bin/sh"
+          },
+          {
+            "tag": 1087,
+            "value": "/bin/sh"
+          },
+          {
+            "tag": 1112,
+            "value": [
+              8
+            ]
+          },
+          {
+            "tag": 1113,
+            "value": [
+              "1.2-3"
+            ]
+          },
+          {
+            "tag": 1124,
+            "value": "cpio"
+          },
+          {
+            "tag": 1125,
+            "value": "gzip"
+          },
+          {
+            "tag": 1126,
+            "value": "9"
+          }
+        ],
+        "tool": "RPM version 4.18.2",
+        "version": "1.2"
+      },
+      "pinned_fixture": true,
+      "sample": "native-script.rpm",
+      "sha256": "55f0c03cd773fac8922977683702e9d551556d4470f65e11e92934dffe252585",
+      "source": "tools/native-compare/linux-package-fixtures.py"
+    },
+    {
+      "checks": [
+        {
+          "check": "header identity: name",
+          "matches": true
+        },
+        {
+          "check": "header identity: version",
+          "matches": true
+        },
+        {
+          "check": "header identity: release",
+          "matches": true
+        },
+        {
+          "check": "header identity: architecture",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1000",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1001",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1002",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1014",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1020",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1021",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1022",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1047",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1048",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1049",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1050",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1112",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1113",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1124",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1125",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1126",
+          "matches": true
+        },
+        {
+          "check": "symlink declaration: /usr/lib/.build-id/d7/a9a3db0ee6e186c399138ab1e7bf87f83dc3be",
+          "matches": true
+        },
+        {
+          "check": "symlink declaration: /usr/lib64/libxxhash.so.0",
+          "matches": true
+        },
+        {
+          "check": "native file size: /usr/lib64/libxxhash.so.0.8.4",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: xxhash-libs-0.8.4-2.fc43.x86_64.rpm/[payload].cpio.zst/[payload].cpio/usr/lib64/libxxhash.so.0.8.4",
+          "matches": true
+        },
+        {
+          "check": "native file size: /usr/share/doc/xxhash-libs/README.md",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: xxhash-libs-0.8.4-2.fc43.x86_64.rpm/[payload].cpio.zst/[payload].cpio/usr/share/doc/xxhash-libs/README.md",
+          "matches": true
+        },
+        {
+          "check": "native file size: /usr/share/licenses/xxhash-libs/LICENSE",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: xxhash-libs-0.8.4-2.fc43.x86_64.rpm/[payload].cpio.zst/[payload].cpio/usr/share/licenses/xxhash-libs/LICENSE",
+          "matches": true
+        },
+        {
+          "check": "native CPIO paths",
+          "matches": true
+        }
+      ],
+      "limitations": [
+        {
+          "artifact": "xxhash-libs-0.8.4-2.fc43.x86_64.rpm/[payload].cpio.zst/[payload].cpio",
+          "code": "cpio.special-file"
+        },
+        {
+          "artifact": "xxhash-libs-0.8.4-2.fc43.x86_64.rpm/[payload].cpio.zst/[payload].cpio",
+          "code": "cpio.special-file"
+        },
+        {
+          "artifact": "xxhash-libs-0.8.4-2.fc43.x86_64.rpm",
+          "code": "rpm.integrity-unverified"
+        },
+        {
+          "artifact": "xxhash-libs-0.8.4-2.fc43.x86_64.rpm",
+          "code": "rpm.metadata-scope"
+        }
+      ],
+      "native": {
+        "architecture": "x86_64",
+        "entries": [
+          {
+            "link_target": null,
+            "mode": 16877,
+            "path": "/usr/lib/.build-id",
+            "size": 0
+          },
+          {
+            "link_target": null,
+            "mode": 16877,
+            "path": "/usr/lib/.build-id/d7",
+            "size": 0
+          },
+          {
+            "link_target": "../../../../usr/lib64/libxxhash.so.0.8.4",
+            "mode": 41471,
+            "path": "/usr/lib/.build-id/d7/a9a3db0ee6e186c399138ab1e7bf87f83dc3be",
+            "size": 40
+          },
+          {
+            "link_target": "libxxhash.so.0.8.4",
+            "mode": 41471,
+            "path": "/usr/lib64/libxxhash.so.0",
+            "size": 18
+          },
+          {
+            "link_target": null,
+            "mode": 33261,
+            "path": "/usr/lib64/libxxhash.so.0.8.4",
+            "sha256": "a675ab4606a48df13b028d86e4d974a24471a706adb25399d7fe433d712397dc",
+            "size": 73440
+          },
+          {
+            "link_target": null,
+            "mode": 16877,
+            "path": "/usr/share/doc/xxhash-libs",
+            "size": 0
+          },
+          {
+            "link_target": null,
+            "mode": 33188,
+            "path": "/usr/share/doc/xxhash-libs/README.md",
+            "sha256": "2291c62a22b47c72539b852952d9b351a37638ca55398bf02b12cbc111997df7",
+            "size": 17222
+          },
+          {
+            "link_target": null,
+            "mode": 16877,
+            "path": "/usr/share/licenses/xxhash-libs",
+            "size": 0
+          },
+          {
+            "link_target": null,
+            "mode": 33188,
+            "path": "/usr/share/licenses/xxhash-libs/LICENSE",
+            "sha256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a",
+            "size": 1389
+          }
+        ],
+        "name": "xxhash-libs",
+        "release": "2.fc43",
+        "tags": [
+          {
+            "tag": 1000,
+            "value": "xxhash-libs"
+          },
+          {
+            "tag": 1001,
+            "value": "0.8.4"
+          },
+          {
+            "tag": 1002,
+            "value": "2.fc43"
+          },
+          {
+            "tag": 1014,
+            "value": "BSD-2-Clause"
+          },
+          {
+            "tag": 1020,
+            "value": "https://www.xxhash.com/"
+          },
+          {
+            "tag": 1021,
+            "value": "linux"
+          },
+          {
+            "tag": 1022,
+            "value": "x86_64"
+          },
+          {
+            "tag": 1047,
+            "value": [
+              "libxxhash.so.0()(64bit)",
+              "xxhash-libs",
+              "xxhash-libs(x86-64)"
+            ]
+          },
+          {
+            "tag": 1048,
+            "value": [
+              16384,
+              16384,
+              16384,
+              16384,
+              16384,
+              16384,
+              16777226,
+              16777226,
+              16777226,
+              16777226,
+              16384
+            ]
+          },
+          {
+            "tag": 1049,
+            "value": [
+              "libc.so.6()(64bit)",
+              "libc.so.6(GLIBC_2.14)(64bit)",
+              "libc.so.6(GLIBC_2.2.5)(64bit)",
+              "libc.so.6(GLIBC_2.3.4)(64bit)",
+              "libc.so.6(GLIBC_2.4)(64bit)",
+              "libc.so.6(GLIBC_ABI_DT_RELR)(64bit)",
+              "rpmlib(CompressedFileNames)",
+              "rpmlib(FileDigests)",
+              "rpmlib(PayloadFilesHavePrefix)",
+              "rpmlib(PayloadIsZstd)",
+              "rtld(GNU_HASH)"
+            ]
+          },
+          {
+            "tag": 1050,
+            "value": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "3.0.4-1",
+              "4.6.0-1",
+              "4.0-1",
+              "5.4.18-1",
+              ""
+            ]
+          },
+          {
+            "tag": 1112,
+            "value": [
+              32768,
+              8,
+              8
+            ]
+          },
+          {
+            "tag": 1113,
+            "value": [
+              "",
+              "0.8.4-2.fc43",
+              "0.8.4-2.fc43"
+            ]
+          },
+          {
+            "tag": 1124,
+            "value": "cpio"
+          },
+          {
+            "tag": 1125,
+            "value": "zstd"
+          },
+          {
+            "tag": 1126,
+            "value": "19"
+          }
+        ],
+        "tool": "RPM version 4.18.2",
+        "version": "0.8.4"
+      },
+      "pinned_fixture": true,
+      "sample": "xxhash-libs-0.8.4-2.fc43.x86_64.rpm",
+      "sha256": "8ebf402b124f6fc75f39155254b5a116fccfda53e4a3fbd52210f6f66f7b7c8e",
+      "source": "https://ftp.plusline.net/fedora/linux/updates/43/Everything/x86_64/Packages/x/xxhash-libs-0.8.4-2.fc43.x86_64.rpm"
+    },
+    {
+      "checks": [
+        {
+          "check": "control identity: Package",
+          "matches": true
+        },
+        {
+          "check": "control identity: Version",
+          "matches": true
+        },
+        {
+          "check": "control identity: Architecture",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/control.tar.zst/control.tar/control",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/control.tar.zst/control.tar/postinst",
+          "matches": true
+        },
+        {
+          "check": "installation declaration text: native-script.deb/control.tar.zst/control.tar/postinst",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/control.tar.zst/control.tar/triggers",
+          "matches": true
+        },
+        {
+          "check": "installation declaration text: native-script.deb/control.tar.zst/control.tar/triggers",
+          "matches": true
+        },
+        {
+          "check": "native TAR metadata: control.tar.zst",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/data.tar.zst/data.tar/usr/share/aa-fixture/data.txt",
+          "matches": true
+        },
+        {
+          "check": "native TAR metadata: data.tar.zst",
+          "matches": true
+        },
+        {
+          "check": "maintainer script declarations",
+          "matches": true
+        },
+        {
+          "check": "trigger declarations",
+          "matches": true
+        }
+      ],
+      "limitations": [
+        {
+          "artifact": "native-script.deb",
+          "code": "deb.integrity-unverified"
+        },
+        {
+          "artifact": "native-script.deb/control.tar.zst/control.tar/postinst",
+          "code": "deb.script-semantics"
+        },
+        {
+          "artifact": "native-script.deb/control.tar.zst/control.tar/triggers",
+          "code": "deb.trigger-semantics"
+        }
+      ],
+      "native": {
+        "architecture": "all",
+        "archives": [
+          {
+            "entries": [
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": ".",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./control",
+                "sha256": "57283ff156911cc67284c348682c45fca777712107ef17080a1e7b0b060b5fc4",
+                "size": 206,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./postinst",
+                "sha256": "664dafcaaf2450efc2c75ea870b0caaac50c70fa832d70f26263b357bd371ecc",
+                "size": 50,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./triggers",
+                "sha256": "e383429895893e3a219fa681f6b5730f2f886b1e6a17d9f258a24efdd6b9428b",
+                "size": 39,
+                "type": 48
+              }
+            ],
+            "member": "control.tar.zst"
+          },
+          {
+            "entries": [
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": ".",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 493,
+                "path": "./usr/share/aa-fixture",
+                "size": 0,
+                "type": 53
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./usr/share/aa-fixture/data.txt",
+                "sha256": "ab0b200cd9648260da4da0399ae041181fb583374bd07bc76465c1b90ee2b6c1",
+                "size": 39,
+                "type": 48
+              }
+            ],
+            "member": "data.tar.zst"
+          }
+        ],
+        "name": "aa-native-fixture",
+        "tool": "Debian 'dpkg-deb' package archive backend version 1.22.6 (amd64).",
+        "version": "1.2-3"
+      },
+      "pinned_fixture": false,
+      "sample": "native-script.deb",
+      "sha256": "24f8178b1874d5e04f229da5fdeb65613614b9e8f0992e287bb2bb7ec6058b77",
+      "source": "tools/native-compare/linux-package-fixtures.py"
+    },
+    {
+      "checks": [
+        {
+          "check": "header identity: name",
+          "matches": true
+        },
+        {
+          "check": "header identity: version",
+          "matches": true
+        },
+        {
+          "check": "header identity: release",
+          "matches": true
+        },
+        {
+          "check": "header identity: architecture",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1000",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1001",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1002",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1014",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1021",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1022",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1024",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1025",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1047",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1048",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1049",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1050",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1065",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1066",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1067",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1068",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1069",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1086",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1087",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1092",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1112",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1113",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1124",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1125",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1126",
+          "matches": true
+        },
+        {
+          "check": "native file size: /usr/share/aa-fixture/data.txt",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.rpm/[payload].cpio.gz/[payload].cpio/usr/share/aa-fixture/data.txt",
+          "matches": true
+        },
+        {
+          "check": "native CPIO paths",
+          "matches": true
+        }
+      ],
+      "limitations": [
+        {
+          "artifact": "native-script.rpm",
+          "code": "rpm.integrity-unverified"
+        },
+        {
+          "artifact": "native-script.rpm",
+          "code": "rpm.metadata-scope"
+        },
+        {
+          "artifact": "native-script.rpm",
+          "code": "rpm.script-semantics"
+        }
+      ],
+      "native": {
+        "architecture": "noarch",
+        "entries": [
+          {
+            "link_target": null,
+            "mode": 33188,
+            "path": "/usr/share/aa-fixture/data.txt",
+            "sha256": "ab0b200cd9648260da4da0399ae041181fb583374bd07bc76465c1b90ee2b6c1",
+            "size": 39
+          }
+        ],
+        "name": "aa-native-fixture",
+        "release": "3",
+        "tags": [
+          {
+            "tag": 1000,
+            "value": "aa-native-fixture"
+          },
+          {
+            "tag": 1001,
+            "value": "1.2"
+          },
+          {
+            "tag": 1002,
+            "value": "3"
+          },
+          {
+            "tag": 1014,
+            "value": "Apache-2.0"
+          },
+          {
+            "tag": 1021,
+            "value": "linux"
+          },
+          {
+            "tag": 1022,
+            "value": "noarch"
+          },
+          {
+            "tag": 1024,
+            "value": "printf 'not executed by these checks\\n'"
+          },
+          {
+            "tag": 1025,
+            "value": "printf 'not executed by these checks\\n'"
+          },
+          {
+            "tag": 1047,
+            "value": [
+              "aa-native-fixture"
+            ]
+          },
+          {
+            "tag": 1048,
+            "value": [
+              0,
+              256,
+              1280,
+              2304,
+              16777226,
+              16777226,
+              16777226
+            ]
+          },
+          {
+            "tag": 1049,
+            "value": [
+              "/bin/sh",
+              "/bin/sh",
+              "/bin/sh",
+              "/bin/sh",
+              "rpmlib(CompressedFileNames)",
+              "rpmlib(FileDigests)",
+              "rpmlib(PayloadFilesHavePrefix)"
+            ]
+          },
+          {
+            "tag": 1050,
+            "value": [
+              "",
+              "",
+              "",
+              "",
+              "3.0.4-1",
+              "4.6.0-1",
+              "4.0-1"
+            ]
+          },
+          {
+            "tag": 1065,
+            "value": [
+              "printf 'trigger not executed by these checks\\n'"
+            ]
+          },
+          {
+            "tag": 1066,
+            "value": [
+              "aa-native-fixture"
+            ]
+          },
+          {
+            "tag": 1067,
+            "value": [
+              ""
+            ]
+          },
+          {
+            "tag": 1068,
+            "value": [
+              65536
+            ]
+          },
+          {
+            "tag": 1069,
+            "value": [
+              0
+            ]
+          },
+          {
+            "tag": 1086,
+            "value": "/bin/sh"
+          },
+          {
+            "tag": 1087,
+            "value": "/bin/sh"
+          },
+          {
+            "tag": 1092,
+            "value": [
+              "/bin/sh"
+            ]
+          },
+          {
+            "tag": 1112,
+            "value": [
+              8
+            ]
+          },
+          {
+            "tag": 1113,
+            "value": [
+              "1.2-3"
+            ]
+          },
+          {
+            "tag": 1124,
+            "value": "cpio"
+          },
+          {
+            "tag": 1125,
+            "value": "gzip"
+          },
+          {
+            "tag": 1126,
+            "value": "9"
+          }
+        ],
+        "tool": "RPM version 4.18.2",
+        "version": "1.2"
+      },
+      "pinned_fixture": false,
+      "sample": "native-script.rpm",
+      "sha256": "41a6ad494354bde14a16fcf51166f9f75499ca484560ebcd48e4ec7346cc25f2",
+      "source": "tools/native-compare/linux-package-fixtures.py"
+    }
+  ],
+  "run": "https://github.com/atomsprout/analyze-anything/actions/runs/45374169192"
+}

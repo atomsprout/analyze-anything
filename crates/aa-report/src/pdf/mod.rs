@@ -377,6 +377,31 @@ fn view(report: &Report, lang: Lang) -> Value {
         "project": crate::credit(),
         "header": pairs(doc::header_items(report, lang)),
         "summary": pairs(doc::summary_items(report, lang)),
+        "questions_title": ui(lang, "questions"),
+        "questions_note": ui(lang, "questions_note"),
+        "questions_coverage": ui(lang, "questions_coverage"),
+        "relationships": ({
+            let relationships = crate::relationships::collect(report);
+            json!({
+                "title": ui(lang, "relationships"),
+                "note": ui(lang, "relationships_note"),
+                "empty": ui(lang, "relationships_none"),
+                "source_note": relationships.source_truncated.then(|| ui(lang, "relationships_cut")),
+                "count": format!("{} / {}", relationships.rows.len(), relationships.total),
+                "head": (["source_declaration", "relationship_status", "supplied_target"].map(|key| ui(lang, key))),
+                "rows": relationships.rows.iter().map(|row| vec![
+                    line(&cut(&format!("{} @ {} = {}", row.source, row.location, row.declaration), TEXT_LENGTH)),
+                    line(&format!("{} {}", row.status, row.reason.as_deref().unwrap_or(""))),
+                    line(&cut(&format!("{} {}", row.target.as_deref().unwrap_or(w.unknown), row.target_sha256.as_deref().unwrap_or("")), TEXT_LENGTH)),
+                ]).collect::<Vec<_>>(),
+            })
+        }),
+        "questions": doc::questions(report, lang).into_iter().map(|question| json!({
+            "title": question.title,
+            "total": question.total,
+            "empty": ui(lang, "question_unknown"),
+            "samples": question.samples.iter().map(|sample| line(&format!("{} [{} · {}]", sample.text, words::confidence(lang, sample.confidence), sample.id.chars().take(16).collect::<String>()))).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
         "severities": severities,
         "attention": attention_view,
         "chapters": chapters,
@@ -386,8 +411,9 @@ fn view(report: &Report, lang: Lang) -> Value {
             "note": inventory.note,
         },
         "coverage": {
-            "truncated": report.coverage.truncated,
-            "status": if report.coverage.truncated { w.truncated } else { w.complete },
+            "truncated": doc::content_incomplete(report),
+            "status": if doc::content_incomplete(report) { w.truncated } else { w.complete },
+            "items": pairs(doc::coverage_items(report, lang)),
             "limitations": limitations,
         },
     })

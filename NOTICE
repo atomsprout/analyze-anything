@@ -5,6 +5,24 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This product bundles the following, each under its own licence.
 
+The fixtures in crates/aa-linux/tests/data include:
+- node-isarray_2.0.5-1_all.deb, unchanged from Debian's package pool:
+  https://deb.debian.org/debian/pool/main/n/node-isarray/node-isarray_2.0.5-1_all.deb
+  Copyright 2013 Julian Gruber; Debian packaging copyright 2015 Bas Couwenberg
+  and Ross Gammon. Expat (MIT); see COPYRIGHT-node-isarray.txt, copied unchanged
+  from the package's usr/share/doc/node-isarray/copyright.
+- xxhash-libs-0.8.4-2.fc43.x86_64.rpm, unchanged from the Fedora 43 updates mirror:
+  https://ftp.plusline.net/fedora/linux/updates/43/Everything/x86_64/Packages/x/xxhash-libs-0.8.4-2.fc43.x86_64.rpm
+  The xxHash library, copyright 2012-2021 Yann Collet, BSD-2-Clause.
+  See LICENSE-xxhash.txt, from Cyan4973/xxHash tag v0.8.4. This is the library
+  subpackage; it contains no GPL xxhsum command-line program.
+Both are static test inputs, never installed or executed. Native development
+tools used to read them are not distributed as runtime dependencies.
+The native-script.deb and native-script.rpm fixtures in the same directory are
+project-authored Apache-2.0 text/script-declaration packages built by
+tools/native-compare/linux-package-fixtures.py on the hosted Ubuntu 24.04 runner.
+Their installation scripts were never run; neither package was installed.
+
 The project-authored native-catalog-v1.cat, native-catalog-v2.cat and their -unsigned.cat
 fixtures in crates/aa-windows/tests/data were generated with Windows SDK MakeCat
 10.0.26100.0 and signed with SignTool using a temporary project-generated test key.
@@ -151,6 +169,28 @@ Test samples in crates/aa-windows/tests/data (not part of the program):
     Only the sample is used; no parser code is copied.
 
 Every other test sample is built by scripts in this repository.
+
+The sdk-dotnet-bundle.exe fixture in crates/aa-unpack/tests/data is built from
+tools/fixtures/executable-bundles with Microsoft .NET SDK 10.0.401 and the
+Microsoft.NETCore.App.Host.win-x64 10.0.12 pack. The native apphost is Copyright
+(c) .NET Foundation and Contributors, MIT; LICENSE-dotnet-runtime.txt preserves
+the upstream notice (https://github.com/dotnet/runtime). The embedded program
+and build project are project-authored under Apache-2.0. The program is never
+executed by analysis or tests. Its reference JSON is a read-only BinaryReader,
+DeflateStream and SHA-256 snapshot produced by this project's reference tool.
+
+The native-carchive.pkg fixture contains only the project-authored Apache-2.0
+data.txt from tools/fixtures/executable-bundles, serialized by PyInstaller 6.22.3's
+external CArchive writer. No PyInstaller code or bootloader is contained in this
+fixture or copied into the analyzer. The read-only reference snapshot and
+producer script are project-authored under Apache-2.0.
+
+Additional executable-bundle comparisons use externally stored WinSW-x64.exe
+from winsw/winsw v3.0.0-alpha.11 (source project: MIT) and yt-dlp.exe from
+yt-dlp/yt-dlp 2026.11.23 (source project: Unlicense). Their bundled runtimes and
+dependencies have their respective upstream licences. These larger executables
+are not redistributed in this repository. Sources, digests and comparison scope
+are recorded in docs/spikes/executable-bundles.md.
 
 native-codepages.reg and its reference JSON in crates/aa-windows/tests/data are a
 read-only export of Windows code-page metadata, made by this project's

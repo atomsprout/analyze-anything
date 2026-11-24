@@ -33,13 +33,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: apps/desktop
     steps:
       - uses: actions/checkout@v4
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xvfb dbus-x11
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v4
@@ -50,10 +55,11 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npx playwright install webkit chromium
+      - run: npx playwright install --with-deps webkit chromium
       - run: npm run fixture
       - run: npm run test:browser
       - run: cargo clippy -p aa-desktop --all-targets -- -D warnings
+      - run: cargo test -p aa-desktop
       - name: Compare Windows WebView2 desktop exports with the CLI
         if: runner.os == 'Windows'
         working-directory: .
@@ -66,6 +72,17 @@ jobs:
           $file = [IO.File]::Create($slow)
           try { $file.SetLength(1GB) } finally { $file.Dispose() }
           python -u tools/desktop-check/check.py target/debug/analyze-anything-desktop.exe target/debug/analyze-anything.exe crates/aa-unpack/tests/data/sample.zip crates/aa-unpack/tests/data/sample.tar.gz --slow $slow --timeout 300
+      - name: Compare Linux WebKitGTK desktop exports with the CLI
+        if: runner.os == 'Linux'
+        working-directory: .
+        env:
+          CARGO_BUILD_JOBS: 2
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          cargo build --locked -p aa-desktop -p aa-cli -F tauri/custom-protocol
+          slow="$RUNNER_TEMP/aa-desktop-slow.bin"
+          truncate -s 1G "$slow"
+          dbus-run-session -- xvfb-run -a python3 -u tools/desktop-check/check.py target/debug/analyze-anything-desktop target/debug/analyze-anything crates/aa-unpack/tests/data/sample.zip crates/aa-unpack/tests/data/sample.tar.gz --slow "$slow" --timeout 300
 
   licenses:
     runs-on: ubuntu-latest

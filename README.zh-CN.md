@@ -20,7 +20,7 @@ analyze-anything App.ipa
 有两种用法，共用同一套引擎，同一个输入得到相同的报告：
 
 - **命令行** `analyze-anything`（短名字 `aaaa`）；
-- macOS 的**桌面版**：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史并对比两个版本；设置好之后，还可以让模型在报告旁边解读它。
+- macOS 的**桌面版**：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史；设置好之后，还可以让模型在报告旁边解读它。
 
 报告默认是英文，加 `--lang zh` 写中文。
 
@@ -59,14 +59,14 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-目前只发布 Apple 芯片 Mac 的版本。在 Linux 和 Windows 上，代码能构建、测试在 CI 里通过，但还没有人在这两个平台上实际用过。
+签名的稳定版面向 Apple 芯片 Mac。[GitHub releases](https://github.com/atomsprout/analyze-anything/releases) 另有 Windows x64 和 Linux x64/ARM64 的未签名 CLI 预览版。Windows x64 桌面版已通过本地验收，包括 Windows 10 离线安装；托管环境的 Windows 与 Ubuntu 24.04 x64 Linux 桌面检查也已通过。已发布的 preview.1 Windows CLI 依赖 Visual C++ 运行库；静态链接的 preview.2 候选已通过干净系统自测。具体范围见[平台验收记录](docs/LIMITATIONS.md)。
 
 ## 使用
 
 ```
 analyze-anything <文件或文件夹>                    # 分析；报告写到 <名字>.report/
 analyze-anything App.ipa -o out --lang zh         # 指定文件夹；用中文写报告
-analyze-anything diff 旧/report.json 新/report.json     # 两个版本之间变了什么
+analyze-anything query out/report.json evidence --args '{}' # 离线查询证据，无需 AI
 analyze-anything explain out/report.json <结论 ID>      # 一条结论和它的全部证据
 analyze-anything verify out/                      # 输出文件有没有被改动
 ```
@@ -83,7 +83,8 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 |---|---|
 | Apple | `.app` 等 bundle、IPA、DMG（HFS+ 和 APFS）、pkg；Info.plist、代码签名与证书链、封存资源、权利、描述文件、隐私清单、FairPlay 加密 |
 | Android | APK、AAB、XAPK / APKS / APKM；清单、资源、签名方案 v1–v3.1、DEX、SDK 与加固壳 |
-| Windows | PE、Authenticode、.NET 程序集、MSI（含它自身的签名）、NSIS、Inno Setup、CAB、自解压程序、Electron（asar）、MSIX、已安装程序目录 |
+| Windows | PE、Authenticode、.NET 程序集与有边界的单文件包、PyInstaller CArchive 内容、MSI（含它自身的签名）、NSIS、Inno Setup、CAB、自解压程序、Electron（asar）、MSIX、已安装程序目录 |
+| Linux 软件包 | 有边界的 deb 与 RPM v4 支持：包元数据、依赖与安装脚本的字面声明、TAR/CPIO 载荷及链接声明；不安装或验证签名 |
 | 通用 | Mach-O、ELF、PE 的结构与加固选项；zip、tar、7z、gzip、bzip2、xz、zstd，任意嵌套；URL、疑似凭据、熵、相同文件 |
 
 ## 工作原理
@@ -159,14 +160,14 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-0.1 是第一个发布系列（目前是 0.1.1）。今天任何文件或文件夹都能得到一份报告；Apple、Android、Windows 的格式能深入理解。目前只发布了 Apple 芯片 Mac 的版本，也只在一台这样的 Mac 上手工用过；在 Linux 和 Windows 上，代码能构建并通过 CI 里的测试。
+稳定版是 0.1.1；源码正在准备 0.2.0-preview.2。今天任何文件或文件夹都能得到一份报告，各格式有不同的分析深度和明确的局限。macOS 有签名发布版，CLI 有 Windows 和 Linux 预览版，Windows 桌面版已做本地验收。平台验收和更广的格式覆盖仍在推进。
 
 “Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
 
-1. **各个系统上都一样可用**：发布 Linux、Windows 的版本；桌面版走出 macOS。
-2. **更多种输入**：Linux 软件包、容器镜像、各语言生态的包、更多应用平台、带代码的文档、固件镜像。
-3. **在要紧的地方更深入**：用离线数据库匹配已知漏洞、函数级的事实、把规则和策略做成数据。
-4. **更容易在它之上构建**：GitHub Action、把 AI 解读放进报告、更完整的 agent 接口、稳定的报告结构。
+1. **0.2 — 可靠使用**：验收跨平台交付、取消、资源限制和不完整分析的行为。
+2. **0.3 — 理解整个软件**：串联入口、载荷、组件和完整性声明，改善报告导读并明确覆盖范围。
+3. **0.4 — 看进更多内容**：有边界地读取 .NET single-file、PyInstaller 和 Linux 软件包，复用已有分析器。
+4. **0.5 — 更容易获取和复用答案**：离线查询报告、便捷查阅证据、明确 JSON 兼容性，并提供显式的 agent 分析流程。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
 
@@ -185,6 +186,8 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 除本文件和使用说明外，文档都是英文。
 
 - [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md) — 命令行的完整说明
+- [docs/QUERY.md](docs/QUERY.md)、[docs/JSON.md](docs/JSON.md) — 离线查询、分页与报告兼容性
+- [docs/AGENT-SERVER.md](docs/AGENT-SERVER.md) — 通过 MCP 显式请求分析指定根目录内的输入
 - [docs/DEEP.md](docs/DEEP.md) — 可选的深入分析：让 Ghidra 或 Hopper 指出哪段代码做了什么
 - [docs/AI.md](docs/AI.md) — 可选的 AI 解读
 - [docs/DESKTOP.md](docs/DESKTOP.md) — 桌面版：结构、开发、测试、发布

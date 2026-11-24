@@ -15,6 +15,20 @@ mod walk;
 pub use aa_windows::source_roots::{SourceRoot as WindowsSourceRoot, validate as validate_windows_source_roots};
 pub use tree::Reader;
 
+/// Check the platform's local-file policy before metadata access. This is a path
+/// preflight, not filesystem isolation against concurrent ancestor replacement.
+pub fn validate_local_input(path: &std::path::Path) -> std::io::Result<()> {
+    #[cfg(windows)]
+    {
+        disk::check(path)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        Ok(())
+    }
+}
+
 /// Checks storage placement before a supervisor creates its worker directory.
 /// Scratch files must not become part of the input being listed or modify that input.
 pub fn validate_scratch_root(input: &std::path::Path, scratch: &std::path::Path) -> std::io::Result<()> {
@@ -208,15 +222,20 @@ impl Registry {
     /// Everything built into this version.
     pub fn standard() -> Self {
         let mut registry = Registry::default();
-        registry.unpackers.extend(aa_apple::unpackers());
+        registry.unpackers.extend(aa_apple::container_unpackers());
+        registry.unpackers.extend(aa_unpack::executable_unpackers());
         registry.unpackers.extend(aa_windows::unpackers());
         registry.unpackers.extend(aa_android::unpackers());
+        registry.unpackers.extend(aa_linux::unpackers());
         registry.unpackers.extend(aa_unpack::unpackers());
+        registry.unpackers.extend(aa_apple::payload_unpackers());
         registry.analyzers.extend(aa_content::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_binary::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_apple::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_windows::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_android::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_linux::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_unpack::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_correlate::analyzers().into_iter().map(Arc::from));
         registry
     }

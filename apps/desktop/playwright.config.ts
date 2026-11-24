@@ -6,8 +6,13 @@ export default defineConfig({
   testDir: "tests/browser",
   fullyParallel: true,
   reporter: "list",
-  use: { baseURL: "http://localhost:1420" },
-  webServer: { command: "npm run dev", url: "http://localhost:1420", reuseExistingServer: true },
+  // Use the same address family for Vite, readiness and browser navigation on every host.
+  use: { baseURL: "http://127.0.0.1:1420" },
+  webServer: {
+    command: "npm run dev -- --host 127.0.0.1",
+    url: "http://127.0.0.1:1420",
+    reuseExistingServer: !process.env.CI,
+  },
   projects: [
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },

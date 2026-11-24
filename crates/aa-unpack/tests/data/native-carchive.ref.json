@@ -1,0 +1,21 @@
+{
+  "archive_start": 0,
+  "contents_agree": true,
+  "declarations_agree": true,
+  "files": [
+    {
+      "compression_flag": 1,
+      "name": "data.txt",
+      "offset": 0,
+      "sha256": "a31decef81c09993dd380198d47b7069d1af9e6b69b356075012023896bd2962",
+      "size": 56,
+      "stored_size": 61,
+      "type": "x"
+    }
+  ],
+  "limitations": {},
+  "options": [],
+  "reference_version": "6.22.3",
+  "sample": "sdk-carchive.pkg",
+  "sha256": "656f35762d5ca722b6ccd83d06db7c97a81fcd821b1b776886757a384b3569a7"
+}

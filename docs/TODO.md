@@ -2,13 +2,73 @@
 
 Phase one (the command line) and the macOS desktop app of phase two (D0–D5) are done, and so is the optional AI interpretation of phase three. This file lists what is not finished, item by item; the direction and the order of the larger work are in [ROADMAP.md](ROADMAP.md). Known limits of what the program does are in [LIMITATIONS.md](LIMITATIONS.md); the desktop app is described in [DESKTOP.md](DESKTOP.md).
 
-## Next after 0.2.0-preview.1
+## Delivery milestones: 0.2 through 0.5
+
+The implementation and scoped acceptance evidence are collected in
+[PR #6](https://github.com/atomsprout/analyze-anything/pull/6), in the order defined in
+[PLAN-VERSIONS.md](PLAN-VERSIONS.md). These completed milestones do not publish releases
+or close the broader Windows and ecosystem projects below.
+
+- [x] **0.2 — Reliable use:** hosted platform checks, packaged CLI qualification,
+  cancellation and limit semantics, and current installation documentation.
+  - [x] Bind browser tests and readiness checks to the same explicit IPv4 address;
+    production page build, 14 unit tests and 38 WebKit/Chromium tests passed on Windows.
+  - [x] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
+    Rehearsals 45360483004 and 45382485314 passed; the downloaded Windows archive passed its checksum,
+    self-test and two independent CRT import checks. See [qualification](spikes/delivery-qualification.md).
+  - [x] Verify hosted CI and release rehearsal and record supported runtime baselines.
+    Combined-source CI 45382506185 at d047df8 passed all seven jobs, as did CI
+    45386227144 after the final cancellation correction at 9dab32b. Windows/Linux
+    real-window checks each passed 67 checks. Rehearsal 45382485314 passed all four
+    builds, Windows desktop packaging and Linux x64/ARM64 self-tests in Ubuntu 24.04
+    and Debian trixie-slim. Exact revisions and archive hashes are recorded in
+    [delivery qualification](spikes/delivery-qualification.md).
+  - [x] Compare a real signed MSI and installed directory; 127 native checks passed,
+    including independent digests for 107 installed files. See [the record](spikes/windows-baseline.md).
+  - [x] Resolve the url/cookie advisory gate through patched lockfile versions;
+    the hosted advisory/license job passed again for the combined d047df8 source.
+- [x] **0.3 — Understand the supplied software:** evidence-linked relationships,
+  report orientation and attributable coverage, with ambiguous and unresolved cases.
+  - [x] Add bilingual opening questions that cite existing findings and confidence,
+    with direct HTML navigation to their evidence.
+  - [x] Index supported supplied-file, driver-source, catalog-digest and package-dependency
+    facts, preserving unknown targets, reasons, candidates and truncation.
+  - [x] Distinguish lost content from complete byte reads in every report format and
+    expose artifact-specific versus run-wide limitation counts.
+  - [x] Pass 24 rendering regressions, the multi-file engine-to-renderer test and 38
+    browser checks. English/Chinese PDF pages were visually inspected; see
+    [the acceptance record](spikes/report-understanding.md). Combined-source CI
+    45382506185 passed, including the expanded 38-check browser suite.
+- [x] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
+  profiles, each with real samples, native comparisons and tested limitations.
+  Hosted CI 45374182266 passed all three core and desktop platforms and the license
+  gate at 52bb060; combined-source CI 45382506185 passed again at d047df8.
+  - [x] Add bounded .NET single-file and PyInstaller CArchive readers, with original
+    metadata evidence, native fixtures and published WinSW/yt-dlp comparisons. See
+    [the profiles](spikes/executable-bundles.md).
+  - [x] Implement and qualify deb/rpm metadata, payloads and declared installation scripts.
+    The readers and 17 local tests pass; native run 45374169192 passed 125 checks,
+    including source text and trigger declarations. See [the supported profiles](spikes/linux-packages.md).
+- [x] **0.5 — Find and reuse answers:** offline report queries, report navigation,
+  JSON compatibility and explicit agent analysis requests.
+  - [x] Share offline bounded finding/evidence/file/coverage queries between the CLI,
+    optional interpretation and read-only MCP, including the no-AI build. See [queries](QUERY.md).
+  - [x] Check the schema header before parsing a report body, with explicit unsupported
+    versions and tests of same-layout optional defaults. See [the JSON contract](JSON.md).
+  - [x] Complete large-report navigation and its browser checks: isolated finding view,
+    stable fragments, keyboard focus and filter retention; 38 browser checks passed.
+  - [x] Add explicit rooted agent analysis separately from finished-report queries,
+    with snapshot IDs, cancellation, deadlines and private worker cleanup. Windows
+    process tests passed, as did hosted Unix path checks and combined CI 45382506185.
+    CI 45386227144 passed again after fixing cancellation during deadline shutdown.
+
+## Release qualification after 0.2.0-preview.1
 
 The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
 
-1. Finish hosted Windows desktop CI and the release rehearsal. A fresh, disconnected Windows 10 x64 guest without `VCRUNTIME140.dll` reproduced the launch failure with the published preview.1 CLI. The statically linked preview.2 candidate ran its full CLI self-test in the same guest and exited successfully.
+1. Hosted Windows desktop CI and packaged-artifact qualification passed as recorded above. A fresh, disconnected Windows 10 x64 guest without `VCRUNTIME140.dll` reproduced the launch failure with the published preview.1 CLI. The statically linked preview.2 candidate ran its full CLI self-test in the same guest and exited successfully; that guest was not rerun with later rehearsal archives.
 2. Extend Windows native CLI comparisons (W0), file-access coverage (W1) and worker isolation (W2).
-3. Qualify the Windows and Linux CLI previews on clean systems. Expand coverage for entry points, scripts, drivers and package metadata (W3–W5, W7). MSIX follow-up work remains deferred (W6).
+3. Broaden the recorded Windows/Linux runtime baselines and prepare formal distribution. Expand coverage for entry points, scripts, drivers and package metadata (W3–W5, W7). MSIX follow-up work remains deferred (W6).
 4. Scope modern executable bundles and installer relationships separately (W8, W9). Office and disk images remain separate projects (W11, W12).
 
 Also investigate the Xcode pkg CMS parsing limitation and obtain real samples for the formats below. Linux desktop verification and signed release automation have their own acceptance criteria.
@@ -17,7 +77,7 @@ Also investigate the Xcode pkg CMS parsing limitation and obtain real samples fo
 
 The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md). Items remain open until their full implementation and recorded comparisons are complete; partial checks are listed explicitly.
 
-- [ ] **W0 — Windows CLI baseline**: run real installers and installed program folders on the available x64 machine; compare embedded and MSI signatures with `signtool` and the Windows signature view. Record tool versions, sample digests and the differences in cryptographic checks versus system trust policy.
+- [ ] **W0 — Real samples and parser accuracy**: read real installers and installed program folders on the available x64 machine; verify embedded and MSI signature results against `signtool` and the Windows signature view for the same samples. Record tool versions, sample digests and the differences in cryptographic checks versus system trust policy.
   Initial x64 no-AI build and 12 native checks passed; [the baseline record](spikes/windows-baseline.md) states the exact samples and remaining coverage.
 - [ ] **W1 — Local file boundaries**: test Unicode and long paths, reparse points, locked files, extraction-name collisions and remote/cloud content; define named-stream coverage without making ordinary reports depend on machine metadata.
   Initial checks refuse explicit UNC/device/stream paths, reparse points and recall/encrypted file attributes; real junction, hardlink, named-stream, long Unicode path and locked-file tests pass. Ancestor replacement races, mapped network drives and real cloud/EFS samples remain open; see [the file-access record](spikes/windows-file-access.md).
@@ -83,7 +143,8 @@ Left from that run, both honest limitations rather than wrong findings:
 - [ ] Put the interpretation into the HTML and PDF reports as a chapter of its own, marked AI-generated.
 - [x] Offer it in the desktop app: a panel beside the report, with the same settings file. Setting it up from inside the app, and stopping an interpretation that is under way, are not there yet.
 - [ ] Follow-up questions about a report: `analyze-anything ask out/ "which hosts does it mention?"`.
-- [ ] A SKILL.md, and a tool-server mode in which an agent can also ask for an analysis.
+- [x] A separate rooted tool-server mode in which an agent can explicitly request analysis; see [AGENT-SERVER.md](AGENT-SERVER.md).
+- [ ] A SKILL.md for agents using the program.
 
 ## The deep level
 
@@ -125,12 +186,12 @@ These formats were tested with constructed data only:
 ## After phase two
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
-  Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows desktop CI, signed delivery and Linux desktop verification remain open. See [DESKTOP.md](DESKTOP.md).
-- [ ] Qualify Linux and Windows CLI builds for formal distribution. The published preview passed the release workflow self-checks. The statically linked Windows x64 preview.2 candidate passed its clean-system self-test. Linux clean-system checks and verification of the hosted release artifacts remain open.
+  Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows WebView2 and Ubuntu 24.04 x64 WebKitGTK checks each passed 67 checks at d047df8. Linux physical-display acceptance, broader packaging and signed delivery remain open. See [DESKTOP.md](DESKTOP.md).
+- [ ] Prepare Linux and Windows CLI builds for formal distribution beyond the qualified unsigned archives. Rehearsal 45382485314 passed packaged self-tests and Linux x64/ARM64 checks in Ubuntu 24.04 and Debian trixie-slim. The downloaded Windows CLI passed its checksum, self-test and independent CRT import checks. The earlier statically linked preview.2 candidate passed a clean Windows 10 guest self-test; later archives were not rerun in that guest. Release promotion, broader OS baselines and signed delivery remain separate work.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 
 ## Phase three: the ecosystem
 
-- [ ] More inputs: Linux packages (deb, rpm, AppImage), HarmonyOS HAP, PyInstaller and similar bundles.
+- [ ] More inputs: broaden the qualified initial deb/rpm and PyInstaller profiles; add AppImage, HarmonyOS HAP and similar bundles.
 - [x] A `deep` level: done with Ghidra and Hopper; what is left of it is under "The deep level" above.

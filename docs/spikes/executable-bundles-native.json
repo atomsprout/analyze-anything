@@ -1,0 +1,3749 @@
+[
+  {
+    "all_member_digests_agree": true,
+    "compressed_members": 0,
+    "entry_fields_agree": true,
+    "files": [
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282422,
+        "offset": 9467392,
+        "path": "WinSW.runtimeconfig.json",
+        "sha256": "585e971c9ea4fb46e434ca5cad76f0660cf83d29399cbc8237e3d4914d153923",
+        "size": 1265,
+        "type": 4
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282472,
+        "offset": 9469952,
+        "path": "cs/System.CommandLine.resources.dll",
+        "sha256": "80a66497a01e9ea5be7d68ce19069719751c4b720f9774660c09ab33ac8f8e6e",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282533,
+        "offset": 9490432,
+        "path": "de/System.CommandLine.resources.dll",
+        "sha256": "3dfa07de8267c771be47a10217e2eafd0e57e68933c536a239b65284dc6f09da",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282594,
+        "offset": 9510912,
+        "path": "es/System.CommandLine.resources.dll",
+        "sha256": "4283743428f7abb509eab0d523d8000ee7a89fd354dc1db96dc8424b37ce714f",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282655,
+        "offset": 9531392,
+        "path": "fr/System.CommandLine.resources.dll",
+        "sha256": "e52478e38b6ac9ecd85999aa5ad181097c41833c9adba62b87bd9fa443b2a8ea",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282716,
+        "offset": 9551872,
+        "path": "it/System.CommandLine.resources.dll",
+        "sha256": "291da56b4c02bded6ad0e707999370b1e6ad592b74c4691e299c8097fbe44f97",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282777,
+        "offset": 9572352,
+        "path": "ja/System.CommandLine.resources.dll",
+        "sha256": "8b03127957ea51ca2c4e17512d9b84fb545b6c6995047e96c7c1b674d2a3fc83",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282838,
+        "offset": 9592832,
+        "path": "ko/System.CommandLine.resources.dll",
+        "sha256": "b4d7904ec3b87b632cec7fd479c6feb063caa7394c79c7f5165df506a45ee0ba",
+        "size": 19344,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282899,
+        "offset": 9613312,
+        "path": "pl/System.CommandLine.resources.dll",
+        "sha256": "5a51caed53a75d8339df176c8f5118cf609f38e73e39097c6d7edf73721678a0",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18282960,
+        "offset": 9633792,
+        "path": "pt-BR/System.CommandLine.resources.dll",
+        "sha256": "8fd9272f780e6d46d69ff25bf320e7a5caf5d61fbfb0c89781fbc8f64dab6596",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283024,
+        "offset": 9654272,
+        "path": "ru/System.CommandLine.resources.dll",
+        "sha256": "a56ee9d0fd2254b0581f256495b61cc24135a3f1fffdb4edd70db87eff6db3ab",
+        "size": 19344,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283085,
+        "offset": 9674752,
+        "path": "tr/System.CommandLine.resources.dll",
+        "sha256": "795abf08b10483a5d58a95dda7190fa62cfa56bfe91fba84dc71ff4918f6ef21",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283146,
+        "offset": 9695232,
+        "path": "zh-Hans/System.CommandLine.resources.dll",
+        "sha256": "b964e741986ad049f2a66daffdfb4a44a1d2a63852245ee95ffc429ee6887891",
+        "size": 19360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283212,
+        "offset": 9715712,
+        "path": "zh-Hant/System.CommandLine.resources.dll",
+        "sha256": "5536a72bf99553442693acd0bdfa5d0f8f892a422f088e3b4c612ea284c85fb9",
+        "size": 19344,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283278,
+        "offset": 9736192,
+        "path": "log4net.dll",
+        "sha256": "33909e473b3225081106cfaf03f2fbb0a564d5a61a41ac5c35603f165e44e638",
+        "size": 258048,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283315,
+        "offset": 9994240,
+        "path": "System.CommandLine.dll",
+        "sha256": "7f3004463b3b39cd16a152bc1660bf39d609f1753e5e1b2843bf8ec817214268",
+        "size": 130560,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283363,
+        "offset": 10125312,
+        "path": "System.Configuration.ConfigurationManager.dll",
+        "sha256": "e814b79f175ecde855c7ae003cd8bc5ed88edea4ab4089d055ed7b63da7bbec9",
+        "size": 382096,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283434,
+        "offset": 10510336,
+        "path": "System.Diagnostics.EventLog.dll",
+        "sha256": "19fa8972c7fc1249f25b7c7a95a936a9951776c514f2c5adc793f4c0f7223535",
+        "size": 35840,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283491,
+        "offset": 10547200,
+        "path": "System.Security.Cryptography.ProtectedData.dll",
+        "sha256": "7f2b633eed63bf20d558a25ed9686d2f1ef6c6e3fef5c0b19c2c1258d90acabd",
+        "size": 32912,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283563,
+        "offset": 10584064,
+        "path": "System.Security.Permissions.dll",
+        "sha256": "8ca99b4d76d2708d27040d82d87c9f2beb26987e283146aea6bc275d92e895ce",
+        "size": 96400,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283620,
+        "offset": 10682368,
+        "path": "System.ServiceProcess.ServiceController.dll",
+        "sha256": "24792afb96a7856637f5321bfbd12a2bdb77997e4910f0d1fe8ed7e33d0e1f60",
+        "size": 31744,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283689,
+        "offset": 10715136,
+        "path": "WinSW.Core.dll",
+        "sha256": "f718cf8f846fb76f36c82592d26f34587772487a85300241fe690eb49849e69f",
+        "size": 75264,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283729,
+        "offset": 10792960,
+        "path": "WinSW.Plugins.dll",
+        "sha256": "ef4dd2c4f3e477a781786604251130c2fe92bcd11bbf993fd8ff7cc39abb5e06",
+        "size": 3584,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283772,
+        "offset": 10797056,
+        "path": "WinSW.dll",
+        "sha256": "70482b8376307d00e031e9babc15fd56a7202afa1748d8824615034300211bc0",
+        "size": 32256,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283807,
+        "offset": 10829824,
+        "path": "Microsoft.Win32.Registry.dll",
+        "sha256": "357e9f45113ac5c09f2ab3c744942d73e72dda912ecdf5b00c765441d139bc64",
+        "size": 27136,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283861,
+        "offset": 10858496,
+        "path": "System.Collections.Concurrent.dll",
+        "sha256": "33d357b0f4836c3158f4ac3b6dadafe826e6de8abefade1821e2f1217c66e015",
+        "size": 29696,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283920,
+        "offset": 10891264,
+        "path": "System.Collections.Immutable.dll",
+        "sha256": "3be94c72ac44b283f5090d91f142839bc4478f3b0ea9975486bb914eb7375f09",
+        "size": 18432,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18283978,
+        "offset": 10911744,
+        "path": "System.Collections.NonGeneric.dll",
+        "sha256": "cae78acfc20898a0070168fb8c1af0c7ef5cfdc16a5c8ef09976a815f7007e24",
+        "size": 22528,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284037,
+        "offset": 10936320,
+        "path": "System.Collections.Specialized.dll",
+        "sha256": "fbfc6434bc4ce0a654bdcae36348b9e4b37550009d0d4287080e9a7a5085cf48",
+        "size": 26624,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284097,
+        "offset": 10964992,
+        "path": "System.Collections.dll",
+        "sha256": "27cfe1c91d98e903f4f155258e4e7becbca9ae15abd4d6427a4d508f4a49512f",
+        "size": 19968,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284145,
+        "offset": 10985472,
+        "path": "System.ComponentModel.EventBasedAsync.dll",
+        "sha256": "5981e15879ed5499257472e981229b1ed98466a714bfe341df8ae8342651227e",
+        "size": 5632,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284212,
+        "offset": 10993664,
+        "path": "System.ComponentModel.Primitives.dll",
+        "sha256": "d7e7fea39b99b960c263d68e8aaa5f81fdcff8ac7c6decca8144449d0f3dab67",
+        "size": 14336,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284274,
+        "offset": 11010048,
+        "path": "System.ComponentModel.TypeConverter.dll",
+        "sha256": "bd83fc2c9a1acb78b0e1fa01eaa90199556ca58ee704a286ac08611dd37e5b6d",
+        "size": 91136,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284339,
+        "offset": 11104256,
+        "path": "System.ComponentModel.dll",
+        "sha256": "f8db6703c656b2ec4c69d36e6dd4851b52cb820e59d0896401c1c28397664a40",
+        "size": 4096,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284390,
+        "offset": 11108352,
+        "path": "System.Console.dll",
+        "sha256": "a9cfcb75d1a74605cef7c06db11b048350197c9d06a5f714c111e628e6aa23d8",
+        "size": 37888,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284434,
+        "offset": 11149312,
+        "path": "System.Data.Common.dll",
+        "sha256": "a3fd8a706723893c1486928f540942fa1b53b3716ed9c82922fcaae9438698b7",
+        "size": 69632,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284482,
+        "offset": 11218944,
+        "path": "System.Diagnostics.DiagnosticSource.dll",
+        "sha256": "315178336542deb189781915712552a6e3c443a9e21164d1770cfe5a038d1c7a",
+        "size": 59904,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284547,
+        "offset": 11280384,
+        "path": "System.Diagnostics.Process.dll",
+        "sha256": "1a730d2c47fe933a1020dc3684134fd311f3ccb6a905d734987982f962ed9dfb",
+        "size": 87552,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284603,
+        "offset": 11370496,
+        "path": "System.Diagnostics.StackTrace.dll",
+        "sha256": "1a9491978cdaed54a5ae82063ffe37eb11f47fbaed5ef1ba9028385160890dab",
+        "size": 7680,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284662,
+        "offset": 11378688,
+        "path": "System.Diagnostics.TraceSource.dll",
+        "sha256": "47beffef4d453ac5f3075bfe4bc5a0c8ed68cb502e6e4c4f08f1c06ff8418769",
+        "size": 17408,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284722,
+        "offset": 11399168,
+        "path": "System.IO.Compression.Brotli.dll",
+        "sha256": "a94c26e83f91480c9075a5a97829390246732f4245db905994be6e6e1f2fd957",
+        "size": 24576,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284780,
+        "offset": 11423744,
+        "path": "System.IO.Compression.ZipFile.dll",
+        "sha256": "12e818b93e8edaf00f90071be102b8c9a0f7247f60071c5eef08c2bab1b42de0",
+        "size": 7168,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284839,
+        "offset": 11431936,
+        "path": "System.IO.Compression.dll",
+        "sha256": "d2b3111f7ae48b93f95fdfe0f19b4b36b509571c11c73d1fd377717292cd070d",
+        "size": 88064,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284890,
+        "offset": 11522048,
+        "path": "System.IO.FileSystem.Watcher.dll",
+        "sha256": "fce585796e24ffcb5caa30c0c661091272f4c42e6c3c0652d2465a02a198c1c5",
+        "size": 23040,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18284948,
+        "offset": 11546624,
+        "path": "System.IO.MemoryMappedFiles.dll",
+        "sha256": "75855f9ba1792caa6fc3a4953711dd84d2e693e5ea4571b3bdfbaff2d3900bca",
+        "size": 22016,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285005,
+        "offset": 11571200,
+        "path": "System.IO.Pipes.dll",
+        "sha256": "a12b63bf8e2b3a70a9eb87b8b698f4f440c1f9f3a8ea8510d475fadb69d19954",
+        "size": 46592,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285050,
+        "offset": 11620352,
+        "path": "System.Linq.Expressions.dll",
+        "sha256": "eb78fddbe21adf9c826db058b2e849abe57025dfe621b7d86b39d717816e0379",
+        "size": 372736,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285103,
+        "offset": 11993088,
+        "path": "System.Linq.dll",
+        "sha256": "09f725677dd6dc3e07a8c3b456baca9cbbe3e4e55409d651ad33b6d2ac10da47",
+        "size": 50176,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285144,
+        "offset": 12046336,
+        "path": "System.Memory.dll",
+        "sha256": "ec3b710668d05497c55d0c08818199fd7ebd10c4dd682641dae562f8a618a00f",
+        "size": 8192,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285187,
+        "offset": 12054528,
+        "path": "System.Net.Http.dll",
+        "sha256": "dcc3c4ddc8117a48a5d4ef9d70722890fbd846de9fcf418a7d36962831d83209",
+        "size": 505344,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285232,
+        "offset": 12562432,
+        "path": "System.Net.Mail.dll",
+        "sha256": "8151efdad3f58320efc21f4b63bbf346444e5fa226aae89588f47eab123c23eb",
+        "size": 108544,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285277,
+        "offset": 12673024,
+        "path": "System.Net.NameResolution.dll",
+        "sha256": "408477879d5ec820160d179885888678351179efd8da2b681fcda576f40bf5ba",
+        "size": 30720,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285332,
+        "offset": 12705792,
+        "path": "System.Net.NetworkInformation.dll",
+        "sha256": "adff1b8f0dbc07dca22a17510a5eef63a812c6677a12699a1d20f13dba1992dd",
+        "size": 32256,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285391,
+        "offset": 12738560,
+        "path": "System.Net.Primitives.dll",
+        "sha256": "dd60e87a384cba72257c75f4363bd6d93c2d5d9468df70a0d6310520f5662790",
+        "size": 67072,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285442,
+        "offset": 12808192,
+        "path": "System.Net.Quic.dll",
+        "sha256": "c31f6ec297c3a73fb3d6e70558025ead87ce18d51b0b32f5657e79f54a6d8910",
+        "size": 89088,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285487,
+        "offset": 12898304,
+        "path": "System.Net.Requests.dll",
+        "sha256": "42c9b68c316b97cb3abee8a7efbf995e3a79deb02b7b01d11c2a200683a6014e",
+        "size": 105984,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285536,
+        "offset": 13004800,
+        "path": "System.Net.Security.dll",
+        "sha256": "81dc5dddb7786685e718676161ff36847587a7c24b9ee1b356a523e94542b8aa",
+        "size": 190464,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285585,
+        "offset": 13197312,
+        "path": "System.Net.ServicePoint.dll",
+        "sha256": "b0781c0e131adcc984439891a2dfb954061bef18f7695c67d26506dc2923e49e",
+        "size": 5632,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285638,
+        "offset": 13205504,
+        "path": "System.Net.Sockets.dll",
+        "sha256": "37d98ff2852f990b2b909de930833199a195ea143d4ee38756b1072a1ddc265c",
+        "size": 116224,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285686,
+        "offset": 13324288,
+        "path": "System.Net.WebClient.dll",
+        "sha256": "445dae1cfaec3e9c6f036abe0ad4dd7b8febca7c1ed2ab5ab318866bc52facce",
+        "size": 13312,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285736,
+        "offset": 13340672,
+        "path": "System.Net.WebHeaderCollection.dll",
+        "sha256": "8c49a5890f2b622b151a9bdfc30182c71ea79d8c4b35f4bd79a97c78a31e2e2a",
+        "size": 15360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285796,
+        "offset": 13357056,
+        "path": "System.Net.WebProxy.dll",
+        "sha256": "08dd28caab83da7e0319380e646aeda9101983e26d8e0b0deb49849a8f54177a",
+        "size": 9216,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285845,
+        "offset": 13369344,
+        "path": "System.ObjectModel.dll",
+        "sha256": "8150da3c4bdad88dab47eb9ee9efa9c5affd5938b45fc50d3ed1b8836611e787",
+        "size": 7168,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285893,
+        "offset": 13377536,
+        "path": "System.Private.CoreLib.dll",
+        "sha256": "d52806edfd790229541423c3a193b1c6643385cafb4a6512617198eaa757403e",
+        "size": 2510336,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285945,
+        "offset": 15888384,
+        "path": "System.Private.Uri.dll",
+        "sha256": "693730504e8f07f319b48bf276038ab60152db50ee0fe2e0755cc8c72bd937e0",
+        "size": 73216,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18285993,
+        "offset": 15962112,
+        "path": "System.Private.Xml.dll",
+        "sha256": "1daf84a393c1f1a609a52c2dcabcf17998a2ac23ee11615513c5b10b24b71ddf",
+        "size": 1390080,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286041,
+        "offset": 17354752,
+        "path": "System.Reflection.Metadata.dll",
+        "sha256": "941b7ed6e33793154c3a4b9c835f5721df37953e39b854dfee538c31fd67a4e7",
+        "size": 102400,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286097,
+        "offset": 17457152,
+        "path": "System.Runtime.Numerics.dll",
+        "sha256": "82c8ce1599b3df376a7bb45f7b7d9adace37ffa1b2cda8ac6ffd1a2f8066c387",
+        "size": 88064,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286150,
+        "offset": 17547264,
+        "path": "System.Runtime.Serialization.Formatters.dll",
+        "sha256": "8c57bebbee9ce06cc55c8653614b51b9acf7cab6f8e9967cdbb377fe99e77bf1",
+        "size": 15360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286219,
+        "offset": 17563648,
+        "path": "System.Runtime.dll",
+        "sha256": "a8c2afa1932c902e346f07163dc1d62d8ee224d3f8a82f4823ac429c72da2e03",
+        "size": 4608,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286263,
+        "offset": 17571840,
+        "path": "System.Security.AccessControl.dll",
+        "sha256": "b438f097c351d55278fd6a9c5f101237d3a200cfa6d9f00c1d246557398ccb33",
+        "size": 57344,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286322,
+        "offset": 17629184,
+        "path": "System.Security.Claims.dll",
+        "sha256": "54dfe983ec677bea2289fcdf9364ae627157df93910262f833a1b2c290b52d19",
+        "size": 14336,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286374,
+        "offset": 17645568,
+        "path": "System.Security.Cryptography.dll",
+        "sha256": "fc2cc6368d5156748cb48ffb2beea70094587b22cecc85a3a7cc435357085705",
+        "size": 196608,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286432,
+        "offset": 17842176,
+        "path": "System.Security.Principal.Windows.dll",
+        "sha256": "2c67c54dfab17dd717969c4b03d47be9bf39d5a7d28db54b8ac390f0aa087529",
+        "size": 51712,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286495,
+        "offset": 17895424,
+        "path": "System.Text.RegularExpressions.dll",
+        "sha256": "6e849313f0d7d14b2f89237992cdb90ef15eb823f2002c4f9dedabc9f2b80e92",
+        "size": 301056,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286555,
+        "offset": 18198528,
+        "path": "System.Threading.Channels.dll",
+        "sha256": "a629e090bdb5e0754668306deece31a5b53739c7fa6bf6d14d7baa206359242c",
+        "size": 24064,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286610,
+        "offset": 18223104,
+        "path": "System.Threading.dll",
+        "sha256": "169d775ff41a9c2ea5e12c88409dc2ec39b85c08ba1b2affd60d5f445c706f7c",
+        "size": 16896,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286656,
+        "offset": 18243584,
+        "path": "System.dll",
+        "sha256": "fb609926f7fbf614551c3c907a987c05db598c2beff8192efed72cc79b2fd937",
+        "size": 4096,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286692,
+        "offset": 18247680,
+        "path": "netstandard.dll",
+        "sha256": "1de99a593975c4e2ff3fe3d7f8d8fad55367d88496deefbb2de1032532d94639",
+        "size": 15360,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 18286733,
+        "offset": 18263040,
+        "path": "WinSW.deps.json",
+        "sha256": "563c7e3ab1dbd5c3004c3a175d26a4642ea3faa8676720ab32429278dccb5626",
+        "size": 19297,
+        "type": 3
+      }
+    ],
+    "member_count": 80,
+    "sample": "WinSW-x64.exe",
+    "sha256": "a2daa6a33a9c2b791ae31d9092e7935c339d1e03e89bfb747618ce2f4e819e20",
+    "source": "https://github.com/winsw/winsw/releases/tag/v3.0.0-alpha.11"
+  },
+  {
+    "all_member_digests_agree": true,
+    "compressed_members": 0,
+    "entry_fields_agree": true,
+    "files": [
+      {
+        "compressed_size": 0,
+        "manifest_offset": 168830,
+        "offset": 163840,
+        "path": "BundleFixture.dll",
+        "sha256": "5e1cb7e12f0bc317f49a06c8d87bbbdc921006a83c0d3b02589fbd204bc59ab7",
+        "size": 4096,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 168873,
+        "offset": 167936,
+        "path": "BundleFixture.runtimeconfig.json",
+        "sha256": "c230a317a54dd960bcbeb5f347f52e18dc665a26f7efda2159fced9a5ac7e097",
+        "size": 342,
+        "type": 4
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 168931,
+        "offset": 168278,
+        "path": "BundleFixture.deps.json",
+        "sha256": "9fec52ca8913e6bb2d8414826bda708805a06703993e6b879fdee9cff8d9e1e5",
+        "size": 487,
+        "type": 3
+      }
+    ],
+    "member_count": 3,
+    "sample": "BundleFixture.exe",
+    "sha256": "b4a005799c003822a5937a62dfede23de026610776e870905cc983bbc99c2f41",
+    "source": "tools/fixtures/executable-bundles"
+  },
+  {
+    "all_member_digests_agree": true,
+    "compressed_members": 173,
+    "entry_fields_agree": true,
+    "files": [
+      {
+        "compressed_size": 1699,
+        "manifest_offset": 37577021,
+        "offset": 9989120,
+        "path": "BundleFixture.dll",
+        "sha256": "5e1cb7e12f0bc317f49a06c8d87bbbdc921006a83c0d3b02589fbd204bc59ab7",
+        "size": 4096,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 37577064,
+        "offset": 9990819,
+        "path": "BundleFixture.runtimeconfig.json",
+        "sha256": "5f8fa34afd7f3e5a94948944eeda37e8d1bfa294aaf4001c9c0f24d1ed83a2c7",
+        "size": 374,
+        "type": 4
+      },
+      {
+        "compressed_size": 475624,
+        "manifest_offset": 37577122,
+        "offset": 9991193,
+        "path": "Microsoft.CSharp.dll",
+        "sha256": "2000912f2fc52e0c64ed893d79f4e7b143502540fb7170b5ae5fcea7099ba431",
+        "size": 980776,
+        "type": 1
+      },
+      {
+        "compressed_size": 569484,
+        "manifest_offset": 37577168,
+        "offset": 10466817,
+        "path": "Microsoft.VisualBasic.Core.dll",
+        "sha256": "2666b24eb6e295476b44abd057ea250fd5957db9c1c7adee6a223a747ddfe3d2",
+        "size": 1193768,
+        "type": 1
+      },
+      {
+        "compressed_size": 9972,
+        "manifest_offset": 37577224,
+        "offset": 11036301,
+        "path": "Microsoft.VisualBasic.dll",
+        "sha256": "e192508adde6a758138a5a8e28998dccb64e7f45eaf30d8ab3564f87749028b1",
+        "size": 17192,
+        "type": 1
+      },
+      {
+        "compressed_size": 9256,
+        "manifest_offset": 37577275,
+        "offset": 11046273,
+        "path": "Microsoft.Win32.Primitives.dll",
+        "sha256": "6c21472b0ae2f9b484a97614fad5485a22f18f9f19ee1adb9ceb3ed8ddb072d7",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 52962,
+        "manifest_offset": 37577331,
+        "offset": 11055529,
+        "path": "Microsoft.Win32.Registry.dll",
+        "sha256": "76849cfde4369f3ae93e28261fe5e1010dbf1332f7da95c98543cba9b03961c0",
+        "size": 116520,
+        "type": 1
+      },
+      {
+        "compressed_size": 9141,
+        "manifest_offset": 37577385,
+        "offset": 11108491,
+        "path": "System.AppContext.dll",
+        "sha256": "d9dd9fa44e019f27172d6b2662e2b6038f48c270912ac8aae53d4d909da7e9be",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 9154,
+        "manifest_offset": 37577432,
+        "offset": 11117632,
+        "path": "System.Buffers.dll",
+        "sha256": "a1a35f5524e2f831d08ca55f702fbddcb8c6dfecd264f0f563d81a1c8b8280bd",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 112918,
+        "manifest_offset": 37577476,
+        "offset": 11126786,
+        "path": "System.Collections.Concurrent.dll",
+        "sha256": "082f4bc0da1141eb65111b6da633d75624adfb7bb067d7ee90c5622c8b30885b",
+        "size": 231248,
+        "type": 1
+      },
+      {
+        "compressed_size": 420316,
+        "manifest_offset": 37577535,
+        "offset": 11239704,
+        "path": "System.Collections.Immutable.dll",
+        "sha256": "b527dd7b2beb82c22aa39787298cbeb33f3eac9eb9b83a0f0271353421db28db",
+        "size": 976680,
+        "type": 1
+      },
+      {
+        "compressed_size": 44399,
+        "manifest_offset": 37577593,
+        "offset": 11660020,
+        "path": "System.Collections.NonGeneric.dll",
+        "sha256": "aa4d5216d066c91cb489f63c6cbfcaf1f47b6e74e070db45639d3460454fc60b",
+        "size": 104232,
+        "type": 1
+      },
+      {
+        "compressed_size": 47385,
+        "manifest_offset": 37577652,
+        "offset": 11704419,
+        "path": "System.Collections.Specialized.dll",
+        "sha256": "e31af1f866e880844e027be59f545b9a6b34108e0b0680ebe3fbc19a53070819",
+        "size": 104272,
+        "type": 1
+      },
+      {
+        "compressed_size": 138039,
+        "manifest_offset": 37577712,
+        "offset": 11751804,
+        "path": "System.Collections.dll",
+        "sha256": "df6f2037eabee28100184e92f7536427ba2f086c1110629804d466b124bc4d54",
+        "size": 296744,
+        "type": 1
+      },
+      {
+        "compressed_size": 87375,
+        "manifest_offset": 37577760,
+        "offset": 11889843,
+        "path": "System.ComponentModel.Annotations.dll",
+        "sha256": "e3be2d35d81e6475c64110cfc099895b71df22c8b46a18c2d7c76a913b8ba903",
+        "size": 198480,
+        "type": 1
+      },
+      {
+        "compressed_size": 9684,
+        "manifest_offset": 37577823,
+        "offset": 11977218,
+        "path": "System.ComponentModel.DataAnnotations.dll",
+        "sha256": "d40e8c7062e6b9ce11ba83eab3d26be0eec8066b99970ea88b8e87fb75f411bd",
+        "size": 16720,
+        "type": 1
+      },
+      {
+        "compressed_size": 19314,
+        "manifest_offset": 37577890,
+        "offset": 11986902,
+        "path": "System.ComponentModel.EventBasedAsync.dll",
+        "sha256": "cc84fe814ef5e58271d83193e328f8ec220efd4696d90af9a7c4690c10451495",
+        "size": 46888,
+        "type": 1
+      },
+      {
+        "compressed_size": 34855,
+        "manifest_offset": 37577957,
+        "offset": 12006216,
+        "path": "System.ComponentModel.Primitives.dll",
+        "sha256": "1e2451184c287409ea25acde3c90f25950bf34d16458a6e52a94ca4292434f62",
+        "size": 79656,
+        "type": 1
+      },
+      {
+        "compressed_size": 343942,
+        "manifest_offset": 37578019,
+        "offset": 12041071,
+        "path": "System.ComponentModel.TypeConverter.dll",
+        "sha256": "10dae312a6697718f8ce3dfcdb17d6ae4b74687c765d74d50de8a8e69e08f5e7",
+        "size": 767784,
+        "type": 1
+      },
+      {
+        "compressed_size": 10215,
+        "manifest_offset": 37578084,
+        "offset": 12385013,
+        "path": "System.ComponentModel.dll",
+        "sha256": "e3b6f75864ee944898540937c1f300e04f44a1b2729516f0bbf948589a8b14b2",
+        "size": 30544,
+        "type": 1
+      },
+      {
+        "compressed_size": 10231,
+        "manifest_offset": 37578135,
+        "offset": 12395228,
+        "path": "System.Configuration.dll",
+        "sha256": "3952a72e1f18774f16952b46c20e80ed2bc601a06eca01f33fa924c738022a9c",
+        "size": 19240,
+        "type": 1
+      },
+      {
+        "compressed_size": 76205,
+        "manifest_offset": 37578185,
+        "offset": 12405459,
+        "path": "System.Console.dll",
+        "sha256": "3b85daf02a3d9ed99b84bb1c639fe8b1ced46d8d157fa56f525f6b8c5be43b3e",
+        "size": 169808,
+        "type": 1
+      },
+      {
+        "compressed_size": 11747,
+        "manifest_offset": 37578229,
+        "offset": 12481664,
+        "path": "System.Core.dll",
+        "sha256": "ac23faf1b37fa49f1b117baad951a65609e799a6e669a6df06d3552677e0c086",
+        "size": 23336,
+        "type": 1
+      },
+      {
+        "compressed_size": 1274275,
+        "manifest_offset": 37578270,
+        "offset": 12493411,
+        "path": "System.Data.Common.dll",
+        "sha256": "66bdd62047ee460e2ce2c33d15dd1173ac97997b2745864a905179594f821acc",
+        "size": 2770728,
+        "type": 1
+      },
+      {
+        "compressed_size": 9139,
+        "manifest_offset": 37578318,
+        "offset": 13767686,
+        "path": "System.Data.DataSetExtensions.dll",
+        "sha256": "aeeae0755c8c7f6747765cdf82fa43182e320e97f2035e3a0a19f21905e6c113",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 12270,
+        "manifest_offset": 37578377,
+        "offset": 13776825,
+        "path": "System.Data.dll",
+        "sha256": "49f52958a2a6e461d0fd7a47e54a199eb263c69ecfcc0fc684b73b5918ebf466",
+        "size": 25424,
+        "type": 1
+      },
+      {
+        "compressed_size": 9466,
+        "manifest_offset": 37578418,
+        "offset": 13789095,
+        "path": "System.Diagnostics.Contracts.dll",
+        "sha256": "6c05cacd9b61b08ae75f2d783cc402b0b5fc848e3d68c29c10b93897cc083e8b",
+        "size": 16208,
+        "type": 1
+      },
+      {
+        "compressed_size": 9340,
+        "manifest_offset": 37578476,
+        "offset": 13798561,
+        "path": "System.Diagnostics.Debug.dll",
+        "sha256": "8b160ffe7518588bf64e13c01c6dcb2ef504d64f38bbf0f198d31e7b698db92c",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 234890,
+        "manifest_offset": 37578530,
+        "offset": 13807901,
+        "path": "System.Diagnostics.DiagnosticSource.dll",
+        "sha256": "6267c1bd1bdf2bdd4b5748b885b0adcda10f18697adfea8488a19a009ad44fdb",
+        "size": 501544,
+        "type": 1
+      },
+      {
+        "compressed_size": 18192,
+        "manifest_offset": 37578595,
+        "offset": 14042791,
+        "path": "System.Diagnostics.FileVersionInfo.dll",
+        "sha256": "e94f158142e93834dec3100bde3313935517d549ff36c65819a06d3104dec427",
+        "size": 46928,
+        "type": 1
+      },
+      {
+        "compressed_size": 154310,
+        "manifest_offset": 37578659,
+        "offset": 14060983,
+        "path": "System.Diagnostics.Process.dll",
+        "sha256": "51a57fbe918f8b68930c090792b718fc0850ea12da869d50b97a3796af29a740",
+        "size": 329552,
+        "type": 1
+      },
+      {
+        "compressed_size": 19806,
+        "manifest_offset": 37578715,
+        "offset": 14215293,
+        "path": "System.Diagnostics.StackTrace.dll",
+        "sha256": "8f6397c1e2ba9b8b8bfa317962151b5035049ce8d6b3575e5027a0d0eeacc797",
+        "size": 46888,
+        "type": 1
+      },
+      {
+        "compressed_size": 31279,
+        "manifest_offset": 37578774,
+        "offset": 14235099,
+        "path": "System.Diagnostics.TextWriterTraceListener.dll",
+        "sha256": "1bf165cee916a854e1150f489e4348ce94755359d5fcdcc0bc2bbbe6a7102bdd",
+        "size": 67368,
+        "type": 1
+      },
+      {
+        "compressed_size": 9235,
+        "manifest_offset": 37578846,
+        "offset": 14266378,
+        "path": "System.Diagnostics.Tools.dll",
+        "sha256": "841c5e2b6c171fa9aaff0fc6295f3fbc93dc5dcab44118b62f1c942bb674aff2",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 64184,
+        "manifest_offset": 37578900,
+        "offset": 14275613,
+        "path": "System.Diagnostics.TraceSource.dll",
+        "sha256": "8445c7f1bbaae6cffde60e2c9a8753faaa5100255fbe31d0a1927d9d9bb7f194",
+        "size": 141096,
+        "type": 1
+      },
+      {
+        "compressed_size": 9582,
+        "manifest_offset": 37578960,
+        "offset": 14339797,
+        "path": "System.Diagnostics.Tracing.dll",
+        "sha256": "9563d5eec35f94d13a5e62eaa9535dbe0e9ea474f055da132fb8af46b0b01263",
+        "size": 16208,
+        "type": 1
+      },
+      {
+        "compressed_size": 58602,
+        "manifest_offset": 37579016,
+        "offset": 14349379,
+        "path": "System.Drawing.Primitives.dll",
+        "sha256": "17585b32ca91bac8ccff2ef1c6ddf62ee9ea5efc552928c3a9d1b868394246e9",
+        "size": 132944,
+        "type": 1
+      },
+      {
+        "compressed_size": 11036,
+        "manifest_offset": 37579071,
+        "offset": 14407981,
+        "path": "System.Drawing.dll",
+        "sha256": "585a8da9952d715f8de7a7b1879b59d68ff8608b92f6ed1c5f0e1d251180d3c6",
+        "size": 20304,
+        "type": 1
+      },
+      {
+        "compressed_size": 9500,
+        "manifest_offset": 37579115,
+        "offset": 14419017,
+        "path": "System.Dynamic.Runtime.dll",
+        "sha256": "c0eac30c791db8c1a2b50b61c50d029f4ddd0eadfdd35433745001688a3e7466",
+        "size": 16168,
+        "type": 1
+      },
+      {
+        "compressed_size": 114095,
+        "manifest_offset": 37579167,
+        "offset": 14428517,
+        "path": "System.Formats.Asn1.dll",
+        "sha256": "a163fe5f96d1689f1bc1ac531b38c3aba95792ac7dd52231d325d658947fbcfd",
+        "size": 239440,
+        "type": 1
+      },
+      {
+        "compressed_size": 128356,
+        "manifest_offset": 37579216,
+        "offset": 14542612,
+        "path": "System.Formats.Tar.dll",
+        "sha256": "44c9984f269a158915195fd32007f22c3bb692dcfeb933cda8ea45a3ac6cd1ce",
+        "size": 272168,
+        "type": 1
+      },
+      {
+        "compressed_size": 9350,
+        "manifest_offset": 37579264,
+        "offset": 14670968,
+        "path": "System.Globalization.Calendars.dll",
+        "sha256": "e0f3f3f6e4acc7b6755782fed5cb075ecf70beee4fc5d404579ae99bc0883ef2",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9236,
+        "manifest_offset": 37579324,
+        "offset": 14680318,
+        "path": "System.Globalization.Extensions.dll",
+        "sha256": "be0390557cc72078a7217cf94fd44b9ab66aa30838c00a92aa78c62469c44aa0",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 9348,
+        "manifest_offset": 37579385,
+        "offset": 14689554,
+        "path": "System.Globalization.dll",
+        "sha256": "66902cffd057673b4b77aa68faf80d33ffa4c94510e61db2a067943cc53b7702",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 38716,
+        "manifest_offset": 37579435,
+        "offset": 14698902,
+        "path": "System.IO.Compression.Brotli.dll",
+        "sha256": "0a59a95787ee15784d73079fdd5dc555b78659a6c560b6cbbf0d7452e638df89",
+        "size": 83752,
+        "type": 1
+      },
+      {
+        "compressed_size": 9085,
+        "manifest_offset": 37579493,
+        "offset": 14737618,
+        "path": "System.IO.Compression.FileSystem.dll",
+        "sha256": "4aeec2c0189f73ba8122f05c0d759008ddae1a8873b167cc8a558d53f2af80e1",
+        "size": 15184,
+        "type": 1
+      },
+      {
+        "compressed_size": 45617,
+        "manifest_offset": 37579555,
+        "offset": 14746703,
+        "path": "System.IO.Compression.ZipFile.dll",
+        "sha256": "2da76eb281740be485b5637da8c60fe0ce12bc2848d1a1a81ce144fa74313e18",
+        "size": 100176,
+        "type": 1
+      },
+      {
+        "compressed_size": 197881,
+        "manifest_offset": 37579614,
+        "offset": 14792320,
+        "path": "System.IO.Compression.dll",
+        "sha256": "c942747f84b730887090f5e0cf86d164c0ee402e524dce2750e06a6df48513fb",
+        "size": 419624,
+        "type": 1
+      },
+      {
+        "compressed_size": 47124,
+        "manifest_offset": 37579665,
+        "offset": 14990201,
+        "path": "System.IO.FileSystem.AccessControl.dll",
+        "sha256": "f7f9ed6cdab35274711e9345266784ec332ae8040db184d141c70e7941fbbec5",
+        "size": 104232,
+        "type": 1
+      },
+      {
+        "compressed_size": 23207,
+        "manifest_offset": 37579729,
+        "offset": 15037325,
+        "path": "System.IO.FileSystem.DriveInfo.dll",
+        "sha256": "0a7f3dd2fb6147a3fc046aeac8501d764effe5a3d8cfa56d2b244aa50b874b98",
+        "size": 55120,
+        "type": 1
+      },
+      {
+        "compressed_size": 9235,
+        "manifest_offset": 37579789,
+        "offset": 15060532,
+        "path": "System.IO.FileSystem.Primitives.dll",
+        "sha256": "d3b21b8b38e48c6b4d1cb5cfe9adfe4abad7b3353601febd3c7e4027f9ef9c6b",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 40848,
+        "manifest_offset": 37579850,
+        "offset": 15069767,
+        "path": "System.IO.FileSystem.Watcher.dll",
+        "sha256": "8ab1704e4bd171056ec5a11e886d5199d05a641c6d0233c53d4766bf30328dd3",
+        "size": 87848,
+        "type": 1
+      },
+      {
+        "compressed_size": 9360,
+        "manifest_offset": 37579908,
+        "offset": 15110615,
+        "path": "System.IO.FileSystem.dll",
+        "sha256": "c251f33b29382c47b773d907463edd9fe978a06e39efd5670ef3b3b1d4f8c2b7",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 40206,
+        "manifest_offset": 37579958,
+        "offset": 15119975,
+        "path": "System.IO.IsolatedStorage.dll",
+        "sha256": "2272a8bde18ed0e7c9e54ece9b849b9be76c90b978909d2b2fc94cf0ccbce427",
+        "size": 87848,
+        "type": 1
+      },
+      {
+        "compressed_size": 36985,
+        "manifest_offset": 37580013,
+        "offset": 15160181,
+        "path": "System.IO.MemoryMappedFiles.dll",
+        "sha256": "6e8b281ecb2f0f5e7aad3980f61d8812caa6b37884737f542f95410a76663e0e",
+        "size": 83752,
+        "type": 1
+      },
+      {
+        "compressed_size": 93380,
+        "manifest_offset": 37580070,
+        "offset": 15197166,
+        "path": "System.IO.Pipelines.dll",
+        "sha256": "ee9f0fd6c659f50799afd103c6ed9c5e408967e28dfa059bddf4b0a3fd2557dd",
+        "size": 190248,
+        "type": 1
+      },
+      {
+        "compressed_size": 9333,
+        "manifest_offset": 37580119,
+        "offset": 15290546,
+        "path": "System.IO.Pipes.AccessControl.dll",
+        "sha256": "1102f25a6e88f2fae81e4cd3628d8ef826f847b9c9b6a4d32ff8b37e0300da35",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 76595,
+        "manifest_offset": 37580178,
+        "offset": 15299879,
+        "path": "System.IO.Pipes.dll",
+        "sha256": "3804f9992861122e60990b0765d0b50b33cdc2e4d89d26d9dbf8641d1d0134a2",
+        "size": 165712,
+        "type": 1
+      },
+      {
+        "compressed_size": 9287,
+        "manifest_offset": 37580223,
+        "offset": 15376474,
+        "path": "System.IO.UnmanagedMemoryStream.dll",
+        "sha256": "ad6a5f859589e1951103a00f45566da079cf87bd8b03f0c6ad985a6f39f19c5a",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 9324,
+        "manifest_offset": 37580284,
+        "offset": 15385761,
+        "path": "System.IO.dll",
+        "sha256": "388400ccb189b819d6ec5f1ef70710a39641d93ed5b870fc9324866b75dfb78b",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 464197,
+        "manifest_offset": 37580323,
+        "offset": 15395085,
+        "path": "System.Linq.AsyncEnumerable.dll",
+        "sha256": "925208e8ac40ac3f7b988aba6ccbbb58adac38ad1876a7d97ee137be6c21a653",
+        "size": 1292072,
+        "type": 1
+      },
+      {
+        "compressed_size": 1212364,
+        "manifest_offset": 37580380,
+        "offset": 15859282,
+        "path": "System.Linq.Expressions.dll",
+        "sha256": "8830f4a6a6982f53cfbb54f992858ee36b4994a6ff6e6078c39627e77bef282f",
+        "size": 3639080,
+        "type": 1
+      },
+      {
+        "compressed_size": 318905,
+        "manifest_offset": 37580433,
+        "offset": 17071646,
+        "path": "System.Linq.Parallel.dll",
+        "sha256": "aa6068e3d8f6b2e492cc63dcaad6b02942edbae445cb2b88c24f1850b25c49f5",
+        "size": 775976,
+        "type": 1
+      },
+      {
+        "compressed_size": 64184,
+        "manifest_offset": 37580483,
+        "offset": 17390551,
+        "path": "System.Linq.Queryable.dll",
+        "sha256": "b3b3a9c1b87a51dacd46a3f9ec392c5d05e449152d44d6bd495df0994350e2fa",
+        "size": 182056,
+        "type": 1
+      },
+      {
+        "compressed_size": 304087,
+        "manifest_offset": 37580534,
+        "offset": 17454735,
+        "path": "System.Linq.dll",
+        "sha256": "284d38945b6e92e847129bd28af458b19818d0f2181f79882888ab2003f4c519",
+        "size": 698192,
+        "type": 1
+      },
+      {
+        "compressed_size": 75679,
+        "manifest_offset": 37580575,
+        "offset": 17758822,
+        "path": "System.Memory.dll",
+        "sha256": "f8f9d38efd6b0de30954d6bf1f353e9617bfb36d3d245c013a3b12be9f6bd88a",
+        "size": 161576,
+        "type": 1
+      },
+      {
+        "compressed_size": 56896,
+        "manifest_offset": 37580618,
+        "offset": 17834501,
+        "path": "System.Net.Http.Json.dll",
+        "sha256": "a9fe81ba3c048f9977e0099800eefd570a49be723c555725da57ba797c92b4e0",
+        "size": 128848,
+        "type": 1
+      },
+      {
+        "compressed_size": 811496,
+        "manifest_offset": 37580668,
+        "offset": 17891397,
+        "path": "System.Net.Http.dll",
+        "sha256": "b98ed0cb80dd54c33fc049f33af5448710752155bbd5cc8cbcd932e01f066801",
+        "size": 1746768,
+        "type": 1
+      },
+      {
+        "compressed_size": 258115,
+        "manifest_offset": 37580713,
+        "offset": 18702893,
+        "path": "System.Net.HttpListener.dll",
+        "sha256": "3dfe11fb30c5f84c911d9562be6c2037113cd8976ef2def3550ac415ae58955b",
+        "size": 534312,
+        "type": 1
+      },
+      {
+        "compressed_size": 217897,
+        "manifest_offset": 37580766,
+        "offset": 18961008,
+        "path": "System.Net.Mail.dll",
+        "sha256": "b585a55ee67c80d7f02a84d50d626d279c7aa77fd3e38206b434bd20c181eedc",
+        "size": 481064,
+        "type": 1
+      },
+      {
+        "compressed_size": 60149,
+        "manifest_offset": 37580811,
+        "offset": 19178905,
+        "path": "System.Net.NameResolution.dll",
+        "sha256": "e786c0940f5322f0ad6e8e34e7b582e5b050df0fb2230329325307e61bfd994c",
+        "size": 124712,
+        "type": 1
+      },
+      {
+        "compressed_size": 72039,
+        "manifest_offset": 37580866,
+        "offset": 19239054,
+        "path": "System.Net.NetworkInformation.dll",
+        "sha256": "7e8791833eb2d0aea77b119fed3cab8bf501f6a553155cc1c4e5b1c02f65593b",
+        "size": 157520,
+        "type": 1
+      },
+      {
+        "compressed_size": 44672,
+        "manifest_offset": 37580925,
+        "offset": 19311093,
+        "path": "System.Net.Ping.dll",
+        "sha256": "06bb307343db955a312634d00ba5e097cf5168a901284437592c28d780804e33",
+        "size": 91984,
+        "type": 1
+      },
+      {
+        "compressed_size": 104971,
+        "manifest_offset": 37580970,
+        "offset": 19355765,
+        "path": "System.Net.Primitives.dll",
+        "sha256": "4dbb41a178ef013a898327152eccd146228dd2eb83859b9bb36078333b41f0f1",
+        "size": 210728,
+        "type": 1
+      },
+      {
+        "compressed_size": 165871,
+        "manifest_offset": 37581021,
+        "offset": 19460736,
+        "path": "System.Net.Quic.dll",
+        "sha256": "af5b52cdee62d014af677c411530a3fde5c1c368adecb8f83dcfe9246e8bbe73",
+        "size": 358224,
+        "type": 1
+      },
+      {
+        "compressed_size": 181266,
+        "manifest_offset": 37581066,
+        "offset": 19626607,
+        "path": "System.Net.Requests.dll",
+        "sha256": "ed82d9d0b7942b2b02c5744a4591fbe2316879618adfc5660c9f111f814155f2",
+        "size": 374568,
+        "type": 1
+      },
+      {
+        "compressed_size": 307865,
+        "manifest_offset": 37581115,
+        "offset": 19807873,
+        "path": "System.Net.Security.dll",
+        "sha256": "a78bd713e807729f15b0e085c67fd6cbfefa85736a2618512d4ff1212759eba5",
+        "size": 665424,
+        "type": 1
+      },
+      {
+        "compressed_size": 39883,
+        "manifest_offset": 37581164,
+        "offset": 20115738,
+        "path": "System.Net.ServerSentEvents.dll",
+        "sha256": "c0b1944020d0e5688b90fba9f29209e367674e29d2020f700c302994d5417eda",
+        "size": 83752,
+        "type": 1
+      },
+      {
+        "compressed_size": 9228,
+        "manifest_offset": 37581221,
+        "offset": 20155621,
+        "path": "System.Net.ServicePoint.dll",
+        "sha256": "84fa83cd96e62fda02991b8a8e99fa1c7b3ac08807b04f7486a896cfe6b4a760",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 248392,
+        "manifest_offset": 37581274,
+        "offset": 20164849,
+        "path": "System.Net.Sockets.dll",
+        "sha256": "645c56d637ce15976998119e50722a911315682ce141b4aab98874ce1b063f3a",
+        "size": 530216,
+        "type": 1
+      },
+      {
+        "compressed_size": 75923,
+        "manifest_offset": 37581322,
+        "offset": 20413241,
+        "path": "System.Net.WebClient.dll",
+        "sha256": "defa7bbf90c77ed01d6add53f678e4adfbcf97f3b1152affec06e652d327f1a2",
+        "size": 165672,
+        "type": 1
+      },
+      {
+        "compressed_size": 27927,
+        "manifest_offset": 37581372,
+        "offset": 20489164,
+        "path": "System.Net.WebHeaderCollection.dll",
+        "sha256": "74d66f776b4c15936a7b887f47ceb8bf277dbe82e71a78dd3ea5d02502b081e7",
+        "size": 63312,
+        "type": 1
+      },
+      {
+        "compressed_size": 18828,
+        "manifest_offset": 37581432,
+        "offset": 20517091,
+        "path": "System.Net.WebProxy.dll",
+        "sha256": "408e3daabb3f42b4f1b72a1e1def38f12ba58eb9d23dca620086819cf7484195",
+        "size": 42832,
+        "type": 1
+      },
+      {
+        "compressed_size": 47412,
+        "manifest_offset": 37581481,
+        "offset": 20535919,
+        "path": "System.Net.WebSockets.Client.dll",
+        "sha256": "f308a69b9ee1ac982f53d1d94374f4972a7e3c700742901ff7c2bbfb570019d2",
+        "size": 104232,
+        "type": 1
+      },
+      {
+        "compressed_size": 116134,
+        "manifest_offset": 37581539,
+        "offset": 20583331,
+        "path": "System.Net.WebSockets.dll",
+        "sha256": "c014a074d408c71011e26eac69be85003a852cfe115e8608bb5d4fd70536eb2e",
+        "size": 243496,
+        "type": 1
+      },
+      {
+        "compressed_size": 9842,
+        "manifest_offset": 37581590,
+        "offset": 20699465,
+        "path": "System.Net.dll",
+        "sha256": "481b38c912f8779b3510cd00f079e45096ea22b6defdaab66780d5ac3ae6986a",
+        "size": 17192,
+        "type": 1
+      },
+      {
+        "compressed_size": 9314,
+        "manifest_offset": 37581630,
+        "offset": 20709307,
+        "path": "System.Numerics.Vectors.dll",
+        "sha256": "a9a980ee33ed0c798a5e1960c4557521f465ac9e0987dfd2c3049d53b1f2fa5a",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9109,
+        "manifest_offset": 37581683,
+        "offset": 20718621,
+        "path": "System.Numerics.dll",
+        "sha256": "35adc9360421b3b7a3d50399cb2c651c160158d7e8c302907acbce5f61f4a4f7",
+        "size": 15184,
+        "type": 1
+      },
+      {
+        "compressed_size": 35391,
+        "manifest_offset": 37581728,
+        "offset": 20727730,
+        "path": "System.ObjectModel.dll",
+        "sha256": "2179bb19f335b4fcacd0994ad2ccfdac6840deff09c7889debfe9dbb5b88a3e6",
+        "size": 79656,
+        "type": 1
+      },
+      {
+        "compressed_size": 6580234,
+        "manifest_offset": 37581776,
+        "offset": 20763121,
+        "path": "System.Private.CoreLib.dll",
+        "sha256": "1125acc8106c43fc8bad2d203c4c4485df6182d292846c2fff415c1040c54678",
+        "size": 16033576,
+        "type": 1
+      },
+      {
+        "compressed_size": 890927,
+        "manifest_offset": 37581828,
+        "offset": 27343355,
+        "path": "System.Private.DataContractSerialization.dll",
+        "sha256": "8c07a5333c4e938cad8ac8f24b5965121bc0622442a352cbe81c58f17c2349a8",
+        "size": 2062120,
+        "type": 1
+      },
+      {
+        "compressed_size": 132413,
+        "manifest_offset": 37581898,
+        "offset": 28234282,
+        "path": "System.Private.Uri.dll",
+        "sha256": "b15c84d2120e1ec9612c66ba59bc3d7e67d841e2bce7b7d0478cb212537539b4",
+        "size": 255824,
+        "type": 1
+      },
+      {
+        "compressed_size": 184095,
+        "manifest_offset": 37581946,
+        "offset": 28366695,
+        "path": "System.Private.Xml.Linq.dll",
+        "sha256": "c832b73de9783e6929ca5ff4863fc313e13ef7cfb5965c52587c4f77f6e037a7",
+        "size": 390952,
+        "type": 1
+      },
+      {
+        "compressed_size": 3424528,
+        "manifest_offset": 37581999,
+        "offset": 28550790,
+        "path": "System.Private.Xml.dll",
+        "sha256": "d71e72a7a9de324352edd281a46466b51bd0bdd2831b1573f8d3bae8bd2dd4a6",
+        "size": 7788328,
+        "type": 1
+      },
+      {
+        "compressed_size": 35581,
+        "manifest_offset": 37582047,
+        "offset": 31975318,
+        "path": "System.Reflection.DispatchProxy.dll",
+        "sha256": "bf93a361c0bba8497889c9f7713add5968ba39394f9e6bda27e86294c6c43560",
+        "size": 75600,
+        "type": 1
+      },
+      {
+        "compressed_size": 9322,
+        "manifest_offset": 37582108,
+        "offset": 32010899,
+        "path": "System.Reflection.Emit.ILGeneration.dll",
+        "sha256": "6b42ddd05b0ca1c7342d73ea9f401fe588044215d65c67b756deb780f0894a26",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9283,
+        "manifest_offset": 37582173,
+        "offset": 32020221,
+        "path": "System.Reflection.Emit.Lightweight.dll",
+        "sha256": "d2724a2b7b46146877ec1f6e400c49ea05f84bdd31f3bba52ae139ee68a4f779",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 145164,
+        "manifest_offset": 37582237,
+        "offset": 32029504,
+        "path": "System.Reflection.Emit.dll",
+        "sha256": "09059981bbeea0fdc5df589be5d7e3937d57e22bec4d78ceb492c587926fc238",
+        "size": 309032,
+        "type": 1
+      },
+      {
+        "compressed_size": 9201,
+        "manifest_offset": 37582289,
+        "offset": 32174668,
+        "path": "System.Reflection.Extensions.dll",
+        "sha256": "ceb1b81e1eb488d87bd43d16dc54450b2a78e0b653c44c988aae2a20abc162bc",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 500216,
+        "manifest_offset": 37582347,
+        "offset": 32183869,
+        "path": "System.Reflection.Metadata.dll",
+        "sha256": "82973e772017944a0548e445f30757595d95fe99e1f5c4a446df8c4db04b1c18",
+        "size": 1156904,
+        "type": 1
+      },
+      {
+        "compressed_size": 9428,
+        "manifest_offset": 37582403,
+        "offset": 32684085,
+        "path": "System.Reflection.Primitives.dll",
+        "sha256": "c2bbd885d03da5e880667c228ac1f56a5f3a72ea37d43f010ada000adc33da28",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 16479,
+        "manifest_offset": 37582461,
+        "offset": 32693513,
+        "path": "System.Reflection.TypeExtensions.dll",
+        "sha256": "7cac73ed746ce05a4a2f1e61dd52d41322ecc6ba84cfec463380f49487031459",
+        "size": 42792,
+        "type": 1
+      },
+      {
+        "compressed_size": 9535,
+        "manifest_offset": 37582523,
+        "offset": 32709992,
+        "path": "System.Reflection.dll",
+        "sha256": "95059346d6271dd6d0322cc321e5fb8cceab662f550c67aee7615059e41739bb",
+        "size": 16168,
+        "type": 1
+      },
+      {
+        "compressed_size": 9164,
+        "manifest_offset": 37582570,
+        "offset": 32719527,
+        "path": "System.Resources.Reader.dll",
+        "sha256": "20bdb5d302b5e28f6042c9f281cfa3ae2f2358544cc40783052fe5abf6aa859b",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 9317,
+        "manifest_offset": 37582623,
+        "offset": 32728691,
+        "path": "System.Resources.ResourceManager.dll",
+        "sha256": "f709eb5cf16e26679782784c428825019785fcc7085562092425d4999bece03d",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 23244,
+        "manifest_offset": 37582685,
+        "offset": 32738008,
+        "path": "System.Resources.Writer.dll",
+        "sha256": "684836486b9ba2817efa3099118860d259fd16db0c4c0533d42cad8c6c165b62",
+        "size": 50984,
+        "type": 1
+      },
+      {
+        "compressed_size": 9185,
+        "manifest_offset": 37582738,
+        "offset": 32761252,
+        "path": "System.Runtime.CompilerServices.Unsafe.dll",
+        "sha256": "6e685ec0477b21a688cd38bfcafc673888cdf186c99df3c96fab352e96d6fdc8",
+        "size": 15184,
+        "type": 1
+      },
+      {
+        "compressed_size": 10883,
+        "manifest_offset": 37582806,
+        "offset": 32770437,
+        "path": "System.Runtime.CompilerServices.VisualC.dll",
+        "sha256": "5fd85d3d7b47a921bdf48bf938c6615a49a4a3d493e1ea199f1b997c709618f4",
+        "size": 30504,
+        "type": 1
+      },
+      {
+        "compressed_size": 10092,
+        "manifest_offset": 37582875,
+        "offset": 32781320,
+        "path": "System.Runtime.Extensions.dll",
+        "sha256": "3d7b517d4fd89ee58c53e0f642cc9be42e7a8669b51a85e861dafe118067cbfd",
+        "size": 17704,
+        "type": 1
+      },
+      {
+        "compressed_size": 9261,
+        "manifest_offset": 37582930,
+        "offset": 32791412,
+        "path": "System.Runtime.Handles.dll",
+        "sha256": "985457a3e6a67e96a445ee0fb69b2d58bcdadc4c964253fb63e2d5061a36b050",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 18272,
+        "manifest_offset": 37582982,
+        "offset": 32800673,
+        "path": "System.Runtime.InteropServices.JavaScript.dll",
+        "sha256": "5ba32bcde2d72362db2d6e02763ece79fa35bc878b50493e956ce594307e997f",
+        "size": 50984,
+        "type": 1
+      },
+      {
+        "compressed_size": 9212,
+        "manifest_offset": 37583053,
+        "offset": 32818945,
+        "path": "System.Runtime.InteropServices.RuntimeInformation.dll",
+        "sha256": "c26d9f94329422bd000f28f6c65fdc162bf9397a6d29e418a189d4ca49c5c3ec",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 51477,
+        "manifest_offset": 37583132,
+        "offset": 32828157,
+        "path": "System.Runtime.InteropServices.dll",
+        "sha256": "e5eb1679f3579c9141e2bb9dbdce62624a623f38d299805cc1de07bacd21841f",
+        "size": 112464,
+        "type": 1
+      },
+      {
+        "compressed_size": 9909,
+        "manifest_offset": 37583192,
+        "offset": 32879634,
+        "path": "System.Runtime.Intrinsics.dll",
+        "sha256": "b07694ec91f3a200acf0f8b37c6ce5fcf05126a9198ae156d839fa5ca8439dc5",
+        "size": 17192,
+        "type": 1
+      },
+      {
+        "compressed_size": 9374,
+        "manifest_offset": 37583247,
+        "offset": 32889543,
+        "path": "System.Runtime.Loader.dll",
+        "sha256": "9b9b2a4f0358d9146e76178ddb87d019be380c78baa7dac853493d45df089f03",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 172541,
+        "manifest_offset": 37583298,
+        "offset": 32898917,
+        "path": "System.Runtime.Numerics.dll",
+        "sha256": "8ac94fb810c092a9297a903762e79a75ae07d7229d0721540c391f86d3d5d220",
+        "size": 354128,
+        "type": 1
+      },
+      {
+        "compressed_size": 59013,
+        "manifest_offset": 37583351,
+        "offset": 33071458,
+        "path": "System.Runtime.Serialization.Formatters.dll",
+        "sha256": "5e8e957c6b7a63132555ede5bcf5fe6a59934c83300e28074ec6e9845ecdd17f",
+        "size": 124712,
+        "type": 1
+      },
+      {
+        "compressed_size": 9295,
+        "manifest_offset": 37583420,
+        "offset": 33130471,
+        "path": "System.Runtime.Serialization.Json.dll",
+        "sha256": "2fd71e3545dab4fc89b3fe54d13a1142f26a0cf187ebe375b3f7fa210fcb2596",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 15249,
+        "manifest_offset": 37583483,
+        "offset": 33139766,
+        "path": "System.Runtime.Serialization.Primitives.dll",
+        "sha256": "f96093940e64d8eead98c86de9773d3c9d12c2b033bc6b1312ac88398303fdf3",
+        "size": 38696,
+        "type": 1
+      },
+      {
+        "compressed_size": 9634,
+        "manifest_offset": 37583552,
+        "offset": 33155015,
+        "path": "System.Runtime.Serialization.Xml.dll",
+        "sha256": "eedb66ea2cd1a26cc45a46d6631209ccbec959af82208872a93b3ae52f189222",
+        "size": 16680,
+        "type": 1
+      },
+      {
+        "compressed_size": 9608,
+        "manifest_offset": 37583614,
+        "offset": 33164649,
+        "path": "System.Runtime.Serialization.dll",
+        "sha256": "d565fc261ca98cbd14833821f777860291e8a0f775de7aee91778a9f6647f6f4",
+        "size": 17192,
+        "type": 1
+      },
+      {
+        "compressed_size": 18215,
+        "manifest_offset": 37583672,
+        "offset": 33174257,
+        "path": "System.Runtime.dll",
+        "sha256": "76be53624f64b23d0249dfa0bbe85390086de7c44bfd490642ea86c6faaf44af",
+        "size": 44840,
+        "type": 1
+      },
+      {
+        "compressed_size": 107826,
+        "manifest_offset": 37583716,
+        "offset": 33192472,
+        "path": "System.Security.AccessControl.dll",
+        "sha256": "cdc304f9ddb32023adb8db8953e56711c9b64462e4341d0b62e87ccd19dc7b10",
+        "size": 227112,
+        "type": 1
+      },
+      {
+        "compressed_size": 44689,
+        "manifest_offset": 37583775,
+        "offset": 33300298,
+        "path": "System.Security.Claims.dll",
+        "sha256": "c53c8a7e95d8296f951872fdd2e6334d11c20bffd4322f1a088773bf9dcaa3c2",
+        "size": 100176,
+        "type": 1
+      },
+      {
+        "compressed_size": 9814,
+        "manifest_offset": 37583827,
+        "offset": 33344987,
+        "path": "System.Security.Cryptography.Algorithms.dll",
+        "sha256": "eb99ae7dbe058a1b015aba6769ce1f65155b7ff51ff9a7203fcf6d7cdea5fef7",
+        "size": 17232,
+        "type": 1
+      },
+      {
+        "compressed_size": 9538,
+        "manifest_offset": 37583896,
+        "offset": 33354801,
+        "path": "System.Security.Cryptography.Cng.dll",
+        "sha256": "7319f97896d92a7d0729cf28dc6c4d1f797c1520b656ee01a780eec726ec2c16",
+        "size": 16168,
+        "type": 1
+      },
+      {
+        "compressed_size": 9411,
+        "manifest_offset": 37583958,
+        "offset": 33364339,
+        "path": "System.Security.Cryptography.Csp.dll",
+        "sha256": "4002af141e9cb29875b677841adf64a9681e5672c2595492dcbc161460d4e121",
+        "size": 16208,
+        "type": 1
+      },
+      {
+        "compressed_size": 9322,
+        "manifest_offset": 37584020,
+        "offset": 33373750,
+        "path": "System.Security.Cryptography.Encoding.dll",
+        "sha256": "994494aec7760f40fade2264aa7c13eebae36360f0b1399a7134bb19c9d58fda",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9265,
+        "manifest_offset": 37584087,
+        "offset": 33383072,
+        "path": "System.Security.Cryptography.OpenSsl.dll",
+        "sha256": "1a8902bbad1b577a98bec62a8472105dc1e9a253e390f69fbe3d167e93206968",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9398,
+        "manifest_offset": 37584153,
+        "offset": 33392337,
+        "path": "System.Security.Cryptography.Primitives.dll",
+        "sha256": "194cccea9354bb248e44c954b5373f9069163f8f21524b3ee4b3185fe436bc15",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9749,
+        "manifest_offset": 37584222,
+        "offset": 33401735,
+        "path": "System.Security.Cryptography.X509Certificates.dll",
+        "sha256": "7439c3b90bc2ee49a9275b28ed29052b4d48b45999ac1b7d25593033b1bb8dd6",
+        "size": 16680,
+        "type": 1
+      },
+      {
+        "compressed_size": 1081863,
+        "manifest_offset": 37584297,
+        "offset": 33411484,
+        "path": "System.Security.Cryptography.dll",
+        "sha256": "e0a839a540e47343b53a936b32d91599a3470005228d50fd0b896f8bbdcc65b0",
+        "size": 2549544,
+        "type": 1
+      },
+      {
+        "compressed_size": 87262,
+        "manifest_offset": 37584355,
+        "offset": 34493347,
+        "path": "System.Security.Principal.Windows.dll",
+        "sha256": "2311a3f92971de918943573dfb66e04e25c1d543663951eb24e8eb1a0dcd4251",
+        "size": 178000,
+        "type": 1
+      },
+      {
+        "compressed_size": 9220,
+        "manifest_offset": 37584418,
+        "offset": 34580609,
+        "path": "System.Security.Principal.dll",
+        "sha256": "1d3e351058be3a33214b23b308fe57f78cd6fd4d8fad448fc84cbbe7376129f9",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 9265,
+        "manifest_offset": 37584473,
+        "offset": 34589829,
+        "path": "System.Security.SecureString.dll",
+        "sha256": "73aac97072b7deefa4de9647bf822162224f1452ad467841b989ff89d4d94595",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 10065,
+        "manifest_offset": 37584531,
+        "offset": 34599094,
+        "path": "System.Security.dll",
+        "sha256": "d8efd304765e859369698efef9b3ca707defa8e142721fe5605d7a2de7d38375",
+        "size": 18256,
+        "type": 1
+      },
+      {
+        "compressed_size": 9612,
+        "manifest_offset": 37584576,
+        "offset": 34609159,
+        "path": "System.ServiceModel.Web.dll",
+        "sha256": "ce91013ee3a9a9d69a85e258f7749e6ece488295d7cb66f7c1079f2e8678fc5e",
+        "size": 16680,
+        "type": 1
+      },
+      {
+        "compressed_size": 9376,
+        "manifest_offset": 37584629,
+        "offset": 34618771,
+        "path": "System.ServiceProcess.dll",
+        "sha256": "63fc498c9d04e3c4345dfdb8016ad0639d54562dd7d8c707c072792c854df944",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 583500,
+        "manifest_offset": 37584680,
+        "offset": 34628147,
+        "path": "System.Text.Encoding.CodePages.dll",
+        "sha256": "226e216e33c94ef7594bdffe670ba4dc5907151c113cb41ac9e9d570227e1765",
+        "size": 862032,
+        "type": 1
+      },
+      {
+        "compressed_size": 9308,
+        "manifest_offset": 37584740,
+        "offset": 35211647,
+        "path": "System.Text.Encoding.Extensions.dll",
+        "sha256": "8f51b9535db64fe027a40d6076200b1a6b0889bf05f62bb8e68c3eb083c7f113",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9304,
+        "manifest_offset": 37584801,
+        "offset": 35220955,
+        "path": "System.Text.Encoding.dll",
+        "sha256": "5e347db6b4f9b2746d50e1ac85be2d9cc7dc4038fde98ac4295bc7030c83cda9",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 54273,
+        "manifest_offset": 37584851,
+        "offset": 35230259,
+        "path": "System.Text.Encodings.Web.dll",
+        "sha256": "d20431f20d992e71a4e82e5f25c822474e2f4097d8527972d3d78ea1f26e47c3",
+        "size": 124752,
+        "type": 1
+      },
+      {
+        "compressed_size": 794563,
+        "manifest_offset": 37584906,
+        "offset": 35284532,
+        "path": "System.Text.Json.dll",
+        "sha256": "fa99f413be21ed5f484a09093fe5f0beba7de3062cf9cc9f847dbf8108dba55a",
+        "size": 1890128,
+        "type": 1
+      },
+      {
+        "compressed_size": 494255,
+        "manifest_offset": 37584952,
+        "offset": 36079095,
+        "path": "System.Text.RegularExpressions.dll",
+        "sha256": "060bcc88a688e687ff1404b83b5fb5cf17e19ec57f33d5b8a48ab494da83c134",
+        "size": 1034064,
+        "type": 1
+      },
+      {
+        "compressed_size": 30010,
+        "manifest_offset": 37585012,
+        "offset": 36573350,
+        "path": "System.Threading.AccessControl.dll",
+        "sha256": "66d618b5522b3e4f7a3c7f2bd872fc378fa6f9bbdca3636854eb1a8cb948e631",
+        "size": 75560,
+        "type": 1
+      },
+      {
+        "compressed_size": 74517,
+        "manifest_offset": 37585072,
+        "offset": 36603360,
+        "path": "System.Threading.Channels.dll",
+        "sha256": "afc5deb3c32b3f64bced2025d0b01b316d41b691ebc6ccb1a2ec445ad4c15e39",
+        "size": 157480,
+        "type": 1
+      },
+      {
+        "compressed_size": 9377,
+        "manifest_offset": 37585127,
+        "offset": 36677877,
+        "path": "System.Threading.Overlapped.dll",
+        "sha256": "89fde15f8e520c4bcbc6cbfdceba2baed8670cdf52399a4cd7a21c6efb276c1a",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 216455,
+        "manifest_offset": 37585184,
+        "offset": 36687254,
+        "path": "System.Threading.Tasks.Dataflow.dll",
+        "sha256": "a895b0c73d3a1afc4d89c1d9e445ed447af12864c25aad2c4cb7398ff50aa934",
+        "size": 472872,
+        "type": 1
+      },
+      {
+        "compressed_size": 9376,
+        "manifest_offset": 37585245,
+        "offset": 36903709,
+        "path": "System.Threading.Tasks.Extensions.dll",
+        "sha256": "f148e3a1414b7c2763ae21529ad79ad759f7cfd3c885256b64b0d2209dec2613",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 60131,
+        "manifest_offset": 37585308,
+        "offset": 36913085,
+        "path": "System.Threading.Tasks.Parallel.dll",
+        "sha256": "6fa359bdbebb56be96339f244ed41658afcead5e010074da470df1115d1e7699",
+        "size": 132904,
+        "type": 1
+      },
+      {
+        "compressed_size": 9647,
+        "manifest_offset": 37585369,
+        "offset": 36973216,
+        "path": "System.Threading.Tasks.dll",
+        "sha256": "f80b21f7dae04377b73945456cabe25e2ab1f4b564095aed546c2aa571644567",
+        "size": 16680,
+        "type": 1
+      },
+      {
+        "compressed_size": 9413,
+        "manifest_offset": 37585421,
+        "offset": 36982863,
+        "path": "System.Threading.Thread.dll",
+        "sha256": "ce71949bb1ea67b686e799128582015ebf8758f1107e59e43f342ece3f662930",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 9298,
+        "manifest_offset": 37585474,
+        "offset": 36992276,
+        "path": "System.Threading.ThreadPool.dll",
+        "sha256": "58fbc6c4b9c72087152fd0f0670a527098c00b0c19ba8d0979d3ca5ce07c6936",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9181,
+        "manifest_offset": 37585531,
+        "offset": 37001574,
+        "path": "System.Threading.Timer.dll",
+        "sha256": "9e4620846572f49aeb476aa99405071b4bbd0df4323e4e232787ed73642b1ee5",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 39964,
+        "manifest_offset": 37585583,
+        "offset": 37010755,
+        "path": "System.Threading.dll",
+        "sha256": "6c32ed1bf8067e4169e8feddd15e6489b89d19d1c7aae1520a551b57745d0a60",
+        "size": 83792,
+        "type": 1
+      },
+      {
+        "compressed_size": 258294,
+        "manifest_offset": 37585629,
+        "offset": 37050719,
+        "path": "System.Transactions.Local.dll",
+        "sha256": "8d0283a311a16333ffb6f966d9765e4d8b866777ad99291a93b30db349a15bc4",
+        "size": 640808,
+        "type": 1
+      },
+      {
+        "compressed_size": 9494,
+        "manifest_offset": 37585684,
+        "offset": 37309013,
+        "path": "System.Transactions.dll",
+        "sha256": "56abfca0350c111d077b3d86a2469ea3da4fccc1871f7c51a8b4fdb664bb0ede",
+        "size": 16720,
+        "type": 1
+      },
+      {
+        "compressed_size": 9255,
+        "manifest_offset": 37585733,
+        "offset": 37318507,
+        "path": "System.ValueTuple.dll",
+        "sha256": "07a5347f6a597e5e0d72109efa1a525697e8c3f74fb0029005500f8ebbf9187a",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 30145,
+        "manifest_offset": 37585780,
+        "offset": 37327762,
+        "path": "System.Web.HttpUtility.dll",
+        "sha256": "2cedef51b0a2c2b84240583339ecf2422c650e3388aa46f3494160b93b673887",
+        "size": 63272,
+        "type": 1
+      },
+      {
+        "compressed_size": 9166,
+        "manifest_offset": 37585832,
+        "offset": 37357907,
+        "path": "System.Web.dll",
+        "sha256": "bc260b3db247ad9a6e4a82a275da85c3691a41272cc745cb7eaefcf1f31cc817",
+        "size": 15144,
+        "type": 1
+      },
+      {
+        "compressed_size": 9338,
+        "manifest_offset": 37585872,
+        "offset": 37367073,
+        "path": "System.Windows.dll",
+        "sha256": "716eee98ceee87d38f0b301224462f8442aa793f4b1b9c3ffac315753320ab37",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 9310,
+        "manifest_offset": 37585916,
+        "offset": 37376411,
+        "path": "System.Xml.Linq.dll",
+        "sha256": "ae04903b25717fa4695e7e63489091f0d461e791e0bd264c6c85250d668f540d",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 11185,
+        "manifest_offset": 37585961,
+        "offset": 37385721,
+        "path": "System.Xml.ReaderWriter.dll",
+        "sha256": "8e48fed4d12bcffff01e8059caafb564697275797d2f5ec6823fdd82b87fe938",
+        "size": 21840,
+        "type": 1
+      },
+      {
+        "compressed_size": 9335,
+        "manifest_offset": 37586014,
+        "offset": 37396906,
+        "path": "System.Xml.Serialization.dll",
+        "sha256": "489694401c60905cb6dca8ef0bf738cb609cd45b337126a01c825b913086ba43",
+        "size": 16208,
+        "type": 1
+      },
+      {
+        "compressed_size": 9469,
+        "manifest_offset": 37586068,
+        "offset": 37406241,
+        "path": "System.Xml.XDocument.dll",
+        "sha256": "3ff858607de5146051498a7124ef983bea280d86e165f993516c6c26af81cfb5",
+        "size": 15696,
+        "type": 1
+      },
+      {
+        "compressed_size": 10042,
+        "manifest_offset": 37586118,
+        "offset": 37415710,
+        "path": "System.Xml.XPath.XDocument.dll",
+        "sha256": "5bcd27a7e93515b745993f6dda51391033883cb8a1a8a2e3dad5caed3548f0da",
+        "size": 30504,
+        "type": 1
+      },
+      {
+        "compressed_size": 9368,
+        "manifest_offset": 37586174,
+        "offset": 37425752,
+        "path": "System.Xml.XPath.dll",
+        "sha256": "c817b11c58d95fa942fbc62a4cfa8219e16dafa5641eb004cb2be424028ed5d8",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9428,
+        "manifest_offset": 37586220,
+        "offset": 37435120,
+        "path": "System.Xml.XmlDocument.dll",
+        "sha256": "a50b9b3a03596e36e73e7a7d54f4d018e8dcfaa7fe79e8cf900af8838ef3ec36",
+        "size": 15656,
+        "type": 1
+      },
+      {
+        "compressed_size": 9954,
+        "manifest_offset": 37586272,
+        "offset": 37444548,
+        "path": "System.Xml.XmlSerializer.dll",
+        "sha256": "0b7d057c2b5b2272e8d4096a755edfd96f3cf03ab9aaa3fef54b462bf48d517e",
+        "size": 17744,
+        "type": 1
+      },
+      {
+        "compressed_size": 11450,
+        "manifest_offset": 37586326,
+        "offset": 37454502,
+        "path": "System.Xml.dll",
+        "sha256": "277a84ba155fe7808a514f32694a8157ec9f0eeeef00ef9643e5250004054ff0",
+        "size": 23376,
+        "type": 1
+      },
+      {
+        "compressed_size": 19323,
+        "manifest_offset": 37586366,
+        "offset": 37465952,
+        "path": "System.dll",
+        "sha256": "ef135f0bda0c41e142fdbd67b93e5aa7911916cb250f7df302f4151a3bbfa380",
+        "size": 50472,
+        "type": 1
+      },
+      {
+        "compressed_size": 9595,
+        "manifest_offset": 37586402,
+        "offset": 37485275,
+        "path": "WindowsBase.dll",
+        "sha256": "0ec46a38f29a234b9a4d0ae9364c8322f661a47c831c5b948f2787b7ca12dbbd",
+        "size": 16208,
+        "type": 1
+      },
+      {
+        "compressed_size": 22323,
+        "manifest_offset": 37586443,
+        "offset": 37494870,
+        "path": "mscorlib.dll",
+        "sha256": "b698595367a7d4fa57ccacab73751fde0bb8f2415345c62cdfe7ced890da2c0c",
+        "size": 59728,
+        "type": 1
+      },
+      {
+        "compressed_size": 33089,
+        "manifest_offset": 37586481,
+        "offset": 37517193,
+        "path": "netstandard.dll",
+        "sha256": "3dc81dbc9dacd28261632c94410859eda24c2db50cd6c14309cbb2a434b50c57",
+        "size": 100648,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 37586522,
+        "offset": 37550282,
+        "path": "BundleFixture.deps.json",
+        "sha256": "bdb09798d623a8d881217e4309209437a0e67d709a9d255b7a98ff513a8eb232",
+        "size": 26674,
+        "type": 3
+      }
+    ],
+    "member_count": 175,
+    "sample": "BundleFixture.exe",
+    "sha256": "8e2dfadc79a62f2abcaaa77e8989e35fcc33a02d2649fd1775c081f49679dc8a",
+    "source": "tools/fixtures/executable-bundles"
+  },
+  {
+    "all_member_digests_agree": true,
+    "compressed_members": 152,
+    "entry_fields_agree": true,
+    "files": [
+      {
+        "compression_flag": 1,
+        "name": "struct",
+        "offset": 228864,
+        "sha256": "97bb8aad7c1879275ba0aa0705c99759cd23178593fa66d0acdaf15854fdab5b",
+        "size": 291,
+        "stored_size": 233,
+        "type": "m"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyimod01_archive",
+        "offset": 229097,
+        "sha256": "2f1074d6b969d902e92b8addecb7e4fdec2f1bceb060348805e9250dcc0eaff5",
+        "size": 5038,
+        "stored_size": 2897,
+        "type": "m"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyimod02_importers",
+        "offset": 231994,
+        "sha256": "256c10c1f4543e7f593d71523107b2fbf6a4ba5be42cdb23ff027f80cb76a79c",
+        "size": 32319,
+        "stored_size": 13819,
+        "type": "m"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyimod03_ctypes",
+        "offset": 245813,
+        "sha256": "c8deab179ed81927d37cbc936a847a095c4e597e6f77ac9fc3aa8110019e1ab3",
+        "size": 6619,
+        "stored_size": 2877,
+        "type": "m"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyimod04_pywin32",
+        "offset": 248690,
+        "sha256": "2f2af5db444803d63d3450b1d478694c9f4267160b4d24a25dcb47bf5f7d67f4",
+        "size": 1689,
+        "stored_size": 939,
+        "type": "m"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyiboot01_bootstrap",
+        "offset": 249629,
+        "sha256": "234ac0279e39e67c9a03ca09eaf91df234926ceaa497dec26448f8d0f1a9e6a9",
+        "size": 2048,
+        "stored_size": 1158,
+        "type": "s"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyi_rth_inspect",
+        "offset": 250787,
+        "sha256": "bce33ad21566e31689c257facd3b9d3acbf26679842e0a2fd22ba52fda6197ee",
+        "size": 2835,
+        "stored_size": 1486,
+        "type": "s"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyi_rth_pkgutil",
+        "offset": 252273,
+        "sha256": "f2c4681599071667907ec2fe04b4cfcbeebf3835199f7c2201a9a517fdcbbe5f",
+        "size": 1568,
+        "stored_size": 955,
+        "type": "s"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyi_rth_multiprocessing",
+        "offset": 253228,
+        "sha256": "ef53391e3795ee2b477c62f8d6cd13a3df8a53dcde6d674a298881c355b255ab",
+        "size": 2393,
+        "stored_size": 1337,
+        "type": "s"
+      },
+      {
+        "compression_flag": 1,
+        "name": "__main__",
+        "offset": 254565,
+        "sha256": "f40761bdc141b7f88a81fe7fef0b151f0b5f9e251b1721f82db5753de1fefb12",
+        "size": 737,
+        "stored_size": 447,
+        "type": "s"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_ARC4.pyd",
+        "offset": 255012,
+        "sha256": "2b077c3435324a51fdd25ea5a26bd657caaa5c3f3f208d763cb0fc5cf5fb3d57",
+        "size": 11264,
+        "stored_size": 5110,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_Salsa20.pyd",
+        "offset": 260122,
+        "sha256": "bb87f74ab8c7bd39ef2a9c0b9d197f969793bc406d6a9af443ddc0a0cb588609",
+        "size": 13312,
+        "stored_size": 6110,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_chacha20.pyd",
+        "offset": 266232,
+        "sha256": "02c61d3d7a897fac1d51b1ad5a2a82aec6c6a6283f8245fbf1db5e60a0c23443",
+        "size": 13312,
+        "stored_size": 6410,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_pkcs1_decode.pyd",
+        "offset": 272642,
+        "sha256": "035c9a585f32b9fef57926c7444883148f96b04f5d6bb7dd801bf097b5d97a6e",
+        "size": 13824,
+        "stored_size": 6243,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_aes.pyd",
+        "offset": 278885,
+        "sha256": "2c066fb52dec96d3b03b0d59a4d2bc680793eecc78430d33e5a1942b8ceefd39",
+        "size": 36864,
+        "stored_size": 18404,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_aesni.pyd",
+        "offset": 297289,
+        "sha256": "73c0e4a4c39b4ca889d206141b06939366c383dcce9e48ec77493c77eb8c9350",
+        "size": 15360,
+        "stored_size": 7041,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_arc2.pyd",
+        "offset": 304330,
+        "sha256": "4b7a3231026c274c8a05bd470b26d7c638ff9a12f4f4e87e4d24ce13718c4b90",
+        "size": 15872,
+        "stored_size": 7631,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_blowfish.pyd",
+        "offset": 311961,
+        "sha256": "dbaccc76ccd717fc93edc85763f402f54cf451be921168b7e4c81c83befaaa81",
+        "size": 19456,
+        "stored_size": 10609,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_cast.pyd",
+        "offset": 322570,
+        "sha256": "38243e704f8c87b388ceef8532711256a16f86b9b8a732d3b4c0cbc21ae7ce62",
+        "size": 24064,
+        "stored_size": 16046,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_cbc.pyd",
+        "offset": 338616,
+        "sha256": "650df70c8af6456c0c88c790c56bcc2311970d88394e789f6f4e9c633a782151",
+        "size": 12288,
+        "stored_size": 5609,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_cfb.pyd",
+        "offset": 344225,
+        "sha256": "617ae8897f5b59f714a31ed66e13e32bbcc22041fcedb444c112dcd67b797e85",
+        "size": 13312,
+        "stored_size": 5827,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_ctr.pyd",
+        "offset": 350052,
+        "sha256": "7952ddef6d8122abc55d04e3c3b23f60765dcd9857bc731639a49c01e1351d63",
+        "size": 14848,
+        "stored_size": 6373,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_des.pyd",
+        "offset": 356425,
+        "sha256": "0cbc5d1d1f062208857d6e66e1559aec934c5ff9bf9ed36b1e5b74f7640a9efe",
+        "size": 52736,
+        "stored_size": 16038,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_des3.pyd",
+        "offset": 372463,
+        "sha256": "da0f6951f914ec8e24e280f2868030672dbabf7c00864d7448a2b439f60602ad",
+        "size": 53248,
+        "stored_size": 16154,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_ecb.pyd",
+        "offset": 388617,
+        "sha256": "6d8485092ae6b09efd990c207d1d4257666d2d360a6601c184cf8c57b09c4ea1",
+        "size": 10752,
+        "stored_size": 4730,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_eksblowfish.pyd",
+        "offset": 393347,
+        "sha256": "4ce25cef683c369df88b6aaee4891c2ab909222af623b98876ccd458af4756f1",
+        "size": 21504,
+        "stored_size": 11208,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_ocb.pyd",
+        "offset": 404555,
+        "sha256": "48db0149aaa2305e05c7af6f7f2626feddfcc456cc854a95ee6bc3fc8af99f82",
+        "size": 18432,
+        "stored_size": 7774,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Cipher\\_raw_ofb.pyd",
+        "offset": 412329,
+        "sha256": "e08ab310422fa69fbfca176339021778f8782a904cec60084610422478d088bc",
+        "size": 12288,
+        "stored_size": 5400,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_BLAKE2b.pyd",
+        "offset": 417729,
+        "sha256": "c32b08338b56b0308b6f1b9198911c4cfbfb995e67e708360c68bee5c0844d98",
+        "size": 14848,
+        "stored_size": 7056,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_BLAKE2s.pyd",
+        "offset": 424785,
+        "sha256": "60ecc78a661a2f1416118202da82aceacbf9f775a1ef83727bc0e042c201108f",
+        "size": 14336,
+        "stored_size": 6871,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_MD2.pyd",
+        "offset": 431656,
+        "sha256": "c5a96067c82c5ccd6a231b911ad186b552197862bff7f20856016e2b014e30fd",
+        "size": 15360,
+        "stored_size": 6756,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_MD4.pyd",
+        "offset": 438412,
+        "sha256": "62c9bc06674d65fa4a0482cbb611eead430ec702613488cc0a56f42b12466d81",
+        "size": 13824,
+        "stored_size": 6291,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_MD5.pyd",
+        "offset": 444703,
+        "sha256": "8111a554790c0bce631136745d8f47d1cb74b8b7a24653b9dca9abc16f7405b5",
+        "size": 15872,
+        "stored_size": 7728,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_RIPEMD160.pyd",
+        "offset": 452431,
+        "sha256": "56ad242b17083d006d583afced56d5639b07a6650f708b83410f656df1e55b3e",
+        "size": 17920,
+        "stored_size": 8741,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_SHA1.pyd",
+        "offset": 461172,
+        "sha256": "12b486c2642a4cb3f0945d446dbc7314a59ebf939c2085943805245a65920891",
+        "size": 18432,
+        "stored_size": 9184,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_SHA224.pyd",
+        "offset": 470356,
+        "sha256": "facde9f5cfae316a6d4b9ee75bddffcfe3b5f5f6a60e73b879e33d99c35282ca",
+        "size": 22528,
+        "stored_size": 10127,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_SHA256.pyd",
+        "offset": 480483,
+        "sha256": "5843cf7090c0df52fb0d9cc0419d0e4e3c3abca61079568ad9a218d3065e5169",
+        "size": 22528,
+        "stored_size": 10129,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_SHA384.pyd",
+        "offset": 490612,
+        "sha256": "ec35372f74c1f16c255c5db2034c9ba9f0fee4994fe541e16c7b0ae7431243e7",
+        "size": 26624,
+        "stored_size": 12096,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_SHA512.pyd",
+        "offset": 502708,
+        "sha256": "17809c3d967ff362fcc3d039b1948f07acba9e556bd9cb982c5d17018b09f789",
+        "size": 27136,
+        "stored_size": 12300,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_ghash_clmul.pyd",
+        "offset": 515008,
+        "sha256": "adf7db8b403bb5e15c891b2532bc04f5255c5e8690d97e83e6bac5efeba6ad4b",
+        "size": 12800,
+        "stored_size": 5728,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_ghash_portable.pyd",
+        "offset": 520736,
+        "sha256": "9d361391afbd9d415d386c888989cfd66c78930f1baaaaaf760c2d7070f4e58a",
+        "size": 12288,
+        "stored_size": 5577,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_keccak.pyd",
+        "offset": 526313,
+        "sha256": "375a78d65879341d1369961cbb73b20d8fcebf21fd731cf8e300b830c4b2c218",
+        "size": 16896,
+        "stored_size": 8278,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Hash\\_poly1305.pyd",
+        "offset": 534591,
+        "sha256": "114db39e28506836e2c08c9859a67e0e3a65361edec5a50aeca3e4c5b0851363",
+        "size": 14336,
+        "stored_size": 6735,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Math\\_modexp.pyd",
+        "offset": 541326,
+        "sha256": "b6bc4bf6908758a702fb519f1a63f073372208a4a05f7661c79005cd2c60f3a0",
+        "size": 32256,
+        "stored_size": 16358,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Protocol\\_scrypt.pyd",
+        "offset": 557684,
+        "sha256": "2028877e75cd6ae4b3fc67dda0056ce92ffef9832be5aeb675431ca56beef655",
+        "size": 12288,
+        "stored_size": 5575,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\PublicKey\\_curve25519.pyd",
+        "offset": 563259,
+        "sha256": "25534785ca08e11cd2f5a8a2fa0a5c02acb74d7b13d66c17f74677b37bb155da",
+        "size": 20992,
+        "stored_size": 9758,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\PublicKey\\_curve448.pyd",
+        "offset": 573017,
+        "sha256": "1e567bb3afca67eb59ce764bf5fa8696f5f4a75deba2a95fee08061fc589d553",
+        "size": 59392,
+        "stored_size": 22707,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\PublicKey\\_ec_ws.pyd",
+        "offset": 595724,
+        "sha256": "974fc6ed63158a16930e09421e45d10b8cc92d7dfe36a8b89a72bbaf4eafb8c5",
+        "size": 756736,
+        "stored_size": 638581,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\PublicKey\\_ed25519.pyd",
+        "offset": 1234305,
+        "sha256": "6ca64b7791ad72465864468cd82be1930aea9e7ace2708c257056b5dbf0665a5",
+        "size": 25088,
+        "stored_size": 12244,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\PublicKey\\_ed448.pyd",
+        "offset": 1246549,
+        "sha256": "22af46fd4b25e6e8eb1095bf93aa64cf97d69c850e451e9a8f3020a1928c245e",
+        "size": 75776,
+        "stored_size": 26818,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Util\\_cpuid_c.pyd",
+        "offset": 1273367,
+        "sha256": "d4fb1d13244f4a8642ea17bd943c84e78d418408dbad4d28abdc39bfbb785604",
+        "size": 10240,
+        "stored_size": 4675,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "Cryptodome\\Util\\_strxor.pyd",
+        "offset": 1278042,
+        "sha256": "a3dade83c73f4bfeb41b3623efc947936f632b0fca532d497d28e64c2419edf5",
+        "size": 10240,
+        "stored_size": 4670,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "THIRD_PARTY_LICENSES.txt",
+        "offset": 1282712,
+        "sha256": "db2c768518669620aa36c53b70e2471e47cb61c13905a96dd16df0f5f853dd29",
+        "size": 249743,
+        "stored_size": 58195,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "VCRUNTIME140.dll",
+        "offset": 1340907,
+        "sha256": "d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7",
+        "size": 178616,
+        "stored_size": 84654,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "VCRUNTIME140_1.dll",
+        "offset": 1425561,
+        "sha256": "a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e",
+        "size": 50112,
+        "stored_size": 26627,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_asyncio.pyd",
+        "offset": 1452188,
+        "sha256": "c833cfdab82da58163acdada02cdb2b92d42bc543e1b5519dbcbe4d3805a98fc",
+        "size": 79072,
+        "stored_size": 35845,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_brotli.cp314-win_amd64.pyd",
+        "offset": 1488033,
+        "sha256": "e91121006fc85b001a9d51b9293719d1af0e56e774bfd396bfe1d3ccf21baf85",
+        "size": 872960,
+        "stored_size": 362855,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_bz2.pyd",
+        "offset": 1850888,
+        "sha256": "9590a3f4b7c0801cd379341d40bb89b5dc9a4e232c9498b6f3bc6b5e99d4ae7f",
+        "size": 87776,
+        "stored_size": 46737,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_cffi_backend.cp314-win_amd64.pyd",
+        "offset": 1897625,
+        "sha256": "9e99b2184c60f21a88cafc374386ded3559e8694ed7cf111f2869e066d303334",
+        "size": 181248,
+        "stored_size": 81380,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_ctypes.pyd",
+        "offset": 1979005,
+        "sha256": "adf71d85781a2fe937fcc44c0961498e2cf30849f9863ff7b5f7510817cea952",
+        "size": 143072,
+        "stored_size": 67817,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_decimal.pyd",
+        "offset": 2046822,
+        "sha256": "9605f332fb52636d77a3125abc7e42ba22b3838dcf136d81f37fe5875cbd62d6",
+        "size": 290016,
+        "stored_size": 136004,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_elementtree.pyd",
+        "offset": 2182826,
+        "sha256": "77707cb19dc91eb634d70f31b21022ee4c6ea5ce834c6952bc56ba00c6fd644d",
+        "size": 138976,
+        "stored_size": 63142,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_hashlib.pyd",
+        "offset": 2245968,
+        "sha256": "9052a85ac9947afbbdfdd62b0cad7501b668e6107832cefaa4b76377d710dae0",
+        "size": 68832,
+        "stored_size": 31233,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_lzma.pyd",
+        "offset": 2277201,
+        "sha256": "9ff9f63ad79f161722106e029b4c3afc6494848fd73f9bcc2ed5434a15c71bde",
+        "size": 160992,
+        "stored_size": 88998,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_multiprocessing.pyd",
+        "offset": 2366199,
+        "sha256": "7606f4044ffc923eac208f5bc5acb1dea14fe8edf2efe08a63e11177f4c7a016",
+        "size": 38624,
+        "stored_size": 20877,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_overlapped.pyd",
+        "offset": 2387076,
+        "sha256": "8f35ff35e76a2308ce0a50200fb01b55569f30952098239f7e000f3da1393a61",
+        "size": 58080,
+        "stored_size": 28887,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_queue.pyd",
+        "offset": 2415963,
+        "sha256": "51a3d8e40b061db4fc77f9a3b18e6c2f912c4edf467e46c95ac325d35f2be4df",
+        "size": 36576,
+        "stored_size": 20178,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_socket.pyd",
+        "offset": 2436141,
+        "sha256": "11f2ace2a37e59bf0f2fcfcc2523307408fa2e7f0aec561bc7531a8db130a83c",
+        "size": 87776,
+        "stored_size": 42118,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_sqlite3.pyd",
+        "offset": 2478259,
+        "sha256": "33e91d0de7924180012c86efb17611ec589b93f90b321ed9ec3c2f4c99fae5be",
+        "size": 133344,
+        "stored_size": 61171,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_ssl.pyd",
+        "offset": 2539430,
+        "sha256": "56fdbe70896e4b3c6d4e8897fad1d011129354172566832371289edca0d85a21",
+        "size": 193248,
+        "stored_size": 76236,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_uuid.pyd",
+        "offset": 2615666,
+        "sha256": "ad949327a9730feefc7f2c14db9b1b43f4351df1aad3688dc1e68e4a23f7e81c",
+        "size": 28384,
+        "stored_size": 16218,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_wmi.pyd",
+        "offset": 2631884,
+        "sha256": "c8f6705d2da1be12b10050a1311b7c865fd79f11404cfad1a70b3f8962051056",
+        "size": 40160,
+        "stored_size": 22010,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "_zstd.pyd",
+        "offset": 2653894,
+        "sha256": "7a7b50c580428daf3d43c87b121988d2e8c7af9533fa2195f1aef8652fc2c489",
+        "size": 503520,
+        "stored_size": 207939,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-console-l1-1-0.dll",
+        "offset": 2861833,
+        "sha256": "88ace577a9c51061cb7d1a36babbbefa48212fadc838ffde98fdfff60de18386",
+        "size": 22072,
+        "stored_size": 7710,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-datetime-l1-1-0.dll",
+        "offset": 2869543,
+        "sha256": "1bd81dfd19204b44662510d9054852fb77c9f25c1088d647881c9b976cc16818",
+        "size": 22056,
+        "stored_size": 7526,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-debug-l1-1-0.dll",
+        "offset": 2877069,
+        "sha256": "591358eb4d1531e9563ee0813e4301c552ce364c912ce684d16576eabf195dc3",
+        "size": 21944,
+        "stored_size": 7417,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-errorhandling-l1-1-0.dll",
+        "offset": 2884486,
+        "sha256": "d56ce7b1cd76108ad6c137326ec694a14c99d48c3d7b0ace8c3ff4d9bcee3ce8",
+        "size": 22096,
+        "stored_size": 7608,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-fibers-l1-1-0.dll",
+        "offset": 2892094,
+        "sha256": "91d249d7bc0e38ef6bcb17158b1fdc6dd8888dc086615c9b8b750b87e52a5fb3",
+        "size": 22072,
+        "stored_size": 7550,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-fibers-l1-1-1.dll",
+        "offset": 2899644,
+        "sha256": "fc9d86cec621383eab636ebc87ddd3f5c19a3cb2a33d97be112c051d0b275429",
+        "size": 22072,
+        "stored_size": 7505,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-file-l1-1-0.dll",
+        "offset": 2907149,
+        "sha256": "1ca895aba4e7435563a6b43e85eba67a0f8c74aa6a6a94d0fc48fa35535e2585",
+        "size": 26152,
+        "stored_size": 8696,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-file-l1-2-0.dll",
+        "offset": 2915845,
+        "sha256": "4cadbc0c39da7c6722206fdcebd670abe5b8d261e7b041dd94f9397a89d1990d",
+        "size": 22056,
+        "stored_size": 7561,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-file-l2-1-0.dll",
+        "offset": 2923406,
+        "sha256": "93c624b366ba16c643fc8933070a26f03b073ad0cf7f80173266d67536c61989",
+        "size": 21960,
+        "stored_size": 7564,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-handle-l1-1-0.dll",
+        "offset": 2930970,
+        "sha256": "39095f59c41d76ec81bb2723d646fde4c148e7cc3402f4980d2ade95cb9c84f9",
+        "size": 21944,
+        "stored_size": 7439,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-heap-l1-1-0.dll",
+        "offset": 2938409,
+        "sha256": "8f105771b236dbcb859de271f0a6822ce1cb79c36988dd42c9e3f6f55c5f7eb9",
+        "size": 22072,
+        "stored_size": 7748,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-interlocked-l1-1-0.dll",
+        "offset": 2946157,
+        "sha256": "53b25e753ca785bf8b695d89dde5818a318890211dc992a89146f16658f0b606",
+        "size": 22072,
+        "stored_size": 7609,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-kernel32-legacy-l1-1-1.dll",
+        "offset": 2953766,
+        "sha256": "a9b13a1cd1b8c19b0c6b4afcd5bb0dd29c0e2288231ac9e6db8510094ce68ba6",
+        "size": 22080,
+        "stored_size": 7842,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-libraryloader-l1-1-0.dll",
+        "offset": 2961608,
+        "sha256": "7f39ba298b41e4963047341288cab36b6a241835ee11ba4ad70f44dacd40906c",
+        "size": 22056,
+        "stored_size": 7889,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-localization-l1-2-0.dll",
+        "offset": 2969497,
+        "sha256": "6ee44dd0d8510dc024c9f7c79b1b9fa88c987b26b6beb6653ddd11751c34e5dc",
+        "size": 22080,
+        "stored_size": 8442,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-memory-l1-1-0.dll",
+        "offset": 2977939,
+        "sha256": "0512a35316ec9180437f86696a84c5c06a7e4e82e050055a656e5bf9fca206f9",
+        "size": 22056,
+        "stored_size": 7723,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-namedpipe-l1-1-0.dll",
+        "offset": 2985662,
+        "sha256": "c05f1fffe3b5a2738ea54ce9485cca026fb9635f982626fba1e1dcc531897273",
+        "size": 22096,
+        "stored_size": 7667,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-processenvironment-l1-1-0.dll",
+        "offset": 2993329,
+        "sha256": "c4eca98c3c67b6395d5b005b00ac1eb0318b86b23aa71035a44c2b1602befba9",
+        "size": 21968,
+        "stored_size": 7690,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-processthreads-l1-1-0.dll",
+        "offset": 3001019,
+        "sha256": "5ccb89e93d67bc3288d4e84649c5346e66e15e3d7cd65d989daf3f4cb584be9a",
+        "size": 22096,
+        "stored_size": 8333,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-processthreads-l1-1-1.dll",
+        "offset": 3009352,
+        "sha256": "4ad565a8ba3ef0ea8ab87221ad11f83ee0bc844ce236607958406663b407333e",
+        "size": 22072,
+        "stored_size": 7774,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-profile-l1-1-0.dll",
+        "offset": 3017126,
+        "sha256": "7809160932f44e59b021699f5bc68799eb7293ee1fa926d6fcca3c3445302e61",
+        "size": 22080,
+        "stored_size": 7530,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-rtlsupport-l1-1-0.dll",
+        "offset": 3024656,
+        "sha256": "9dc1e91e71c7c054854bd1487cb4e6946d82c9f463430f1c4e8d1471005172b1",
+        "size": 21960,
+        "stored_size": 7644,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-string-l1-1-0.dll",
+        "offset": 3032300,
+        "sha256": "60fc31d2a0c634412f529dba76af3b9bf991352877c6dae528186d3935704cfd",
+        "size": 22056,
+        "stored_size": 7613,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-synch-l1-1-0.dll",
+        "offset": 3039913,
+        "sha256": "3a72b4f29f39a265d32ad12f0ce15dbf60129c840e10d84d427829ede45e78ad",
+        "size": 22056,
+        "stored_size": 8137,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-synch-l1-2-0.dll",
+        "offset": 3048050,
+        "sha256": "efc1e4460984a73cf47a3def033af1c8f3b1dbc1a56cd27781d3aacf3e3330cb",
+        "size": 22080,
+        "stored_size": 7811,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-sysinfo-l1-1-0.dll",
+        "offset": 3055861,
+        "sha256": "b203d862ddef1dd62bf623fc866c7f7a9c317c1c2ae30d1f52cb41f955b5698e",
+        "size": 22072,
+        "stored_size": 7860,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-sysinfo-l1-2-0.dll",
+        "offset": 3063721,
+        "sha256": "2703635d835396afd0f138d7c73751afe7e33a24f4225d08c1690b0a371932c0",
+        "size": 22080,
+        "stored_size": 7690,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-timezone-l1-1-0.dll",
+        "offset": 3071411,
+        "sha256": "33f4fddc181066fce06b2227bded813f95e94ed1f3d785e982c6b6b56c510c57",
+        "size": 22056,
+        "stored_size": 7716,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-core-util-l1-1-0.dll",
+        "offset": 3079127,
+        "sha256": "6eda016742a6171205a387a14b3c0b331841567740376f56768f8c151724207d",
+        "size": 21944,
+        "stored_size": 7423,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-conio-l1-1-0.dll",
+        "offset": 3086550,
+        "sha256": "b762061b688aae679afe788904d2c9970f74a7dac98f3b42463d08f25e483d3f",
+        "size": 22056,
+        "stored_size": 7878,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-convert-l1-1-0.dll",
+        "offset": 3094428,
+        "sha256": "ebb2ae5535a64f65daeab8235585114fc9dd2cf1a49f5852d446250b998b6ae4",
+        "size": 26056,
+        "stored_size": 8859,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-environment-l1-1-0.dll",
+        "offset": 3103287,
+        "sha256": "17d63275d00bdd8670422b95bd264c532998e0a1b041079e54fce4b6b7a55819",
+        "size": 22080,
+        "stored_size": 7732,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "offset": 3111019,
+        "sha256": "9a9e2a65a281644e368d0f272b95ba5f6b445d1c35910d06056c5ebeb77402db",
+        "size": 22056,
+        "stored_size": 8340,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-heap-l1-1-0.dll",
+        "offset": 3119359,
+        "sha256": "bab9ac3ec83e380ae51e4295ef3bf2c738627812d3a49d1e713661abbc8dc57a",
+        "size": 22096,
+        "stored_size": 7878,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-locale-l1-1-0.dll",
+        "offset": 3127237,
+        "sha256": "bd14c67ea28e21d6257ad780a37122c9b5773f69e693f5db6bffaee4d839526e",
+        "size": 22080,
+        "stored_size": 7847,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-math-l1-1-0.dll",
+        "offset": 3135084,
+        "sha256": "606d66d82db562ea7979179d06486a0f94d079941d26b80a1e2c49d29959df6f",
+        "size": 30248,
+        "stored_size": 10873,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-process-l1-1-0.dll",
+        "offset": 3145957,
+        "sha256": "f6156b1020380ec4f0e48577ebedaaef5fb1ab1f337d8b4e72e6a33a7567a9cc",
+        "size": 22096,
+        "stored_size": 7924,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-runtime-l1-1-0.dll",
+        "offset": 3153881,
+        "sha256": "c5902934d026d7e15fbe9917d474f3322846a41a25e66f4b2b1f758801879f4b",
+        "size": 26152,
+        "stored_size": 9154,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-stdio-l1-1-0.dll",
+        "offset": 3163035,
+        "sha256": "a9c5a153d8c0286f9b41a2b1c65854ad9e6471b8755b7de87bae4470e60bcab6",
+        "size": 26168,
+        "stored_size": 9613,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-string-l1-1-0.dll",
+        "offset": 3172648,
+        "sha256": "25b8f83a7767211b11132775a0e27a45aa4ec8ab4e6572599f9c172ae3606b40",
+        "size": 26176,
+        "stored_size": 9779,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-time-l1-1-0.dll",
+        "offset": 3182427,
+        "sha256": "7c7f6393f06de11750adb09cc5698ae55cd9fb27b2e51e207286feb1b5b2b156",
+        "size": 22096,
+        "stored_size": 8422,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "api-ms-win-crt-utility-l1-1-0.dll",
+        "offset": 3190849,
+        "sha256": "d8ba5f17b9ffcbf3aeaf3fa1da226832d2fa90f81acce0cd669464e76ce434ac",
+        "size": 21952,
+        "stored_size": 7749,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "base_library.zip",
+        "offset": 3198598,
+        "sha256": "e5f006f571264e04094b0471caa5f12d539ffb1bc5c262ee899603a534331926",
+        "size": 1396401,
+        "stored_size": 414445,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "certifi\\cacert.pem",
+        "offset": 3613043,
+        "sha256": "2ef52ad56b4803e264045c915e55c236cbfa045b84b81efefc218a19eb44bd2b",
+        "size": 235863,
+        "stored_size": 131856,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "certifi\\py.typed",
+        "offset": 3744899,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0,
+        "stored_size": 8,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "charset_normalizer\\cd.cp314-win_amd64.pyd",
+        "offset": 3744907,
+        "sha256": "2fc82a309cdd4499e5dba1a87671f9ac3a3a35e44008afafd7867888d400f3a3",
+        "size": 119296,
+        "stored_size": 57237,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "charset_normalizer\\md.cp314-win_amd64.pyd",
+        "offset": 3802144,
+        "sha256": "ca72897ac6a6aca48bac72b409bb3cbe6326b755b37d733cad731d5624e17f79",
+        "size": 210944,
+        "stored_size": 80164,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\DELVEWHEEL",
+        "offset": 3882308,
+        "sha256": "834774cfd61a0d050b60a8ce59a94f318ea99417e146f4300c4b16b64455ce90",
+        "size": 446,
+        "stored_size": 220,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\INSTALLER",
+        "offset": 3882528,
+        "sha256": "ceebae7b8927a3227e5303cf5e0f1f7b34bb542ad7250ac03fbcde36ec2f1508",
+        "size": 4,
+        "stored_size": 12,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\METADATA",
+        "offset": 3882540,
+        "sha256": "b624837429aad39b5e5559da8aca3c0492ea2fcc59edd892a48eabab3ee996e4",
+        "size": 19172,
+        "stored_size": 6738,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\RECORD",
+        "offset": 3889278,
+        "sha256": "0cc41c2c902e8015854365496e895f087a36f6d7dca1345f2d1f89e9f17942ce",
+        "size": 5011,
+        "stored_size": 2141,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\REQUESTED",
+        "offset": 3891419,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0,
+        "stored_size": 8,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\WHEEL",
+        "offset": 3891427,
+        "sha256": "9c276c77f6aee9d90d02198d8387bd78b47bb9d32249bb02d79bef294bc7a245",
+        "size": 100,
+        "stored_size": 107,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\entry_points.txt",
+        "offset": 3891534,
+        "sha256": "1f34f0a14a5b88a228e6e26baa7c4f93939dc59d0f853d1d3d34aa50ff09b3bd",
+        "size": 49,
+        "stored_size": 52,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\licenses\\LICENSE",
+        "offset": 3891586,
+        "sha256": "47e6ce96c02170758c16164e66f920620db614523d642eba5000ba0c7aa2be6e",
+        "size": 1129,
+        "stored_size": 665,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi-0.17.0.dist-info\\top_level.txt",
+        "offset": 3892251,
+        "sha256": "6f9d58079d08fefbba5c06d21119aab606987226000c203f6da56867f4f92f3b",
+        "size": 10,
+        "stored_size": 18,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi.libs\\libcurl-impersonate-ae864b926b0a86bfa3b18a664407a1ab.dll",
+        "offset": 3892269,
+        "sha256": "ae864b926b0a86bfa3b18a664407a1abb71c31a30c317d938f8c88537d044e45",
+        "size": 4113920,
+        "stored_size": 1954048,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "curl_cffi\\_wrapper.pyd",
+        "offset": 5846317,
+        "sha256": "1d478b6ea9d7d80cc165563ff1744b5eddda19c0015b843ca7964a6ec879ddca",
+        "size": 42496,
+        "stored_size": 14497,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "libcrypto-3.dll",
+        "offset": 5860814,
+        "sha256": "75495fe0e079ab00d49be740d3c710a0b94e3f74f9648cb7cc9f768fc7f52319",
+        "size": 6021880,
+        "stored_size": 2087419,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "libffi-8.dll",
+        "offset": 7948233,
+        "sha256": "eff52743773eb550fcc6ce3efc37c85724502233b6b002a35496d828bd7b280a",
+        "size": 39696,
+        "stored_size": 23239,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "libssl-3.dll",
+        "offset": 7971472,
+        "sha256": "8957182a9c385bfd9f3f790921de2ddc614cf91f99edbed4e9e5446a46504e32",
+        "size": 1308920,
+        "stored_size": 482948,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "pyexpat.pyd",
+        "offset": 8454420,
+        "sha256": "87b0f7401749bd19bddf8872c17965a99142928fdefab0b513ded9c116f3da6b",
+        "size": 202464,
+        "stored_size": 96610,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "python3.dll",
+        "offset": 8551030,
+        "sha256": "7bb0a7df2d5cb829319dd8d122039843e2a762361bb5a61bb5d24ca34f4040b5",
+        "size": 73952,
+        "stored_size": 25054,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "python314.dll",
+        "offset": 8576084,
+        "sha256": "d8a06cc6ca3348925ea29e343e1c5c5895fe0bb433ff913e1cee44caf358aa6a",
+        "size": 6816992,
+        "stored_size": 2738631,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "select.pyd",
+        "offset": 11314715,
+        "sha256": "0da869c017fd3231cfc1c1e4c4bef1bb7bf5cba38236e6d7bf1630c3507c5a1d",
+        "size": 33504,
+        "stored_size": 18795,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "sqlite3.dll",
+        "offset": 11333510,
+        "sha256": "99c296ca2b4372418edbdcbd923ab0df2cdbcf406782694d7376f2b01e5010c9",
+        "size": 1584864,
+        "stored_size": 843388,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "ucrtbase.dll",
+        "offset": 12176898,
+        "sha256": "2e5fb14b7bf8540278f3614a12f0226e56a7cc9e64b81cbd976c6fcf2f71cbfb",
+        "size": 1361448,
+        "stored_size": 649307,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "unicodedata.pyd",
+        "offset": 12826205,
+        "sha256": "4c4e9f9e71e299a7e0093830e79f955f2b12b4eb0a6bb45003d42256b6e5985d",
+        "size": 758496,
+        "stored_size": 344331,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\INSTALLER",
+        "offset": 13170536,
+        "sha256": "ceebae7b8927a3227e5303cf5e0f1f7b34bb542ad7250ac03fbcde36ec2f1508",
+        "size": 4,
+        "stored_size": 12,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\METADATA",
+        "offset": 13170548,
+        "sha256": "0f4dbbb04b659eb336bddd7ca16901e19f9252011c1f9fe03d3002b39cf8d653",
+        "size": 6506,
+        "stored_size": 2560,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\RECORD",
+        "offset": 13173108,
+        "sha256": "ab3830c96c832173fdc9833ac1fc716c2d917abd8753a18e544db4f7b5e79d25",
+        "size": 8263,
+        "stored_size": 3126,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\REQUESTED",
+        "offset": 13176234,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0,
+        "stored_size": 8,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\WHEEL",
+        "offset": 13176242,
+        "sha256": "1a3368594293c15a983a1f8601e3aa996b3c2b9325cff626d85dfd9bdd5753c4",
+        "size": 101,
+        "stored_size": 104,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\entry_points.txt",
+        "offset": 13176346,
+        "sha256": "0e7867e1d9b912c23864c02c1e574617a0b005766b1979d1edc9cadbe5d1ef36",
+        "size": 51,
+        "stored_size": 50,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\licenses\\LICENSE",
+        "offset": 13176396,
+        "sha256": "0f44514998aca209d3482d10204a8adf2aa4296ff157a36a5c0922f2280632d3",
+        "size": 1538,
+        "stored_size": 784,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets-17.4.dist-info\\top_level.txt",
+        "offset": 13177180,
+        "sha256": "08ca5d2a49712acbd980283296dc5458e1e26d95d9d6e60856971af71b10f079",
+        "size": 11,
+        "stored_size": 19,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "websockets\\speedups.cp314-win_amd64.pyd",
+        "offset": 13177199,
+        "sha256": "5fcfdb626c2578711cc37849f03211e7d42bb9b5c35b81668293635d8ad5dcd6",
+        "size": 11264,
+        "stored_size": 4991,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "yt_dlp_ejs\\yt\\solver\\core.min.js",
+        "offset": 13182190,
+        "sha256": "18da6ce0758b416e7ae645084f4f8801f9f9d59d6c477c05eaa0ff94ebd8cc00",
+        "size": 6945,
+        "stored_size": 2312,
+        "type": "b"
+      },
+      {
+        "compression_flag": 1,
+        "name": "yt_dlp_ejs\\yt\\solver\\lib.min.js",
+        "offset": 13184502,
+        "sha256": "c55987fe697e5b9ee18830163f7af85327e9bb5c3e674b969d38c8d205eaa577",
+        "size": 151561,
+        "stored_size": 46320,
+        "type": "b"
+      },
+      {
+        "compression_flag": 0,
+        "name": "PYZ.pyz",
+        "offset": 13230822,
+        "sha256": "f9e858c5e613a1b1525698c4488572c103e11c85454556c2994c91d1df8c896c",
+        "size": 10388427,
+        "stored_size": 10388427,
+        "type": "z"
+      }
+    ],
+    "limitations": {
+      "pyinstaller.python-code": 1
+    },
+    "member_count": 153,
+    "reference_version": "6.22.3",
+    "sample": "yt-dlp.exe",
+    "sha256": "622ed48023cac1daa52a3bf3a6ac38f03514de214b5f0fa069389fd0f6d17e5c",
+    "source": "https://github.com/yt-dlp/yt-dlp/releases/tag/2026.11.23"
+  }
+]

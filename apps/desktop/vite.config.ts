@@ -11,18 +11,20 @@ function sampleReport(): Plugin {
   return {
     name: "sample-report",
     configureServer(server) {
-      server.middlewares.use("/sample-report", (_request, response) => {
-        readFile(new URL("./tests/fixtures/sample-report.html", import.meta.url)).then(
-          (page) => {
-            response.setHeader("Content-Type", "text/html; charset=utf-8");
-            response.end(page);
-          },
-          () => {
-            response.statusCode = 404;
-            response.end("Make the sample first: npm run fixture");
-          },
-        );
-      });
+      for (const name of ["sample-report", "relationships-report", "large-report"]) {
+        server.middlewares.use(`/${name}`, (_request, response) => {
+          readFile(new URL(`./tests/fixtures/${name}.html`, import.meta.url)).then(
+            (page) => {
+              response.setHeader("Content-Type", "text/html; charset=utf-8");
+              response.end(page);
+            },
+            () => {
+              response.statusCode = 404;
+              response.end("Make the sample first: npm run fixture");
+            },
+          );
+        });
+      }
     },
   };
 }

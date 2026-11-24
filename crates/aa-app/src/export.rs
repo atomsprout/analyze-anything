@@ -155,14 +155,5 @@ pub fn add_files(dir: &Path, files: &[(&str, Vec<u8>)]) -> Result<Vec<PathBuf>, 
 /// Reads a `report.json`, refusing one written in a layout this program does not read.
 pub fn load(path: &Path) -> Result<Report, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
-    let report: Report = serde_json::from_slice(&bytes).map_err(|e| format!("{} is not a report: {e}", path.display()))?;
-    if report.schema_version != aa_core::SCHEMA_VERSION {
-        return Err(format!(
-            "{} uses report layout {}, this program reads layout {}",
-            path.display(),
-            report.schema_version,
-            aa_core::SCHEMA_VERSION
-        ));
-    }
-    Ok(report)
+    aa_query::decode(&bytes).map_err(|error| format!("{}: {error}", path.display()))
 }

@@ -14,6 +14,28 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 
 ## Parts not verified on real samples
 
+The initial Linux package readers have native Linux references for Debian node-isarray
+2.0.5-1, Fedora xxhash-libs 0.8.4-2.fc43 and project-authored script packages. Debian
+metadata is read only from its captured control archive; dependency alternatives
+and constraints remain literal. TAR link declarations are retained without
+following targets. The RPM profile reads 3.0 leads, v4 headers and declared
+CPIO payloads using shared gzip/bzip2/xz/zstd streams. Raw LZMA, RPM v6/07070X,
+old Debian containers and unsupported metadata profiles remain explicit gaps.
+SVR4 CPIO newc/crc has constructed checksum and late-hardlink tests; unresolved
+groups and special files remain limitations. Neither package authentication nor
+declared package checksums, installation eligibility, script control flow or host
+dependency resolution is established. See [Linux package scope](spikes/linux-packages.md).
+
+The bounded .NET single-file reader supports manifest versions 1.0, 2.0 and 6.0;
+version 6 has published WinSW and SDK-built stored/compressed comparisons. Versions
+1/2 have constructed tests only. Unsupported versions/layouts, ambiguous markers,
+invalid ranges and malformed compression remain explicit. The PyInstaller reader
+supports the 88-byte CArchive profile with stored/zlib members, native-writer fixtures
+and a published yt-dlp Windows executable comparison. Python marshal objects and PYZ
+modules are not loaded or decoded; symbolic/external references are not followed.
+Other executable platforms, legacy cookies and real signed trailers remain unqualified.
+See [the exact profiles and comparisons](spikes/executable-bundles.md).
+
 The NuGet reader has been compared with the Windows .NET SDK on the published
 NuGet.Versioning and NuGet.Configuration 6.11.1 packages. Ambiguous sibling
 packages and incomplete listings have constructed coverage. Only exact stable
@@ -36,7 +58,7 @@ See [the WinGet record](spikes/windows-winget.md).
 The following features have only been tested with data we constructed ourselves, and have not been compared against reference tools on real samples:
 
 - **Apple**: APFS snapshots and multiple volumes, ECDSA signatures. An encrypted DMG is identified but cannot be read. FairPlay-encrypted IPAs downloaded from the App Store have been verified on real samples: the encryption is identified, metadata, signatures and resources are analyzed as usual, and the encrypted code cannot be read.
-- **Windows**: Inno Setup 6.4 files can be extracted, but the reference tool cannot read this version, so the result cannot be checked; NSIS 1.x / 2.x and forked versions are untested; an MSI's own digital signature is verified (content digest, metadata digest, signature value, certificate chain), with osslsigncode as the reference tool. An initial Windows SignTool comparison of the signed MSI fixture is recorded in [the baseline](spikes/windows-baseline.md); Windows reported UnknownError and SignTool returned nonzero; the cause was not established, and a real trusted signed installer distribution remains unverified. The position of the `MsiDigitalSignatureEx` stream in the digest has two readings, and when only the other reading matches, it is reported as "could not verify" without drawing a conclusion; a RAR self-extractor only has its appended data exported and is not unpacked (for license reasons); Quantum-compressed CABs, multi-volume CABs and external CABs are not unpacked.
+- **Windows**: Inno Setup 6.4 files can be extracted, but the reference tool cannot read this version, so the result cannot be checked; NSIS 1.x / 2.x and forked versions are untested; an MSI's own digital signature is verified (content digest, metadata digest, signature value, certificate chain), with osslsigncode as the reference tool. The initial signed MSI fixture produced Windows UnknownError and a nonzero SignTool result for an unestablished reason. A subsequent real signed OpenJDK MSI comparison passed all four offline cryptographic checks, with Windows Valid and SignTool exit zero; the same run checked an installed 7-Zip directory. These representative results do not establish Windows trust equivalence or every signature profile; see [the baseline](spikes/windows-baseline.md). The position of the `MsiDigitalSignatureEx` stream in the digest has two readings, and when only the other reading matches, it is reported as "could not verify" without drawing a conclusion; a RAR self-extractor only has its appended data exported and is not unpacked (for license reasons); Quantum-compressed CABs, multi-volume CABs and external CABs are not unpacked.
 - **Android**: XAPK / APKS have only been tested with hand-built samples; packers, Janus and unusual compression methods have only been tested on constructed samples; for AAB only the base module is analyzed in depth; a manifest in text format (apktool output) is not decoded.
 - **Binaries**: Mach-O imports and exports are read from the symbol table, the export trie, chained fixups and bind opcodes, and have been compared against `dyld_info`, `nm` and `objdump`; compressed symbol names in chained fixups and the big-endian format are not read (recorded as a limitation). PE delay imports have only been verified on samples we constructed ourselves.
 
@@ -147,7 +169,7 @@ and [source graph profile and budgets](spikes/windows-inf-relationships.md).
 
 The automated tests pass on Linux, macOS and Windows (GitHub Actions). Release builds were run successfully on Linux x64 / arm64, macOS arm64 / x64 and Windows x64 and passed the self-check. The large-scale comparison using release packages of open source projects was done on Linux.
 
-It has been tested with real samples on one Apple silicon Mac (macOS 27): 8 installed applications (all 332 items match `codesign`), an encrypted IPA downloaded from the App Store and a decrypted IPA, and two DMGs (one of which unpacked to 7461 files). On the same Mac, version 0.1.1 was run over every app in the Applications folder (52 apps, 677,336 files); the findings that looked wrong were compared with `codesign` and the differences fixed ([TODO.md](TODO.md) lists them). The desktop app has only been verified on this Mac. Initial native Windows x64 CLI comparisons and file-access checks are now recorded in [the Windows baseline](spikes/windows-baseline.md) and [file-access record](spikes/windows-file-access.md); their explicitly pending cases remain open. This does not establish Windows desktop release readiness.
+It has been tested with real samples on one Apple silicon Mac (macOS 27): 8 installed applications (all 332 items match `codesign`), an encrypted IPA downloaded from the App Store and a decrypted IPA, and two DMGs (one of which unpacked to 7461 files). On the same Mac, version 0.1.1 was run over every app in the Applications folder (52 apps, 677,336 files); the findings that looked wrong were compared with `codesign` and the differences fixed ([TODO.md](TODO.md) lists them). Windows x64 desktop acceptance includes local portable/NSIS builds and an offline Windows 10 guest. Hosted Windows WebView2 and Ubuntu 24.04 x64 WebKitGTK under Xvfb/D-Bus each passed 67 native-window checks at d047df8. These scoped runs do not establish physical-display behavior on other Linux distributions or signed Windows/Linux delivery; see [desktop qualification](DESKTOP.md). Native Windows CLI comparisons and file-access checks are recorded in [the Windows baseline](spikes/windows-baseline.md) and [file-access record](spikes/windows-file-access.md); their explicitly pending cases remain open.
 
 ## Comparison with the system's own tools
 

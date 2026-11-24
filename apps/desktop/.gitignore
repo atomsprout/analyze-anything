@@ -2,5 +2,10 @@ node_modules
 dist
 src-tauri/gen
 tests/fixtures/sample-report.html
+tests/fixtures/relationships-report.html
+tests/fixtures/relationships
 tests/fixtures/out
+tests/fixtures/large
+tests/fixtures/large-report.html
+tests/fixtures/large-report.json
 test-results

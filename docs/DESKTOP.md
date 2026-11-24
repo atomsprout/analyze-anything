@@ -1,8 +1,8 @@
 # Desktop app
 
-A graphical interface for the same analysis engine: drop a file in → watch progress → read the report → look at the evidence bytes → export → history and diff. It adds no analysis capability; the same input produces byte-identical reports in the desktop app and in `analyze-anything`. The plan is in [PLAN-DESKTOP.md](PLAN-DESKTOP.md).
+A graphical interface for the same analysis engine: drop a file in → watch progress → read the report → look at the evidence bytes → export → history. It adds no analysis capability; the same input produces byte-identical reports in the desktop app and in `analyze-anything`. The plan is in [PLAN-DESKTOP.md](PLAN-DESKTOP.md).
 
-Only a macOS (Apple silicon) build exists for now.
+The signed stable desktop release is for macOS (Apple silicon). Windows x64 portable and NSIS builds have passed local and hosted acceptance; Ubuntu 24.04 x64 WebKitGTK passed hosted real-window checks under Xvfb/D-Bus. Those checks do not establish physical-display behavior on every Linux distribution. See the qualification and packaging sections below for exact scope.
 
 ## Install
 
@@ -120,8 +120,19 @@ the window.
 
 The desktop CI matrix includes a Windows WebView2 job that launches the actual
 desktop window, runs the self-check with a cancellation input and compares the
-exports with the CLI. The CI build command passed locally. A hosted run with
-the new Windows desktop job remains pending. See [CI](../.github/workflows/ci.yml).
+exports with the CLI. The hosted Windows job at dbdfd79 passed all 67 native
+checks on 2026-11-24, including byte-for-byte agreement for seven export formats
+and the complete exported folder. [Run 45357629773](https://github.com/atomsprout/analyze-anything/actions/runs/45357629773)
+also passed the three core-platform jobs and the advisory/license gate; its macOS
+browser job failed on a test initialization race, addressed separately. The current
+CI matrix adds a Linux WebKitGTK window under Xvfb and D-Bus using the documented
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/#linux). That hosted
+Linux run subsequently passed all 67 native checks at 2caf6d4, including seven export
+formats and the full folder comparison. [Run 45360964209](https://github.com/atomsprout/analyze-anything/actions/runs/45360964209)
+passed all three core-platform jobs, all three desktop jobs and the advisory/license gate.
+The Linux result qualifies Ubuntu 24.04 x64 WebKitGTK under Xvfb/D-Bus, not physical-display
+interaction or all Linux distributions. Later changes still require final-head regression.
+See [CI](../.github/workflows/ci.yml).
 
 ### Self-check mode
 

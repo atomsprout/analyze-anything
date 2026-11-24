@@ -113,6 +113,28 @@ test("the report page, on its own, has its own controls and no host buttons", as
   await expect(page.locator(".hostlink")).toHaveCount(0);
 });
 
+test("opening questions lead to the original finding and coverage", async ({ page }) => {
+  await page.goto("/sample-report");
+  const questions = page.locator("#questions");
+  await expect(questions).toBeVisible();
+  await expect(questions.locator("h4")).toHaveCount(4);
+  await questions.getByRole("button").first().click();
+  await expect(page.locator("#findings :focus")).toBeVisible();
+  await questions.locator('a[href="#coverage"]').click();
+  await expect(page.locator("#coverage")).toBeInViewport();
+});
+
+test("unresolved relationships retain their reasons and open the source evidence", async ({ page }) => {
+  await page.goto("/relationships-report");
+  const relationships = page.locator("#relationships");
+  await expect(relationships.locator("tbody tr")).toHaveCount(4);
+  await expect(relationships).toContainText("unresolved");
+  await expect(relationships).toContainText("absolute-or-device-path-not-anchored");
+  await relationships.getByRole("button").first().click();
+  await expect(page.locator("#detail")).toContainText("native.lnk");
+  await expect(page.locator("#detail")).toContainText("windows.input-references");
+});
+
 test("opening a file shows progress, then the report in a sandboxed frame", async ({ page }) => {
   await openSample(page);
   const frame = page.locator("iframe.report-frame");
@@ -148,14 +170,17 @@ test("the report asks its host for bytes, and the host shows them with the evide
 });
 
 test("the report page sends its host nothing but what the host asked to be told", async ({ page }) => {
+  // Observe the first load. Reloading before that load finishes can mix two ready messages.
+  await page.addInitScript(() => {
+    const seen: unknown[] = [];
+    Object.defineProperty(window, "__reportMessages", { value: seen });
+    window.addEventListener("message", (event) => seen.push(event.data));
+  });
   await openSample(page);
   const messages = await page.evaluate(
     () =>
       new Promise<unknown[]>((resolve) => {
-        const seen: unknown[] = [];
-        window.addEventListener("message", (event) => seen.push(event.data));
-        const frame = document.querySelector<HTMLIFrameElement>("iframe.report-frame");
-        if (frame) frame.src = frame.src;
+        const seen = (window as Window & { __reportMessages?: unknown[] }).__reportMessages ?? [];
         window.setTimeout(() => resolve(seen), 1500);
       }),
   );

@@ -19,6 +19,7 @@ ai = ["dep:aa-interpret"]
 
 [dependencies]
 aa-core.workspace = true
+aa-query.workspace = true
 aa-engine.workspace = true
 aa-app.workspace = true
 aa-report = { path = "../aa-report", default-features = false }

@@ -13,7 +13,7 @@ is a complete small analyzer, `crates/aa-unpack` a complete set of unpackers.
    look the same.
 2. **File pass.** `Analyzer::analyze_file` runs for every artifact, in parallel.
 3. **Tree pass.** `Analyzer::analyze_tree` runs once per analyzer, in registration order
-   (content, binary, apple, windows, android). It sees the facts and kinds every analyzer
+   (content, binary, apple, windows, android, linux, executable bundles, correlation). It sees the facts and kinds every analyzer
    attached in the file pass, and those of the analyzers before it in the tree pass.
 
 A kind set in the file pass sticks to the first analyzer that sets it; the tree pass may replace

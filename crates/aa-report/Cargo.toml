@@ -21,3 +21,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 typst = { version = "0.14.2", optional = true }
 typst-pdf = { version = "0.14.2", optional = true }
+
+[dev-dependencies]
+aa-engine.workspace = true
+zip.workspace = true

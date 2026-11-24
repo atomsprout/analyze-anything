@@ -190,7 +190,7 @@ fn claude_is_asked_the_anthropic_way_round_after_round() {
     assert!(asked[0].headers.iter().any(|(name, _)| name == "anthropic-version"));
     let first = transport.body(0);
     assert_eq!(first["model"], "test-model");
-    assert_eq!(first["tools"].as_array().expect("tools").len(), 3);
+    assert_eq!(first["tools"].as_array().expect("tools").len(), 7);
     assert!(first["tools"][0]["input_schema"].is_object());
     assert!(first["messages"][0]["content"].as_str().expect("text").contains("Looks like a Stripe live secret key"));
     // The second request repeats the model's blocks unchanged and answers each question.
@@ -382,7 +382,10 @@ fn claude_code_is_started_with_the_reports_tools_and_nothing_else() {
     assert_eq!(program, "claude");
     assert!(arguments.contains(&"--print".to_string()) && arguments.contains(&"--strict-mcp-config".to_string()));
     assert_eq!(after(arguments, "--tools"), "");
-    assert_eq!(after(arguments, "--allowedTools"), "mcp__report__list_findings,mcp__report__get_finding,mcp__report__list_files");
+    assert_eq!(
+        after(arguments, "--allowedTools"),
+        "mcp__report__list_findings,mcp__report__get_finding,mcp__report__list_files,mcp__report__list_evidence,mcp__report__list_limitations,mcp__report__get_file,mcp__report__get_coverage"
+    );
     assert_eq!(after(arguments, "--permission-mode"), "dontAsk");
     assert!(after(arguments, "--system-prompt").contains("Use no other tool"));
     assert!(input.starts_with("Report data:"));
@@ -473,7 +476,7 @@ fn the_tool_server_speaks_the_protocol() {
     let tools = replies[1]["result"]["tools"].as_array().expect("tools");
     assert_eq!(
         tools.iter().map(|tool| tool["name"].as_str().expect("a name")).collect::<Vec<_>>(),
-        ["list_findings", "get_finding", "list_files"]
+        ["list_findings", "get_finding", "list_files", "list_evidence", "list_limitations", "get_file", "get_coverage"]
     );
     assert!(tools.iter().all(|tool| tool["inputSchema"]["type"] == "object"));
     assert_eq!(replies[2]["id"], "three");

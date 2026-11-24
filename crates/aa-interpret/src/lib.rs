@@ -34,13 +34,7 @@ pub const SCHEMA_VERSION: u32 = 2;
 pub const JSON_NAME: &str = "ai.json";
 pub const MARKDOWN_NAME: &str = "ai.md";
 
-/// The language the interpretation is written in.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Language {
-    En,
-    Zh,
-}
+pub use aa_query::Language;
 
 /// Something the model said, and the findings it rests on.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -20,7 +20,7 @@ That writes `App.ipa.report/` with the report as HTML, PDF, Markdown, plain text
 There are two ways to use it, on the same engine, giving the same report for the same input:
 
 - the **command line**, `analyze-anything` (short name `aaaa`);
-- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history and compare two versions, and, if you set it up, have a model explain the report beside it.
+- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history, and, if you set it up, have a model explain the report beside it.
 
 ## What it looks like
 
@@ -57,14 +57,14 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-Released builds exist for Apple silicon Macs only. On Linux and Windows the code builds and its tests pass in CI, but nobody has used it by hand there yet.
+The signed stable release is available for Apple silicon Macs. Unsigned CLI previews are also available for Windows x64 and Linux x64/ARM64 from [GitHub releases](https://github.com/atomsprout/analyze-anything/releases). Windows x64 desktop builds have passed local acceptance, including an offline Windows 10 installation; hosted Windows and Ubuntu 24.04 x64 Linux desktop checks have also passed. The published preview.1 Windows CLI requires the Visual C++ runtime; the statically linked preview.2 candidate passed a clean-system self-test. See [platform qualification](docs/LIMITATIONS.md) for the exact scope.
 
 ## Use
 
 ```
 analyze-anything <file or folder>                 # analyze; the report goes to <name>.report/
 analyze-anything App.ipa -o out --lang zh         # choose the folder; write the report in Chinese
-analyze-anything diff old/report.json new/report.json    # what changed between two versions
+analyze-anything query out/report.json evidence --args '{}' # offline evidence queries, without AI
 analyze-anything explain out/report.json <finding id>    # one finding with all its evidence
 analyze-anything verify out/                      # are the files still what was written?
 ```
@@ -81,7 +81,8 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 |---|---|
 | Apple | `.app` and other bundles, IPA, DMG (HFS+ and APFS), pkg; Info.plist, code signatures and certificate chains, sealed resources, entitlements, provisioning profiles, privacy manifests, FairPlay encryption |
 | Android | APK, AAB, XAPK / APKS / APKM; manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers |
-| Windows | PE, Authenticode, .NET assemblies, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
+| Windows | PE, Authenticode, .NET assemblies and bounded single-file bundles, PyInstaller CArchive contents, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
+| Linux packages | Bounded deb and RPM v4 profiles: package metadata, literal dependencies and installation scripts, TAR/CPIO payloads and link declarations; no installation or signature verification |
 | General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested to any depth; URLs, likely credentials, entropy, duplicate files |
 
 ## How it works
@@ -157,14 +158,14 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-0.1 is the first release line (0.1.1 now). Any file or folder gets a report today; Apple, Android and Windows formats are understood in depth. It is released for Apple silicon Macs and has been used by hand on one; on Linux and Windows the code builds and passes its tests in CI.
+The stable release is 0.1.1; the source is preparing 0.2.0-preview.2. Any file or folder gets a report today, with format-specific depth and explicit limitations. macOS has a signed release, the CLI has Windows and Linux previews, and Windows desktop acceptance has been exercised locally. Platform qualification and broader format profiles remain tracked work.
 
 "Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
 
-1. **The same thing on every system**: released builds for Linux and Windows; the desktop app beyond macOS.
-2. **More kinds of input**: Linux packages, container images, packages of language ecosystems, more app platforms, documents that carry code, firmware images.
-3. **Deeper where it matters**: known vulnerabilities from an offline database, function-level facts, rules and policies as data.
-4. **Easier to build on**: a GitHub Action, the AI reading inside the report, a fuller interface for agents, a stable report schema.
+1. **0.2 — Reliable use**: qualify cross-platform delivery, cancellation, resource limits and incomplete analysis.
+2. **0.3 — Understand the supplied software**: connect entry points, payloads, components and integrity declarations, with useful report orientation and explicit coverage.
+3. **0.4 — Read more contents**: bounded .NET single-file, PyInstaller and Linux package profiles, reusing the existing analyzers.
+4. **0.5 — Find and reuse answers**: offline report queries, easier evidence navigation, JSON compatibility and explicit agent analysis workflows.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
 
@@ -181,6 +182,8 @@ More in [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 ## Documentation
 
 - [docs/USAGE.md](docs/USAGE.md) — the command line in full ([中文](docs/USAGE.zh-CN.md))
+- [docs/QUERY.md](docs/QUERY.md), [docs/JSON.md](docs/JSON.md) — offline queries, pagination and report compatibility
+- [docs/AGENT-SERVER.md](docs/AGENT-SERVER.md) — explicit rooted analysis requests over MCP
 - [docs/DEEP.md](docs/DEEP.md) — the optional deep level: asking Ghidra or Hopper which code does what
 - [docs/AI.md](docs/AI.md) — the optional AI interpretation
 - [docs/DESKTOP.md](docs/DESKTOP.md) — the desktop app: structure, development, testing, release
