@@ -81,4 +81,17 @@ invalid envelopes and malformed JSON receive JSON-RPC errors. Query failures are
 tool errors. Input text appears only in JSON data, never in commands or tool names.
 
 See [the JSON compatibility contract](JSON.md). Large-report browser navigation and
-explicit agent analysis requests are the remaining 0.5 work, tracked in [TODO.md](TODO.md).
+explicit agent analysis requests are tracked in [TODO.md](TODO.md). The separate
+[rooted analysis server](AGENT-SERVER.md) enables explicit analysis without adding
+analysis authority to this finished-report server.
+
+## Finding navigation in HTML
+
+An interactive report accepts `#finding-<full finding ID>` links. Finding cards offer
+the same stable fragment and a copy action. Enter a unique ID or prefix in finding
+search and press Enter to open it directly. A selected-finding view shows its evidence
+without expanding the preceding chapter/group pages. Previous/next follows report
+order, filters stay intact, and Return to results restores keyboard focus. Refresh,
+browser back and the desktop's citation messages use the same lookup. Unknown or
+ambiguous IDs do not select an arbitrary finding. The selected view and controls
+are bilingual; the navigation view is excluded from printing to avoid duplication.

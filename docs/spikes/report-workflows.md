@@ -1,0 +1,46 @@
+# Report navigation and explicit agent workflows
+
+The selected-finding HTML view resolves IDs directly and renders one finding with
+its bounded evidence pages. It does not render preceding chapter groups/variants.
+Stable `#finding-<64 hex ID>` links support reload and browser history; ID search
+accepts unique prefixes. Desktop citation messages use the same unambiguous lookup.
+Filters remain intact, Return restores focus, and language changes keep the selection.
+The view is omitted from printing. Evidence/file associations use sets, so source
+paths cannot collide with JavaScript object prototype names.
+
+A reproducible Node fixture builds 12,000 declared findings and renders them with
+the production Rust renderer. The browser tests open its last finding with only
+ten initial variant rows in the original chapter, inspect its evidence, follow
+previous/back/reload, retain filters/focus, switch English/Chinese, and reject unknown
+or malformed fragments. A script-shaped value stays text. Chromium and WebKit both
+passed these six checks. Screenshots of the selected view were inspected at each
+browser's resolution; navigation, source text and evidence fit without clipping.
+The complete page suite passed 38 browser checks and 14 unit tests. Report rendering's
+24 tests passed, including hostile text and the 50,000-file/5,000-finding report.
+
+`agent --root` is a separate stdio mode. It adds explicit `analyze_input` requests to
+the seven bounded queries; the original `mcp report.json` remains read-only and has
+no analysis capability. It uses the existing trusted process worker, never an input
+program or disassembler. Paths must resolve within the configured root. Queries
+require an immutable report hash; newer successful analyses replace the one retained
+snapshot. Cancellation discards the request without replying or replacing that snapshot.
+Deadlines accept a received partial report or report termination explicitly. EOF drops
+the worker and removes its private scratch folder.
+
+Local Windows validation passed five real-process agent tests and three no-AI
+finished-report CLI tests: engine/hash agreement, source independence, snapshot
+replacement, rejected path/tool/limit syntax, partial file-budget coverage, cancellation
+responsiveness and EOF cleanup. A separate trusted test child that ignores requests
+verified cancellation and forced termination at a controlled grace deadline, including
+scratch cleanup. Its intentionally ignored helper test is only a subprocess fixture,
+not an unverified production case. The Unix external-symlink test awaits hosted CI.
+
+Nine query tests, the optional interpretation regression and targeted Clippy also
+passed after sharing stdio parsing/response bounds. No live model was invoked.
+The root preflight reuses the platform file policy before canonicalization; it is
+not an OS sandbox against concurrent filesystem changes. Existing W1 gaps remain.
+See [the explicit server contract](../AGENT-SERVER.md).
+
+Hosted CI for the preceding query state (88a4c29, run 45377846711) passed all core,
+desktop and license jobs. The combined navigation/agent head still requires hosted
+platform checks, full workspace validation and a packaged-artifact release rehearsal.

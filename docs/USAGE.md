@@ -128,6 +128,7 @@ analyze-anything diff old/report.json new/report.json                    # compa
 analyze-anything interpret out/                                          # optional: an AI reading of a report, see AI.md
 analyze-anything ai                                                      # show or choose who does the AI reading
 analyze-anything mcp out/report.json                                     # serve a report's read-only tools to an AI agent
+analyze-anything agent --root ./supplied                                  # explicitly allow rooted static-analysis requests over MCP
 ```
 
 `diff` is meant for two versions of one app. Findings are paired by rule and by where in the input their file is: the same statement is unchanged, a different one is changed, one that is on one side only is added or removed. Files are compared by path inside the input and by SHA-256. `--json` prints the full result, `--lang zh` writes Chinese, and `--fail-on-difference` ends with exit code 3 when the reports differ.

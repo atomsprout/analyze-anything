@@ -46,7 +46,7 @@
   var state = {
     severity: {}, confidence: {}, chapter: 'all', query: '',
     shown: {}, // section -> number of findings rendered
-    treeQuery: '', treeFindingsOnly: false, selected: null, cursor: 0
+    treeQuery: '', treeFindingsOnly: false, selected: null, cursor: 0, focused: null
   };
 
   /* ---------- small helpers ---------- */
@@ -160,6 +160,8 @@
   var byArtifact = null; // path -> finding indices
   var haystacks = null; // lower-case searchable text per finding
   var artifactIndex = null; // path -> index in R.artifacts
+  var findingIndex = null; // full stable id -> unique index, or null for a duplicate
+  var focusReturn = null;
 
   function prepare() {
     var rank = { high: 0, medium: 1, low: 2, info: 3 };
@@ -174,10 +176,10 @@
     CONFIDENCES.forEach(function (c) { state.confidence[c] = true; });
     byArtifact = new Map();
     R.findings.forEach(function (f, i) {
-      var seen = {};
+      var seen = new Set();
       f.evidence.forEach(function (e) {
-        if (seen[e.artifact]) return;
-        seen[e.artifact] = true;
+        if (seen.has(e.artifact)) return;
+        seen.add(e.artifact);
         var list = byArtifact.get(e.artifact);
         if (!list) byArtifact.set(e.artifact, list = []);
         list.push(i);
@@ -185,6 +187,13 @@
     });
     artifactIndex = new Map();
     R.artifacts.forEach(function (a, i) { artifactIndex.set(a.path, i); });
+    findingIndex = new Map();
+    R.findings.forEach(function (f, i) {
+      if (/^[0-9a-f]{64}$/i.test(f.id)) {
+        var id = f.id.toLowerCase();
+        findingIndex.set(id, findingIndex.has(id) ? null : i);
+      }
+    });
   }
 
   function evidenceValue(findingIndex, evidenceIndex) {
@@ -380,6 +389,7 @@
         el('span', null, el('span', { class: 'k' }, t('rule')), el('code', null, f.rule)),
         el('span', { class: 'fid' }, el('span', { class: 'k' }, t('finding_id')),
           el('code', { title: f.id }, f.id.slice(0, 16)), copyButton(f.id, t('finding_id'))),
+        findingLink(index),
         compact && !inPlace ? el('button', { type: 'button', class: 'link', onclick: function () { revealFinding(index); } }, t('go_to_finding')) : null),
       f.evidence.length ? details : null);
   }
@@ -438,10 +448,8 @@
     });
     var host = el('div', { class: 'variants' });
     var shownVariants = 0;
-    var lists = []; // per variant: {fill(upTo), details}
     function variantNode(v) {
       if (v.indices.length === 1) {
-        lists.push(null);
         return instanceRow(v.indices[0], true, compact);
       }
       var list = el('div', { class: 'insts' });
@@ -466,7 +474,6 @@
         el('summary', null, t('group_shared', group(v.indices.length)) + ': ',
           el('span', { class: 'path' }, names.join(', ') + (v.indices.length > names.length ? ' …' : ''))), list);
       details.addEventListener('toggle', function () { if (details.open && !filled) fill(50); });
-      lists.push({ fill: fill, details: details });
       return el('div', { class: 'variant' }, el('p', { class: 'ftext' }, v.text), details);
     }
     function showVariants(upTo) {
@@ -496,17 +503,6 @@
         el('span', { class: 'gcount' }, t('group_count', group(total)))),
       host,
       el('div', { class: 'fmeta' }, el('span', null, el('span', { class: 'k' }, t('rule')), el('code', null, g.rule))));
-    // Brings the row of finding `index` on screen, opening whatever hides it.
-    card.reveal = function (index) {
-      for (var vi = 0; vi < g.variants.length; vi++) {
-        var at = g.variants[vi].indices.indexOf(index);
-        if (at < 0) continue;
-        showVariants(vi + 1);
-        if (lists[vi]) { lists[vi].details.open = true; lists[vi].fill(at + 1); }
-        return doc.getElementById('f-' + index);
-      }
-      return null;
-    };
     return card;
   }
 
@@ -592,24 +588,93 @@
   }
 
   function revealFinding(index) {
-    var f = R.findings[index];
-    resetFilters();
-    state.shown[f.section] = Infinity;
-    renderFindings();
-    var card = doc.getElementById('f-' + index);
-    if (!card) {
-      var cards = doc.querySelectorAll('#ch-' + f.section + ' .group');
-      for (var i = 0; i < cards.length && !card; i++) {
-        if (cards[i].getAttribute('data-rule') === f.rule && cards[i].reveal) card = cards[i].reveal(index);
-      }
+    showFinding(index, true);
+  }
+
+  function findingFragment(index) {
+    var id = R.findings[index].id;
+    return /^[0-9a-f]{64}$/i.test(id) ? '#finding-' + id.toLowerCase() : null;
+  }
+
+  function findingLink(index) {
+    var fragment = findingFragment(index);
+    if (!fragment) return null;
+    return el('a', { class: 'link finding-link', href: fragment,
+      onclick: function (event) { event.preventDefault(); revealFinding(index); }
+    }, t('finding_link'));
+  }
+
+  function indexForId(id) {
+    if (typeof id !== 'string' || !/^[0-9a-f]{8,64}$/i.test(id)) return null;
+    id = id.toLowerCase();
+    if (id.length === 64) return findingIndex.has(id) ? findingIndex.get(id) : null;
+    var found = null;
+    for (var i = 0; i < R.findings.length; i++) {
+      if (R.findings[i].id.toLowerCase().indexOf(id) !== 0) continue;
+      if (found !== null) return null;
+      found = i;
     }
-    if (!card) return;
-    if (card.tagName === 'DETAILS') card.open = true;
-    else card.setAttribute('tabindex', '-1');
-    card.scrollIntoView({ block: 'center' });
-    (card.tagName === 'DETAILS' ? card.querySelector('summary') : card).focus({ preventScroll: true });
-    card.classList.add('flash');
-    setTimeout(function () { card.classList.remove('flash'); }, 1600);
+    return found;
+  }
+
+  function setFragment(fragment) {
+    if (window.location.hash === fragment) return;
+    try { window.history.pushState(null, '', fragment); }
+    catch (error) { window.location.hash = fragment; }
+  }
+
+  function renderFocused(bringIntoView) {
+    var host = doc.getElementById('focused-finding');
+    if (!host) return;
+    clear(host);
+    host.hidden = state.focused === null;
+    if (host.hidden) return;
+    var index = state.focused;
+    var fragment = findingFragment(index);
+    var card = findingCard(index, false, true);
+    // The normal results may already contain f-index. This isolated view has its own anchor.
+    card.id = 'focused-card';
+    add(host, [el('h3', null, t('focused_finding')),
+      el('div', { class: 'focus-nav', role: 'group', 'aria-label': t('finding_navigation') },
+        el('button', { type: 'button', class: 'btn', disabled: index === 0,
+          onclick: function () { revealFinding(index - 1); } }, t('previous_finding')),
+        el('span', { role: 'status', 'aria-live': 'polite' }, t('finding_position', group(index + 1), group(R.findings.length))),
+        el('button', { type: 'button', class: 'btn', disabled: index + 1 === R.findings.length,
+          onclick: function () { revealFinding(index + 1); } }, t('next_finding')),
+        fragment ? el('button', { type: 'button', class: 'btn', onclick: function () {
+          copy(hosted ? fragment : window.location.href.split('#')[0] + fragment);
+        } }, t('copy_finding_link')) : null,
+        el('button', { type: 'button', class: 'btn', onclick: function () {
+          state.focused = null; renderFocused(false); setFragment('#findings');
+          var target = focusReturn && focusReturn !== doc.body && doc.contains(focusReturn) ? focusReturn : doc.getElementById('fsearch');
+          if (target) target.focus();
+        } }, t('return_findings'))), card]);
+    var evidence = card.querySelector('details.evidence');
+    if (evidence) evidence.open = true;
+    if (bringIntoView) {
+      card.scrollIntoView({ block: 'center' });
+      card.focus({ preventScroll: true });
+      card.classList.add('flash');
+      setTimeout(function () { card.classList.remove('flash'); }, 1600);
+    }
+  }
+
+  function showFinding(index, changeHash) {
+    if (!Number.isInteger(index) || index < 0 || index >= R.findings.length) return;
+    if (state.focused === null) focusReturn = doc.activeElement;
+    state.focused = index;
+    renderFocused(true);
+    if (changeHash) {
+      var fragment = findingFragment(index);
+      if (fragment) setFragment(fragment);
+    }
+  }
+
+  function followFragment() {
+    var match = /^#finding-([0-9a-f]{64})$/i.exec(window.location.hash);
+    var index = match ? indexForId(match[1]) : null;
+    if (index !== null) showFinding(index, false);
+    else if (state.focused !== null) { state.focused = null; renderFocused(false); }
   }
 
   function filterBar() {
@@ -635,6 +700,14 @@
       oninput: function () {
         clearTimeout(timer);
         timer = setTimeout(function () { state.query = input.value.trim(); state.shown = {}; renderFindings(); }, 120);
+      },
+      onkeydown: function (event) {
+        if (event.key !== 'Enter') return;
+        var index = indexForId(input.value.trim());
+        if (index === null) return;
+        clearTimeout(timer);
+        state.query = input.value.trim(); state.shown = {}; renderFindings();
+        revealFinding(index);
       }
     });
     input.value = state.query;
@@ -1259,6 +1332,7 @@
             el('h2', null, t('findings_title'), el('span', { class: 'count' }, group(R.findings.length))),
             el('div', { class: 'noprint sticky' }, filterBar()),
             el('p', { class: 'none', id: 'fnone', hidden: true }, t('no_match')),
+            el('section', { id: 'focused-finding', class: 'focused noprint', hidden: true, 'aria-label': t('focused_finding') }),
             SECTIONS.map(function (s, i) {
               var chapter = el('section', { class: 'chapter', id: 'ch-' + s },
                 el('h3', null, el('span', { class: 'num' }, i + 1), sectionName(s), el('span', { class: 'count' })),
@@ -1277,6 +1351,7 @@
     ]);
     renderFindings();
     refreshTree(state.selected);
+    renderFocused(false);
     renderDetail();
     measure();
     window.scrollTo(0, scroll);
@@ -1294,6 +1369,8 @@
     if (fallback) fallback.hidden = true;
     doc.getElementById('app').hidden = false;
     render();
+    followFragment();
+    window.addEventListener('hashchange', followFragment);
     if (fallback) fallback.parentNode.removeChild(fallback);
     var ticking = false;
     window.addEventListener('scroll', function () {
@@ -1312,9 +1389,8 @@
         if (data.theme === 'dark' || data.theme === 'light') setTheme(data.theme);
         if ((data.lang === 'zh' || data.lang === 'en') && data.lang !== lang) { lang = data.lang; render(); }
         if (typeof data.finding === 'string' && data.finding.length >= 8 && data.finding.length <= 64) {
-          for (var i = 0; i < R.findings.length; i++) {
-            if (R.findings[i].id.indexOf(data.finding) === 0) { revealFinding(i); break; }
-          }
+          var index = indexForId(data.finding);
+          if (index !== null) revealFinding(index);
         }
       });
       tellHost('ready');

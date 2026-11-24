@@ -50,8 +50,11 @@ The implementation is being collected in one pull request, in the order defined 
     optional interpretation and read-only MCP, including the no-AI build. See [queries](QUERY.md).
   - [x] Check the schema header before parsing a report body, with explicit unsupported
     versions and tests of same-layout optional defaults. See [the JSON contract](JSON.md).
-  - [ ] Complete large-report navigation and its browser checks.
-  - [ ] Add and verify explicit agent analysis requests separately from finished-report queries.
+  - [x] Complete large-report navigation and its browser checks: isolated finding view,
+    stable fragments, keyboard focus and filter retention; 38 browser checks passed.
+  - [x] Add explicit rooted agent analysis separately from finished-report queries,
+    with snapshot IDs, cancellation, deadlines and private worker cleanup. Windows
+    process tests passed; hosted Unix path checks and final combined CI remain open.
 
 ## Release qualification after 0.2.0-preview.1
 

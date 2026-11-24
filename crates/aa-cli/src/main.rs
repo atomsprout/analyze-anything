@@ -11,6 +11,7 @@ use aa_engine::{Event, Limits, Options, ProgressSink, Registry};
 use aa_export::manifest::{self, Status};
 use clap::{Parser, Subcommand, ValueEnum};
 
+mod agent;
 mod selftest;
 mod supervisor;
 
@@ -185,6 +186,19 @@ enum Command {
         /// A report.json written by `analyze-anything analyze`
         report: PathBuf,
         /// Language of the text
+        #[arg(long, default_value = "en")]
+        lang: LangArg,
+    },
+    /// Explicit rooted analysis and report queries over MCP; no model or network
+    Agent {
+        /// Directory whose relative inputs the agent may request
+        #[arg(long)]
+        root: PathBuf,
+        /// Maximum whole-run seconds per request, followed by five seconds for a partial report
+        #[arg(long,default_value="60",value_parser=clap::value_parser!(u64).range(1..=3600))]
+        analysis_timeout: u64,
+        #[command(flatten)]
+        limits: LimitArgs,
         #[arg(long, default_value = "en")]
         lang: LangArg,
     },
@@ -955,6 +969,13 @@ fn run(cli: Cli) -> Result<u8, String> {
             aa_query::mcp::serve(&load(&report)?, language, std::io::stdin().lock(), std::io::stdout().lock())
                 .map_err(|error| error.to_string())?;
             return Ok(0);
+        }
+        Command::Agent { root, analysis_timeout, limits: chosen, lang } => {
+            let language = match lang {
+                LangArg::En => aa_query::Language::En,
+                LangArg::Zh => aa_query::Language::Zh,
+            };
+            return agent::serve(&root, analysis_timeout, limits(&chosen), language);
         }
         Command::Diff { before, after, json, lang, fail_on_difference } => {
             let difference = aa_export::diff::diff(&load(&before)?, &load(&after)?);

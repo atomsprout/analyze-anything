@@ -109,6 +109,7 @@ analyze-anything diff 旧/report.json 新/report.json                       # �
 analyze-anything interpret out/                                          # 可选：让 AI 解读一份报告，见 AI.md
 analyze-anything ai                                                      # 查看或选择由谁来做 AI 解读
 analyze-anything mcp out/report.json                                     # 把报告的只读工具提供给 AI agent
+analyze-anything agent --root ./supplied                                  # 显式允许 MCP 请求分析指定根目录内的输入
 ```
 
 `diff` 的典型用途是同一个应用的两个版本。结论按“同一条规则、输入内同一位置的文件”配对：说法相同算相同，说法不同算变化，只在一边出现算新增或消失。文件按输入内的路径和 SHA-256 比较。`--json` 输出完整结果，`--lang zh` 写中文，`--fail-on-difference` 在有差别时以退出码 3 结束。

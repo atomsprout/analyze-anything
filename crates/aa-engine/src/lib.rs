@@ -15,6 +15,20 @@ mod walk;
 pub use aa_windows::source_roots::{SourceRoot as WindowsSourceRoot, validate as validate_windows_source_roots};
 pub use tree::Reader;
 
+/// Check the platform's local-file policy before metadata access. This is a path
+/// preflight, not filesystem isolation against concurrent ancestor replacement.
+pub fn validate_local_input(path: &std::path::Path) -> std::io::Result<()> {
+    #[cfg(windows)]
+    {
+        disk::check(path)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        Ok(())
+    }
+}
+
 /// Checks storage placement before a supervisor creates its worker directory.
 /// Scratch files must not become part of the input being listed or modify that input.
 pub fn validate_scratch_root(input: &std::path::Path, scratch: &std::path::Path) -> std::io::Result<()> {

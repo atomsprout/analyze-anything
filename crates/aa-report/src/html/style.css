@@ -418,3 +418,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: now
 /* Host mode: the buttons that ask the desktop app to show bytes. */
 .hostlink { margin-left: .75rem; white-space: nowrap; }
 .hostrow { margin: .5rem 0 0; }
+
+.focused { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: 8px; }
+.focus-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .75rem 0; }
+.focused > .finding { margin-bottom: 0; }
+.focus-nav .btn:disabled { opacity: .5; cursor: default; background: var(--surface); }

@@ -31,6 +31,7 @@ source files were changed. That run is not counted as a pass. Complete workspace
 checks must be repeated on the final stable source state. The separate hosted
 52bb060 CI run qualified the preceding 0.4 state on all platforms.
 
-Large-report browser navigation and explicit agent analysis requests are still
-required for 0.5; neither is claimed complete by these query tests. See [the query
-contract](../QUERY.md) and [JSON compatibility](../JSON.md).
+The subsequent navigation and explicit-analysis work is recorded in
+[the 0.5 workflow qualification](report-workflows.md). These query tests alone do
+not establish its platform acceptance. See [the query contract](../QUERY.md)
+and [JSON compatibility](../JSON.md).
