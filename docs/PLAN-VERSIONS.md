@@ -3,8 +3,8 @@
 This plan implements the product direction agreed for the next four milestones in one
 pull request. The milestone numbers describe acceptance groups; merging the pull request
 does not publish four releases. Work proceeds in order, preserving the five guarantees
-in [AGENTS.md](../AGENTS.md). Version comparison remains an existing auxiliary command,
-not a milestone theme.
+in [AGENTS.md](../AGENTS.md). Each milestone improves the explanation of a supplied file
+or folder, from identifying its contents to retrieving the evidence behind an answer.
 
 ## 0.2: Reliable use
 
@@ -16,9 +16,10 @@ not a milestone theme.
 - Synchronize installation and platform documentation with recorded evidence.
 
 Acceptance requires repository format, lint, workspace tests, the no-AI CLI build,
-desktop tests, hosted platform checks and packaged-artifact qualification. Native
-comparisons use representative real samples with recorded hashes and reference results;
-they do not import Windows trust policy into offline findings.
+desktop tests, hosted platform checks and packaged-artifact qualification. Parser accuracy
+is checked against reference tools reading the same representative real samples, with
+recorded hashes and reference results. These development checks do not import Windows
+trust policy into offline findings.
 
 ## 0.3: Understand the supplied software
 

@@ -130,7 +130,7 @@ Real-sample acquisition and review can change the size.
 
 | ID | Priority | Feature | Size | Prerequisite |
 |---|---|---|---|---|
-| W0 | P0 | Reproducible Windows baseline and native comparisons | M | Existing code |
+| W0 | P0 | Real samples and parser accuracy verification | M | Existing code |
 | W1 | P0 | Local file boundary and Windows path handling | M–L | W0 |
 | W2 | P0 | Worker termination and precise timeout semantics | L | W0; design spike |
 | W3 | P1 | LNK, URL, REG and exported scheduled tasks | M | W1 |
@@ -148,7 +148,11 @@ P0 establishes the Windows foundation. P1 is the first feature wave; it can ship
 releases. P2 follows demonstrated sample demand. P3 is exploratory and does not block a
 Windows release. W5 and W6 can be developed independently after the foundation.
 
-### W0 Windows baseline and reference comparisons
+### W0 Real samples and parser accuracy
+
+This is development verification: the analyzer and reference tools read the same sample,
+and their shared observations are checked for agreement. It establishes the accuracy of
+the explanation of one supplied artifact.
 
 Build the CLI without AI, run the repository checks on this host, and record exact tool versions
 and sample digests in a development result file. Extend the comparison harness to discover SDK
@@ -164,8 +168,7 @@ optional development reference, with its online lookup features excluded from th
 
 Exit: recorded x64 CLI results on real installers and application folders; embedded and MSI
 signature cases compared; explicit pending cases for catalogs and unsupported versions; no
-unchecked claim of Windows ARM64 or desktop readiness. The existing diff input-name issue remains
-an early, independent patch, with regressions proving real changed parameters are preserved.
+unchecked claim of Windows ARM64 or desktop readiness.
 
 ### W1 File access and extraction boundaries
 

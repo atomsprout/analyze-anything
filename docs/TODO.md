@@ -43,8 +43,6 @@ The implementation is being collected in one pull request, in the order defined 
 - [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,
   JSON compatibility and explicit agent analysis requests.
 
-Existing diff functionality remains available; comparing versions is not a milestone theme.
-
 ## Release qualification after 0.2.0-preview.1
 
 The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
@@ -60,7 +58,7 @@ Also investigate the Xcode pkg CMS parsing limitation and obtain real samples fo
 
 The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md). Items remain open until their full implementation and recorded comparisons are complete; partial checks are listed explicitly.
 
-- [ ] **W0 — Windows CLI baseline**: run real installers and installed program folders on the available x64 machine; compare embedded and MSI signatures with `signtool` and the Windows signature view. Record tool versions, sample digests and the differences in cryptographic checks versus system trust policy.
+- [ ] **W0 — Real samples and parser accuracy**: read real installers and installed program folders on the available x64 machine; verify embedded and MSI signature results against `signtool` and the Windows signature view for the same samples. Record tool versions, sample digests and the differences in cryptographic checks versus system trust policy.
   Initial x64 no-AI build and 12 native checks passed; [the baseline record](spikes/windows-baseline.md) states the exact samples and remaining coverage.
 - [ ] **W1 — Local file boundaries**: test Unicode and long paths, reparse points, locked files, extraction-name collisions and remote/cloud content; define named-stream coverage without making ordinary reports depend on machine metadata.
   Initial checks refuse explicit UNC/device/stream paths, reparse points and recall/encrypted file attributes; real junction, hardlink, named-stream, long Unicode path and locked-file tests pass. Ancestor replacement races, mapped network drives and real cloud/EFS samples remain open; see [the file-access record](spikes/windows-file-access.md).

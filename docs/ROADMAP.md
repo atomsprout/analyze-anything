@@ -19,7 +19,7 @@ acceptance groups, not claims that those versions have shipped.
 | 0.5 — Find and reuse answers | Retrieve evidence efficiently from a finished report | Offline structured queries, report navigation, JSON compatibility and explicit agent analysis workflows |
 
 Report readability, explicit limitations and real-sample verification accompany every
-milestone. Existing version comparison remains an auxiliary feature. New formats are chosen
+milestone. New formats are chosen
 for the workflow they complete, with independent completion gates for each profile. See
 [PLAN-VERSIONS.md](PLAN-VERSIONS.md) for acceptance requirements.
 
@@ -42,7 +42,7 @@ The portable and NSIS-installed builds passed real-window WebView2 checks with b
 
 ### Windows foundation work
 
-- **W0 — Native comparisons.** Expand the recorded comparisons with real signed PE and MSI distributions and installed program folders. Keep signature evidence and Windows trust-policy results distinct. [Windows CLI baseline](spikes/windows-baseline.md)
+- **W0 — Real samples and parser accuracy.** Verify what the analyzer reads from real signed PE and MSI distributions and installed program folders against reference tools reading the same samples. This is a development acceptance check. Keep signature evidence and Windows trust-policy results distinct. [Windows CLI baseline](spikes/windows-baseline.md)
 - **W1 — File access.** Resolve or document the remaining cases around ancestor replacement, mapped network drives, cloud files and EFS. [File-access coverage](spikes/windows-file-access.md)
 - **W2 — Worker supervision.** The CLI can terminate an entire run. Define and test per-analyzer hard timeouts, descendant-process cleanup and the rules for returning partial reports. [CLI supervision](spikes/cli-supervision.md)
 
