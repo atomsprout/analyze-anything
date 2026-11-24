@@ -35,6 +35,13 @@ verified cancellation and forced termination at a controlled grace deadline, inc
 scratch cleanup. Its intentionally ignored helper test is only a subprocess fixture,
 not an unverified production case. The Unix external-symlink test passed in hosted CI.
 
+A final cancellation review found that a client cancellation arriving during deadline
+shutdown could still receive the deadline reply. The state now changes to cancellation
+while retaining the original shutdown deadline, so repeated cancellations cannot extend
+the grace period. A second controlled worker test verifies reply suppression and cleanup
+in that state. Both worker unit tests, all eight no-AI CLI query/agent integration tests
+and no-AI CLI Clippy passed locally after the correction.
+
 Nine query tests, the optional interpretation regression and targeted Clippy also
 passed after sharing stdio parsing/response bounds. No live model was invoked.
 The root preflight reuses the platform file policy before canonicalization; it is

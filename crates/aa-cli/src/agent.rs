@@ -92,10 +92,16 @@ impl State {
     fn cancel(&mut self, id: &Value) {
         if let Some(pending) = self.pending.as_mut()
             && &pending.id == id
-            && pending.stopping.is_none()
         {
-            let _ = pending.worker.send(&Request::Cancel);
-            pending.stopping = Some(("cancelled", Instant::now() + Duration::from_secs(5)));
+            let end = match pending.stopping {
+                Some((_, end)) => end,
+                None => {
+                    let _ = pending.worker.send(&Request::Cancel);
+                    Instant::now() + Duration::from_secs(5)
+                }
+            };
+            // A client cancellation also suppresses a deadline response already awaiting shutdown.
+            pending.stopping = Some(("cancelled", end));
         }
     }
 
@@ -300,6 +306,36 @@ mod tests {
         let reply = state.poll().expect("termination reply");
         assert_eq!(reply["id"], 7);
         assert_eq!(reply["result"]["isError"], true);
+        assert!(state.pending.is_none());
+        assert!(state.finished.is_none());
+        assert!(!worker_folder.exists());
+    }
+
+    #[test]
+    fn client_cancellation_during_deadline_shutdown_suppresses_the_reply_without_extending_grace() {
+        let scratch = tempfile::tempdir().expect("private worker root");
+        let worker = Worker::start(
+            &std::env::current_exe().expect("test executable"),
+            &["--exact", "agent::tests::deadline_worker_ignores_requests", "--ignored", "--nocapture"],
+            scratch.path(),
+        )
+        .expect("trusted test child");
+        let worker_folder = worker.scratch().to_path_buf();
+        let end = Instant::now();
+        let mut state = State {
+            root: scratch.path().to_path_buf(),
+            scratch: scratch.path().to_path_buf(),
+            timeout: 1,
+            limits: Limits::default(),
+            language: Language::En,
+            finished: None,
+            pending: Some(Pending { id: json!(7), worker, deadline: end, stopping: Some(("deadline", end)) }),
+        };
+        state.cancel(&json!(7));
+        assert_eq!(state.pending.as_ref().expect("pending shutdown").stopping, Some(("cancelled", end)));
+        state.cancel(&json!(7));
+        assert_eq!(state.pending.as_ref().expect("pending shutdown").stopping, Some(("cancelled", end)));
+        assert!(state.poll().is_none());
         assert!(state.pending.is_none());
         assert!(state.finished.is_none());
         assert!(!worker_folder.exists());
