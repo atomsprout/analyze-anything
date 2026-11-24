@@ -62,8 +62,24 @@ pagination, schema compatibility tests and browser checks of report navigation.
 
 ## Tracking
 
-Implementation and evidence are tracked in [TODO.md](TODO.md). Existing W0–W12 items
-remain engineering work with their own profiles; these milestones do not silently mark
-them complete. Unavailable platform checks remain open until an actual run establishes
-the result. One pull request accumulates the implementation and records outstanding gates
-until all four milestones are reviewable and verified.
+All four scoped milestones are implemented and verified in
+[PR #6](https://github.com/atomsprout/analyze-anything/pull/6):
+
+| Milestone | Acceptance evidence |
+|---|---|
+| 0.2 | [Delivery qualification](spikes/delivery-qualification.md): three-platform CI, native desktop windows on Windows/Linux, four packaged CLI targets, Windows portable/NSIS packages and named Linux clean userspaces |
+| 0.3 | [Report understanding](spikes/report-understanding.md): bilingual questions, supplied-file relationships, attributable coverage, deterministic rendering and inspected PDFs |
+| 0.4 | [Executable bundles](spikes/executable-bundles.md) and [Linux packages](spikes/linux-packages.md): bounded supported profiles, licensed samples, native references and tested limitations |
+| 0.5 | [Offline queries](spikes/report-query.md) and [report/agent workflows](spikes/report-workflows.md): query/schema/protocol tests, 12,000-finding navigation and supervised rooted analysis |
+
+CI 45386227144 passed all seven jobs at the final code revision 9dab32b. Release
+rehearsal 45382485314 passed at d047df8, which includes all four milestones; the later
+code correction changes only cancellation during deadline shutdown and has local
+release and hosted regression evidence. Exact artifact hashes and revision boundaries
+are retained in the linked records. Subsequent acceptance-record edits are documentation
+only. No release or tag was created.
+
+Remaining work is tracked in [TODO.md](TODO.md). Existing W0–W12 and D6 items retain
+their broader completion gates; these milestones do not silently mark them complete.
+Physical Linux display acceptance, broader signature/format profiles and signed delivery
+remain separate work.

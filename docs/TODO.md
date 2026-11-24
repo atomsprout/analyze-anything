@@ -4,21 +4,25 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Delivery milestones: 0.2 through 0.5
 
-The implementation is being collected in one pull request, in the order defined in
-[PLAN-VERSIONS.md](PLAN-VERSIONS.md). A checked subtask does not complete its milestone.
+The implementation and scoped acceptance evidence are collected in
+[PR #6](https://github.com/atomsprout/analyze-anything/pull/6), in the order defined in
+[PLAN-VERSIONS.md](PLAN-VERSIONS.md). These completed milestones do not publish releases
+or close the broader Windows and ecosystem projects below.
 
-- [ ] **0.2 — Reliable use:** hosted platform checks, packaged CLI qualification,
+- [x] **0.2 — Reliable use:** hosted platform checks, packaged CLI qualification,
   cancellation and limit semantics, and current installation documentation.
   - [x] Bind browser tests and readiness checks to the same explicit IPv4 address;
-    production page build, 14 unit tests and 28 WebKit/Chromium tests passed on Windows.
+    production page build, 14 unit tests and 38 WebKit/Chromium tests passed on Windows.
   - [x] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
-    Rehearsal 45360483004 passed; the downloaded Windows archive passed its checksum,
+    Rehearsals 45360483004 and 45382485314 passed; the downloaded Windows archive passed its checksum,
     self-test and two independent CRT import checks. See [qualification](spikes/delivery-qualification.md).
-  - [ ] Verify final hosted CI and release rehearsal and record supported runtime baselines.
-    The dbdfd79 Windows desktop job passed 67 real-window checks and seven-format CLI
-    parity on the hosted runner; the current report changes and new Linux window job
-    passed their hosted qualification at 2caf6d4. Combined-source CI 45382506185 at
-    d047df8 passed all seven jobs; packaged-artifact qualification remains below.
+  - [x] Verify hosted CI and release rehearsal and record supported runtime baselines.
+    Combined-source CI 45382506185 at d047df8 passed all seven jobs, as did CI
+    45386227144 after the final cancellation correction at 9dab32b. Windows/Linux
+    real-window checks each passed 67 checks. Rehearsal 45382485314 passed all four
+    builds, Windows desktop packaging and Linux x64/ARM64 self-tests in Ubuntu 24.04
+    and Debian trixie-slim. Exact revisions and archive hashes are recorded in
+    [delivery qualification](spikes/delivery-qualification.md).
   - [x] Compare a real signed MSI and installed directory; 127 native checks passed,
     including independent digests for 107 installed files. See [the record](spikes/windows-baseline.md).
   - [x] Resolve the url/cookie advisory gate through patched lockfile versions;
@@ -31,7 +35,7 @@ The implementation is being collected in one pull request, in the order defined 
     facts, preserving unknown targets, reasons, candidates and truncation.
   - [x] Distinguish lost content from complete byte reads in every report format and
     expose artifact-specific versus run-wide limitation counts.
-  - [x] Pass 24 rendering regressions, the multi-file engine-to-renderer test and 32
+  - [x] Pass 24 rendering regressions, the multi-file engine-to-renderer test and 38
     browser checks. English/Chinese PDF pages were visually inspected; see
     [the acceptance record](spikes/report-understanding.md). Combined-source CI
     45382506185 passed, including the expanded 38-check browser suite.
@@ -56,14 +60,15 @@ The implementation is being collected in one pull request, in the order defined 
   - [x] Add explicit rooted agent analysis separately from finished-report queries,
     with snapshot IDs, cancellation, deadlines and private worker cleanup. Windows
     process tests passed, as did hosted Unix path checks and combined CI 45382506185.
+    CI 45386227144 passed again after fixing cancellation during deadline shutdown.
 
 ## Release qualification after 0.2.0-preview.1
 
 The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
 
-1. Hosted Windows desktop CI passed; final packaged-artifact qualification is tracked above. A fresh, disconnected Windows 10 x64 guest without `VCRUNTIME140.dll` reproduced the launch failure with the published preview.1 CLI. The statically linked preview.2 candidate ran its full CLI self-test in the same guest and exited successfully.
+1. Hosted Windows desktop CI and packaged-artifact qualification passed as recorded above. A fresh, disconnected Windows 10 x64 guest without `VCRUNTIME140.dll` reproduced the launch failure with the published preview.1 CLI. The statically linked preview.2 candidate ran its full CLI self-test in the same guest and exited successfully; that guest was not rerun with later rehearsal archives.
 2. Extend Windows native CLI comparisons (W0), file-access coverage (W1) and worker isolation (W2).
-3. Qualify the Windows and Linux CLI previews on clean systems. Expand coverage for entry points, scripts, drivers and package metadata (W3–W5, W7). MSIX follow-up work remains deferred (W6).
+3. Broaden the recorded Windows/Linux runtime baselines and prepare formal distribution. Expand coverage for entry points, scripts, drivers and package metadata (W3–W5, W7). MSIX follow-up work remains deferred (W6).
 4. Scope modern executable bundles and installer relationships separately (W8, W9). Office and disk images remain separate projects (W11, W12).
 
 Also investigate the Xcode pkg CMS parsing limitation and obtain real samples for the formats below. Linux desktop verification and signed release automation have their own acceptance criteria.
@@ -182,7 +187,7 @@ These formats were tested with constructed data only:
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
   Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows WebView2 and Ubuntu 24.04 x64 WebKitGTK checks each passed 67 checks at d047df8. Linux physical-display acceptance, broader packaging and signed delivery remain open. See [DESKTOP.md](DESKTOP.md).
-- [ ] Qualify Linux and Windows CLI builds for formal distribution. The published preview passed the release workflow self-checks. The statically linked Windows x64 preview.2 candidate passed its clean-system self-test. Linux clean-system checks and verification of the hosted release artifacts remain open.
+- [ ] Prepare Linux and Windows CLI builds for formal distribution beyond the qualified unsigned archives. Rehearsal 45382485314 passed packaged self-tests and Linux x64/ARM64 checks in Ubuntu 24.04 and Debian trixie-slim. The downloaded Windows CLI passed its checksum, self-test and independent CRT import checks. The earlier statically linked preview.2 candidate passed a clean Windows 10 guest self-test; later archives were not rerun in that guest. Release promotion, broader OS baselines and signed delivery remain separate work.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 

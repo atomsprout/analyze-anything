@@ -53,3 +53,13 @@ at the combined d047df8 source passed all three core and desktop platforms and t
 advisory/license gate. Local full-workspace tests, Clippy, formatting, the no-AI CLI
 build and production page build also passed. Packaged-artifact qualification is
 recorded separately in [delivery qualification](delivery-qualification.md).
+
+After the cancellation correction, [CI 45386227144](https://github.com/atomsprout/analyze-anything/actions/runs/45386227144)
+at 9dab32b passed all seven jobs again, including the Unix path guards, both controlled
+shutdown tests and all three desktop/browser platforms. The intermediate documentation
+revision 4f78fe4 also passed CI 45385912274. No live AI service was used.
+
+The local Windows `cargo test --release` run also passed on 9dab32b, including
+the damaged-fixture corpus, worker lifecycle tests and doctests. A separate no-AI
+release run passed all five agent and three query process tests. These local runs
+do not substitute for the packaged-runtime checks recorded in delivery qualification.
