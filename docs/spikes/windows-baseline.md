@@ -46,3 +46,26 @@ membership itself was not verified. [The sanitized sample record](windows-baseli
 preserves each sample's name, digest, native status, signer thumbprint, analyzer cryptographic
 checks and limitation counts without absolute paths or raw native diagnostics. These are individual
 file comparisons, not analysis of an entire installed application folder.
+
+## Real signed MSI and installed directory (2026-11-24)
+
+The extended `windows.py` harness accepts repeatable `--folder` inputs. It analyzes each
+directory once, compares every loose regular file against independent Python SHA-256,
+and compares EXE/DLL/SYS/MSI signature facts from that same directory report with
+Get-AuthenticodeSignature and SDK SignTool. It does not execute any program in the input.
+Native policy outcomes remain separate from offline cryptographic facts.
+
+A run on this Windows x64 host compared installed `dotnet.exe`, the locally supplied
+`OpenJDK25U-jdk_x64_windows_hotspot_25.0.3_9.msi`, and the installed 7-Zip directory.
+All 127 checks passed, including the existing modified-byte and generated CAB checks.
+Windows reported Valid and SignTool returned zero for both signed standalone samples;
+all four recorded analyzer signature checks passed. The directory's EXE/DLL signatures
+were absent in both readers. Full directory inventory agreement does not establish
+dynamic loader resolution or runtime behavior.
+
+[The sanitized record](milestone-02-native.json) includes sample digests, signer identities,
+cryptographic checks, directory file digests, limitation counts and the analyzer/SignTool
+binary hashes. Raw native diagnostics remain under ignored `out/windows-baseline/`.
+The external installed files and installer are not redistributed with the repository.
+This adds representative evidence to W0; it does not establish every PE/MSI signature
+profile, Windows trust equivalence or ARM64 behavior.
