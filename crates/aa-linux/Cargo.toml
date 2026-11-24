@@ -1,0 +1,18 @@
+[package]
+name = "aa-linux"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aa-core.workspace = true
+serde_json.workspace = true
+tar.workspace = true
+
+[dev-dependencies]
+flate2.workspace = true

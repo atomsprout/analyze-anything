@@ -92,3 +92,12 @@ python tools/native-compare/dotnet-bundle.py target/debug/analyze-anything.exe o
 python tools/native-compare/pyinstaller-fixture.py out/bundle-fixtures/data.pkg
 python tools/native-compare/pyinstaller-archive.py target/debug/analyze-anything.exe out/bundle-fixtures/data.pkg --record out/bundle-fixtures/carchive.json
 ```
+
+## Windows checkout follow-up
+
+Hosted CI 45369702842 at a4bb836 passed the Linux/macOS core jobs, all three
+platform desktop jobs and the advisory/license gate. The Windows core job exposed
+a fixture line-ending mismatch: Git converted data.txt to CRLF while the pinned
+native CArchive embeds its original LF bytes. The source fixture now explicitly
+uses LF through .gitattributes. The byte-for-byte digest assertion is retained;
+a fresh hosted Windows checkout must verify this fix before final acceptance.

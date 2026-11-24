@@ -10,6 +10,20 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-deb",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a Debian package. Control declarations and supported payload contents were read as data, without installation.",
+        text_zh: "这是 Debian 软件包。控制声明与受支持的载荷内容作为数据读取，没有安装。",
+    },
+    Rule {
+        id: "overview.kind-rpm",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is an RPM package. Header declarations and supported payload contents were read as data, without installation.",
+        text_zh: "这是 RPM 软件包。头部声明与受支持的载荷内容作为数据读取，没有安装。",
+    },
+    Rule {
         id: "overview.kind-dotnet-bundle",
         title_en: "Kind of input",
         title_zh: "输入类型",
@@ -446,6 +460,8 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let unpacker = root.unpacked_by.as_deref().unwrap_or("");
     let installer_format = root.facts.get("windows.installer").and_then(|f| text(f, "format").or_else(|| text(f, "kind")));
     let made = match (kind, unpacker) {
+        (_, "deb") => finding("overview.kind-deb", Confidence::Verified),
+        (_, "rpm") => finding("overview.kind-rpm", Confidence::Verified),
         (_, "dotnet-bundle") => finding("overview.kind-dotnet-bundle", Confidence::Verified),
         (_, "pyinstaller") => finding("overview.kind-pyinstaller", Confidence::Verified),
         ("ipa", _) => finding("overview.kind-ipa", Confidence::Derived),

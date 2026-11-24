@@ -14,6 +14,18 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 
 ## Parts not verified on real samples
 
+The initial Linux package readers have local runs on Debian node-isarray 2.0.5-1
+and Fedora xxhash-libs 0.8.4-2.fc43. Native Linux qualification is pending. Debian
+metadata is read only from its captured control archive; dependency alternatives
+and constraints remain literal. TAR link declarations are retained without
+following targets. The RPM profile reads 3.0 leads, v4 headers and declared
+CPIO payloads using shared gzip/bzip2/xz/zstd streams. Raw LZMA, RPM v6/07070X,
+old Debian containers and unsupported metadata profiles remain explicit gaps.
+SVR4 CPIO newc/crc has constructed checksum and late-hardlink tests; unresolved
+groups and special files remain limitations. Neither package authentication nor
+declared package checksums, installation eligibility, script control flow or host
+dependency resolution is established. See [Linux package scope](spikes/linux-packages.md).
+
 The bounded .NET single-file reader supports manifest versions 1.0, 2.0 and 6.0;
 version 6 has published WinSW and SDK-built stored/compressed comparisons. Versions
 1/2 have constructed tests only. Unsupported versions/layouts, ambiguous markers,

@@ -9,3 +9,9 @@ crates/aa-windows/tests/data/native-inf-syntax.inf -text
 crates/aa-windows/tests/data/native-inf-relationships.inf -text
 crates/aa-windows/tests/data/native-catalog-*.cat -text
 crates/aa-windows/tests/data/upstream-makeaosponwinx86.cmd -text whitespace=cr-at-eol
+# Native-built archives embed these exact source bytes on every checkout platform.
+tools/fixtures/executable-bundles/data.txt text eol=lf
+crates/aa-linux/tests/data/*.deb -text
+crates/aa-linux/tests/data/*.rpm -text
+crates/aa-linux/tests/data/COPYRIGHT-node-isarray.txt -text
+crates/aa-linux/tests/data/LICENSE-xxhash.txt -text

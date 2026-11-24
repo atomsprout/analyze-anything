@@ -159,6 +159,7 @@ dependencies = [
  "aa-content",
  "aa-core",
  "aa-correlate",
+ "aa-linux",
  "aa-unpack",
  "aa-windows",
  "flate2",
@@ -199,6 +200,16 @@ dependencies = [
  "tempfile",
  "toml 0.9.12+spec-1.1.0",
  "ureq",
+]
+
+[[package]]
+name = "aa-linux"
+version = "0.2.0-preview.2"
+dependencies = [
+ "aa-core",
+ "flate2",
+ "serde_json",
+ "tar",
 ]
 
 [[package]]

@@ -5,6 +5,20 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This product bundles the following, each under its own licence.
 
+The fixtures in crates/aa-linux/tests/data include:
+- node-isarray_2.0.5-1_all.deb, unchanged from Debian's package pool:
+  https://deb.debian.org/debian/pool/main/n/node-isarray/node-isarray_2.0.5-1_all.deb
+  Copyright 2013 Julian Gruber; Debian packaging copyright 2015 Bas Couwenberg
+  and Ross Gammon. Expat (MIT); see COPYRIGHT-node-isarray.txt, copied unchanged
+  from the package's usr/share/doc/node-isarray/copyright.
+- xxhash-libs-0.8.4-2.fc43.x86_64.rpm, unchanged from the Fedora 43 updates mirror:
+  https://ftp.plusline.net/fedora/linux/updates/43/Everything/x86_64/Packages/x/xxhash-libs-0.8.4-2.fc43.x86_64.rpm
+  The xxHash library, copyright 2012-2021 Yann Collet, BSD-2-Clause.
+  See LICENSE-xxhash.txt, from Cyan4973/xxHash tag v0.8.4. This is the library
+  subpackage; it contains no GPL xxhsum command-line program.
+Both are static test inputs, never installed or executed. Native development
+tools used to read them are not distributed as runtime dependencies.
+
 The project-authored native-catalog-v1.cat, native-catalog-v2.cat and their -unsigned.cat
 fixtures in crates/aa-windows/tests/data were generated with Windows SDK MakeCat
 10.0.26100.0 and signed with SignTool using a temporary project-generated test key.

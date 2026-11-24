@@ -40,6 +40,8 @@ The implementation is being collected in one pull request, in the order defined 
     metadata evidence, native fixtures and published WinSW/yt-dlp comparisons. See
     [the profiles](spikes/executable-bundles.md).
   - [ ] Implement and qualify deb/rpm metadata, payloads and declared installation scripts.
+    The initial readers and constructed tests pass locally; native Linux qualification
+    is pending. See [the supported profiles](spikes/linux-packages.md).
 - [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,
   JSON compatibility and explicit agent analysis requests.
 

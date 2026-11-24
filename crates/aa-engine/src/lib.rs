@@ -208,16 +208,19 @@ impl Registry {
     /// Everything built into this version.
     pub fn standard() -> Self {
         let mut registry = Registry::default();
-        registry.unpackers.extend(aa_apple::unpackers());
+        registry.unpackers.extend(aa_apple::container_unpackers());
         registry.unpackers.extend(aa_unpack::executable_unpackers());
         registry.unpackers.extend(aa_windows::unpackers());
         registry.unpackers.extend(aa_android::unpackers());
+        registry.unpackers.extend(aa_linux::unpackers());
         registry.unpackers.extend(aa_unpack::unpackers());
+        registry.unpackers.extend(aa_apple::payload_unpackers());
         registry.analyzers.extend(aa_content::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_binary::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_apple::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_windows::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_android::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_linux::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_unpack::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_correlate::analyzers().into_iter().map(Arc::from));
         registry

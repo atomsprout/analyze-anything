@@ -4,12 +4,19 @@ name: Native comparison
 # downloads a sample and takes a while, so it is not part of every push.
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Reference-tool jobs to run
+        type: choice
+        options: [all, linux]
+        default: all
 
 permissions:
   contents: read
 
 jobs:
   macos:
+    if: inputs.platform != 'linux'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +26,7 @@ jobs:
       - run: python3 tools/native-compare/macos.py target/release/analyze-anything
 
   windows:
+    if: inputs.platform != 'linux'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,3 +34,23 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release -p aa-cli --no-default-features
       - run: python tools/native-compare/windows.py target\release\analyze-anything.exe
+
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y rpm rpm2cpio python3-rpm libarchive-tools
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build -p aa-cli --no-default-features
+      - run: /usr/bin/python3 tools/native-compare/linux-package-fixtures.py out/native-linux
+      - run: >-
+          /usr/bin/python3 tools/native-compare/linux-packages.py
+          target/debug/analyze-anything crates/aa-linux/tests/data/*.deb
+          crates/aa-linux/tests/data/*.rpm out/native-linux/*.deb out/native-linux/*.rpm
+          --record out/native-linux/reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-package-reference
+          path: out/native-linux/
