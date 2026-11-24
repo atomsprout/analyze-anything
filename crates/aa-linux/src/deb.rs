@@ -166,6 +166,9 @@ impl Unpacker for Deb {
         RULES
     }
     fn unpack(&self, file: &Artifact, bytes: &[u8], sink: &mut dyn UnpackSink) -> Unpack {
+        if bytes.starts_with(b"0.939000\n") {
+            return Unpack::Failed { kind: "deb", detail: "old pre-ar Debian packages are outside the supported profile".into() };
+        }
         if !bytes.starts_with(b"!<arch>\n") {
             return Unpack::NotMine;
         }
@@ -259,11 +262,12 @@ fn package_tar<'a>(tree: &'a dyn Tree, package: &Artifact, member: &str) -> Resu
         if container.unpacked_by.as_deref() != Some("stream") {
             return Err("control compression was not decoded".into());
         }
-        let mut children = tree.artifacts().iter().filter(|file| file.parent.as_deref() == Some(&container.path));
-        container = children.next().ok_or("decompressed control archive is missing")?;
-        if children.next().is_some() || !clean(container) {
-            return Err("decompressed control archive is ambiguous".into());
-        }
+        let stem = member.rsplit_once('.').ok_or("missing compression suffix")?.0;
+        let path = format!("{}/{stem}", container.path);
+        container = tree
+            .get(&path)
+            .filter(|file| file.parent.as_deref() == Some(&container.path) && clean(file))
+            .ok_or("decompressed package archive is missing or ambiguous")?;
     }
     if container.unpacked_by.as_deref() != Some("tar") {
         return Err("control archive TAR profile was not decoded".into());
@@ -396,7 +400,7 @@ fn retain_archive(tree: &dyn Tree, package: &Artifact, file: &Artifact, out: &mu
 fn retain_control(package: &Artifact, file: &Artifact, fields: &[Field], out: &mut Output) {
     let mut values = Vec::new();
     for field in fields {
-        let value = match aa_core::text::redact_sensitive_text(&field.value) {
+        let value = match aa_core::text::redact_named_value(&field.name, &field.value) {
             Ok(value) => value,
             Err(detail) => {
                 out.limitation("deb.control-unread", Some(file), Some(detail.into()));

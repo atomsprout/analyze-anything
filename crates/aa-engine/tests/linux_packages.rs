@@ -109,3 +109,41 @@ fn colliding_control_files_and_payload_script_names_do_not_create_false_declarat
     assert!(!report.findings.iter().any(|finding| matches!(finding.rule.as_str(), "deb.identity" | "deb.install-script")));
     assert!(report.limitations.iter().any(|limit| limit.code == "deb.control-unread"));
 }
+
+#[test]
+fn native_built_script_packages_preserve_scalar_interpreters_and_script_evidence() {
+    for (name, bytes, rule) in [
+        ("native-script.deb", &include_bytes!("../../aa-linux/tests/data/native-script.deb")[..], "deb.install-script"),
+        ("native-script.rpm", &include_bytes!("../../aa-linux/tests/data/native-script.rpm")[..], "rpm.install-scripts"),
+    ] {
+        let report = analyze_bytes(&Registry::standard(), name, bytes.to_vec(), &Options::default(), &mut NoProgress);
+        assert!(report.findings.iter().any(|finding| finding.rule == rule));
+        assert!(!report.limitations.iter().any(|limit| limit.code == "unpack_failed"));
+        if name.ends_with("rpm") {
+            let root = report.artifacts.iter().find(|file| file.parent.is_none()).expect("RPM root");
+            let interpreter = root.facts["rpm.package"]["tags"]
+                .as_array()
+                .expect("tags")
+                .iter()
+                .find(|row| row["tag"] == 1086)
+                .expect("native post interpreter");
+            assert_eq!(interpreter["type"], 6);
+            assert_eq!(interpreter["value"], "/bin/sh");
+        }
+    }
+}
+
+#[test]
+fn package_metadata_redacts_named_credentials_and_script_assignments() {
+    let mut control = support::CONTROL.to_vec();
+    control.extend(b"X-Api-Key: fixture-control-credential\n");
+    let report = analyze_bytes(&Registry::standard(), "sample.deb", support::deb(&control, b"data"), &Options::default(), &mut NoProgress);
+    let root = report.artifacts.iter().find(|file| file.parent.is_none()).expect("Debian root");
+    assert!(!root.facts["deb.control"].to_string().contains("fixture-control-credential"));
+    assert!(root.facts["deb.control"].to_string().contains("[redacted]"));
+    let rpm = support::rpm("none", vec![(1079, 6, b"token=fixture-script-credential\0".to_vec(), 1)]);
+    let report = analyze_bytes(&Registry::standard(), "sample.rpm", rpm, &Options::default(), &mut NoProgress);
+    let root = report.artifacts.iter().find(|file| file.parent.is_none()).expect("RPM root");
+    assert!(!root.facts["rpm.package"].to_string().contains("fixture-script-credential"));
+    assert!(root.facts["rpm.package"].to_string().contains("[redacted]"));
+}

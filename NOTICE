@@ -18,6 +18,10 @@ The fixtures in crates/aa-linux/tests/data include:
   subpackage; it contains no GPL xxhsum command-line program.
 Both are static test inputs, never installed or executed. Native development
 tools used to read them are not distributed as runtime dependencies.
+The native-script.deb and native-script.rpm fixtures in the same directory are
+project-authored Apache-2.0 text/script-declaration packages built by
+tools/native-compare/linux-package-fixtures.py on the hosted Ubuntu 24.04 runner.
+Their installation scripts were never run; neither package was installed.
 
 The project-authored native-catalog-v1.cat, native-catalog-v2.cat and their -unsigned.cat
 fixtures in crates/aa-windows/tests/data were generated with Windows SDK MakeCat

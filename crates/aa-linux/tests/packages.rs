@@ -53,6 +53,7 @@ fn deb_exposes_separate_original_members() {
 
 #[test]
 fn deb_rejects_ambiguous_members_versions_and_lengths_before_extraction() {
+    assert!(matches!(unpack("deb", b"0.939000\n1\nx").0, Unpack::Failed { .. }));
     let tar = support::tar(&[("control", support::CONTROL)]);
     for bytes in [
         support::ar(&[("debian-binary", b"3.0\n"), ("control.tar", &tar), ("data.tar", &tar)]),

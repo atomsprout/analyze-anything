@@ -90,6 +90,8 @@ def verify(cli, sample):
         transaction.setVSFlags(rpm._RPMVSF_NOSIGNATURES | rpm._RPMVSF_NODIGESTS)
         with sample.open("rb") as stream:
             header = transaction.hdrFromFdno(stream.fileno())
+        if "rpm.package" not in root["facts"]:
+            raise AssertionError(f"{sample.name}: RPM metadata missing: {report['limitations']!r}")
         package = root["facts"]["rpm.package"]
         for key, tag in [("name", 1000), ("version", 1001), ("release", 1002), ("architecture", 1022)]:
             native[key] = header[tag]
@@ -99,6 +101,8 @@ def verify(cli, sample):
             if row["value"] is None or row["type"] == 9:
                 continue
             value = header[row["tag"]]
+            if row["type"] == 6 and isinstance(value, list) and len(value) == 1:
+                value = value[0]
             if row["type"] != 6 and not isinstance(value, list):
                 value = [value]
             check("native header tag: " + str(row["tag"]), row["value"], value)

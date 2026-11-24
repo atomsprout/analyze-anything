@@ -106,26 +106,13 @@ fn expected_type(tag: u32) -> Option<u32> {
     match tag {
         1000..=1002 | 1014 | 1020..=1026 | 1079 | 1124..=1126 | 1151 | 1152 | 5103 | 5104 => Some(6),
         1003 | 1048 | 1053 | 1112 | 1114 | 5114 => Some(4),
-        1047
-        | 1049
-        | 1050
-        | 1054
-        | 1055
-        | 1065..=1067
-        | 1085..=1088
-        | 1090..=1092
-        | 1113
-        | 1115
-        | 1153
-        | 1154
-        | 5066
-        | 5067
-        | 5076
-        | 5077
-        | 5105
-        | 5106 => Some(8),
+        1047 | 1049 | 1050 | 1054 | 1055 | 1065..=1067 | 1090 | 1113 | 1115 | 5066 | 5076 => Some(8),
         _ => None,
     }
+}
+
+fn interpreter(tag: u32) -> bool {
+    matches!(tag, 1085..=1088 | 1091 | 1092 | 1153 | 1154 | 5067 | 5077 | 5105 | 5106)
 }
 
 fn header(bytes: &[u8], offset: usize, retain: bool) -> Result<Header> {
@@ -158,7 +145,7 @@ fn header(bytes: &[u8], offset: usize, retain: bool) -> Result<Header> {
             return Err("RPM tag offset exceeds data store".into());
         }
         let wanted = retain && selected(id);
-        if retain && expected_type(id).is_some_and(|expected| kind != expected) {
+        if retain && (expected_type(id).is_some_and(|expected| kind != expected) || interpreter(id) && !matches!(kind, 6 | 8)) {
             return Err(format!("RPM tag {id} has a type inconsistent with the supported declaration profile"));
         }
         if wanted || matches!(kind, 6 | 8 | 9) {

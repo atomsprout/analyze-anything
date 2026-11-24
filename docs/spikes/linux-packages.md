@@ -40,7 +40,7 @@ the Apple odc and pbzx readers remain available.
 
 ## Evidence so far
 
-Seven constructed unpacker tests and six engine tests passed on Windows, including
+Seven constructed unpacker tests and eight engine tests passed on Windows, including
 malformed lengths, all short prefixes, unsupported payloads, CPIO checksums and
 hardlinks, ambiguous control metadata, source attribution, repeated-report equality
 and engine budgets. Two published package fixtures exercise real compression and
@@ -54,6 +54,12 @@ The Linux Native comparison job uses dpkg-deb, librpm, rpm2cpio and bsdtar to ch
 identity, selected header values, regular-file SHA-256, TAR metadata, CPIO paths,
 symlink targets and maintainer-script declarations. Separate native-built fixtures
 exercise Debian postinst and RPM post/preun declarations; those scripts are never run.
+
+The first Linux run (45372596833 at be39b11) found a real profile gap: rpmbuild
+stored a single script interpreter as STRING rather than STRING_ARRAY. The reader
+now accepts both representations for interpreter tags, preserving the original
+type, count and value. The generated script packages are pinned regression inputs.
+The Linux reference job must pass again before native acceptance is recorded.
 
 ```
 python3 tools/native-compare/linux-package-fixtures.py out/native-linux
