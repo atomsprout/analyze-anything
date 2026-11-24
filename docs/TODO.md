@@ -2,7 +2,27 @@
 
 Phase one (the command line) and the macOS desktop app of phase two (D0–D5) are done, and so is the optional AI interpretation of phase three. This file lists what is not finished, item by item; the direction and the order of the larger work are in [ROADMAP.md](ROADMAP.md). Known limits of what the program does are in [LIMITATIONS.md](LIMITATIONS.md); the desktop app is described in [DESKTOP.md](DESKTOP.md).
 
-## Next after 0.2.0-preview.1
+## Delivery milestones: 0.2 through 0.5
+
+The implementation is being collected in one pull request, in the order defined in
+[PLAN-VERSIONS.md](PLAN-VERSIONS.md). A checked subtask does not complete its milestone.
+
+- [ ] **0.2 — Reliable use:** hosted platform checks, packaged CLI qualification,
+  cancellation and limit semantics, and current installation documentation.
+  - [x] Bind browser tests and readiness checks to the same explicit IPv4 address;
+    production page build, 14 unit tests and 28 WebKit/Chromium tests passed on Windows.
+  - [ ] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
+  - [ ] Verify final hosted CI and release rehearsal and record supported runtime baselines.
+- [ ] **0.3 — Understand the supplied software:** evidence-linked relationships,
+  report orientation and attributable coverage, with ambiguous and unresolved cases.
+- [ ] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
+  profiles, each with real samples, native comparisons and tested limitations.
+- [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,
+  JSON compatibility and explicit agent analysis requests.
+
+Existing diff functionality remains available; comparing versions is not a milestone theme.
+
+## Release qualification after 0.2.0-preview.1
 
 The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
 

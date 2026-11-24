@@ -2,7 +2,26 @@
 
 The latest stable release is [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1) for Apple silicon Macs. [v0.2.0-preview.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.1) adds unsigned CLI archives for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. The release workflow ran tests and self-checks for all four targets. The downloaded Windows ZIP also passed its self-check on the development machine.
 
-The Windows x64 desktop app has passed local W10 acceptance, including offline NSIS installation. The next work is **hosted Windows desktop CI and clean-system CLI qualification**. The [Windows plan](PLAN-WINDOWS.md) defines feature scope and acceptance gates. [TODO.md](TODO.md) tracks the remaining tasks, and [LIMITATIONS.md](LIMITATIONS.md) records supported profiles and verification gaps.
+The Windows x64 desktop app has passed local W10 acceptance, including offline NSIS installation. The immediate work is **hosted Windows desktop CI and clean-system CLI qualification**. The [delivery plan](PLAN-VERSIONS.md) defines the next four product milestones; the [Windows plan](PLAN-WINDOWS.md) retains format-specific scope and acceptance gates. [TODO.md](TODO.md) tracks implementation, and [LIMITATIONS.md](LIMITATIONS.md) records supported profiles and verification gaps.
+
+## Product milestones
+
+The purpose of a report is to explain an unfamiliar supplied artifact: what it is, what it
+contains, what capabilities and actions it declares, how its parts relate, and what could
+not be established. The following milestones build that workflow in order. They are planned
+acceptance groups, not claims that those versions have shipped.
+
+| Milestone | User outcome | Main work |
+|---|---|---|
+| 0.2 — Reliable use | Obtain a working build and understand incomplete analysis | Cross-platform delivery, packaged-artifact verification, cancellation, resource limits and accurate platform documentation |
+| 0.3 — Understand the supplied software | Read a coherent explanation with traceable details | Entry-point, payload, component and integrity relationships; report orientation and artifact-specific coverage |
+| 0.4 — Read more contents | Inspect software currently hidden inside unsupported packaging | Bounded .NET single-file, PyInstaller, deb and rpm profiles that reuse the artifact tree |
+| 0.5 — Find and reuse answers | Retrieve evidence efficiently from a finished report | Offline structured queries, report navigation, JSON compatibility and explicit agent analysis workflows |
+
+Report readability, explicit limitations and real-sample verification accompany every
+milestone. Existing version comparison remains an auxiliary feature. New formats are chosen
+for the workflow they complete, with independent completion gates for each profile. See
+[PLAN-VERSIONS.md](PLAN-VERSIONS.md) for acceptance requirements.
 
 ## Available today
 

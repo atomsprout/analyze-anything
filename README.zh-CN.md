@@ -59,7 +59,7 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-目前只发布 Apple 芯片 Mac 的版本。在 Linux 和 Windows 上，代码能构建、测试在 CI 里通过，但还没有人在这两个平台上实际用过。
+签名的稳定版面向 Apple 芯片 Mac。[GitHub releases](https://github.com/atomsprout/analyze-anything/releases) 另有 Windows x64 和 Linux x64/ARM64 的未签名 CLI 预览版。Windows x64 桌面版已通过本地验收，包括 Windows 10 离线安装；Linux 桌面验收仍待完成。已发布的 preview.1 Windows CLI 依赖 Visual C++ 运行库；静态链接的 preview.2 候选已通过干净系统自测。具体范围见[平台验收记录](docs/LIMITATIONS.md)。
 
 ## 使用
 
@@ -159,14 +159,14 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-0.1 是第一个发布系列（目前是 0.1.1）。今天任何文件或文件夹都能得到一份报告；Apple、Android、Windows 的格式能深入理解。目前只发布了 Apple 芯片 Mac 的版本，也只在一台这样的 Mac 上手工用过；在 Linux 和 Windows 上，代码能构建并通过 CI 里的测试。
+稳定版是 0.1.1；源码正在准备 0.2.0-preview.2。今天任何文件或文件夹都能得到一份报告，各格式有不同的分析深度和明确的局限。macOS 有签名发布版，CLI 有 Windows 和 Linux 预览版，Windows 桌面版已做本地验收。平台验收和更广的格式覆盖仍在推进。
 
 “Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
 
-1. **各个系统上都一样可用**：发布 Linux、Windows 的版本；桌面版走出 macOS。
-2. **更多种输入**：Linux 软件包、容器镜像、各语言生态的包、更多应用平台、带代码的文档、固件镜像。
-3. **在要紧的地方更深入**：用离线数据库匹配已知漏洞、函数级的事实、把规则和策略做成数据。
-4. **更容易在它之上构建**：GitHub Action、把 AI 解读放进报告、更完整的 agent 接口、稳定的报告结构。
+1. **0.2 — 可靠使用**：验收跨平台交付、取消、资源限制和不完整分析的行为。
+2. **0.3 — 理解整个软件**：串联入口、载荷、组件和完整性声明，改善报告导读并明确覆盖范围。
+3. **0.4 — 看进更多内容**：有边界地读取 .NET single-file、PyInstaller 和 Linux 软件包，复用已有分析器。
+4. **0.5 — 更容易获取和复用答案**：离线查询报告、便捷查阅证据、明确 JSON 兼容性，并提供显式的 agent 分析流程。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
 

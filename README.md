@@ -57,7 +57,7 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-Released builds exist for Apple silicon Macs only. On Linux and Windows the code builds and its tests pass in CI, but nobody has used it by hand there yet.
+The signed stable release is available for Apple silicon Macs. Unsigned CLI previews are also available for Windows x64 and Linux x64/ARM64 from [GitHub releases](https://github.com/atomsprout/analyze-anything/releases). Windows x64 desktop builds have passed local acceptance, including an offline Windows 10 installation; Linux desktop verification remains open. The published preview.1 Windows CLI requires the Visual C++ runtime; the statically linked preview.2 candidate passed a clean-system self-test. See [platform qualification](docs/LIMITATIONS.md) for the exact scope.
 
 ## Use
 
@@ -157,14 +157,14 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-0.1 is the first release line (0.1.1 now). Any file or folder gets a report today; Apple, Android and Windows formats are understood in depth. It is released for Apple silicon Macs and has been used by hand on one; on Linux and Windows the code builds and passes its tests in CI.
+The stable release is 0.1.1; the source is preparing 0.2.0-preview.2. Any file or folder gets a report today, with format-specific depth and explicit limitations. macOS has a signed release, the CLI has Windows and Linux previews, and Windows desktop acceptance has been exercised locally. Platform qualification and broader format profiles remain tracked work.
 
 "Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
 
-1. **The same thing on every system**: released builds for Linux and Windows; the desktop app beyond macOS.
-2. **More kinds of input**: Linux packages, container images, packages of language ecosystems, more app platforms, documents that carry code, firmware images.
-3. **Deeper where it matters**: known vulnerabilities from an offline database, function-level facts, rules and policies as data.
-4. **Easier to build on**: a GitHub Action, the AI reading inside the report, a fuller interface for agents, a stable report schema.
+1. **0.2 — Reliable use**: qualify cross-platform delivery, cancellation, resource limits and incomplete analysis.
+2. **0.3 — Understand the supplied software**: connect entry points, payloads, components and integrity declarations, with useful report orientation and explicit coverage.
+3. **0.4 — Read more contents**: bounded .NET single-file, PyInstaller and Linux package profiles, reusing the existing analyzers.
+4. **0.5 — Find and reuse answers**: offline report queries, easier evidence navigation, JSON compatibility and explicit agent analysis workflows.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
 
