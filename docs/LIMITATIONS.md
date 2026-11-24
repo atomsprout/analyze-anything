@@ -14,6 +14,16 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 
 ## Parts not verified on real samples
 
+The bounded .NET single-file reader supports manifest versions 1.0, 2.0 and 6.0;
+version 6 has published WinSW and SDK-built stored/compressed comparisons. Versions
+1/2 have constructed tests only. Unsupported versions/layouts, ambiguous markers,
+invalid ranges and malformed compression remain explicit. The PyInstaller reader
+supports the 88-byte CArchive profile with stored/zlib members, native-writer fixtures
+and a published yt-dlp Windows executable comparison. Python marshal objects and PYZ
+modules are not loaded or decoded; symbolic/external references are not followed.
+Other executable platforms, legacy cookies and real signed trailers remain unqualified.
+See [the exact profiles and comparisons](spikes/executable-bundles.md).
+
 The NuGet reader has been compared with the Windows .NET SDK on the published
 NuGet.Versioning and NuGet.Configuration 6.11.1 packages. Ambiguous sibling
 packages and incomplete listings have constructed coverage. Only exact stable

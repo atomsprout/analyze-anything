@@ -1,0 +1,1 @@
+Static archive fixture: https://example.com/static-data

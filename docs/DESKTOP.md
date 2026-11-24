@@ -127,7 +127,12 @@ also passed the three core-platform jobs and the advisory/license gate; its macO
 browser job failed on a test initialization race, addressed separately. The current
 CI matrix adds a Linux WebKitGTK window under Xvfb and D-Bus using the documented
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/#linux). That hosted
-Linux run and final-head regression remain pending. See [CI](../.github/workflows/ci.yml).
+Linux run subsequently passed all 67 native checks at 2caf6d4, including seven export
+formats and the full folder comparison. [Run 45360964209](https://github.com/atomsprout/analyze-anything/actions/runs/45360964209)
+passed all three core-platform jobs, all three desktop jobs and the advisory/license gate.
+The Linux result qualifies Ubuntu 24.04 x64 WebKitGTK under Xvfb/D-Bus, not physical-display
+interaction or all Linux distributions. Later changes still require final-head regression.
+See [CI](../.github/workflows/ci.yml).
 
 ### Self-check mode
 

@@ -223,6 +223,7 @@ dependencies = [
  "bzip2",
  "flate2",
  "lzma-rust2 0.16.5",
+ "memchr",
  "ruzstd",
  "serde_json",
  "sevenz-rust2",

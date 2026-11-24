@@ -11,16 +11,18 @@ The implementation is being collected in one pull request, in the order defined 
   cancellation and limit semantics, and current installation documentation.
   - [x] Bind browser tests and readiness checks to the same explicit IPv4 address;
     production page build, 14 unit tests and 28 WebKit/Chromium tests passed on Windows.
-  - [ ] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
+  - [x] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
+    Rehearsal 45360483004 passed; the downloaded Windows archive passed its checksum,
+    self-test and two independent CRT import checks. See [qualification](spikes/delivery-qualification.md).
   - [ ] Verify final hosted CI and release rehearsal and record supported runtime baselines.
     The dbdfd79 Windows desktop job passed 67 real-window checks and seven-format CLI
     parity on the hosted runner; the current report changes and new Linux window job
-    still need final-head qualification.
+    passed their hosted qualification at 2caf6d4; final combined-head regression remains required.
   - [x] Compare a real signed MSI and installed directory; 127 native checks passed,
     including independent digests for 107 installed files. See [the record](spikes/windows-baseline.md).
   - [x] Resolve the url/cookie advisory gate through patched lockfile versions;
     the hosted advisory/license job passed for dbdfd79. Final-head qualification remains open.
-- [ ] **0.3 — Understand the supplied software:** evidence-linked relationships,
+- [x] **0.3 — Understand the supplied software:** evidence-linked relationships,
   report orientation and attributable coverage, with ambiguous and unresolved cases.
   - [x] Add bilingual opening questions that cite existing findings and confidence,
     with direct HTML navigation to their evidence.
@@ -30,9 +32,14 @@ The implementation is being collected in one pull request, in the order defined 
     expose artifact-specific versus run-wide limitation counts.
   - [x] Pass 24 rendering regressions, the multi-file engine-to-renderer test and 32
     browser checks. English/Chinese PDF pages were visually inspected; see
-    [the acceptance record](spikes/report-understanding.md). Final hosted checks remain open.
+    [the acceptance record](spikes/report-understanding.md). Hosted CI passed at 2caf6d4;
+    the final combined head will be checked again after the remaining milestones.
 - [ ] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
   profiles, each with real samples, native comparisons and tested limitations.
+  - [x] Add bounded .NET single-file and PyInstaller CArchive readers, with original
+    metadata evidence, native fixtures and published WinSW/yt-dlp comparisons. See
+    [the profiles](spikes/executable-bundles.md).
+  - [ ] Implement and qualify deb/rpm metadata, payloads and declared installation scripts.
 - [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,
   JSON compatibility and explicit agent analysis requests.
 

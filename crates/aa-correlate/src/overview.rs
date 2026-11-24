@@ -10,6 +10,20 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-dotnet-bundle",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This input declares a .NET single-file bundle. Supported embedded contents were opened as data; the host and assemblies were not run.",
+        text_zh: "此输入声明了 .NET 单文件包。受支持的内嵌内容作为数据打开，没有运行宿主与程序集。",
+    },
+    Rule {
+        id: "overview.kind-pyinstaller",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This input declares a PyInstaller CArchive. Supported contents were opened as data; the bootloader and Python code were not run.",
+        text_zh: "此输入声明了 PyInstaller CArchive。受支持的内容作为数据打开，没有运行引导程序或 Python 代码。",
+    },
+    Rule {
         id: "overview.kind-batch-script",
         title_zh: "输入类型",
         title_en: "Kind of input",
@@ -432,6 +446,8 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let unpacker = root.unpacked_by.as_deref().unwrap_or("");
     let installer_format = root.facts.get("windows.installer").and_then(|f| text(f, "format").or_else(|| text(f, "kind")));
     let made = match (kind, unpacker) {
+        (_, "dotnet-bundle") => finding("overview.kind-dotnet-bundle", Confidence::Verified),
+        (_, "pyinstaller") => finding("overview.kind-pyinstaller", Confidence::Verified),
         ("ipa", _) => finding("overview.kind-ipa", Confidence::Derived),
         ("internet-shortcut", _) => finding("overview.kind-internet-shortcut", Confidence::Verified),
         ("shell-link", _) => finding("overview.kind-shell-link", Confidence::Verified),

@@ -1,0 +1,40 @@
+{
+  "reference": {
+    "bundle_id": "-_w1DXNohgfx",
+    "files": [
+      {
+        "compressed_size": 0,
+        "manifest_offset": 168830,
+        "offset": 163840,
+        "path": "BundleFixture.dll",
+        "sha256": "5e1cb7e12f0bc317f49a06c8d87bbbdc921006a83c0d3b02589fbd204bc59ab7",
+        "size": 4096,
+        "type": 1
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 168873,
+        "offset": 167936,
+        "path": "BundleFixture.runtimeconfig.json",
+        "sha256": "c230a317a54dd960bcbeb5f347f52e18dc665a26f7efda2159fced9a5ac7e097",
+        "size": 342,
+        "type": 4
+      },
+      {
+        "compressed_size": 0,
+        "manifest_offset": 168931,
+        "offset": 168278,
+        "path": "BundleFixture.deps.json",
+        "sha256": "9fec52ca8913e6bb2d8414826bda708805a06703993e6b879fdee9cff8d9e1e5",
+        "size": 487,
+        "type": 3
+      }
+    ],
+    "header_offset": 168765,
+    "minor": 0,
+    "powershell": "7.6.9",
+    "runtime": "10.0.14",
+    "version": 6
+  },
+  "sha256": "b4a005799c003822a5937a62dfede23de026610776e870905cc983bbc99c2f41"
+}
