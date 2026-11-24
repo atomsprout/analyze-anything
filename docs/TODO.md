@@ -13,6 +13,9 @@ The implementation is being collected in one pull request, in the order defined 
     production page build, 14 unit tests and 28 WebKit/Chromium tests passed on Windows.
   - [ ] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
   - [ ] Verify final hosted CI and release rehearsal and record supported runtime baselines.
+    The dbdfd79 Windows desktop job passed 67 real-window checks and seven-format CLI
+    parity on the hosted runner; the current report changes and new Linux window job
+    still need final-head qualification.
   - [x] Compare a real signed MSI and installed directory; 127 native checks passed,
     including independent digests for 107 installed files. See [the record](spikes/windows-baseline.md).
   - [x] Resolve the url/cookie advisory gate through patched lockfile versions;

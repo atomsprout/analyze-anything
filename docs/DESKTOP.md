@@ -120,8 +120,14 @@ the window.
 
 The desktop CI matrix includes a Windows WebView2 job that launches the actual
 desktop window, runs the self-check with a cancellation input and compares the
-exports with the CLI. The CI build command passed locally. A hosted run with
-the new Windows desktop job remains pending. See [CI](../.github/workflows/ci.yml).
+exports with the CLI. The hosted Windows job at dbdfd79 passed all 67 native
+checks on 2026-11-24, including byte-for-byte agreement for seven export formats
+and the complete exported folder. [Run 45357629773](https://github.com/atomsprout/analyze-anything/actions/runs/45357629773)
+also passed the three core-platform jobs and the advisory/license gate; its macOS
+browser job failed on a test initialization race, addressed separately. The current
+CI matrix adds a Linux WebKitGTK window under Xvfb and D-Bus using the documented
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/#linux). That hosted
+Linux run and final-head regression remain pending. See [CI](../.github/workflows/ci.yml).
 
 ### Self-check mode
 
