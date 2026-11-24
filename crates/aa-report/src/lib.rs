@@ -14,6 +14,7 @@ mod markdown;
 #[cfg(feature = "pdf")]
 mod pdf;
 mod plain;
+pub mod relationships;
 pub mod sanitize;
 pub mod words;
 

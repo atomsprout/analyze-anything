@@ -6,11 +6,16 @@ import { spawnSync } from "node:child_process";
 
 const desktop = fileURLToPath(new URL("../", import.meta.url));
 const fixtures = join(desktop, "tests", "fixtures");
-const result = spawnSync("cargo", [
-  "run", "-q", "--release", "-p", "aa-cli", "--", "analyze",
-  "../../crates/aa-apple/tests/data/tiny.dmg", "-o", "tests/fixtures/out", "-f", "html", "--no-ai",
-], { cwd: desktop, stdio: "inherit", windowsHide: true });
-if (result.error) throw result.error;
-if (result.status !== 0) process.exit(result.status ?? 1);
 mkdirSync(fixtures, { recursive: true });
-copyFileSync(join(fixtures, "out", "report.html"), join(fixtures, "sample-report.html"));
+for (const [input, output, name] of [
+  ["../../crates/aa-apple/tests/data/tiny.dmg", "out", "sample-report"],
+  ["../../crates/aa-windows/tests/data/native.lnk", "relationships", "relationships-report"],
+]) {
+  const result = spawnSync("cargo", [
+    "run", "-q", "--release", "-p", "aa-cli", "--", "analyze",
+    input, "-o", `tests/fixtures/${output}`, "-f", "html", "--no-ai",
+  ], { cwd: desktop, stdio: "inherit", windowsHide: true });
+  if (result.error) throw result.error;
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  copyFileSync(join(fixtures, output, "report.html"), join(fixtures, `${name}.html`));
+}

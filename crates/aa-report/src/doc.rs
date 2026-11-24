@@ -10,6 +10,8 @@ use crate::words::{self, Words};
 
 /// Rows shown in the inventory table. The JSON report always holds every file.
 pub const INVENTORY_ROWS: usize = 300;
+/// Findings previewed for each opening question; full findings remain in their chapters.
+const QUESTION_FINDINGS: usize = 3;
 /// Artifacts listed under one limitation before the rest are counted.
 const LIMITATION_ARTIFACTS: usize = 30;
 /// Characters of an evidence value shown before it is cut.
@@ -119,6 +121,74 @@ pub fn summary_items(report: &Report, lang: Lang) -> Vec<(String, String)> {
     ]
 }
 
+/// Reading all enumerated bytes and understanding every structure are separate claims.
+pub fn content_incomplete(report: &Report) -> bool {
+    report.coverage.truncated || report.coverage.content_lost > 0 || report.coverage.artifacts_analyzed < report.coverage.artifacts_total
+}
+
+pub fn coverage_items(report: &Report, lang: Lang) -> Vec<(String, String)> {
+    let affected: std::collections::BTreeSet<&str> = report.limitations.iter().filter_map(|l| l.artifact.as_deref()).collect();
+    vec![
+        (words::ui(lang, "limited_files").into(), affected.len().to_string()),
+        (words::ui(lang, "run_limitations").into(), report.limitations.iter().filter(|l| l.artifact.is_none()).count().to_string()),
+        (words::ui(lang, "content_losses").into(), report.coverage.content_lost.to_string()),
+    ]
+}
+
+/// An opening question answered only with existing findings, without synthesizing new claims.
+#[derive(Debug, serde::Serialize)]
+pub struct Question {
+    pub title: String,
+    pub total: usize,
+    pub samples: Vec<Answer>,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct Answer {
+    pub index: usize,
+    pub id: String,
+    pub confidence: aa_core::Confidence,
+    pub text: String,
+}
+
+/// A bounded reading route through the report, shared by every human-readable output.
+pub fn questions(report: &Report, lang: Lang) -> Vec<Question> {
+    [
+        ("question_identity", &[Section::Overview, Section::Identity][..]),
+        ("question_contents", &[Section::Structure, Section::Composition][..]),
+        ("question_capabilities", &[Section::Capabilities][..]),
+        ("question_integrity", &[Section::Provenance][..]),
+    ]
+    .into_iter()
+    .map(|(key, sections)| {
+        let mut indices: Vec<usize> = report
+            .findings
+            .iter()
+            .enumerate()
+            .filter_map(|(index, finding)| sections.contains(&finding.section).then_some(index))
+            .collect();
+        indices.sort_by_key(|&index| std::cmp::Reverse(report.findings[index].severity));
+        Question {
+            title: words::ui(lang, key).into(),
+            total: indices.len(),
+            samples: indices
+                .into_iter()
+                .take(QUESTION_FINDINGS)
+                .map(|index| {
+                    let finding = &report.findings[index];
+                    let sentence = finding_text(report, lang, finding);
+                    let mut text: String = sentence.chars().take(280).collect();
+                    if sentence.chars().count() > 280 {
+                        text.push('…');
+                    }
+                    Answer { index, id: finding.id.clone(), confidence: finding.confidence, text }
+                })
+                .collect(),
+        }
+    })
+    .collect()
+}
+
 /// The inventory table: its head, its rows, and a note when the rows were cut.
 pub struct Inventory {
     pub head: Vec<String>,
@@ -220,6 +290,53 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
     doc.paragraph(w.reading_guide_text);
     doc.paragraph(words::ui(lang, "grouping_guide"));
 
+    doc.heading(3, words::ui(lang, "questions"));
+    doc.paragraph(words::ui(lang, "questions_note"));
+    for question in questions(report, lang) {
+        doc.heading(3, format!("{} ({})", question.title, question.total));
+        if question.samples.is_empty() {
+            doc.paragraph(words::ui(lang, "question_unknown"));
+        }
+        for sample in question.samples {
+            doc.item(
+                0,
+                format!(
+                    "{} [{} · {}]",
+                    sample.text,
+                    words::confidence(lang, sample.confidence),
+                    sample.id.chars().take(16).collect::<String>()
+                ),
+            );
+        }
+    }
+    doc.paragraph(words::ui(lang, "questions_coverage"));
+
+    doc.heading(2, words::ui(lang, "relationships"));
+    doc.paragraph(words::ui(lang, "relationships_note"));
+    let relationships = crate::relationships::collect(report);
+    if relationships.total == 0 {
+        doc.paragraph(words::ui(lang, "relationships_none"));
+    } else {
+        doc.blocks.push(Block::Table {
+            head: ["source_declaration", "relationship_status", "supplied_target"].map(|key| words::ui(lang, key).into()).to_vec(),
+            rows: relationships
+                .rows
+                .iter()
+                .map(|row| {
+                    vec![
+                        format!("{} @ {} = {}", row.source, row.location, row.declaration),
+                        format!("{}{}", row.status, row.reason.as_ref().map(|s| format!(" — {s}")).unwrap_or_default()),
+                        format!("{} {}", row.target.as_deref().unwrap_or(w.unknown), row.target_sha256.as_deref().unwrap_or("")),
+                    ]
+                })
+                .collect(),
+        });
+        doc.paragraph(format!("{} / {}", relationships.rows.len(), relationships.total));
+    }
+    if relationships.source_truncated {
+        doc.paragraph(words::ui(lang, "relationships_cut"));
+    }
+
     for section in Section::ALL {
         let groups = group::chapter(report, lang, section);
         doc.heading(2, group::heading(lang, words::section(lang, section), &groups));
@@ -248,7 +365,10 @@ pub fn build(report: &Report, lang: Lang) -> Doc {
     }
 
     doc.heading(2, w.coverage);
-    doc.paragraph(if report.coverage.truncated { w.truncated } else { w.complete });
+    doc.paragraph(if content_incomplete(report) { w.truncated } else { w.complete });
+    for (label, value) in coverage_items(report, lang) {
+        doc.item(0, format!("{label}: {value}"));
+    }
     if report.limitations.is_empty() {
         doc.paragraph(w.no_limitations);
     }

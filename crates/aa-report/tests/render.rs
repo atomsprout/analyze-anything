@@ -607,3 +607,105 @@ fn reports_for_people_end_by_naming_the_tool_and_where_it_lives() {
     let json = String::from_utf8(render(&report, Format::Json, Lang::En).expect("renders")).expect("text");
     assert!(!json.contains(aa_report::PROJECT_URL));
 }
+
+#[test]
+fn opening_questions_reuse_findings_and_bound_the_preview() {
+    let input = full();
+    for lang in [Lang::En, Lang::Zh] {
+        let questions = aa_report::doc::questions(&input, lang);
+        assert_eq!(questions.len(), 4);
+        for question in questions {
+            assert!(question.samples.len() <= 3);
+            assert!(question.total >= question.samples.len());
+            for sample in question.samples {
+                let finding = &input.findings[sample.index];
+                assert_eq!(sample.id, finding.id);
+                assert_eq!(sample.confidence, finding.confidence);
+                assert!(aa_report::doc::finding_text(&input, lang, finding).starts_with(sample.text.trim_end_matches('…')));
+            }
+        }
+    }
+    let empty = report("empty", Vec::new(), Vec::new(), Vec::new());
+    assert!(aa_report::doc::questions(&empty, Lang::En).iter().all(|q| q.total == 0 && q.samples.is_empty()));
+}
+
+#[test]
+fn content_loss_is_visible_even_without_a_truncation_flag() {
+    let mut report = full();
+    report.coverage.truncated = false;
+    report.coverage.content_lost = 1;
+    assert!(aa_report::doc::content_incomplete(&report));
+    for format in [Format::Markdown, Format::Text] {
+        let output = String::from_utf8(render(&report, format, Lang::En).expect("renders")).expect("text");
+        assert!(output.contains("The analysis stopped early or skipped content"));
+        assert!(output.contains("Recorded content losses: 1"));
+        assert!(!output.contains("Every enumerated file was read in full"));
+    }
+    report.coverage.content_lost = 0;
+    report.coverage.artifacts_analyzed = 0;
+    assert!(aa_report::doc::content_incomplete(&report));
+}
+
+#[test]
+fn relationship_index_preserves_ambiguity_evidence_and_preview_limits() {
+    let mut report = full();
+    let source = report.artifacts[0].path.clone();
+    let rows: Vec<Value> = (0..55)
+        .map(|index| {
+            json!({
+                "field": format!("RelativePath[{index}]"),
+                "declared": HOSTILE[0],
+                "status": "unresolved",
+                "reason": "ambiguous-target",
+                "target": null,
+                "target_sha256": null,
+            })
+        })
+        .collect();
+    report.artifacts[0].facts.insert("windows.input-references".into(), json!({"references": rows, "truncated": true}));
+    let relationships = aa_report::relationships::collect(&report);
+    assert_eq!(relationships.total, 55);
+    assert_eq!(relationships.rows.len(), 50);
+    assert!(relationships.source_truncated);
+    assert_eq!(relationships.rows[0].source, source);
+    assert_eq!(relationships.rows[0].location, "RelativePath[0]");
+    assert_eq!(relationships.rows[0].reason.as_deref(), Some("ambiguous-target"));
+    assert!(relationships.rows[0].target.is_none());
+    let page = html(&report, Lang::En);
+    assert!(page.contains("ambiguous-target"));
+    // Hostile declarations reach only escaped text or embedded JSON, never HTML instructions.
+    assert!(!page.contains(HOSTILE[0]));
+    assert_eq!(page, html(&report, Lang::En));
+    for format in [Format::Markdown, Format::Text] {
+        let text = String::from_utf8(render(&report, format, Lang::En).expect("renders")).expect("text");
+        assert!(text.contains("50 / 55"));
+        assert!(text.contains("Underlying relationship facts were truncated"));
+        assert!(text.contains("ambiguous-target"));
+    }
+    #[cfg(feature = "pdf")]
+    assert!(!render(&report, Format::Pdf, Lang::En).expect("PDF relationship table").is_empty());
+}
+
+#[test]
+fn catalog_index_keeps_all_captured_digest_candidates_and_search_scope() {
+    let mut report = full();
+    report.artifacts[0].facts.insert(
+        "windows.catalog-membership".into(),
+        json!({
+            "entries_omitted": 1,
+            "entries": [{"status": "digest-agreement", "declared_digest": "abcd", "search_complete": false,
+                "observed_match_count": 2, "algorithm": "sha256", "sip_hash_profile": "flat-file", "matches": [
+                    {"path": "first.bin", "sha256": "1111"}, {"path": "second.bin", "sha256": "2222"},
+                ]}],
+        }),
+    );
+    let relationships = aa_report::relationships::collect(&report);
+    assert_eq!(relationships.total, 2);
+    assert!(relationships.source_truncated);
+    assert_eq!(relationships.rows[0].target.as_deref(), Some("first.bin"));
+    assert_eq!(relationships.rows[1].target.as_deref(), Some("second.bin"));
+    assert!(
+        relationships.rows.iter().all(|row| row.status == "digest-agreement"
+            && row.reason.as_deref().is_some_and(|reason| reason.contains("\"search_complete\":false")))
+    );
+}

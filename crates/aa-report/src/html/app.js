@@ -1043,9 +1043,38 @@
             field(w.containers, group(R.coverage.containers_unpacked)),
             field(w.bytes_read, [bytes(R.coverage.bytes_analyzed) + ' ', el('span', { class: 'exact' }, group(R.coverage.bytes_analyzed) + ' ' + t('bytes'))])))),
       el('div', { class: 'guide' }, el('h3', null, w.reading_guide), el('p', null, w.reading_guide_text), el('p', null, t('grouping_guide_html'))),
+      el('div', { class: 'guide', id: 'questions' },
+        el('h3', null, t('questions')), el('p', null, t('questions_note')),
+        V.questions[lang].map(function (question) {
+          return el('div', null,
+            el('h4', null, question.title, el('span', { class: 'count' }, group(question.total))),
+            question.samples.length ? el('ul', null, question.samples.map(function (sample) {
+              return el('li', null, badge('confidence', sample.confidence), ' ', el('button', { type: 'button', class: 'link', onclick: function () { revealFinding(sample.index); } }, sample.text));
+            })) : el('p', { class: 'muted' }, t('question_unknown')));
+        }),
+        el('p', null, t('questions_coverage'), ' ', el('a', { href: '#coverage' }, t('see_coverage')))),
       Object.keys(R.summary).length ? el('details', { class: 'sumfacts', id: 'summary-facts' },
         el('summary', null, t('summary_facts'), el('span', { class: 'count' }, Object.keys(R.summary).length)),
         el('p', { class: 'muted' }, t('summary_facts_note')), factsView(R.summary, 's')) : null);
+  }
+
+  // Every finding above "info", whatever the filters say, grouped like the chapters.
+  function relationshipsSection() {
+    var relationships = V.relationships;
+    return el('section', { id: 'relationships', class: 'block' },
+      el('h2', null, t('relationships'), el('span', { class: 'count' }, group(relationships.total))),
+      el('p', { class: 'muted' }, t('relationships_note')),
+      relationships.source_truncated ? el('p', { class: 'banner' }, t('relationships_cut')) : null,
+      !relationships.rows.length ? el('p', { class: 'none' }, t('relationships_none')) :
+        el('div', { class: 'tablewrap' }, el('table', null,
+          el('thead', null, el('tr', null, ['source_declaration', 'relationship_status', 'supplied_target'].map(function (key) { return el('th', null, t(key)); }))),
+          el('tbody', null, relationships.rows.map(function (row) {
+            return el('tr', null,
+              el('td', null, pathNode(row.source), el('div', null, row.location), el('div', null, row.declaration)),
+              el('td', null, row.status, row.reason ? el('div', null, row.reason) : null),
+              el('td', null, row.target ? pathNode(row.target) : t('unknown'), row.target_sha256 ? el('div', { class: 'path' }, row.target_sha256) : null));
+          })))),
+      el('p', { class: 'muted' }, group(relationships.rows.length) + ' / ' + group(relationships.total)));
   }
 
   // Every finding above "info", whatever the filters say, grouped like the chapters.
@@ -1062,6 +1091,7 @@
 
   function coverageSection() {
     var w = V.words[lang];
+    var cut = R.coverage.truncated || R.coverage.content_lost > 0 || R.coverage.artifacts_analyzed < R.coverage.artifacts_total;
     var codes = [];
     var groups = {};
     R.limitations.forEach(function (l) {
@@ -1071,7 +1101,8 @@
     codes.sort();
     return el('section', { id: 'coverage', class: 'block' },
       el('h2', null, w.coverage, el('span', { class: 'count' }, group(R.limitations.length))),
-      el('p', { class: R.coverage.truncated ? 'banner' : null }, R.coverage.truncated ? w.truncated : w.complete),
+      el('p', { class: cut ? 'banner' : null }, cut ? w.truncated : w.complete),
+      el('dl', { class: 'kv' }, V.coverage_items[lang].map(function (item) { return field(item[0], item[1]); })),
       R.limitations.length ? null : el('p', { class: 'none' }, w.no_limitations),
       codes.map(function (code) {
         var list = groups[' ' + code];
@@ -1106,6 +1137,7 @@
     return el('nav', { class: 'side noprint', id: 'nav', 'aria-label': t('navigation') },
       el('ul', null,
         item('summary', V.words[lang].summary),
+        item('relationships', t('relationships'), V.relationships.total),
         el('li', { class: 'sep', role: 'presentation' }, t('chapters')),
         SECTIONS.map(function (s, i) {
           var entry = item('ch-' + s, [el('span', { class: 'num' }, i + 1), sectionName(s)], bySection[s].length, 'nav-' + s);
@@ -1222,6 +1254,7 @@
         navigation(),
         el('main', { id: 'main', tabindex: '-1' },
           summarySection(),
+          relationshipsSection(),
           el('section', { id: 'findings', class: 'block' },
             el('h2', null, t('findings_title'), el('span', { class: 'count' }, group(R.findings.length))),
             el('div', { class: 'noprint sticky' }, filterBar()),

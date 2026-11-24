@@ -13,8 +13,21 @@ The implementation is being collected in one pull request, in the order defined 
     production page build, 14 unit tests and 28 WebKit/Chromium tests passed on Windows.
   - [ ] Verify packaged Windows ZIPs and Linux x64/ARM64 archives in the release workflow.
   - [ ] Verify final hosted CI and release rehearsal and record supported runtime baselines.
+  - [x] Compare a real signed MSI and installed directory; 127 native checks passed,
+    including independent digests for 107 installed files. See [the record](spikes/windows-baseline.md).
+  - [x] Resolve the url/cookie advisory gate through patched lockfile versions;
+    the hosted advisory/license job passed for dbdfd79. Final-head qualification remains open.
 - [ ] **0.3 — Understand the supplied software:** evidence-linked relationships,
   report orientation and attributable coverage, with ambiguous and unresolved cases.
+  - [x] Add bilingual opening questions that cite existing findings and confidence,
+    with direct HTML navigation to their evidence.
+  - [x] Index supported supplied-file, driver-source, catalog-digest and package-dependency
+    facts, preserving unknown targets, reasons, candidates and truncation.
+  - [x] Distinguish lost content from complete byte reads in every report format and
+    expose artifact-specific versus run-wide limitation counts.
+  - [x] Pass 24 rendering regressions, the multi-file engine-to-renderer test and 32
+    browser checks. English/Chinese PDF pages were visually inspected; see
+    [the acceptance record](spikes/report-understanding.md). Final hosted checks remain open.
 - [ ] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
   profiles, each with real samples, native comparisons and tested limitations.
 - [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,

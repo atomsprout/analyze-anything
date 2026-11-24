@@ -206,11 +206,13 @@ name = "aa-report"
 version = "0.2.0-preview.2"
 dependencies = [
  "aa-core",
+ "aa-engine",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
  "typst",
  "typst-pdf",
+ "zip",
 ]
 
 [[package]]
