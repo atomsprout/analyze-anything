@@ -28,6 +28,7 @@ dependencies = [
  "aa-core",
  "aa-engine",
  "aa-export",
+ "aa-query",
  "aa-report",
  "aa-worker",
  "serde",
@@ -81,6 +82,7 @@ dependencies = [
  "aa-engine",
  "aa-export",
  "aa-interpret",
+ "aa-query",
  "aa-report",
  "aa-worker",
  "clap",
@@ -195,6 +197,7 @@ name = "aa-interpret"
 version = "0.2.0-preview.2"
 dependencies = [
  "aa-core",
+ "aa-query",
  "serde",
  "serde_json",
  "tempfile",
@@ -210,6 +213,16 @@ dependencies = [
  "flate2",
  "serde_json",
  "tar",
+]
+
+[[package]]
+name = "aa-query"
+version = "0.2.0-preview.2"
+dependencies = [
+ "aa-core",
+ "aa-engine",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

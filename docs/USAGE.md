@@ -120,6 +120,7 @@ Analyzing a kept report again retains its validated mappings. See
 ```
 analyze-anything render out/report.json -o out2 --format pdf --lang zh   # other formats from an existing report, without analyzing again
 analyze-anything explain out/report.json <start of a finding id>         # one finding with all its evidence
+analyze-anything query out/report.json evidence --args '{"under":"app"}' # offline JSON queries; no AI required
 analyze-anything verify out/                                             # do the output files match manifest.json?
 analyze-anything inspect <file or folder>                                # only unpack and list the file tree, as JSON on standard output
 analyze-anything selftest                                                # check this build with built-in samples
@@ -134,6 +135,9 @@ analyze-anything mcp out/report.json                                     # serve
 `manifest.json` records the size and SHA-256 of every output file. `verify` points out files that were changed, are missing, or were added. The manifest is not signed: it catches accidental changes, and deliberate ones too if you keep the manifest's own SHA-256 somewhere else.
 
 ## Exit codes
+
+Offline `query` and read-only `mcp` work without the AI feature. See [query filters
+and pagination](QUERY.md) and the [JSON compatibility contract](JSON.md).
 
 | Code | Meaning |
 |---|---|

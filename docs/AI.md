@@ -107,7 +107,7 @@ The report, and only the report. The analyzed files are not sent and cannot be a
 
 Findings about secrets are already redacted in the report, and that is what the model sees. Even so, the report holds file paths, addresses, identifiers and strings read from the analyzed files. **If what you analyze must not be seen by a third party, use the `ollama` engine, or do not use this.** `analyze-anything interpret out/ --dry-run` prints the instructions and the brief and sends nothing.
 
-With the `claude`, `codex` and `command` engines the conversation is run by that program, which talks to whatever service it is signed in to, on that account's terms. This program starts it with only the report's tools allowed: no file access, no commands, no other tool servers. For Claude Code that is `--tools ""`, `--strict-mcp-config` and an allow-list of the three tools; for Codex, its read-only sandbox.
+With the `claude`, `codex` and `command` engines the conversation is run by that program, which talks to whatever service it is signed in to, on that account's terms. This program starts it with only the report's tools allowed: no file access, no commands, no other tool servers. For Claude Code that is `--tools ""`, `--strict-mcp-config` and an allow-list of the seven read-only report tools; for Codex, its read-only sandbox.
 
 ## How it stays honest
 
@@ -134,7 +134,9 @@ A model or service that does not support tools is noticed on the first request, 
 
 ## For agents: the tool server
 
-`analyze-anything mcp out/report.json` serves the same three read-only tools over the Model Context Protocol on standard input and output. Any agent that speaks MCP can use it to read a report on its own initiative, apart from the interpretation described here.
+`analyze-anything mcp out/report.json` serves the same seven read-only report tools over the Model Context Protocol on standard input and output. Any agent that speaks MCP can use it to read a report on its own initiative, apart from the interpretation described here.
+
+The offline queries and this read-only server are available without the AI feature. See [query filters and pagination](QUERY.md).
 
 ## Without it
 

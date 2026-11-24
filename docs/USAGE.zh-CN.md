@@ -101,6 +101,7 @@ analyze-anything ./bundle.zip -o out --windows-source-root bundle.zip/pkg/driver
 ```
 analyze-anything render out/report.json -o out2 --format pdf --lang zh   # 由已有报告写出其他格式，不重新分析
 analyze-anything explain out/report.json <结论 ID 的前几位>               # 一条结论和它的全部证据
+analyze-anything query out/report.json evidence --args '{"under":"app"}' # 离线 JSON 查询，无需 AI
 analyze-anything verify out/                                             # 输出文件是否与 manifest.json 一致
 analyze-anything inspect <文件或文件夹>                                    # 只解包并列出文件树（JSON，写到标准输出）
 analyze-anything selftest                                                # 用内置样本检查这个构建
@@ -124,6 +125,9 @@ analyze-anything mcp out/report.json                                     # 把�
 | 3 | 有结论达到了 `--fail-on` 指定的严重度，或 `diff --fail-on-difference` 发现了差别 |
 
 ## 如何读报告
+
+离线 `query` 和只读 `mcp` 无需 AI 功能。查询筛选与分页见 [QUERY.md](QUERY.md)，
+报告兼容性见 [JSON.md](JSON.md)。
 
 - **置信度。**“已验证”是直接从格式定义的结构里读出，或经密码学校验的；“推导”是由已验证的事实按固定规则算出的；“启发式”是模式匹配，可能误报。
 - **严重度。**“提示”是中性事实，不是问题。低、中、高是每条规则固定的设定，用来排列阅读顺序，不是对输入是否安全的判定。

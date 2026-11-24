@@ -126,6 +126,22 @@ enum Command {
         #[arg(long, default_value = "en")]
         lang: LangArg,
     },
+    /// Query a finished report offline as bounded JSON, without a model or source-file access
+    Query {
+        #[arg(required_unless_present = "list_tools")]
+        report: Option<PathBuf>,
+        /// Query tool: findings, finding, files, file, evidence, limitations or coverage
+        #[arg(required_unless_present = "list_tools")]
+        view: Option<String>,
+        /// JSON arguments (see `query --list-tools` for the schemas)
+        #[arg(long, default_value = "{}")]
+        args: String,
+        /// Print the available query tools and their argument schemas
+        #[arg(long)]
+        list_tools: bool,
+        #[arg(long, default_value = "en")]
+        lang: LangArg,
+    },
     /// Check that the files in an output folder are the ones the run wrote, unchanged
     Verify {
         /// A folder written by `analyze-anything analyze` or `analyze-anything render`
@@ -165,7 +181,6 @@ enum Command {
         choice: Option<AiChoice>,
     },
     /// Serve a report's read-only tools to an AI agent over standard input and output (MCP)
-    #[cfg(feature = "ai")]
     Mcp {
         /// A report.json written by `analyze-anything analyze`
         report: PathBuf,
@@ -746,12 +761,6 @@ mod ai {
         Ok(0)
     }
 
-    pub fn serve(report: &Path, lang: LangArg) -> Result<u8, String> {
-        let report = load(report)?;
-        aa_interpret::mcp::serve(&report, language(lang), std::io::stdin().lock(), std::io::stdout().lock()).map_err(|e| e.to_string())?;
-        Ok(0)
-    }
-
     /// Shows or changes who does the interpretation.
     pub fn choose(choice: Option<AiChoice>) -> Result<u8, String> {
         let path = config_path(&None)?;
@@ -893,14 +902,60 @@ fn run(cli: Cli) -> Result<u8, String> {
         Command::Selftest => return selftest::run(),
         Command::Render { report, output } => (load(&report)?, output, None),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
+        Command::Query { report, view, args, list_tools, lang } => {
+            if list_tools {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(
+                        &aa_query::tools::specs()
+                            .into_iter()
+                            .map(|spec| serde_json::json!({"name":spec.name,"description":spec.description,"inputSchema":spec.schema}))
+                            .collect::<Vec<_>>()
+                    )
+                    .map_err(|error| error.to_string())?
+                );
+                return Ok(0);
+            }
+            let view = view.as_deref().ok_or("query needs a view")?;
+            let report = report.as_deref().ok_or("query needs a report")?;
+            let name = match view {
+                "findings" => "list_findings",
+                "finding" => "get_finding",
+                "files" => "list_files",
+                "file" => "get_file",
+                "evidence" => "list_evidence",
+                "limitations" => "list_limitations",
+                "coverage" => "get_coverage",
+                other => other,
+            };
+            if args.len() > 64 * 1024 {
+                return Err("query arguments exceed 64 KiB".into());
+            }
+            let input = serde_json::from_str(&args).map_err(|error| format!("query arguments are not JSON: {error}"))?;
+            let saved = load(report)?;
+            let language = match lang {
+                LangArg::En => aa_query::Language::En,
+                LangArg::Zh => aa_query::Language::Zh,
+            };
+            let answer = aa_query::tools::Tools::new(&saved, language).call(name, &input)?;
+            println!("{}", serde_json::to_string_pretty(&answer).map_err(|error| error.to_string())?);
+            return Ok(0);
+        }
         Command::Verify { dir } => return verify(&dir),
         Command::Deep { choice } => return deep::choose(choice),
         #[cfg(feature = "ai")]
         Command::Interpret(args) => return ai::interpret(args),
         #[cfg(feature = "ai")]
         Command::Ai { choice } => return ai::choose(choice),
-        #[cfg(feature = "ai")]
-        Command::Mcp { report, lang } => return ai::serve(&report, lang),
+        Command::Mcp { report, lang } => {
+            let language = match lang {
+                LangArg::En => aa_query::Language::En,
+                LangArg::Zh => aa_query::Language::Zh,
+            };
+            aa_query::mcp::serve(&load(&report)?, language, std::io::stdin().lock(), std::io::stdout().lock())
+                .map_err(|error| error.to_string())?;
+            return Ok(0);
+        }
         Command::Diff { before, after, json, lang, fail_on_difference } => {
             let difference = aa_export::diff::diff(&load(&before)?, &load(&after)?);
             if json {

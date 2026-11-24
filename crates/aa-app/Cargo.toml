@@ -16,6 +16,7 @@ pdf = ["aa-report/pdf"]
 
 [dependencies]
 aa-core.workspace = true
+aa-query.workspace = true
 aa-engine.workspace = true
 aa-export.workspace = true
 aa-worker.workspace = true

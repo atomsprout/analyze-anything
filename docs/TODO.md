@@ -34,17 +34,24 @@ The implementation is being collected in one pull request, in the order defined 
     browser checks. English/Chinese PDF pages were visually inspected; see
     [the acceptance record](spikes/report-understanding.md). Hosted CI passed at 2caf6d4;
     the final combined head will be checked again after the remaining milestones.
-- [ ] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
+- [x] **0.4 — Read more contents:** bounded .NET single-file, PyInstaller, deb and rpm
   profiles, each with real samples, native comparisons and tested limitations.
+  Hosted CI 45374182266 passed all three core and desktop platforms and the license
+  gate at 52bb060; the final combined head remains subject to regression checks.
   - [x] Add bounded .NET single-file and PyInstaller CArchive readers, with original
     metadata evidence, native fixtures and published WinSW/yt-dlp comparisons. See
     [the profiles](spikes/executable-bundles.md).
-  - [ ] Implement and qualify deb/rpm metadata, payloads and declared installation scripts.
-    The readers and 17 local tests pass; native run 45373345565 passed 112 checks.
-    The subsequent bounded script-text and trigger presentation awaits its native
-    check. See [the supported profiles](spikes/linux-packages.md).
+  - [x] Implement and qualify deb/rpm metadata, payloads and declared installation scripts.
+    The readers and 17 local tests pass; native run 45374169192 passed 125 checks,
+    including source text and trigger declarations. See [the supported profiles](spikes/linux-packages.md).
 - [ ] **0.5 — Find and reuse answers:** offline report queries, report navigation,
   JSON compatibility and explicit agent analysis requests.
+  - [x] Share offline bounded finding/evidence/file/coverage queries between the CLI,
+    optional interpretation and read-only MCP, including the no-AI build. See [queries](QUERY.md).
+  - [x] Check the schema header before parsing a report body, with explicit unsupported
+    versions and tests of same-layout optional defaults. See [the JSON contract](JSON.md).
+  - [ ] Complete large-report navigation and its browser checks.
+  - [ ] Add and verify explicit agent analysis requests separately from finished-report queries.
 
 ## Release qualification after 0.2.0-preview.1
 

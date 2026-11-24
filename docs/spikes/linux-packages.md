@@ -69,8 +69,10 @@ at 425b6b6 then passed all 112 checks with dpkg-deb 1.22.6 and RPM 4.18.2.
 [The native record](linux-packages-native.json) binds every result to its input hash.
 It covers the four pinned packages plus two freshly built script packages. A
 cross-platform engine test checks these native identities, tag values and regular
-member digests. Bounded script-text display was added after that run; its explicit
-native text check and the final combined-head qualification remain pending.
+member digests. Run [45374169192](https://github.com/atomsprout/analyze-anything/actions/runs/45374169192)
+at 52bb060 then passed all 125 checks, including bounded script text and fresh
+Debian/RPM trigger declarations. The native record now contains that run. Final
+combined-head workspace and hosted qualification remain required.
 
 ```
 python3 tools/native-compare/linux-package-fixtures.py out/native-linux

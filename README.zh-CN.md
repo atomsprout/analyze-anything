@@ -186,6 +186,7 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 除本文件和使用说明外，文档都是英文。
 
 - [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md) — 命令行的完整说明
+- [docs/QUERY.md](docs/QUERY.md)、[docs/JSON.md](docs/JSON.md) — 离线查询、分页与报告兼容性
 - [docs/DEEP.md](docs/DEEP.md) — 可选的深入分析：让 Ghidra 或 Hopper 指出哪段代码做了什么
 - [docs/AI.md](docs/AI.md) — 可选的 AI 解读
 - [docs/DESKTOP.md](docs/DESKTOP.md) — 桌面版：结构、开发、测试、发布

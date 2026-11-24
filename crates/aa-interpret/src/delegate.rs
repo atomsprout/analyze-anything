@@ -66,7 +66,7 @@ pub fn run(backend: &Backend, job: &Job, runner: &dyn Runner, scratch: &Path) ->
         Ok(path)
     };
     let how = format!(
-        "Use the tools of the `{SERVER}` server (list_findings, get_finding, list_files) to look things up in the report. \
+        "Use the read-only tools of the `{SERVER}` server to look up findings, evidence, files and coverage in the report. \
 Use no other tool, read no file and run no command: everything you may use is in that report."
     );
     let server = json!({ "mcpServers": { SERVER: { "command": job.program.display().to_string(), "args": server_arguments(job) } } });

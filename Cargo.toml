@@ -14,6 +14,7 @@ repository = "https://github.com/atomsprout/analyze-anything"
 
 [workspace.dependencies]
 aa-core = { path = "crates/aa-core" }
+aa-query = { path = "crates/aa-query" }
 aa-engine = { path = "crates/aa-engine" }
 aa-unpack = { path = "crates/aa-unpack" }
 aa-content = { path = "crates/aa-content" }

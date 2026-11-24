@@ -1,5 +1,5 @@
 {
-  "commit": "425b6b6",
+  "commit": "52bb060",
   "records": [
     {
       "checks": [
@@ -24,6 +24,10 @@
           "matches": true
         },
         {
+          "check": "installation declaration text: native-script.deb/control.tar.zst/control.tar/postinst",
+          "matches": true
+        },
+        {
           "check": "native TAR metadata: control.tar.zst",
           "matches": true
         },
@@ -37,6 +41,10 @@
         },
         {
           "check": "maintainer script declarations",
+          "matches": true
+        },
+        {
+          "check": "trigger declarations",
           "matches": true
         }
       ],
@@ -184,6 +192,10 @@
         },
         {
           "check": "maintainer script declarations",
+          "matches": true
+        },
+        {
+          "check": "trigger declarations",
           "matches": true
         }
       ],
@@ -920,6 +932,18 @@
           "matches": true
         },
         {
+          "check": "installation declaration text: native-script.deb/control.tar.zst/control.tar/postinst",
+          "matches": true
+        },
+        {
+          "check": "member SHA-256: native-script.deb/control.tar.zst/control.tar/triggers",
+          "matches": true
+        },
+        {
+          "check": "installation declaration text: native-script.deb/control.tar.zst/control.tar/triggers",
+          "matches": true
+        },
+        {
           "check": "native TAR metadata: control.tar.zst",
           "matches": true
         },
@@ -934,6 +958,10 @@
         {
           "check": "maintainer script declarations",
           "matches": true
+        },
+        {
+          "check": "trigger declarations",
+          "matches": true
         }
       ],
       "limitations": [
@@ -944,6 +972,10 @@
         {
           "artifact": "native-script.deb/control.tar.zst/control.tar/postinst",
           "code": "deb.script-semantics"
+        },
+        {
+          "artifact": "native-script.deb/control.tar.zst/control.tar/triggers",
+          "code": "deb.trigger-semantics"
         }
       ],
       "native": {
@@ -972,6 +1004,14 @@
                 "path": "./postinst",
                 "sha256": "664dafcaaf2450efc2c75ea870b0caaac50c70fa832d70f26263b357bd371ecc",
                 "size": 50,
+                "type": 48
+              },
+              {
+                "link_target": null,
+                "mode": 420,
+                "path": "./triggers",
+                "sha256": "e383429895893e3a219fa681f6b5730f2f886b1e6a17d9f258a24efdd6b9428b",
+                "size": 39,
                 "type": 48
               }
             ],
@@ -1025,7 +1065,7 @@
       },
       "pinned_fixture": false,
       "sample": "native-script.deb",
-      "sha256": "9140ce59edeacd476693e4cab671fd7e61b3802a9b0bfeb789477212d9099487",
+      "sha256": "24f8178b1874d5e04f229da5fdeb65613614b9e8f0992e287bb2bb7ec6058b77",
       "source": "tools/native-compare/linux-package-fixtures.py"
     },
     {
@@ -1095,11 +1135,35 @@
           "matches": true
         },
         {
+          "check": "native header tag: 1065",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1066",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1067",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1068",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1069",
+          "matches": true
+        },
+        {
           "check": "native header tag: 1086",
           "matches": true
         },
         {
           "check": "native header tag: 1087",
+          "matches": true
+        },
+        {
+          "check": "native header tag: 1092",
           "matches": true
         },
         {
@@ -1205,6 +1269,7 @@
             "tag": 1048,
             "value": [
               0,
+              256,
               1280,
               2304,
               16777226,
@@ -1215,6 +1280,7 @@
           {
             "tag": 1049,
             "value": [
+              "/bin/sh",
               "/bin/sh",
               "/bin/sh",
               "/bin/sh",
@@ -1229,9 +1295,40 @@
               "",
               "",
               "",
+              "",
               "3.0.4-1",
               "4.6.0-1",
               "4.0-1"
+            ]
+          },
+          {
+            "tag": 1065,
+            "value": [
+              "printf 'trigger not executed by these checks\\n'"
+            ]
+          },
+          {
+            "tag": 1066,
+            "value": [
+              "aa-native-fixture"
+            ]
+          },
+          {
+            "tag": 1067,
+            "value": [
+              ""
+            ]
+          },
+          {
+            "tag": 1068,
+            "value": [
+              65536
+            ]
+          },
+          {
+            "tag": 1069,
+            "value": [
+              0
             ]
           },
           {
@@ -1241,6 +1338,12 @@
           {
             "tag": 1087,
             "value": "/bin/sh"
+          },
+          {
+            "tag": 1092,
+            "value": [
+              "/bin/sh"
+            ]
           },
           {
             "tag": 1112,
@@ -1272,9 +1375,9 @@
       },
       "pinned_fixture": false,
       "sample": "native-script.rpm",
-      "sha256": "43ce1b081236e76eb25410b230aa34961780335d6049c52fa6679a846be0e756",
+      "sha256": "41a6ad494354bde14a16fcf51166f9f75499ca484560ebcd48e4ec7346cc25f2",
       "source": "tools/native-compare/linux-package-fixtures.py"
     }
   ],
-  "run": "https://github.com/atomsprout/analyze-anything/actions/runs/45373345565"
+  "run": "https://github.com/atomsprout/analyze-anything/actions/runs/45374169192"
 }

@@ -182,6 +182,7 @@ More in [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 ## Documentation
 
 - [docs/USAGE.md](docs/USAGE.md) — the command line in full ([中文](docs/USAGE.zh-CN.md))
+- [docs/QUERY.md](docs/QUERY.md), [docs/JSON.md](docs/JSON.md) — offline queries, pagination and report compatibility
 - [docs/DEEP.md](docs/DEEP.md) — the optional deep level: asking Ghidra or Hopper which code does what
 - [docs/AI.md](docs/AI.md) — the optional AI interpretation
 - [docs/DESKTOP.md](docs/DESKTOP.md) — the desktop app: structure, development, testing, release

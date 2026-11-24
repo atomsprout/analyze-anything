@@ -17,6 +17,7 @@ A static analyzer for software artifacts, in Rust. It reads a file or folder and
 | Path | What it holds |
 |---|---|
 | `crates/aa-core` | The report's data model and the plugin contract (`Analyzer`, `Unpacker`). Short; read it first |
+| `crates/aa-query` | Offline bounded report queries and the read-only tool protocol, shared by CLI and optional AI |
 | `crates/aa-engine` | Builds the tree of files, runs unpackers and analyzers, enforces limits |
 | `crates/aa-unpack` | Archives: zip, tar, 7z and single compressed streams |
 | `crates/aa-content` | Any file: strings, URLs, likely credentials, entropy. The smallest complete analyzer |
