@@ -293,6 +293,7 @@ fn truncate(text: &str, max: usize) -> String {
 
 /// Emits the `windows.installer` fact and the findings that follow from `installer`.
 pub fn report(file: &Artifact, installer: &Installer, out: &mut Output) {
+    out.limitation("windows.installer-semantics-unresolved", Some(file), None);
     // tag -> evidence (source, value)
     let mut tagged: std::collections::BTreeMap<Tag, Vec<(String, Value)>> = std::collections::BTreeMap::new();
     let mut registry_json = Vec::new();

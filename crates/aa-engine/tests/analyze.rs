@@ -18,6 +18,32 @@ fn limits(change: impl FnOnce(&mut Limits)) -> Options {
 }
 
 #[test]
+fn embedded_apple_component_cites_the_child_identity_instead_of_a_directory() {
+    let dir = tempfile::tempdir().expect("supplied application");
+    let child = dir.path().join("Example.app/PlugIns/Share.appex");
+    std::fs::create_dir_all(&child).expect("embedded extension folder");
+    let plist = |id: &str, kind: &str| {
+        format!(
+            "<?xml version=\"1.0\"?><plist version=\"1.0\"><dict>\
+         <key>CFBundleIdentifier</key><string>{id}</string>\
+         <key>CFBundlePackageType</key><string>{kind}</string>\
+         <key>CFBundleShortVersionString</key><string>1.2</string>\
+         </dict></plist>"
+        )
+    };
+    std::fs::write(dir.path().join("Example.app/Info.plist"), plist("example.app", "APPL")).expect("app identity");
+    std::fs::write(child.join("Info.plist"), plist("example.app.share", "XPC!")).expect("extension identity");
+    let report = run(dir.path(), &Options::default());
+    let rows = report.summary["composition.components"]["components"].as_array().expect("embedded component");
+    assert_eq!(rows[0]["source"], "Example.app/PlugIns/Share.appex/Info.plist");
+    assert_eq!(rows[0]["kind"], "application");
+    let finding = report.findings.iter().find(|finding| finding.rule == "composition.components").expect("component summary");
+    assert_eq!(finding.evidence.len(), 1);
+    assert_eq!(finding.evidence[0].artifact, "Example.app/PlugIns/Share.appex/Info.plist");
+    assert!(report.artifacts.iter().any(|artifact| artifact.path == finding.evidence[0].artifact));
+}
+
+#[test]
 fn winget_published_manifest_set_projects_installer_metadata_and_locales() {
     let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aa-windows/tests/data/winget-7zip-24.09");
     let report = run(&folder, &Options::default());

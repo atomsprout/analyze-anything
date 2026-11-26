@@ -1,27 +1,75 @@
 # Roadmap
 
-The latest stable release is [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1) for Apple silicon Macs. [v0.2.0-preview.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.1) adds unsigned CLI archives for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. The release workflow ran tests and self-checks for all four targets. The downloaded Windows ZIP also passed its self-check on the development machine.
+The latest signed stable release is [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1) for Apple silicon Macs. The published [v0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable and offline NSIS packages. Its release tests, packaged self-tests and named Linux runtime checks passed. All 11 attachment digests were checked; the extracted Windows CLI also passed the query/agent workflow with an aged worker root.
 
-The Windows x64 desktop app has passed local W10 acceptance, including offline NSIS installation. Hosted Windows and Ubuntu 24.04 x64 Linux desktop checks have also passed. The **0.2–0.5 implementation milestones have passed their scoped acceptance checks in [PR #6](https://github.com/atomsprout/analyze-anything/pull/6)**, including packaged CLI and Windows desktop builds. Those artifacts have not been published as new releases. The next work is broader format profiles and formal cross-platform delivery. The [delivery plan](PLAN-VERSIONS.md) records the four milestones; the [Windows plan](PLAN-WINDOWS.md) retains format-specific scope and acceptance gates. [TODO.md](TODO.md) tracks remaining work, and [LIMITATIONS.md](LIMITATIONS.md) records supported profiles and verification gaps.
+The previous **0.2–0.5 labels were implementation acceptance groups**, delivered together through [PR #6](https://github.com/atomsprout/analyze-anything/pull/6), with the worker-root correction in [PR #7](https://github.com/atomsprout/analyze-anything/pull/7). They are completed history, not four future releases. [PLAN-VERSIONS.md](PLAN-VERSIONS.md) retains that acceptance record; [TODO.md](TODO.md) tracks open work and [LIMITATIONS.md](LIMITATIONS.md) records its tested boundaries.
 
-## Product milestones
+## Product direction
 
 The purpose of a report is to explain an unfamiliar supplied artifact: what it is, what it
 contains, what capabilities and actions it declares, how its parts relate, and what could
-not be established. The following milestones build that workflow in order. They are
-acceptance groups implemented in the current branch, not claims that those versions have shipped.
+not be established. Existing opening questions, relationship indexes and offline queries
+already support this. The next work should complete useful explanations and evidence
+workflows around them, with a small acceptance set for each delivery.
 
-| Milestone | User outcome | Main work |
-|---|---|---|
-| 0.2 — Reliable use | Obtain a working build and understand incomplete analysis | Cross-platform delivery, packaged-artifact verification, cancellation, resource limits and accurate platform documentation |
-| 0.3 — Understand the supplied software | Read a coherent explanation with traceable details | Entry-point, payload, component and integrity relationships; report orientation and artifact-specific coverage |
-| 0.4 — Read more contents | Inspect software currently hidden inside unsupported packaging | Bounded .NET single-file, PyInstaller, deb and rpm profiles that reuse the artifact tree |
-| 0.5 — Find and reuse answers | Retrieve evidence efficiently from a finished report | Offline structured queries, report navigation, JSON compatibility and explicit agent analysis workflows |
+## Delivery order from preview.2
 
-Report readability, explicit limitations and real-sample verification accompany every
-milestone. New formats are chosen
-for the workflow they complete, with independent completion gates for each profile. See
-[PLAN-VERSIONS.md](PLAN-VERSIONS.md) for acceptance requirements.
+| Order | User outcome | Bounded scope | Acceptance |
+|---|---|---|---|
+| 1. Complete the current workflow — implemented and reviewed | Read a useful report and reliably finish or stop an analysis | Five representative real-input scenarios, source corrections, packaged CLI/agent automation and delivery documentation | [Recorded Windows acceptance](spikes/report-workflow.md), with evidence or explicit unknowns for each reading question; lifecycle and partial-result checks are in CI/release gates |
+| 2. Explain installation and entry declarations | Follow a declared operation to its condition, source and supplied target | Start with MSI action sequence/condition context and supported Binary-table payload links; connect existing installer and entry-point facts | A report preserves action phase, order, literal conditions, target status and original table evidence without asserting execution |
+| 3. Reopen the evidence | Revisit selected raw evidence after the original input is unavailable | Optional bounded evidence fragments for saved reports/history, with hashes, explicit omissions and export controls | A reopened report can verify and display the retained byte ranges; limits and unavailable material remain explicit |
+| 4. Read an existing code blind spot | Inspect more of code already found inside supported bundles | Scope one .NET IL or Python bytecode/PYZ profile after a feasibility check and representative samples | Bounded static references/constants retain source locations, supported versions and tested gaps; no runtime loading or evaluation |
+
+These are delivery priorities. Assign release numbers after each scope is fixed. A stable
+0.2 release needs recorded acceptance for the packages and platform claims it actually
+ships; signing and notarization have their own credential and platform gates.
+
+### First work package: real reports and packaged workflows
+
+The scoped review and Windows process checks are complete; see
+[the inputs, reading answers, corrections and reproducible gates](spikes/report-workflow.md).
+The acceptance definition below is retained for subsequent deliveries. The next feature
+increment is MSI action context, informed by those cases.
+
+Use five scenarios spanning an installer with supplied payloads, an installed application
+folder, an Android or Apple application, a Linux package and a modern executable bundle.
+Choose inputs from licensed fixtures or explicitly sourced real samples. Record the input
+hashes and expected observations; native references check the same sample where available.
+
+Read each report through using the same questions:
+
+1. What kind of software or package is this, and what establishes its identity?
+2. Which entry points and components were established?
+3. Which permissions, operations and network references are declared or observed in bytes?
+4. Where is the evidence, and what is its confidence or resolution status?
+5. Which contents or semantics remain unread or unresolved?
+
+Fix missing context, difficult evidence navigation and understated unknowns found in those
+cases. Existing summaries and queries should be reused. Turn the actual release-package
+analysis, query and agent smoke into a repeatable gate, including private fresh/aged scratch
+roots, cancellation/EOF cleanup and explicit partial results. Update installation and
+qualification wording to distinguish published packages from earlier candidate checks.
+
+Exit with a recorded report review and automated packaged-workflow checks. Use those
+results to choose the next increment. The first planned feature increment is MSI action
+context; Burn, patch/transform semantics and broad script control-flow analysis have
+separate feasibility gates in [PLAN-WINDOWS.md](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
+
+### Follow-up boundaries
+
+Installation conditions depending on host state or user choices remain literal or
+unresolved. Targets are associated only within explicitly supplied inputs. A command
+declaration, a matched file and evidence of an API reference retain distinct meanings.
+
+Saved reports already retain findings and their textual evidence, and offline queries
+already work without the original input. The evidence-retention work adds selected raw
+bytes/hex for history and portable review. It must define size caps, secret/redaction
+handling and user selection before storing fragments; AI tools remain report-only.
+
+Code inspection must use bounded byte readers or the existing explicitly requested deep
+level. Managed assemblies and Python objects are never loaded into their runtimes. A code
+reference does not establish a runtime call or a complete control-flow explanation.
 
 ## Available in the implementation
 
@@ -59,6 +107,9 @@ The portable and NSIS-installed builds passed real-window WebView2 checks with b
 | Existing coverage gaps | Obtain representative packed APK, XAPK, encrypted DMG and Inno Setup 6.4 samples. Investigate the Xcode pkg CMS issue and the partially read device-support DMGs. |
 
 ## Later input formats and workflows
+
+Select from this backlog when the report reviews establish a recurring blind spot. Each
+new format retains the independent completion gates in [ANALYZERS.md](ANALYZERS.md).
 
 - **Executable bundles and installers.** Broaden the documented .NET single-file and PyInstaller profiles (W8), then address MSI action conditions and explicitly supplied payloads, and Burn (W9).
 - **Linux and language packages.** Broaden the initial deb/rpm profiles and add AppImage, Flatpak, snap, Python wheels, npm tarballs and Java archives. Reuse the component inventory for dependency and package metadata.

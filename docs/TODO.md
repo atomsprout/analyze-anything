@@ -2,12 +2,45 @@
 
 Phase one (the command line) and the macOS desktop app of phase two (D0–D5) are done, and so is the optional AI interpretation of phase three. This file lists what is not finished, item by item; the direction and the order of the larger work are in [ROADMAP.md](ROADMAP.md). Known limits of what the program does are in [LIMITATIONS.md](LIMITATIONS.md); the desktop app is described in [DESKTOP.md](DESKTOP.md).
 
-## Delivery milestones: 0.2 through 0.5
+## Next delivery cycle
+
+Current baseline: [v0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2)
+is published, including the worker-root fix from PR #7. The delivery order and acceptance
+questions are in [ROADMAP.md](ROADMAP.md#delivery-order-from-preview2).
+
+- [x] **First: complete the current report workflow.** [Review and reproduction](spikes/report-workflow.md),
+  with hash-bound reading/native/process records. Windows local acceptance passed;
+  hosted workflow results retain their own platform/revision scope.
+  - Select five representative real-input scenarios and record hashes, sources/licences,
+    expected observations and native references where available.
+  - Read each report through for identity, entries/components, declared operations,
+    traceable evidence and explicit unknowns; fix the concrete reading gaps found.
+  - Automate the extracted-package analysis/query/agent smoke used for preview.2,
+    including private fresh/aged scratch roots, cancellation/EOF and partial results.
+    Keep the existing engine marker/junction regressions and process tests.
+  - Synchronize README translations, installation guidance and platform/format limits
+    with published preview.2 and the exact qualification records.
+- [ ] **Then: MSI action context and supplied targets.** Extend the existing CustomAction
+  and LaunchCondition inventory with supported action sequences, phase/order, literal
+  conditions and Binary-table payload links. Carry original row evidence and unresolved
+  states into reports and queries. Validate against read-only native table inspection.
+  Burn, external-payload profiles and MSP/MST semantics retain separate W9 gates.
+- [ ] **Then: optional retained byte evidence.** Define bounded selected fragments,
+  manifest/hash binding, omissions and secret/redaction handling before implementing
+  saved-report/history hex views without the original input. Existing textual evidence
+  and report-only queries remain the baseline.
+- [ ] **Later: inspect a selected code blind spot.** Use real report cases to choose one
+  bounded .NET IL or Python bytecode/PYZ profile. Establish static reference/constant
+  evidence and version limits without runtime loading, deserialization through a language
+  runtime, or evaluation.
+
+## Completed delivery groups: 0.2 through 0.5
 
 The implementation and scoped acceptance evidence are collected in
 [PR #6](https://github.com/atomsprout/analyze-anything/pull/6), in the order defined in
-[PLAN-VERSIONS.md](PLAN-VERSIONS.md). These completed milestones do not publish releases
-or close the broader Windows and ecosystem projects below.
+[PLAN-VERSIONS.md](PLAN-VERSIONS.md). Their scoped implementation shipped together in
+preview.2, with the additional worker-root correction in PR #7. These are historical
+acceptance groups; the broader Windows and ecosystem projects below remain open.
 
 - [x] **0.2 — Reliable use:** hosted platform checks, packaged CLI qualification,
   cancellation and limit semantics, and current installation documentation.
@@ -62,7 +95,7 @@ or close the broader Windows and ecosystem projects below.
     process tests passed, as did hosted Unix path checks and combined CI 45382506185.
     CI 45386227144 passed again after fixing cancellation during deadline shutdown.
 
-## Release qualification after 0.2.0-preview.1
+## Earlier release qualification after 0.2.0-preview.1
 
 The CLI preview shipped for Windows x64, Linux x64 and ARM64, and Apple silicon macOS. Local Windows x64 desktop acceptance (W10) passed. [ROADMAP.md](ROADMAP.md) gives the delivery order and [PLAN-WINDOWS.md](PLAN-WINDOWS.md) records the scope and acceptance criteria.
 
@@ -93,7 +126,7 @@ The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md
   The initial content layer reads bounded block-map declarations and checks SHA-256/384/512 blocks and the checked 2021 whole-file-hash extension against captured uncompressed bytes. Three SDK-built profiles and an independent Microsoft test APPX are compared with native AppxPackaging declarations and byte hashing across 23 original/tampered/missing/duplicate cases. ZIP duplicate names now mark enumeration incomplete. A separate bounded ZIP32/ZIP64 reader checks original record correspondence, raw block-map source binding and physical local-header/uncompressed sizes, with SDK unpacking and eight independent header comparison cases. Physical stored/independently decodable DEFLATE block extents now bind to captured targets, with independent hashes, mapped CRCs, empty final streams and final-segment terminators. Initial SHA-256 SIP/P7X declarations, CMS mathematics and five original package-region/footprint hashes now have CryptoAPI and independent comparison cases on one pinned Microsoft APPX. Manifest namespace/path/cardinality projections now preserve ambiguity and literal dependency/device-family/resource declarations, with four native references and five variants. A qualified publisher-to-verified-signer comparison now keeps signed manifest coverage separate, with native subject/literal comparison probes and controlled package cases; see [publisher scope](spikes/windows-msix-publisher.md). Base bundle declarations now bind stored OPC packages, original offsets/sizes, inner identities/architecture/type and separate outer signed-byte coverage, with three native references and six independent negatives; see [bundle scope](spikes/windows-msix-bundles.md). Bundle resource dimensions and 2018 target-device declarations now compare against captured inner manifests, with four native references and fourteen variants. Broader publisher encodings/certificate policy, full manifest schema/extension coverage, wider signature/bundle/resource profiles, dependency/appinstaller relationships and wider naming/compression/ZIP profiles remain open; see [the MSIX record](spikes/windows-msix-integrity.md) and [manifest record](spikes/windows-msix-manifest.md). W6 is not complete.
 - [ ] **W7 — Package semantics**: NuGet, VSIX and WinGet metadata and supported dependency relationships in the existing component inventory.
   NuGet, VSIX 2.0 and WinGet 1.x now feed the shared component inventory. NuGet links supported exact stable dependencies and VSIX links qualifying exact nested dependencies. WinGet associates supplied manifest sets, links installer declarations to supplied bytes by SHA-256 and records supported package dependency candidates. See [NuGet](spikes/windows-nuget.md), [VSIX](spikes/windows-vsix.md) and [WinGet](spikes/windows-winget.md) for reference comparisons. Broader version matching and additional package and manifest profiles remain open.
-- [ ] **W8 — Modern bundles**: supported .NET single-file and PyInstaller contents, beyond the existing metadata and marker recognition.
+- [ ] **W8 — Modern bundles**: initial bounded .NET single-file and PyInstaller CArchive contents shipped in preview.2. Broader host/layout profiles and opaque code contents remain open; see [the qualified profiles](spikes/executable-bundles.md).
 - [ ] **W9 — Installer relationships**: MSI action conditions and ordering, explicitly supplied external payloads, and a separate Burn feasibility check.
 - [ ] **W11 — Documents**: staged Office container, macro-source and embedded-object analysis, with explicit limits for unread content.
 - [ ] **W12 — Images**: separate feasibility and implementation gates for ISO, WIM and virtual disks, without mounting them.

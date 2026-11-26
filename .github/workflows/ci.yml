@@ -19,6 +19,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       # rust-toolchain.toml names the version; rustup installs it on first use.
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
@@ -27,6 +30,14 @@ jobs:
       - run: cargo test
       # The command line without its optional parts must still build.
       - run: cargo build -p aa-cli --no-default-features
+      - name: Check the executable analysis/query/agent workflow without AI
+        run: python tools/release/check-workflow.py "target/debug/analyze-anything${{ runner.os == 'Windows' && '.exe' || '' }}" --record executable-workflow.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: executable-workflow-${{ runner.os }}
+          path: executable-workflow.json
+          if-no-files-found: warn
 
   # The desktop app is outside the workspace's default members.
   desktop:

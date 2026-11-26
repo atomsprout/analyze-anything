@@ -1,5 +1,11 @@
 # Delivery qualification: 0.2 through 0.5
 
+The candidate observations below are historical. The published preview.2 packages,
+their exact qualification boundaries and the subsequent real-report/process review
+are recorded in [LIMITATIONS.md](../LIMITATIONS.md#published-preview-and-report-workflow)
+and [report-workflow.md](report-workflow.md). An earlier candidate check does not qualify
+a different published installer.
+
 ## Earlier delivery baseline
 
 [CI run 45360964209](https://github.com/atomsprout/analyze-anything/actions/runs/45360964209)

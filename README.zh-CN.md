@@ -20,7 +20,7 @@ analyze-anything App.ipa
 有两种用法，共用同一套引擎，同一个输入得到相同的报告：
 
 - **命令行** `analyze-anything`（短名字 `aaaa`）；
-- macOS 的**桌面版**：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史；设置好之后，还可以让模型在报告旁边解读它。
+- macOS 的**桌面版**，另有 Windows x64 未签名预览版：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史；设置好之后，还可以让模型在报告旁边解读它。
 
 报告默认是英文，加 `--lang zh` 写中文。
 
@@ -52,14 +52,14 @@ brew install --cask atomsprout/tap/analyze-anything-desktop   # 桌面版
 
 两者互不依赖。都用 Developer ID 证书签名并经过 Apple 公证。
 
-其他平台从源码构建命令行（需要 Rust 1.90 或更新版本）：
+从源码构建命令行（需要 Rust 1.90 或更新版本）：
 
 ```
 cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-签名的稳定版面向 Apple 芯片 Mac。[GitHub releases](https://github.com/atomsprout/analyze-anything/releases) 另有 Windows x64 和 Linux x64/ARM64 的未签名 CLI 预览版。Windows x64 桌面版已通过本地验收，包括 Windows 10 离线安装；托管环境的 Windows 与 Ubuntu 24.04 x64 Linux 桌面检查也已通过。已发布的 preview.1 Windows CLI 依赖 Visual C++ 运行库；静态链接的 preview.2 候选已通过干净系统自测。具体范围见[平台验收记录](docs/LIMITATIONS.md)。
+签名稳定版是面向 Apple 芯片 Mac 的 0.1.1。已发布的 [0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2) 提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。preview.2 Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
 
 ## 使用
 
@@ -160,7 +160,7 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-稳定版是 0.1.1；源码正在准备 0.2.0-preview.2。今天任何文件或文件夹都能得到一份报告，各格式有不同的分析深度和明确的局限。macOS 有签名发布版，CLI 有 Windows 和 Linux 预览版，Windows 桌面版已做本地验收。平台验收和更广的格式覆盖仍在推进。
+签名稳定版是 0.1.1；未签名的 0.2.0-preview.2 已发布。今天任何文件或文件夹都能得到一份报告，各格式有不同的分析深度和明确的局限。下一阶段检查完整的真实报告使用流程，以及发布包的分析、查询和 agent 行为；验收标准见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
 “Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
 

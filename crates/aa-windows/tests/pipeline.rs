@@ -1186,6 +1186,9 @@ fn imports_are_grouped_into_capabilities() {
 #[test]
 fn dotnet_metadata_matches_monodis() {
     let run = run_one("dotnet.exe");
+    assert!(
+        run.out.limitations.iter().any(|gap| gap.code == "windows.dotnet-code-unread" && gap.artifact.as_deref() == Some("dotnet.exe"))
+    );
     let net = run.fact("dotnet.exe", "windows.dotnet");
     let reference = reference("dotnet.ref.txt");
     assert_eq!(net["assembly"]["name"].as_str(), after(&reference, "Name:").first().copied());
@@ -1337,6 +1340,12 @@ fn msi_table(reference: &str, table: &str) -> Vec<BTreeMap<String, String>> {
 #[test]
 fn msi_tables_and_files_match_msitools() {
     let run = run_one("fixture.msi");
+    assert!(
+        run.out
+            .limitations
+            .iter()
+            .any(|gap| gap.code == "windows.installer-semantics-unresolved" && gap.artifact.as_deref() == Some("fixture.msi"))
+    );
     assert_eq!(run.unpacked.get("fixture.msi").map(String::as_str), Some("msi"));
     let reference = reference("fixture.msi.ref.txt");
     let installer = run.fact("fixture.msi", "windows.installer");
