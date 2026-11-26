@@ -12,6 +12,27 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 - The AI interpretation checks only that the findings each statement cites exist in the report. It does not check that the model understood them, or that it drew no conclusion of its own from several of them. Each of its engines has produced a full answer for real at least once; [AI.md](AI.md) says exactly what was tried and with which model.
 - It gives no "safe / unsafe" verdict and no single score; it only lists findings and their severity.
 
+## Published preview and report workflow
+
+[v0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2)
+is a published unsigned prerelease, not the signed stable/Homebrew release. It has four
+CLI archives (Windows x64, Linux x64/ARM64, macOS ARM64) and Windows x64 portable/offline
+NSIS desktop packages. Release run 45436464060 passed all seven jobs; CI on its source
+and the merged main also passed. All 11 public attachment digests were verified. The
+published Windows CLI archive hash is
+`0fce07982a62e9fc49d7a8d3a181e2e3fe72d2686e2026a551f6ef7ab1b099ce`.
+Its OS-only imports were checked independently; no separate Visual C++ runtime is needed.
+Linux archive runtime checks used Ubuntu 24.04 and Debian trixie containers with no network
+and read-only roots. This does not qualify older glibc baselines or physical Linux windows.
+The earlier disconnected Windows 10 desktop qualification used a preceding candidate;
+the published NSIS package was not reinstalled in that guest.
+
+The [five-scenario workflow review](spikes/report-workflow.md) records the exact inputs,
+reading answers and packaged CLI checks. Source corrections after preview.2 distinguish
+installation declarations from execution and explicitly report unsupported installer
+execution semantics and unread .NET IL method bodies. These corrections do not add MSI
+condition evaluation, managed call-flow analysis or new runtime/OS qualification.
+
 ## Parts not verified on real samples
 
 The initial Linux package readers have native Linux references for Debian node-isarray

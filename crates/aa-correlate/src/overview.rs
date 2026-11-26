@@ -333,16 +333,16 @@ const RULES: &[Rule] = &[
     Rule {
         id: "overview.installer-contents",
         title_zh: "安装内容",
-        title_en: "What it installs",
-        text_zh: "安装程序会释放 {files} 个文件，共 {bytes} 字节。它写注册表、创建快捷方式、运行命令等行为见“权限与能力”一章。",
-        text_en: "The installer lays down {files} files, {bytes} bytes in all. What it writes to the registry, the shortcuts it creates and the commands it runs are in the Capabilities chapter.",
+        title_en: "Declared installation contents",
+        text_zh: "读取的安装声明列出 {files} 个文件，共 {bytes} 字节。注册表、快捷方式和命令声明见“权限与能力”一章；不表示这些动作一定执行。",
+        text_en: "The captured installation declarations list {files} files, {bytes} bytes in all. Registry, shortcut and command declarations are in the Capabilities chapter; execution is not established.",
     },
     Rule {
         id: "overview.install-dir",
         title_zh: "默认安装位置",
         title_en: "Default install location",
-        text_zh: "默认安装到 {dir}。",
-        text_en: "It installs to {dir} by default.",
+        text_zh: "安装包声明的默认位置为 {dir}；安装时的实际路径未求值。",
+        text_en: "The installer declares {dir} as its default location; the actual installation path is not evaluated.",
     },
     Rule {
         id: "overview.android-sdk",

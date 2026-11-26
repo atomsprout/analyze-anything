@@ -8,6 +8,17 @@ Homebrew also installs the command under the short name `aaaa`.
 
 ## Analyze
 
+For a first report, start with the opening questions: identity, contents, capabilities and
+integrity. Follow a finding ID to its evidence and confidence, then read Coverage and
+limitations. A declared install action, imported API or URL in bytes does not establish
+execution, an actual API call or a network connection. The inventory lists captured
+executables/components; it does not choose the application's real runtime entry point.
+
+If a question has no findings, treat it as unanswered. Complete byte reads do not mean
+every structure or behavior was understood. Textual evidence in `report.json` remains
+queryable after the original input is removed; the desktop's raw-byte view still needs
+the original bytes. Use `explain` or an offline `query` to inspect a finding without AI.
+
 ```
 analyze-anything <file or folder> [-o folder] [--format json,html,pdf,md,txt] [--lang en|zh]
 ```

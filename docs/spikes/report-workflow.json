@@ -1,0 +1,1206 @@
+{
+  "program_sha256": "47afff20f097c9f63b890196988384ce25225ef602afbb0a91525d50d3f785d9",
+  "program_version": "analyze-anything 0.2.0-preview.2",
+  "checks": [
+    "pinned-inputs",
+    "repeat-report",
+    "bilingual-html-markdown",
+    "evidence-confidence",
+    "explain",
+    "offline-query",
+    "input-report-preservation",
+    "directory-digests",
+    "semantic-gaps"
+  ],
+  "scenarios": [
+    {
+      "scenario": "installer",
+      "input": "7z2408-x64.msi",
+      "input_sha256": "98330e7e6db3507b444d576dc437a9ac4d82333a88a6bb6ef36a91fe3d85fa92",
+      "source_files": {
+        "7z2408-x64.msi": "98330e7e6db3507b444d576dc437a9ac4d82333a88a6bb6ef36a91fe3d85fa92"
+      },
+      "report_sha256": "6c88f0929d83ab8d0ca5fe737ad9b108dc463e2bbc094aa147a84fd2eeb07be3",
+      "coverage": {
+        "artifacts_total": 111,
+        "artifacts_analyzed": 111,
+        "bytes_analyzed": 7794517,
+        "containers_unpacked": 1,
+        "truncated": false,
+        "content_lost": 0
+      },
+      "finding_count": 103,
+      "selected_findings": [
+        {
+          "id": "16b54d2d342e6174c3ae20674ed8f69e3878e1f0dbd2ea3157a923c27b745a36",
+          "section": "overview",
+          "analyzer": "overview",
+          "rule": "overview.product",
+          "params": {
+            "name": "7-Zip 24.08 (x64 edition)"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "7z2408-x64.msi",
+              "sha256": "98330e7e6db3507b444d576dc437a9ac4d82333a88a6bb6ef36a91fe3d85fa92",
+              "location": {
+                "field": "installer product"
+              },
+              "value": "7-Zip 24.08 (x64 edition)"
+            }
+          ]
+        },
+        {
+          "id": "0541230abeeb582648c4bc67dabe216216eef205db9528b964eb0934db47ee7e",
+          "section": "structure",
+          "analyzer": "windows",
+          "rule": "windows.installer-files",
+          "params": {
+            "bytes": 5820837,
+            "files": 106,
+            "registry": 16,
+            "shortcuts": 2
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "7z2408-x64.msi",
+              "sha256": "98330e7e6db3507b444d576dc437a9ac4d82333a88a6bb6ef36a91fe3d85fa92",
+              "location": {
+                "field": "installer file list"
+              },
+              "value": {
+                "bytes": 5820837,
+                "files": 106
+              }
+            }
+          ]
+        },
+        {
+          "id": "4e2bb0e312d5fcaac52182a3538cf9065588b6de643a5f98f2553a163f625d56",
+          "section": "provenance",
+          "analyzer": "windows",
+          "rule": "windows.msi-unsigned",
+          "params": {
+            "kind": "MSI"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "7z2408-x64.msi",
+              "sha256": "98330e7e6db3507b444d576dc437a9ac4d82333a88a6bb6ef36a91fe3d85fa92",
+              "location": {
+                "field": "\\x05DigitalSignature stream"
+              },
+              "value": null
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        {
+          "code": "windows.installer-semantics-unresolved",
+          "artifact": "7z2408-x64.msi",
+          "detail": null
+        }
+      ],
+      "independent_reference": {}
+    },
+    {
+      "scenario": "installed",
+      "input": "7-Zip",
+      "input_sha256": null,
+      "source_files": {
+        "7-zip.chm": "07ba58f647b1c56fc96129ec1fe8b892e824bd3f996255f33f396e76b1efa90c",
+        "7-zip.dll": "55ab29a6a8ba247ac3d6863d09b0be0f53f927325184343c1b51c5a482aafa0a",
+        "7-zip32.dll": "592334d6c07d8a285930c1a3314da261957f6cfe33d2b7acc0cbceba33991b7b",
+        "7z.dll": "1d3bd7cfcb033c61966c890953919be21561590b95b63f9226809e92d79afd2a",
+        "7z.exe": "634d38c0c414178e2f35de5cc0fb29aa082eec227e630c4481e1af7694980ac9",
+        "7z.sfx": "d04963d89a04646ee23635ac0277fa772ddf4c825b4c8e188a1a3275ecbfc77e",
+        "7zCon.sfx": "ce6cd663d523ba0acfe4ea6384982a4b0e5c7c36e4e9031059ae656bf5d59fec",
+        "7zFM.exe": "2e030aa5cdf7c562c0acc516e43265d031ec41f448f972d2c3882e9208aa3eb8",
+        "7zG.exe": "7b5eda73c21960c451ea3148900b28cdbac7180e43047fbc944028096e497c08",
+        "descript.ion": "1da513f5a4e8018b9ae143884eb3eaf72454b606fd51f2401b7cfd9be4dbbf4f",
+        "History.txt": "9c92c646e66ac7c8f200659ae3153785e7d6c07efde95c81ec131ea4bbcc394e",
+        "Lang/af.txt": "9cf684ea88ea5a479f510750e4089aee60bbb2452aa85285312bafcc02c10a34",
+        "Lang/an.txt": "3ab9f7aacd38c4cde814f86bc37eec2b9df8d0dddb95fc1d09a5f5bcb11f0eeb",
+        "Lang/ar.txt": "85a26c7b59d6d9932f71518ccd03eceeba42043cb1707719b72bfc348c1c1d72",
+        "Lang/ast.txt": "f5f2174daf36e65790c7f0e9a4496b12e14816dad2ee5b1d48a52307076be35f",
+        "Lang/az.txt": "1da941116e20e69f61a4a68481797e302c11fcf462ca7203a565588b26011615",
+        "Lang/ba.txt": "8a85c3fcb5f81157490971ee4f5e6b9e4f80be69a802ebed04e6724ce859713f",
+        "Lang/be.txt": "32071222af04465a3d98bb30e253579aa4beceaeb6b21ac7c15b25f46620bf30",
+        "Lang/bg.txt": "62c6f410d011a109abecb79caa24d8aeb98b0046d329d611a4d07e66460eef3f",
+        "Lang/bn.txt": "3f55b2ec5033c39c159593c6f5ece667b92f32938b38fcaf58b4b2a98176c1fc",
+        "Lang/br.txt": "432bdb3eaa9953b084ee14eee8fe0abbc1b384cbdd984ccf35f0415d45aabba8",
+        "Lang/ca.txt": "da4df6490c7bc8afd804509f696f9afa6f709b7a327044e2781fa6c95770b239",
+        "Lang/co.txt": "dcfb95b47a4435eb7504b804da47302d8a62bbe450dadf1a34baea51c7f60c77",
+        "Lang/cs.txt": "da788d30aa74b3f8b3d920e98c535e4544756e9e4e235ed0221654f3177d3d2a",
+        "Lang/cy.txt": "470eaf5e67f5ead5b8c3ecc1b5b21b29d16c73591eb0047b681660346e25b3fb",
+        "Lang/da.txt": "5ccd481367f7d8c544de6177187aff53f1143ae451ae755ce9ed9b52c5f5d478",
+        "Lang/de.txt": "895f76bfa4b1165e4c5a11bdab70a774e7d05d4bbdaec0230f29dcc85d5d3563",
+        "Lang/el.txt": "2dd2130f94d31262b12680c080c96b38ad55c1007f9e610ec8473d4bb13d2908",
+        "Lang/en.ttt": "c218145bb039e1fd042fb1f5425b634a4bdc1f40b13801e33ed36cfdbda063ed",
+        "Lang/eo.txt": "a6ef5a5a1e28d406fd78079d9cacf819b047a296adc7083d34f2bfb3d071e5af",
+        "Lang/es.txt": "7199b362f43e9dca2049c0eeb8b1bb443488ca87e12d7dda0f717b2adbdb7f95",
+        "Lang/et.txt": "6b2718882bb47e905f1fdd7b75ece5cc233904203c1407c6f0dcdc5e08e276da",
+        "Lang/eu.txt": "a1c9d46b0639878951538f531bba69aeddd61e6ad5229e3bf9c458196851c7d8",
+        "Lang/ext.txt": "8075fd31b4ebb54603f69abb59d383dcef2f5b66a9f63bb9554027fd2949671c",
+        "Lang/fa.txt": "657f2aceb60d557f907603568b0096f9d94143ff5a624262bbfeb019d45d06d7",
+        "Lang/fi.txt": "12cc4a2cef76045e07dafc7aec7cf6f16a646c0bb80873ec89a5ae0b4844443b",
+        "Lang/fr.txt": "c8611fa3a8c7df28b686e13932e6bf3a29c00b5e24b2ad1f0df0591d020570ca",
+        "Lang/fur.txt": "6ba88938c468e7217bd300b607d7a730530e63d1f97562604ec0bb00d66a06c9",
+        "Lang/fy.txt": "c1c050ed6fe2f8fbc048fd7d82944b8ada784415b6e62316d590c3c7aa45e112",
+        "Lang/ga.txt": "b18730124208d26e5e88b76bb99985bf61938d7a994b626b2de5230557d2d8dd",
+        "Lang/gl.txt": "9280ab90261b0c8f206eef7196d7531e4e4932c9174ab899cee4f8ed97cc87c6",
+        "Lang/gu.txt": "c6e54e2a93b821bc974209cd7e2d10e9fbc4ff07d238ae84f552e4ade271702c",
+        "Lang/he.txt": "03b4ea89cce3aa4193a7e3e1e6180dab8359388df3b574379935ea39d7b8d723",
+        "Lang/hi.txt": "5f79ae167a917860f95f73e5ed007fe250f30af794bcfce17941f9ef87d22a05",
+        "Lang/hr.txt": "210af273246d30cfde87295cd5f4ff135b0bdfb04fe7173bb60f935e685b8e10",
+        "Lang/hu.txt": "486a382483096e9a86ccf6ca02123e48025de5055f1880af7f001c5c3fa25114",
+        "Lang/hy.txt": "91aac9368bd116ab11fda0b70ee4d75911a65713a272a3ba55d1435c33250f5a",
+        "Lang/id.txt": "90308689870ad079e1206a877157f7389bc4351a6b104ffa2bd9311409d6d92d",
+        "Lang/io.txt": "b87a4fca8a0024a915ae86e36951cb7cea442948d9982d4247e49492445ba664",
+        "Lang/is.txt": "dc61090369e1269a68c75e472d863aaf42207f702b3d3e12ca48d2852e1478e3",
+        "Lang/it.txt": "efb1aed5c52af731a733c720b6f5479898c9de28367a5de4c80f697fb745546a",
+        "Lang/ja.txt": "5b53dcfe5b7914b64f561cdd6f40b7f070f7a9dba0e3b7dde52ba88de9c36711",
+        "Lang/ka.txt": "8dd6073b585dd2e9d8cdd8e0fce7dfeaf2f5a2d8bfc3059f67eaa3d8b5eb2d9e",
+        "Lang/kaa.txt": "24f7325271dd7ad2b63e977841d2f06ed0194bd9257f0db460df32baeeec4746",
+        "Lang/kab.txt": "f249930089c374eab59078cf16b8652d443cf2a47485d737ae5a9fca2957d6b9",
+        "Lang/kk.txt": "f813eac0b284edce156dd1e6b7ea75b027f4342e04d8b8db1131894a227a4562",
+        "Lang/ko.txt": "3ea103ffd2ff97e211c7ade3a79a882b494fe416bc56bd05f42f2e82158a7a03",
+        "Lang/ku-ckb.txt": "b8b7db8c139b19d414cef35ae96d854d5a8364c32b0c3fdc4cac331b5af44c16",
+        "Lang/ku.txt": "57ae544f3f9e8bf5d96ce1f9cfe5648eb6c1e2f5604da6eb0c80ae24bc1a40d7",
+        "Lang/ky.txt": "9a9e4ddacc494eaaa386f1220837020f332a49e7fff7f0bf8c38c847390dab18",
+        "Lang/lij.txt": "d9bb6bfc127938c47b43290241378887085314ad1326095934a362cd9836b560",
+        "Lang/lt.txt": "9c15db408e32dc699f598aab30f539f91a212e5fbaee2095022e24b3f1f09ecd",
+        "Lang/lv.txt": "533f9ff016e7bb36216665cca1065139a35d8da71651678814415ff457a9be7d",
+        "Lang/mk.txt": "90efca5f6b8e37b963f7e42f700938440171942e0de0ab8baeb08912c0952957",
+        "Lang/mn.txt": "c6a6cc400ee7420bfb680d71b43a9be1fbc75d7b98ae2b6ffe98229d5eefadca",
+        "Lang/mng.txt": "2e488ef05895b93aca2b5f72ea08da887722215d1b4cb85b12942ea32641da2b",
+        "Lang/mng2.txt": "5a85cc532f802da683374c3f4c98e3f37425cf304d6772ba554d2c49bac7be0b",
+        "Lang/mr.txt": "f6d67ce2eae4c125bbf54c04ac783005bddc07007398cabd3b9603020af67bfd",
+        "Lang/ms.txt": "c88bc7ea0c20769847a0403e188e273a0897d1c77dd72cc4b45471fc67e0d5e1",
+        "Lang/nb.txt": "f349529ea4584eba51cd519b8a1d535d2daec762cd7369673b237fa03a526cc7",
+        "Lang/ne.txt": "e016e8872f2de7cbc1f4fc786c747cc26b2e250e6c1b8f1c46040b72c523d90f",
+        "Lang/nl.txt": "4cb5f08449b5e22ed15f8a8cc038d021cdbcf56548587023d1ab31ab6cfc232d",
+        "Lang/nn.txt": "db540e1a6b8ffff2497f9c1a63f85cb5f345f8cba767f05377c0365abaf7b7d4",
+        "Lang/pa-in.txt": "e542c19640d39f3c56bf11a9eaadb554d7e74d8ec525d41a321e97c5ae5191c5",
+        "Lang/pl.txt": "b4b96fdaa023a3988d514c1cb1e2914817cd538d3bb7f062778360338b73ba67",
+        "Lang/ps.txt": "fa12ca0be49f4921d06268fad673838c3a4644a70dc374a931997178f588e8f4",
+        "Lang/pt-br.txt": "6b21924caea51b395efa0b8fa5d7e2492ce6a6b86dcc08565a5a4dee5c182167",
+        "Lang/pt.txt": "3c76d190ea88cc339392fdb46e005e72e16658cf07fa83487e1a77250e027f41",
+        "Lang/ro.txt": "4fd993dbae9606c062dc3511292274631335956a016b74b3061bab55f7d9c736",
+        "Lang/ru.txt": "3e76bc88db5cb108cf8750b01bdabbb3772dbf2bf14592c6ab18b7339817d6ee",
+        "Lang/sa.txt": "02cc9032c117a7818865af3dcadbdd3c7b348be3507681cd0032dd9bd15b76fc",
+        "Lang/si.txt": "5405e5b04e670ff7a5b5242a3872803725053324ffdc31f71511ea6b2573f6e0",
+        "Lang/sk.txt": "b53fe26795b01f3347b614eaa499d28770d94eb5b51005c842386e97d8344cb6",
+        "Lang/sl.txt": "6b53fb390da88bd79d76487ff30466ae972976d2eed030ade6d9b93991b99cbc",
+        "Lang/sq.txt": "b6ee3c8a14230aa7d1a17c5493e0a410c5c5c638ba7a9d81681ffed4a8de6884",
+        "Lang/sr-spc.txt": "817d7a33f2adb19f47f45f78c314f6ae6df4ca4da133c1f7a82703e0cdee7e20",
+        "Lang/sr-spl.txt": "d8c5223fe423129145c5b55a756e499d4680b1df0a7115d72736f09e51c89c1f",
+        "Lang/sv.txt": "233596e0d29dad356cd31c302eb1eb3a263736f166f5a7628a753bd808668ebb",
+        "Lang/sw.txt": "9fed3c0b4e67673bc1d8bbd67d1f6651fade030f98d12173c3564f2c492a67f8",
+        "Lang/ta.txt": "ae1a795105574bf2674a5de98a4f06cadd9c79debde9fc288f64b3d607fa329d",
+        "Lang/tg.txt": "e029f34ddea8b1358e1f519526ef643d79be37cfce55bb5ea21b4bd0d026f9d3",
+        "Lang/th.txt": "a1967002746961cdc4f3ad4f5f081bba6db231660cdfd5f2ab4a572eb11dd67c",
+        "Lang/tk.txt": "a0f485755cbc6356cfa4bef5cb6134653dc6743f4bfca89ced92d43ec31c5649",
+        "Lang/tr.txt": "d8ddeec7a1d5f98be9fe727d47f8bdf733e21693e988dcfe48089ac3344dcf30",
+        "Lang/tt.txt": "813b5264f3f2d2b632b346e800e738e04dc098c7b3a1a2af64bcf3a6acbca037",
+        "Lang/ug.txt": "7fd494130f9b96dfca492d495ef3fd7b4eaacf59f075172898ece5aebd1f6fce",
+        "Lang/uk.txt": "ca1557c69453b1354279682cf1d3e9d65a0fde56189939ec3dc359ad18be5fe7",
+        "Lang/uz-cyrl.txt": "dd414d39f8da2fbd5caa0c7a7a9155c5f802b4d45f2e8828a79c7b4b63bd1179",
+        "Lang/uz.txt": "d62f8d3e7aa1f2636a1ad1b2aede0da9fd725941a5f81d24a9b0b7599caf0f50",
+        "Lang/va.txt": "c0d985dea02778276ba3d3df96b50b33f7ba0c1ec7c62761f0dcd67a05b62270",
+        "Lang/vi.txt": "c73634402c3effdb2750ab5cf6f1083abd8771529bff6f7e513d646e0fcdae23",
+        "Lang/yo.txt": "de2497946932d806f822082c3cf9f2f26a18752d9973f9d09e0889a94ce4c28a",
+        "Lang/zh-cn.txt": "d04e5bd3bf1e3f3754c3603889aa1b659d1dac518c5c6b5c1c49ecf16dca1c01",
+        "Lang/zh-tw.txt": "76a17b0a97925e5d6deb1ebe8ae14f83bd49957c492c3733a0ea178e28b0d74b",
+        "License.txt": "3a184aa13dc8ad30734e28ff901b478ccbcb5b41be52427a5e7609c8fd9e5ddb",
+        "readme.txt": "a870d1f6d786130e21040e48cad1b2672a26a3ed0181fbed26408a6f27d69b17",
+        "Uninstall.exe": "e25b1326cbaf8e558d76b366c2ad62f1ef78d0d1ec7a47dd583d265ecf5e491b"
+      },
+      "report_sha256": "31868009d1fd0e89e5570d46beab318b0d9488b595cf073ddd797cc114182042",
+      "coverage": {
+        "artifacts_total": 107,
+        "artifacts_analyzed": 107,
+        "bytes_analyzed": 5880815,
+        "containers_unpacked": 0,
+        "truncated": false,
+        "content_lost": 0
+      },
+      "finding_count": 106,
+      "selected_findings": [
+        {
+          "id": "db29c9269f4fbe35151a0282b7d3d26c4d2b8df90d7332cb56ffb1724c7a400b",
+          "section": "overview",
+          "analyzer": "overview",
+          "rule": "overview.kind-folder",
+          "params": {
+            "files": 107
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "7-zip.chm",
+              "sha256": "07ba58f647b1c56fc96129ec1fe8b892e824bd3f996255f33f396e76b1efa90c",
+              "location": "whole",
+              "value": 107
+            }
+          ]
+        },
+        {
+          "id": "41734d4b795627711df4f963a433d5c533ffa95f9dac5439ad846212afde64ad",
+          "section": "identity",
+          "analyzer": "binary",
+          "rule": "binary.pe-identity",
+          "params": {
+            "arch": "x86_64",
+            "file_type": "dll",
+            "file_type_zh": "\u52a8\u6001\u94fe\u63a5\u5e93\uff08DLL\uff09",
+            "format": "PE32+",
+            "subsystem": "windows-gui"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "7-zip.dll",
+              "sha256": "55ab29a6a8ba247ac3d6863d09b0be0f53f927325184343c1b51c5a482aafa0a",
+              "location": {
+                "bytes": {
+                  "offset": 260,
+                  "length": 20
+                }
+              },
+              "value": "64860600b00569680000000000000000f0002220"
+            },
+            {
+              "artifact": "7-zip.dll",
+              "sha256": "55ab29a6a8ba247ac3d6863d09b0be0f53f927325184343c1b51c5a482aafa0a",
+              "location": {
+                "bytes": {
+                  "offset": 348,
+                  "length": 2
+                }
+              },
+              "value": 2
+            }
+          ]
+        },
+        {
+          "id": "6b4776537e20a5bf355e853d8d6d05c5d1db2fe62459b3ca7e11e1bf389a7298",
+          "section": "capabilities",
+          "analyzer": "windows",
+          "rule": "windows.manifest-elevation",
+          "params": {
+            "level": "requireAdministrator"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "Uninstall.exe",
+              "sha256": "e25b1326cbaf8e558d76b366c2ad62f1ef78d0d1ec7a47dd583d265ecf5e491b",
+              "location": {
+                "bytes": {
+                  "offset": 13328,
+                  "length": 1458
+                }
+              },
+              "value": {
+                "element": "requestedExecutionLevel/@level",
+                "value": "requireAdministrator"
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [],
+      "independent_reference": {}
+    },
+    {
+      "scenario": "mobile",
+      "input": "iSH.ipa",
+      "input_sha256": "74b22a209340c5dc6e94975d8c07e4814ae2299dfe0b62cfa22640090d80f36c",
+      "source_files": {
+        "iSH.ipa": "74b22a209340c5dc6e94975d8c07e4814ae2299dfe0b62cfa22640090d80f36c"
+      },
+      "report_sha256": "d527a4725a22ef8132574077539f85dc535566cb36d1adf424a6c894ada44719",
+      "coverage": {
+        "artifacts_total": 190,
+        "artifacts_analyzed": 190,
+        "bytes_analyzed": 22497312,
+        "containers_unpacked": 4,
+        "truncated": false,
+        "content_lost": 0
+      },
+      "finding_count": 235,
+      "selected_findings": [
+        {
+          "id": "238e99d90bf4ff1d7d0dccb4d66e35a09b2d33aa2a49bd347252da4dc165de0d",
+          "section": "overview",
+          "analyzer": "overview",
+          "rule": "overview.identifier",
+          "params": {
+            "id": "app.ish.iSH"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "iSH.ipa/Payload/iSH.app/Info.plist",
+              "sha256": "525eee7d2e2e006f8a3b31f1480ac684c0ffdc8e5612befb2190e4863cb2c355",
+              "location": {
+                "field": "CFBundleIdentifier"
+              },
+              "value": "app.ish.iSH"
+            }
+          ]
+        },
+        {
+          "id": "07878be21e2e6f84806bd497e0c585f54eebf3d51d856ca661e638f76c3b1b24",
+          "section": "capabilities",
+          "analyzer": "apple",
+          "rule": "apple.usage-description",
+          "params": {
+            "bundle": "iSH.app",
+            "key": "NSLocationAlwaysAndWhenInUseUsageDescription",
+            "purpose": "Programs running in iSH will be allowed to track your location in the background.",
+            "resource": "Location Always And When In Use"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [
+            "MASVS-PRIVACY-1"
+          ],
+          "evidence": [
+            {
+              "artifact": "iSH.ipa/Payload/iSH.app/Info.plist",
+              "sha256": "525eee7d2e2e006f8a3b31f1480ac684c0ffdc8e5612befb2190e4863cb2c355",
+              "location": {
+                "field": "NSLocationAlwaysAndWhenInUseUsageDescription"
+              },
+              "value": "Programs running in iSH will be allowed to track your location in the background."
+            }
+          ]
+        },
+        {
+          "id": "c77318c70db29b9cbd99abedfa8805f8b2811be1eba8f677c2ab1de93a422d22",
+          "section": "provenance",
+          "analyzer": "apple",
+          "rule": "apple.signature",
+          "params": {
+            "arch": "arm64",
+            "cdhash": "a9d13eb95bffc45622cde68617e1524be6cd1acd",
+            "file": "iSH",
+            "flags": "0x0",
+            "hash_type": "sha256",
+            "identifier": "app.ish.iSH"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "iSH.ipa/Payload/iSH.app/iSH",
+              "sha256": "c4b4d502c8b9dd02e1b02d008f4323d5ac3d8177d345de68040c1df674e9639e",
+              "location": {
+                "bytes": {
+                  "offset": 1038192,
+                  "length": 27600
+                }
+              },
+              "value": {
+                "arch": "arm64",
+                "cdhash": "a9d13eb95bffc45622cde68617e1524be6cd1acd",
+                "flags": [],
+                "identifier": "app.ish.iSH"
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        {
+          "code": "apple.trust-not-evaluated",
+          "artifact": null,
+          "detail": null
+        }
+      ],
+      "independent_reference": {
+        "reader": "Python stdlib zipfile/plistlib",
+        "direct_members": 91,
+        "identifier": "app.ish.iSH",
+        "native_codesign": "not run on Windows"
+      }
+    },
+    {
+      "scenario": "linux",
+      "input": "node-isarray_2.0.5-1_all.deb",
+      "input_sha256": "41b6b84a05e30d35b2ac224c5f4600b2a4e976d19f7d0bfdf0565dd729962d84",
+      "source_files": {
+        "node-isarray_2.0.5-1_all.deb": "41b6b84a05e30d35b2ac224c5f4600b2a4e976d19f7d0bfdf0565dd729962d84"
+      },
+      "report_sha256": "1cf869a8a25b4c8bea67626f283817168ddfbb3b01c8ef012ea68379dd4edf0c",
+      "coverage": {
+        "artifacts_total": 14,
+        "artifacts_analyzed": 14,
+        "bytes_analyzed": 44573,
+        "containers_unpacked": 6,
+        "truncated": false,
+        "content_lost": 0
+      },
+      "finding_count": 9,
+      "selected_findings": [
+        {
+          "id": "cbd2477343a5e8bb5204e3f9145e149dc43adf598ebc5e04140034912612393d",
+          "section": "identity",
+          "analyzer": "deb",
+          "rule": "deb.identity",
+          "params": {
+            "architecture": "all",
+            "name": "node-isarray",
+            "version": "2.0.5-1"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "node-isarray_2.0.5-1_all.deb/control.tar.xz/control.tar/control",
+              "sha256": "9242572baf0cc80393b78134d8f4a5d22b0976dd50319cb7f1f4614c0d554526",
+              "location": {
+                "field": "Deb822 identity"
+              },
+              "value": {
+                "Architecture": "all",
+                "Package": "node-isarray",
+                "Version": "2.0.5-1"
+              }
+            }
+          ]
+        },
+        {
+          "id": "0f4086ee8cad91c17e17469fe556e84db776fb0f5c8a39d51ef5d41279b9f1ec",
+          "section": "composition",
+          "analyzer": "deb",
+          "rule": "deb.dependencies",
+          "params": {
+            "count": 1
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "node-isarray_2.0.5-1_all.deb/control.tar.xz/control.tar/control",
+              "sha256": "9242572baf0cc80393b78134d8f4a5d22b0976dd50319cb7f1f4614c0d554526",
+              "location": {
+                "field": "Deb822 relationships"
+              },
+              "value": [
+                {
+                  "line": 6,
+                  "name": "Depends",
+                  "value": "nodejs"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "cee7e182b1b64024c349391c8a81421c05342d2f7cb303bb8a747402bc434e12",
+          "section": "composition",
+          "analyzer": "composition",
+          "rule": "composition.components",
+          "params": {
+            "breakdown": "deb: 1",
+            "total": 1
+          },
+          "confidence": "derived",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "node-isarray_2.0.5-1_all.deb",
+              "sha256": "41b6b84a05e30d35b2ac224c5f4600b2a4e976d19f7d0bfdf0565dd729962d84",
+              "location": "whole",
+              "value": "node-isarray"
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        {
+          "code": "deb.integrity-unverified",
+          "artifact": "node-isarray_2.0.5-1_all.deb",
+          "detail": null
+        }
+      ],
+      "independent_reference": {
+        "record": "docs/spikes/linux-packages-native.json",
+        "native_member_digests": 7
+      }
+    },
+    {
+      "scenario": "bundle",
+      "input": "WinSW-x64.exe",
+      "input_sha256": "a2daa6a33a9c2b791ae31d9092e7935c339d1e03e89bfb747618ce2f4e819e20",
+      "source_files": {
+        "WinSW-x64.exe": "a2daa6a33a9c2b791ae31d9092e7935c339d1e03e89bfb747618ce2f4e819e20"
+      },
+      "report_sha256": "434107df24da6920b80231ea0ffa890dda0eeab393b7e7da5d264d28abb04d37",
+      "coverage": {
+        "artifacts_total": 81,
+        "artifacts_analyzed": 81,
+        "bytes_analyzed": 26981800,
+        "containers_unpacked": 1,
+        "truncated": false,
+        "content_lost": 0
+      },
+      "finding_count": 595,
+      "selected_findings": [
+        {
+          "id": "b0b3f55449725388faca2eb5dc106f0849c1ac9e7cada4f40cf3faae862958d7",
+          "section": "overview",
+          "analyzer": "overview",
+          "rule": "overview.product",
+          "params": {
+            "name": "Windows Service Wrapper"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "WinSW-x64.exe",
+              "sha256": "a2daa6a33a9c2b791ae31d9092e7935c339d1e03e89bfb747618ce2f4e819e20",
+              "location": {
+                "field": "ProductName"
+              },
+              "value": "Windows Service Wrapper"
+            }
+          ]
+        },
+        {
+          "id": "b10787da96dac4a8f20d8eecd6ea40e280974cb3196a2e32b5334a69074aae89",
+          "section": "structure",
+          "analyzer": "dotnet-bundle",
+          "rule": "dotnet-bundle.contents",
+          "params": {
+            "count": 80,
+            "version": "6.0"
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "WinSW-x64.exe",
+              "sha256": "a2daa6a33a9c2b791ae31d9092e7935c339d1e03e89bfb747618ce2f4e819e20",
+              "location": {
+                "bytes": {
+                  "offset": 18282337,
+                  "length": 4437
+                }
+              },
+              "value": {
+                "file_count": 80,
+                "version": 6
+              }
+            }
+          ]
+        },
+        {
+          "id": "b4d17f3d18279b7ad48762fdf8a3179111743615b3e150575b2e3aedcb0a67b8",
+          "section": "composition",
+          "analyzer": "windows",
+          "rule": "windows.dotnet-assemblies",
+          "params": {
+            "count": 78,
+            "frameworks": ".NETCoreApp,Version=v7.0 (58), v4.0.30319 (18), .NETCoreApp,Version=v6.0 (1), .NETStandard,Version=v2.0 (1)",
+            "mixed": 0
+          },
+          "confidence": "verified",
+          "severity": "info",
+          "references": [],
+          "evidence": [
+            {
+              "artifact": "WinSW-x64.exe/Microsoft.Win32.Registry.dll",
+              "sha256": "357e9f45113ac5c09f2ab3c744942d73e72dda912ecdf5b00c765441d139bc64",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "Microsoft.Win32.Registry",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.Collections.Concurrent.dll",
+              "sha256": "33d357b0f4836c3158f4ac3b6dadafe826e6de8abefade1821e2f1217c66e015",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.Collections.Concurrent",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.Collections.Immutable.dll",
+              "sha256": "3be94c72ac44b283f5090d91f142839bc4478f3b0ea9975486bb914eb7375f09",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.Collections.Immutable",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.Collections.NonGeneric.dll",
+              "sha256": "cae78acfc20898a0070168fb8c1af0c7ef5cfdc16a5c8ef09976a815f7007e24",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.Collections.NonGeneric",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.Collections.Specialized.dll",
+              "sha256": "fbfc6434bc4ce0a654bdcae36348b9e4b37550009d0d4287080e9a7a5085cf48",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.Collections.Specialized",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.Collections.dll",
+              "sha256": "27cfe1c91d98e903f4f155258e4e7becbca9ae15abd4d6427a4d508f4a49512f",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.Collections",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.CommandLine.dll",
+              "sha256": "7f3004463b3b39cd16a152bc1660bf39d609f1753e5e1b2843bf8ec817214268",
+              "location": {
+                "bytes": {
+                  "offset": 520,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.CommandLine",
+                "version": "2.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.ComponentModel.EventBasedAsync.dll",
+              "sha256": "5981e15879ed5499257472e981229b1ed98466a714bfe341df8ae8342651227e",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.ComponentModel.EventBasedAsync",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.ComponentModel.Primitives.dll",
+              "sha256": "d7e7fea39b99b960c263d68e8aaa5f81fdcff8ac7c6decca8144449d0f3dab67",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.ComponentModel.Primitives",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.ComponentModel.TypeConverter.dll",
+              "sha256": "bd83fc2c9a1acb78b0e1fa01eaa90199556ca58ee704a286ac08611dd37e5b6d",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.ComponentModel.TypeConverter",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.ComponentModel.dll",
+              "sha256": "f8db6703c656b2ec4c69d36e6dd4851b52cb820e59d0896401c1c28397664a40",
+              "location": {
+                "bytes": {
+                  "offset": 512,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.ComponentModel",
+                "version": "7.0.0.0"
+              }
+            },
+            {
+              "artifact": "WinSW-x64.exe/System.Configuration.ConfigurationManager.dll",
+              "sha256": "e814b79f175ecde855c7ae003cd8bc5ed88edea4ab4089d055ed7b63da7bbec9",
+              "location": {
+                "bytes": {
+                  "offset": 520,
+                  "length": 72
+                }
+              },
+              "value": {
+                "assembly": "System.Configuration.ConfigurationManager",
+                "version": "4.0.1.0"
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/Microsoft.Win32.Registry.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Collections.Concurrent.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Collections.Immutable.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Collections.NonGeneric.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Collections.Specialized.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Collections.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.CommandLine.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.ComponentModel.EventBasedAsync.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.ComponentModel.Primitives.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.ComponentModel.TypeConverter.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.ComponentModel.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Configuration.ConfigurationManager.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Console.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Data.Common.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Diagnostics.DiagnosticSource.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Diagnostics.EventLog.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Diagnostics.Process.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Diagnostics.StackTrace.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Diagnostics.TraceSource.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.IO.Compression.Brotli.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.IO.Compression.ZipFile.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.IO.Compression.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.IO.FileSystem.Watcher.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.IO.MemoryMappedFiles.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.IO.Pipes.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Linq.Expressions.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Linq.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Memory.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Http.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Mail.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.NameResolution.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.NetworkInformation.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Primitives.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Quic.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Requests.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Security.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.ServicePoint.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.Sockets.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.WebClient.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.WebHeaderCollection.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Net.WebProxy.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.ObjectModel.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Private.CoreLib.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Private.Uri.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Private.Xml.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Reflection.Metadata.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Runtime.Numerics.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Runtime.Serialization.Formatters.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Runtime.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Security.AccessControl.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Security.Claims.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Security.Cryptography.ProtectedData.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Security.Cryptography.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Security.Permissions.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Security.Principal.Windows.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.ServiceProcess.ServiceController.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Text.RegularExpressions.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Threading.Channels.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.Threading.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/System.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/WinSW.Core.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/WinSW.Plugins.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/WinSW.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/cs/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/de/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/es/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/fr/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/it/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/ja/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/ko/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/log4net.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/netstandard.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/pl/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/pt-BR/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/ru/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/tr/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/zh-Hans/System.CommandLine.resources.dll",
+          "detail": null
+        },
+        {
+          "code": "windows.dotnet-code-unread",
+          "artifact": "WinSW-x64.exe/zh-Hant/System.CommandLine.resources.dll",
+          "detail": null
+        }
+      ],
+      "independent_reference": {}
+    }
+  ]
+}

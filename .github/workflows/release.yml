@@ -32,6 +32,9 @@ jobs:
       RELEASE_NAME: ${{ inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       # rust-toolchain.toml names the version; add the target this job builds for.
       - run: rustup target add ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
@@ -70,6 +73,7 @@ jobs:
           tar xzf "$name.tar.gz" -C "$stage"
           cmp "target/${{ matrix.target }}/release/analyze-anything" "$stage/$name/analyze-anything"
           "$stage/$name/analyze-anything" selftest
+          python tools/release/check-workflow.py "$stage/$name/analyze-anything" --record packaged-workflow.json
       - name: Self-test the packaged Windows CLI
         if: matrix.archive == 'zip'
         shell: pwsh
@@ -86,6 +90,13 @@ jobs:
           $program = Join-Path $unpacked "$name/analyze-anything.exe"
           & $program selftest
           ./tools/release/check-windows-runtime.ps1 -Program $program
+          python tools/release/check-workflow.py $program --record packaged-workflow.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: packaged-workflow-${{ matrix.target }}
+          path: packaged-workflow.json
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
           name: analyze-anything-${{ matrix.target }}

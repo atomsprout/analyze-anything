@@ -20,7 +20,7 @@ That writes `App.ipa.report/` with the report as HTML, PDF, Markdown, plain text
 There are two ways to use it, on the same engine, giving the same report for the same input:
 
 - the **command line**, `analyze-anything` (short name `aaaa`);
-- the **desktop app** for macOS: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history, and, if you set it up, have a model explain the report beside it.
+- the **desktop app** for macOS, with an unsigned Windows x64 preview: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history, and, if you set it up, have a model explain the report beside it.
 
 ## What it looks like
 
@@ -50,14 +50,14 @@ brew install --cask atomsprout/tap/analyze-anything-desktop   # the desktop app
 
 Each works without the other. Both are signed with a Developer ID certificate and notarized by Apple.
 
-On other platforms, build the command line from source (Rust 1.90 or newer):
+To build the command line from source (Rust 1.90 or newer):
 
 ```
 cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed stable release is available for Apple silicon Macs. Unsigned CLI previews are also available for Windows x64 and Linux x64/ARM64 from [GitHub releases](https://github.com/atomsprout/analyze-anything/releases). Windows x64 desktop builds have passed local acceptance, including an offline Windows 10 installation; hosted Windows and Ubuntu 24.04 x64 Linux desktop checks have also passed. The published preview.1 Windows CLI requires the Visual C++ runtime; the statically linked preview.2 candidate passed a clean-system self-test. See [platform qualification](docs/LIMITATIONS.md) for the exact scope.
+The signed stable release is 0.1.1 for Apple silicon Macs. Published [0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The preview.2 Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
 
 ## Use
 
@@ -158,7 +158,7 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The stable release is 0.1.1; the source is preparing 0.2.0-preview.2. Any file or folder gets a report today, with format-specific depth and explicit limitations. macOS has a signed release, the CLI has Windows and Linux previews, and Windows desktop acceptance has been exercised locally. Platform qualification and broader format profiles remain tracked work.
+The signed stable release is 0.1.1; the unsigned 0.2.0-preview.2 is published. Any file or folder gets a report today, with format-specific depth and explicit limitations. The next cycle checks complete real-report workflows and packaged analysis/query/agent behavior; [the roadmap](docs/ROADMAP.md) gives its acceptance criteria. Broader platform and format qualification remains tracked work.
 
 "Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
 

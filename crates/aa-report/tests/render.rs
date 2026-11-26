@@ -630,6 +630,39 @@ fn opening_questions_reuse_findings_and_bound_the_preview() {
 }
 
 #[test]
+fn identity_preview_keeps_aggregate_counts_from_displacing_input_identity() {
+    let mut input = full();
+    let prototype = input.findings[0].clone();
+    input.findings.clear();
+    for (id, rule, section) in [
+        ("attention", "overview.attention", Section::Overview),
+        ("signers", "overview.win-inner-signers", Section::Overview),
+        ("kind", "overview.kind-folder", Section::Overview),
+        ("identity", "binary.pe-identity", Section::Identity),
+        ("identity2", "binary.pe-identity", Section::Identity),
+    ] {
+        let mut finding = prototype.clone();
+        finding.id = id.into();
+        finding.rule = rule.into();
+        finding.section = section;
+        input.findings.push(finding);
+    }
+    for lang in [Lang::En, Lang::Zh] {
+        let questions = aa_report::doc::questions(&input, lang);
+        assert_eq!(questions[0].total, 5);
+        assert_eq!(questions[0].samples.iter().map(|sample| sample.id.as_str()).collect::<Vec<_>>(), ["kind", "identity", "identity2"]);
+        // Counts and signing facts are still available in the full report.
+        assert!(input.findings.iter().any(|finding| finding.id == "attention"));
+    }
+    input.input.kind = InputKind::Directory;
+    input.findings[3].evidence = vec![
+        Evidence::field(&artifact("tools/helper.dll", 12), "format", "PE32+"),
+        Evidence::field(&artifact("tools/helper.dll", 12), "arch", "x86_64"),
+    ];
+    assert!(aa_report::doc::questions(&input, Lang::En)[0].samples[1].text.starts_with("tools/helper.dll: "));
+}
+
+#[test]
 fn content_loss_is_visible_even_without_a_truncation_flag() {
     let mut report = full();
     report.coverage.truncated = false;

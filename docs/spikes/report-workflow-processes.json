@@ -1,0 +1,32 @@
+{
+  "source_windows": {
+    "program_sha256": "47afff20f097c9f63b890196988384ce25225ef602afbb0a91525d50d3f785d9",
+    "results": [
+      {
+        "root": "fresh",
+        "report_id": "bd9d12989f421b51849d7e7847f301ab97c7ab23aafe553ab269061256561ca6",
+        "checks": "analysis/repeat/query/explain/snapshot/source-removal/agent/partial/cancel/active-EOF/scratch/input-preservation"
+      },
+      {
+        "root": "aged",
+        "report_id": "bd9d12989f421b51849d7e7847f301ab97c7ab23aafe553ab269061256561ca6",
+        "checks": "analysis/repeat/query/explain/snapshot/source-removal/agent/partial/cancel/active-EOF/scratch/input-preservation"
+      }
+    ]
+  },
+  "published_windows": {
+    "program_sha256": "b8cbbf94b6eb2fb7c058ff84844043deebee38fa59f53116de07aa19789c944a",
+    "results": [
+      {
+        "root": "fresh",
+        "report_id": "bd9d12989f421b51849d7e7847f301ab97c7ab23aafe553ab269061256561ca6",
+        "checks": "analysis/repeat/query/explain/snapshot/source-removal/agent/partial/cancel/active-EOF/scratch/input-preservation"
+      },
+      {
+        "root": "aged",
+        "report_id": "bd9d12989f421b51849d7e7847f301ab97c7ab23aafe553ab269061256561ca6",
+        "checks": "analysis/repeat/query/explain/snapshot/source-removal/agent/partial/cancel/active-EOF/scratch/input-preservation"
+      }
+    ]
+  }
+}

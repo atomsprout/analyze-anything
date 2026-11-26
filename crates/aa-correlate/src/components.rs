@@ -101,7 +101,7 @@ impl Analyzer for Components {
         let mut found: Vec<Component> = Vec::new();
         let mut declares_packages = false;
         for artifact in tree.artifacts() {
-            apple_embedded(artifact, &mut found);
+            apple_embedded(tree, artifact, &mut found);
             declares_packages |= dotnet_app(artifact, &mut found);
         }
         let manifests: BTreeMap<_, _> = tree
@@ -346,7 +346,7 @@ fn nuget_manifest(artifact: &Artifact) -> Option<&Value> {
     artifact.facts.get("windows.nupkg").or_else(|| artifact.parent.is_none().then(|| artifact.facts.get("windows.nuspec")).flatten())
 }
 
-fn apple_embedded(artifact: &Artifact, found: &mut Vec<Component>) {
+fn apple_embedded(tree: &dyn Tree, artifact: &Artifact, found: &mut Vec<Component>) {
     let Some(items) = artifact.facts.get("apple.embedded").and_then(|f| f.get("items")).and_then(Value::as_array) else { return };
     for item in items {
         let Some(path) = text(item, "path") else { continue };
@@ -354,7 +354,7 @@ fn apple_embedded(artifact: &Artifact, found: &mut Vec<Component>) {
         let name = file.rsplit_once('.').map(|(stem, _)| stem).unwrap_or(file);
         let kind = match text(item, "kind") {
             Some("framework") => "framework",
-            Some("app" | "appex" | "xpc") => "application",
+            Some("app" | "appex" | "app-extension" | "xpc") => "application",
             _ => "library",
         };
         found.push(Component {
@@ -363,7 +363,9 @@ fn apple_embedded(artifact: &Artifact, found: &mut Vec<Component>) {
             version: text(item, "version").map(str::to_string),
             kind,
             declared_range: None,
-            source: path.to_string(),
+            // A bundle directory is not an artifact. Cite its identity plist, or the
+            // containing declaration if the child identity was not captured.
+            source: tree.get(&format!("{path}/Info.plist")).unwrap_or(artifact).path.clone(),
         });
     }
 }

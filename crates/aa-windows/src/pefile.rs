@@ -393,6 +393,7 @@ fn resource_summary(file: &Artifact, pe: &Pe, res: &pe::Resources, out: &mut Out
 }
 
 fn dotnet_findings(file: &Artifact, pe: &Pe, net: &dotnet::DotNet, out: &mut Output) {
+    out.limitation("windows.dotnet-code-unread", Some(file), None);
     if let Some(error) = &net.metadata_error {
         out.limitation("windows.dotnet-unreadable", Some(file), Some(error.clone()));
     }

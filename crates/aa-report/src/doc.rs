@@ -167,7 +167,21 @@ pub fn questions(report: &Report, lang: Lang) -> Vec<Question> {
             .enumerate()
             .filter_map(|(index, finding)| sections.contains(&finding.section).then_some(index))
             .collect();
-        indices.sort_by_key(|&index| std::cmp::Reverse(report.findings[index].severity));
+        indices.sort_by_key(|&index| {
+            let finding = &report.findings[index];
+            // Identity previews should identify the input before showing aggregate risk or signing counts.
+            let context = if key == "question_identity" {
+                match finding.rule.as_str() {
+                    rule if rule.starts_with("overview.kind-") => 0,
+                    "overview.product" | "overview.version" | "overview.identifier" => 1,
+                    _ if finding.section == Section::Identity => 2,
+                    _ => 3,
+                }
+            } else {
+                0
+            };
+            (context, std::cmp::Reverse(finding.severity))
+        });
         Question {
             title: words::ui(lang, key).into(),
             total: indices.len(),
@@ -176,7 +190,14 @@ pub fn questions(report: &Report, lang: Lang) -> Vec<Question> {
                 .take(QUESTION_FINDINGS)
                 .map(|index| {
                     let finding = &report.findings[index];
-                    let sentence = finding_text(report, lang, finding);
+                    let mut sentence = finding_text(report, lang, finding);
+                    if report.input.kind == aa_core::InputKind::Directory
+                        && finding.section == Section::Identity
+                        && let Some(evidence) = finding.evidence.first()
+                        && finding.evidence.iter().all(|item| item.artifact == evidence.artifact)
+                    {
+                        sentence = format!("{}: {sentence}", evidence.artifact);
+                    }
                     let mut text: String = sentence.chars().take(280).collect();
                     if sentence.chars().count() > 280 {
                         text.push('…');
