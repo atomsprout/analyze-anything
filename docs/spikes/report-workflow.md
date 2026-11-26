@@ -98,6 +98,8 @@ eight rooted-agent tools, matching CLI/agent report IDs, explicit file-limit par
 results/limitations, cancellation preserving the previous report, and EOF while worker
 scratch is present. It requires clean process/pipe exits, removed worker scratch and
 unchanged caller-owned sentinels. Inputs are inert text and sparse bytes, never executed.
+Cancellation cleanup must finish before a separate EOF analysis starts. A ping and a
+fresh worker-scratch observation then establish that the EOF case was still active.
 
 Each run owns its temporary parent. It covers a fresh worker root, a root aged one hour
 before startup, and an aged unmarked sibling directory that the engine must preserve.

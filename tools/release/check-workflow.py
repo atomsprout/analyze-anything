@@ -112,6 +112,16 @@ def wait_worker(root, process):
     raise AssertionError("no active worker scratch observed")
 
 
+def wait_worker_exit(root, process):
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        require(process.poll() is None, "agent exited while cancelling its worker")
+        if not list(root.glob(f"worker-{process.pid}-*")):
+            return
+        time.sleep(0.01)
+    raise AssertionError("cancelled worker scratch did not disappear")
+
+
 QUERY_TOOLS = {"list_findings", "get_finding", "list_files", "get_file", "list_evidence", "list_limitations", "get_coverage"}
 
 
@@ -199,8 +209,13 @@ def check(program, base, aged, offline):
         agent.send("notifications/cancelled", {"requestId": pending}, request=False)
         require(agent.request("ping", {}) == {}, "cancelled server unresponsive")
         require(agent.tool("get_coverage", {"report_id": partial["report_id"]})["selected_artifacts"] == 1, "cancellation replaced previous report")
+        # Cancellation is asynchronous. Observe its cleanup before starting a distinct
+        # EOF case, rather than accidentally observing the preceding worker's scratch.
+        wait_worker_exit(scratch, agent.process)
         agent.send("tools/call", {"name": "analyze_input", "arguments": {"path": "large.bin"}})
         wait_worker(scratch, agent.process)
+        require(agent.request("ping", {}) == {}, "EOF analysis did not start")
+        require(list(scratch.glob(f"worker-{agent.process.pid}-*")), "EOF case finished before observation")
         # Close while a worker is present; EOF must stop it and remove its scratch.
     finally:
         agent.close()
