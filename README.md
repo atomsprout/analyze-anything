@@ -61,6 +61,11 @@ The signed stable release is 0.1.1 for Apple silicon Macs. Published [0.2.0-prev
 
 ## Use
 
+Version [0.2.0-preview.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.3)
+adds clearer identity previews, evidence-linked Apple components and explicit installer/.NET
+semantic limits. Its release pipeline checks the extracted CLI's analysis, offline queries,
+agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
+
 ```
 analyze-anything <file or folder>                 # analyze; the report goes to <name>.report/
 analyze-anything App.ipa -o out --lang zh         # choose the folder; write the report in Chinese

@@ -63,6 +63,11 @@ target/release/analyze-anything <文件或文件夹>
 
 ## 使用
 
+[0.2.0-preview.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.3)
+改进了身份摘要、Apple 组件证据关联，以及安装程序和 .NET 的语义限制说明。
+发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
+详见[真实报告验收记录](docs/spikes/report-workflow.md)。
+
 ```
 analyze-anything <文件或文件夹>                    # 分析；报告写到 <名字>.report/
 analyze-anything App.ipa -o out --lang zh         # 指定文件夹；用中文写报告
