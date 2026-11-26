@@ -59,11 +59,11 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-签名稳定版是面向 Apple 芯片 Mac 的 0.1.1。已发布的 [0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2) 提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。preview.2 Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
+签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.1 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
 
 ## 使用
 
-[0.2.0-preview.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.3)
+[0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)
 改进了身份摘要、Apple 组件证据关联，以及安装程序和 .NET 的语义限制说明。
 发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
 详见[真实报告验收记录](docs/spikes/report-workflow.md)。
@@ -165,7 +165,7 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-签名稳定版是 0.1.1；未签名的 0.2.0-preview.2 已发布。今天任何文件或文件夹都能得到一份报告，各格式有不同的分析深度和明确的局限。下一阶段检查完整的真实报告使用流程，以及发布包的分析、查询和 agent 行为；验收标准见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
+当前发布版本是 0.2.1。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
 “Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
 

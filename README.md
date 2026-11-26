@@ -57,11 +57,11 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed stable release is 0.1.1 for Apple silicon Macs. Published [0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The preview.2 Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
+The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
 
 ## Use
 
-Version [0.2.0-preview.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.3)
+Version [0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)
 adds clearer identity previews, evidence-linked Apple components and explicit installer/.NET
 semantic limits. Its release pipeline checks the extracted CLI's analysis, offline queries,
 agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
@@ -163,7 +163,7 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The signed stable release is 0.1.1; the unsigned 0.2.0-preview.2 is published. Any file or folder gets a report today, with format-specific depth and explicit limitations. The next cycle checks complete real-report workflows and packaged analysis/query/agent behavior; [the roadmap](docs/ROADMAP.md) gives its acceptance criteria. Broader platform and format qualification remains tracked work.
+The current release is 0.2.1. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
 "Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
 
