@@ -439,6 +439,30 @@ mod tests {
     }
 
     #[test]
+    fn many_supplied_packages_cannot_exceed_the_global_action_evidence_budget() {
+        let mut tree = Fixture(Vec::new());
+        for package in 0..6 {
+            let mut source = fixture().0.remove(0);
+            source.path = format!("package-{package}.msi");
+            let template = source.facts["windows.msi-actions"]["custom_actions"][0].clone();
+            let actions: Vec<_> = (0..MAX_ROWS)
+                .map(|index| {
+                    let mut action = template.clone();
+                    action["action"] = json!(format!("Action{index}"));
+                    action
+                })
+                .collect();
+            source.facts.get_mut("windows.msi-actions").expect("declarations")["custom_actions"] = json!(actions);
+            tree.0.push(source);
+        }
+        let mut out = Output::default();
+        relate(&tree, &mut out);
+        assert_eq!(out.findings.len(), 10_000);
+        assert!(out.limitations.iter().any(|l| l.code == "windows.msi-actions-incomplete"));
+        assert_eq!(out.facts.last().expect("last package status").value["truncated"], true);
+    }
+
+    #[test]
     fn row_limit_and_schema_mismatches_are_not_silent() {
         use msi::{Column, Insert, Package, PackageType, Value as M};
         let mut package = Package::create(PackageType::Installer, std::io::Cursor::new(Vec::new())).expect("controlled package");

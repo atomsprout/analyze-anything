@@ -31,14 +31,14 @@ pub const RULES: &[Rule] = &[
         id: "windows.msi-sequences",
         title_en: "MSI action sequences and launch conditions",
         title_zh: "MSI 动作序列与启动条件",
-        text_en: "Read {tables} sequence tables and {conditions} launch conditions. Positions and conditions are declarations; conditions were not evaluated and execution was not established.",
+        text_en: "Read {tables} tables for scheduling and {conditions} conditions for launch. Positions and conditions are declarations; conditions were not evaluated and execution was not established.",
         text_zh: "读取了 {tables} 个序列表和 {conditions} 个启动条件。顺序与条件来自包内声明；未求值条件，也未确定实际执行情况。",
     },
     Rule {
         id: "windows.msi-action",
         title_en: "MSI custom action declaration",
         title_zh: "MSI 自定义动作声明",
-        text_en: "Action {action} declares {execution} scheduling and appears in {count} sequence rows. Evidence retains literal conditions, table rows and captured-source resolution. This does not establish execution, effective privileges or runtime behavior.",
+        text_en: "Action {action} declares {execution} scheduling and appears in {count} rows across the read sequence tables. Evidence retains literal conditions, table rows and captured-source resolution. This does not establish execution, effective privileges or runtime behavior.",
         text_zh: "动作 {action} 声明的调度模式为 {execution}，出现在 {count} 个序列表行中。证据保留条件原文、表行与采集目标关联结果。这不能确定实际执行、有效权限或运行时行为。",
     },
     Rule {
