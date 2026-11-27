@@ -352,11 +352,11 @@ The report does not infer execution from a match or from sequence membership. An
 from these five tables may still be referenced by UI events or other unread logic.
 
 Limits are 2,000 rows per table, 8,192 bytes per string and 8 MiB of retained source text;
-target indexing stops above 100,000 artifacts or 32 MiB of paths; associations are limited to the first 500 MSI sources. Tree findings additionally stop above 10,000 actions or 16 MiB of action evidence across all MSI sources. Duplicate declared keys in nonstandard schemas are rejected before association. Limit/schema failures emit
+target indexing stops above 100,000 artifacts or 32 MiB of paths; associations are limited to the first 500 MSI sources. Tree findings additionally stop above 10,000 actions or 16 MiB of action evidence across all MSI sources. Unsupported primary keys/column types and duplicate declared keys are rejected before association; Binary stream names must derive from the standard Name key. Limit/schema failures emit
 `windows.msi-actions-incomplete`, preserve recorded issues and prevent target binding.
 Conditions, property substitutions, effective host paths, custom-action code and control flow
 are not evaluated. Binary-source matching is limited to the recorded ASCII identifier profile.
-It does not establish the effect of a custom-action DLL or script.
+It does not establish the effect of a custom-action DLL or script. Embedded MSI streams above the existing 2 GiB stream limit are rejected rather than captured as prefixes; unread streams produce extraction limitations, and engine entry/total-byte limits still apply.
 
 Windows development references use `tools/native-compare/windows-msi-actions.py` with
 `MsiOpenDatabaseW` in read-only mode. No installer is launched or installed. Recorded runs:

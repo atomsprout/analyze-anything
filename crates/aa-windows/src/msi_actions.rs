@@ -51,6 +51,25 @@ fn rows(package: &mut Package, table: &str, required: &[&str], budget: &mut Budg
             return Vec::new();
         }
     };
+    let key = match table {
+        "Binary" => "Name",
+        "LaunchCondition" => "Condition",
+        _ => "Action",
+    };
+    let keys: Vec<_> = selected.columns().iter().filter(|c| c.is_primary_key()).map(|c| c.name()).collect();
+    let schema_supported = required.iter().all(|name| {
+        selected.columns().iter().find(|c| c.name() == *name).is_some_and(|c| match *name {
+            "Type" | "Sequence" => c.coltype() == msi::ColumnType::Int16,
+            "Data" => c.coltype() == msi::ColumnType::Binary,
+            _ => matches!(c.coltype(), msi::ColumnType::Str(_)),
+        })
+    });
+    if keys != [key] || !schema_supported {
+        // Binary stream names derive from the table's primary key. A lookalike
+        // Name column in a different schema cannot establish that association.
+        budget.issue(format!("{table}: unsupported primary key or column schema"));
+        return Vec::new();
+    }
     let mut result = Vec::new();
     let mut identities = BTreeSet::new();
     for (index, row) in selected.enumerate() {
@@ -76,9 +95,10 @@ fn rows(package: &mut Package, table: &str, required: &[&str], budget: &mut Budg
             };
             fields.insert(column.name().into(), value);
         }
-        let unsupported = required.iter().any(|key| match fields.get(*key) {
+        let unsupported = required.iter().any(|name| match fields.get(*name) {
             None => true,
-            Some(value) => match *key {
+            Some(value) if *name == key => !value.as_str().is_some_and(|s| !s.is_empty()),
+            Some(value) => match *name {
                 "Type" => !value.is_i64(),
                 "Sequence" => !value.is_null() && !value.is_i64(),
                 "Data" => value != &json!({"kind": "binary-stream"}),
@@ -90,11 +110,6 @@ fn rows(package: &mut Package, table: &str, required: &[&str], budget: &mut Budg
             budget.issue(format!("{table}: row {index} exceeds text limits or has unsupported columns"));
             continue;
         }
-        let key = match table {
-            "Binary" => "Name",
-            "LaunchCondition" => "Condition",
-            _ => "Action",
-        };
         if let Some(identity) = fields.get(key)
             && !identities.insert(identity.to_string())
         {
@@ -483,20 +498,30 @@ mod tests {
     }
 
     #[test]
-    fn repeated_names_in_nonstandard_schemas_cannot_multiply_action_context() {
+    fn nonstandard_primary_keys_cannot_establish_action_or_stream_context() {
         use msi::{Column, Insert, Package, PackageType, Value as M};
-        let mut package = Package::create(PackageType::Installer, std::io::Cursor::new(Vec::new())).expect("controlled package");
-        package
-            .create_table("CustomAction", vec![Column::build("Ordinal").primary_key().int16(), Column::build("Action").string(72)])
-            .expect("nonstandard schema");
-        for index in 0..100 {
-            package.insert_rows(Insert::into("CustomAction").row(vec![M::Int(index), M::from("Repeated")])).expect("duplicate name");
+        for (table, key) in [("CustomAction", "Action"), ("Binary", "Name")] {
+            let mut package = Package::create(PackageType::Installer, std::io::Cursor::new(Vec::new())).expect("controlled package");
+            let mut columns = vec![Column::build("Ordinal").primary_key().int16(), Column::build(key).string(72)];
+            let mut required = vec![key];
+            if table == "Binary" {
+                columns.push(Column::build("Data").binary());
+                required.push("Data");
+            }
+            package.create_table(table, columns).expect("nonstandard schema");
+            for index in 0..2 {
+                let mut values = vec![M::Int(index), M::from("Repeated")];
+                if table == "Binary" {
+                    values.push(M::Binary);
+                }
+                package.insert_rows(Insert::into(table).row(values)).expect("duplicate name");
+            }
+            let bytes = package.into_inner().expect("flush").into_inner();
+            let mut package = Package::open(std::io::Cursor::new(bytes.as_slice())).expect("read package");
+            let mut budget = Budget::default();
+            assert!(rows(&mut package, table, &required, &mut budget).is_empty());
+            assert!(budget.incomplete);
+            assert!(budget.issues.iter().any(|s| s.contains("unsupported primary key")));
         }
-        let bytes = package.into_inner().expect("flush").into_inner();
-        let mut package = Package::open(std::io::Cursor::new(bytes.as_slice())).expect("read package");
-        let mut budget = Budget::default();
-        assert_eq!(rows(&mut package, "CustomAction", &["Action"], &mut budget).len(), 1);
-        assert!(budget.incomplete);
-        assert!(budget.issues.iter().any(|s| s.contains("duplicate declared key")));
     }
 }

@@ -4,23 +4,26 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Next delivery cycle
 
-Current baseline: [v0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)
+Current baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
 is published as a formal release with unsigned packages, including the report-workflow
-corrections and gates from PR #8. Signed macOS/Homebrew remains at 0.1.1. The priorities
-and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-after-021).
+corrections and gates from PR #8 and the bounded MSI action-context increment from PR #9.
+Signed macOS/Homebrew remains at 0.1.1. The priorities
+and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
 
 - [x] **Complete the current report workflow.** [Review and reproduction](spikes/report-workflow.md),
   with five hash-bound real-input scenarios, reading/native/process records and concrete
   report corrections. Extracted-package analysis/query/agent gates passed for the four
   0.2.1 CLI archives; the published Windows portable app passed 67 real-window checks.
   Qualification of older candidates remains scoped to their named artifacts/environments.
-- [ ] **MSI action context and supplied targets — implemented; release qualification pending.** Extend the existing CustomAction
+- [x] **MSI action context and captured Binary targets.** Extend the existing CustomAction
   and LaunchCondition inventory with supported action sequences, phase/order, literal
   conditions and Binary-table payload links. Preserve original table/row evidence,
   ambiguity, unresolved states and unread semantics in reports and queries. Link supported
   declarations to captured targets without predicting installation or consulting the host.
-  Validate real redistributable cases against read-only native table inspection, including
-  missing/ambiguous targets and bounded malformed inputs. Burn, external-payload profiles
+  Read-only Windows Installer comparisons passed 97 constructed, 75 7-Zip and 107 OpenJDK
+  checks; the profile has malformed, missing/ambiguous target and resource-limit tests.
+  See [W9 scope and records](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
+  Burn, external-payload profiles
   and MSP/MST semantics retain separate W9 gates.
 - [ ] **Then: bounded .NET IL references and capability explanations.** Qualify one
   profile using existing CLR metadata: method bodies, supported call/string/token
@@ -134,7 +137,7 @@ The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md
 - [ ] **W7 — Package semantics**: NuGet, VSIX and WinGet metadata and supported dependency relationships in the existing component inventory.
   NuGet, VSIX 2.0 and WinGet 1.x now feed the shared component inventory. NuGet links supported exact stable dependencies and VSIX links qualifying exact nested dependencies. WinGet associates supplied manifest sets, links installer declarations to supplied bytes by SHA-256 and records supported package dependency candidates. See [NuGet](spikes/windows-nuget.md), [VSIX](spikes/windows-vsix.md) and [WinGet](spikes/windows-winget.md) for reference comparisons. Broader version matching and additional package and manifest profiles remain open.
 - [ ] **W8 — Modern bundles**: initial bounded .NET single-file and PyInstaller CArchive contents shipped in preview.2. Broader host/layout profiles and opaque code contents remain open; see [the qualified profiles](spikes/executable-bundles.md).
-- [ ] **W9 — Installer relationships**: MSI action conditions and ordering, explicitly supplied external payloads, and a separate Burn feasibility check.
+- [ ] **W9 — Installer relationships**: the initial five-table MSI sequence/condition and captured Binary-source profile shipped in 0.2.2. UI events, broader source/condition semantics, explicitly supplied external payloads and Burn retain separate gates.
 - [ ] **W11 — Documents**: staged Office container, macro-source and embedded-object analysis, with explicit limits for unread content.
 - [ ] **W12 — Images**: separate feasibility and implementation gates for ISO, WIM and virtual disks, without mounting them.
 
