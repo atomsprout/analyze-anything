@@ -1385,7 +1385,7 @@ fn msi_tables_and_files_match_msitools() {
     let ours = &installer["custom_actions"][0];
     assert_eq!(ours["action"].as_str(), Some(action["Action"].as_str()));
     assert_eq!(ours["type"].to_string(), action["Type"]);
-    assert_eq!(ours["flags"], serde_json::json!(["deferred", "runs as SYSTEM"]));
+    assert_eq!(ours["flags"], serde_json::json!(["deferred", "no impersonation requested"]));
     assert_eq!(installer["commands"][0]["command"], "installed EXE: ProgramFilesFolder/Fixture MSI/hello.exe --first-run");
 
     let shortcut = &msi_table(&reference, "Shortcut")[0];
@@ -1928,4 +1928,160 @@ fn damage_inside_structures_never_panics() {
         changed[at] = 0xff;
         analyze(&[("n.exe", changed)]);
     }
+}
+
+fn action_package() -> Vec<u8> {
+    use msi::{Column, Insert, Package, PackageType, Value as M};
+    use std::io::{Cursor, Write};
+    let mut package = Package::create(PackageType::Installer, Cursor::new(Vec::new())).expect("create controlled MSI");
+    package
+        .create_table(
+            "CustomAction",
+            vec![
+                Column::build("Action").primary_key().string(72),
+                Column::build("Type").int16(),
+                Column::build("Source").nullable().string(72),
+                Column::build("Target").nullable().string(0),
+            ],
+        )
+        .expect("custom action table");
+    for (name, kind, source, target) in [
+        ("RunPayload", 0xc02, "Payload", "--first-run"),
+        ("RollbackPayload", 0x502, "Payload", "--undo"),
+        ("CommitPayload", 0x602, "Payload", "--commit"),
+        ("FirstSequence", 0x102, "Payload", "--once"),
+        ("MissingPayload", 2, "Missing", "--absent"),
+        ("HostProperty", 50, "EXECUTABLE", "--host-dependent"),
+        ("NotSequenced", 2, "Payload", "--not-in-sequence"),
+    ] {
+        package
+            .insert_rows(Insert::into("CustomAction").row(vec![M::from(name), M::Int(kind), M::from(source), M::from(target)]))
+            .expect("custom action row");
+    }
+    package
+        .create_table("Binary", vec![Column::build("Name").primary_key().string(72), Column::build("Data").binary()])
+        .expect("binary table");
+    package.insert_rows(Insert::into("Binary").row(vec![M::from("Payload"), M::Binary])).expect("payload declaration");
+    package
+        .write_stream("Binary.Payload")
+        .expect("binary stream")
+        .write_all(b"Controlled inert payload, never execute.\n")
+        .expect("payload bytes");
+    for table in ["InstallExecuteSequence", "InstallUISequence", "AdminExecuteSequence", "AdminUISequence", "AdvtExecuteSequence"] {
+        package
+            .create_table(
+                table,
+                vec![
+                    Column::build("Action").primary_key().string(72),
+                    Column::build("Condition").nullable().string(0),
+                    Column::build("Sequence").nullable().int16(),
+                ],
+            )
+            .expect("sequence table");
+        for (action, condition, sequence) in [
+            ("RunPayload", M::from("NOT Installed AND MODE = \"full\""), M::Int(4000)),
+            ("RollbackPayload", M::from("REMOVE = \"ALL\""), M::Int(3990)),
+            ("CommitPayload", M::Null, M::Int(4010)),
+            ("FirstSequence", M::from("1"), M::Int(4020)),
+            ("MissingPayload", M::from("NOT Installed"), M::Int(4030)),
+            ("ExitSuccess", M::Null, M::Int(-1)),
+            ("ExitCancel", M::Null, M::Int(-2)),
+            ("ExitError", M::Null, M::Int(-3)),
+            ("ExitSuspend", M::Null, M::Int(-4)),
+            ("DisabledAction", M::Null, M::Null),
+        ] {
+            package.insert_rows(Insert::into(table).row(vec![M::from(action), condition, sequence])).expect("sequence row");
+        }
+    }
+    package
+        .create_table("LaunchCondition", vec![Column::build("Condition").primary_key().string(0), Column::build("Description").string(0)])
+        .expect("launch condition table");
+    package
+        .insert_rows(Insert::into("LaunchCondition").row(vec![M::from("VersionNT >= 600"), M::from("Declared host requirement")]))
+        .expect("launch condition");
+    package.into_inner().expect("flush MSI").into_inner()
+}
+
+#[test]
+fn msi_action_context_keeps_literals_phases_and_captured_binary_evidence() {
+    let bytes = action_package();
+    let run = analyze(&[("actions.msi", bytes.clone())]);
+    let fact = run.fact("actions.msi", "windows.msi-actions");
+    assert_eq!(fact["incomplete"], false);
+    assert_eq!(fact["execution_established"], false);
+    assert_eq!(fact["conditions_evaluated"], false);
+    assert_eq!(fact["sequences"].as_array().expect("sequences").len(), 5);
+    let actions = fact["custom_actions"].as_array().expect("actions");
+    let action = |name: &str| actions.iter().find(|a| a["action"] == name).expect("named action");
+    assert_eq!(action("RunPayload")["execution"], "deferred");
+    assert_eq!(action("RunPayload")["no_impersonation_requested"], true);
+    assert_eq!(action("RunPayload")["schedules"].as_array().expect("all phases").len(), 5);
+    assert_eq!(action("RunPayload")["schedules"][0]["condition"], "NOT Installed AND MODE = \"full\"");
+    assert_eq!(action("RunPayload")["schedules"][0]["row"]["Sequence"], 4000);
+    assert_eq!(action("RollbackPayload")["execution"], "rollback");
+    assert_eq!(action("CommitPayload")["execution"], "commit");
+    assert_eq!(action("FirstSequence")["execution"], "immediate");
+    assert_eq!(action("FirstSequence")["repeat_scheduling"], "first-sequence");
+    assert_eq!(action("NotSequenced")["scheduling_status"], "not-found-in-read-sequences");
+    let entries = fact["sequences"][0]["rows"].as_array().expect("sequence rows");
+    assert_eq!(entries.iter().find(|e| e["action"] == "ExitError").expect("error termination")["position_kind"], "termination-error");
+    assert_eq!(entries.iter().find(|e| e["action"] == "DisabledAction").expect("null sequence")["position_kind"], "not-scheduled-null");
+    let references = run.fact("actions.msi", "windows.msi-action-targets")["references"].as_array().expect("relationships");
+    let reference = |name: &str| references.iter().find(|a| a["action"] == name).expect("named relationship");
+    assert_eq!(reference("RunPayload")["status"], "matched-supplied-declaration");
+    assert_eq!(reference("RunPayload")["target"], "actions.msi/[Binary]/Payload");
+    assert_eq!(reference("RunPayload")["target_sha256"], run.sha256("actions.msi/[Binary]/Payload"));
+    assert_eq!(reference("MissingPayload")["reason"], "binary-row-not-unique-or-missing");
+    assert_eq!(reference("HostProperty")["reason"], "action-source-outside-binary-profile");
+    assert_eq!(run.findings("windows.msi-action").len(), 7);
+    assert!(run.findings("windows.msi-action").iter().any(|f| f.evidence.iter().any(|e| e.artifact == "actions.msi/[Binary]/Payload")));
+    assert_eq!(fact, analyze(&[("actions.msi", bytes)]).fact("actions.msi", "windows.msi-actions"));
+}
+
+#[test]
+fn msi_action_table_limits_and_unsupported_columns_are_explicit() {
+    use msi::{Column, Insert, Package, Value as M};
+    let mut package = Package::open(std::io::Cursor::new(action_package())).expect("controlled MSI");
+    package
+        .insert_rows(Insert::into("CustomAction").row(vec![M::from("TooLong"), M::Int(2), M::from("Payload"), M::from("x".repeat(8193))]))
+        .expect("oversized field fixture");
+    package
+        .create_table("ControlEvent", vec![Column::build("Dialog_").primary_key().string(72), Column::build("Event").string(72)])
+        .expect("outside-profile table");
+    let run = analyze(&[("long.msi", package.into_inner().expect("flush").into_inner())]);
+    assert_eq!(run.fact("long.msi", "windows.msi-actions")["incomplete"], true);
+    assert!(run.out.limitations.iter().any(|l| l.code == "windows.msi-actions-incomplete"));
+    assert!(
+        run.fact("long.msi", "windows.msi-action-targets")["references"]
+            .as_array()
+            .expect("references")
+            .iter()
+            .all(|r| r["status"] == "unresolved")
+    );
+}
+
+#[test]
+#[ignore = "writes the controlled, inert MSI used by read-only native reference checks"]
+fn write_msi_action_fixture() {
+    let path = std::env::var_os("AA_MSI_FIXTURE_OUT").expect("set AA_MSI_FIXTURE_OUT to an explicit output path");
+    std::fs::write(path, action_package()).expect("write controlled MSI");
+}
+
+#[test]
+fn stored_msi_action_fixture_matches_independent_native_rows_and_stream_hashes() {
+    let run = run_one("native-actions.msi");
+    let native: Value = serde_json::from_slice(&data("native-actions.msi.ref.json")).expect("Windows Installer snapshot");
+    assert_eq!(native["sha256"], run.sha256("native-actions.msi"));
+    let fact = run.fact("native-actions.msi", "windows.msi-actions");
+    for sequence in fact["sequences"].as_array().expect("sequences") {
+        let table = sequence["table"].as_str().expect("table name");
+        let mut actual: Vec<_> = sequence["rows"].as_array().expect("rows").iter().map(|r| r["row"].clone()).collect();
+        let mut expected = native["tables"][table].as_array().expect("native rows").clone();
+        actual.sort_by_key(Value::to_string);
+        expected.sort_by_key(Value::to_string);
+        assert_eq!(actual, expected, "{table}");
+    }
+    let refs = run.fact("native-actions.msi", "windows.msi-action-targets")["references"].as_array().expect("references");
+    assert_eq!(refs.iter().filter(|r| r["status"] == "matched-supplied-declaration").count(), 5);
+    assert_eq!(run.sha256("native-actions.msi/[Binary]/Payload"), native["tables"]["Binary"][0]["Data"]["sha256"]);
 }

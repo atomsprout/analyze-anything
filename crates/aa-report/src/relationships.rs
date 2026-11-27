@@ -58,7 +58,9 @@ impl Relationships {
 pub fn collect(report: &Report) -> Relationships {
     let mut result = Relationships::default();
     for artifact in &report.artifacts {
-        for (key, list) in [("windows.input-references", "references"), ("windows.source-files", "records")] {
+        for (key, list) in
+            [("windows.input-references", "references"), ("windows.source-files", "records"), ("windows.msi-action-targets", "references")]
+        {
             if let Some(fact) = artifact.facts.get(key) {
                 result.source_truncated |= fact.get("truncated").and_then(Value::as_bool) == Some(true);
                 for (ordinal, row) in fact[list].as_array().into_iter().flatten().enumerate() {

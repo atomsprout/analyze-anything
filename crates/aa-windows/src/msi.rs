@@ -15,7 +15,7 @@ const CFB_MAGIC: &[u8] = &[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 /// Largest embedded stream read into memory.
 const MAX_STREAM: u64 = 2 * 1024 * 1024 * 1024;
 
-type Package<'a> = msi::Package<Cursor<&'a [u8]>>;
+pub(super) type Package<'a> = msi::Package<Cursor<&'a [u8]>>;
 
 pub struct Msi;
 
@@ -278,7 +278,11 @@ fn custom_action(kind: i64, source: &str, target: &str) -> Option<String> {
 /// Reads the tables of an MSI. `None` when `bytes` is not one.
 pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) -> Option<Installer> {
     let mut package = open(bytes)?;
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| read_tables(&mut package)));
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let model = read_tables(&mut package);
+        crate::msi_actions::read(&mut package, file, out);
+        model
+    }));
     match result {
         Ok(model) => Some(model),
         Err(_) => {
@@ -368,10 +372,10 @@ fn read_tables(package: &mut Package) -> Installer {
         let (name, source, target) = (get(&row, "Action"), get(&row, "Source"), get(&row, "Target"));
         let mut flags = Vec::new();
         if kind & 0x400 != 0 {
-            flags.push("deferred");
+            flags.push(crate::msi_actions::execution(kind));
         }
-        if kind & 0x800 != 0 {
-            flags.push("runs as SYSTEM");
+        if kind & 0xc00 == 0xc00 {
+            flags.push("no impersonation requested");
         }
         if actions.len() < 2000 {
             actions.push(json!({ "action": name, "type": kind, "source": source, "target": target, "flags": flags }));

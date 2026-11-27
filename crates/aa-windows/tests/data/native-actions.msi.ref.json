@@ -1,0 +1,329 @@
+{
+  "sample": "native-actions.msi",
+  "sha256": "6b11d6bc1fa37a0a563c002e8282322563ae1d172052ebdd255a8d9636075eda",
+  "reader": "Windows Installer msi.dll, MsiOpenDatabaseW read-only",
+  "tables": {
+    "CustomAction": [
+      {
+        "Action": "RunPayload",
+        "Type": 3074,
+        "Source": "Payload",
+        "Target": "--first-run"
+      },
+      {
+        "Action": "RollbackPayload",
+        "Type": 1282,
+        "Source": "Payload",
+        "Target": "--undo"
+      },
+      {
+        "Action": "CommitPayload",
+        "Type": 1538,
+        "Source": "Payload",
+        "Target": "--commit"
+      },
+      {
+        "Action": "FirstSequence",
+        "Type": 258,
+        "Source": "Payload",
+        "Target": "--once"
+      },
+      {
+        "Action": "MissingPayload",
+        "Type": 2,
+        "Source": "Missing",
+        "Target": "--absent"
+      },
+      {
+        "Action": "HostProperty",
+        "Type": 50,
+        "Source": "EXECUTABLE",
+        "Target": "--host-dependent"
+      },
+      {
+        "Action": "NotSequenced",
+        "Type": 2,
+        "Source": "Payload",
+        "Target": "--not-in-sequence"
+      }
+    ],
+    "LaunchCondition": [
+      {
+        "Condition": "VersionNT >= 600",
+        "Description": "Declared host requirement"
+      }
+    ],
+    "Binary": [
+      {
+        "Name": "Payload",
+        "Data": {
+          "sha256": "29baa2ff2505249b94b48448ce524a9cffa31d53376241c94f323dab52e0bfeb",
+          "size": 41
+        }
+      }
+    ],
+    "InstallExecuteSequence": [
+      {
+        "Action": "RunPayload",
+        "Condition": "NOT Installed AND MODE = \"full\"",
+        "Sequence": 4000
+      },
+      {
+        "Action": "RollbackPayload",
+        "Condition": "REMOVE = \"ALL\"",
+        "Sequence": 3990
+      },
+      {
+        "Action": "CommitPayload",
+        "Condition": null,
+        "Sequence": 4010
+      },
+      {
+        "Action": "FirstSequence",
+        "Condition": "1",
+        "Sequence": 4020
+      },
+      {
+        "Action": "MissingPayload",
+        "Condition": "NOT Installed",
+        "Sequence": 4030
+      },
+      {
+        "Action": "ExitSuccess",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "ExitCancel",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "ExitError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "ExitSuspend",
+        "Condition": null,
+        "Sequence": -4
+      },
+      {
+        "Action": "DisabledAction",
+        "Condition": null,
+        "Sequence": null
+      }
+    ],
+    "InstallUISequence": [
+      {
+        "Action": "RunPayload",
+        "Condition": "NOT Installed AND MODE = \"full\"",
+        "Sequence": 4000
+      },
+      {
+        "Action": "RollbackPayload",
+        "Condition": "REMOVE = \"ALL\"",
+        "Sequence": 3990
+      },
+      {
+        "Action": "CommitPayload",
+        "Condition": null,
+        "Sequence": 4010
+      },
+      {
+        "Action": "FirstSequence",
+        "Condition": "1",
+        "Sequence": 4020
+      },
+      {
+        "Action": "MissingPayload",
+        "Condition": "NOT Installed",
+        "Sequence": 4030
+      },
+      {
+        "Action": "ExitSuccess",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "ExitCancel",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "ExitError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "ExitSuspend",
+        "Condition": null,
+        "Sequence": -4
+      },
+      {
+        "Action": "DisabledAction",
+        "Condition": null,
+        "Sequence": null
+      }
+    ],
+    "AdminExecuteSequence": [
+      {
+        "Action": "RunPayload",
+        "Condition": "NOT Installed AND MODE = \"full\"",
+        "Sequence": 4000
+      },
+      {
+        "Action": "RollbackPayload",
+        "Condition": "REMOVE = \"ALL\"",
+        "Sequence": 3990
+      },
+      {
+        "Action": "CommitPayload",
+        "Condition": null,
+        "Sequence": 4010
+      },
+      {
+        "Action": "FirstSequence",
+        "Condition": "1",
+        "Sequence": 4020
+      },
+      {
+        "Action": "MissingPayload",
+        "Condition": "NOT Installed",
+        "Sequence": 4030
+      },
+      {
+        "Action": "ExitSuccess",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "ExitCancel",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "ExitError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "ExitSuspend",
+        "Condition": null,
+        "Sequence": -4
+      },
+      {
+        "Action": "DisabledAction",
+        "Condition": null,
+        "Sequence": null
+      }
+    ],
+    "AdminUISequence": [
+      {
+        "Action": "RunPayload",
+        "Condition": "NOT Installed AND MODE = \"full\"",
+        "Sequence": 4000
+      },
+      {
+        "Action": "RollbackPayload",
+        "Condition": "REMOVE = \"ALL\"",
+        "Sequence": 3990
+      },
+      {
+        "Action": "CommitPayload",
+        "Condition": null,
+        "Sequence": 4010
+      },
+      {
+        "Action": "FirstSequence",
+        "Condition": "1",
+        "Sequence": 4020
+      },
+      {
+        "Action": "MissingPayload",
+        "Condition": "NOT Installed",
+        "Sequence": 4030
+      },
+      {
+        "Action": "ExitSuccess",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "ExitCancel",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "ExitError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "ExitSuspend",
+        "Condition": null,
+        "Sequence": -4
+      },
+      {
+        "Action": "DisabledAction",
+        "Condition": null,
+        "Sequence": null
+      }
+    ],
+    "AdvtExecuteSequence": [
+      {
+        "Action": "RunPayload",
+        "Condition": "NOT Installed AND MODE = \"full\"",
+        "Sequence": 4000
+      },
+      {
+        "Action": "RollbackPayload",
+        "Condition": "REMOVE = \"ALL\"",
+        "Sequence": 3990
+      },
+      {
+        "Action": "CommitPayload",
+        "Condition": null,
+        "Sequence": 4010
+      },
+      {
+        "Action": "FirstSequence",
+        "Condition": "1",
+        "Sequence": 4020
+      },
+      {
+        "Action": "MissingPayload",
+        "Condition": "NOT Installed",
+        "Sequence": 4030
+      },
+      {
+        "Action": "ExitSuccess",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "ExitCancel",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "ExitError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "ExitSuspend",
+        "Condition": null,
+        "Sequence": -4
+      },
+      {
+        "Action": "DisabledAction",
+        "Condition": null,
+        "Sequence": null
+      }
+    ]
+  },
+  "checks": 97,
+  "execution": "none",
+  "installation": "none"
+}

@@ -11,6 +11,7 @@ mkdirSync(fixtures, { recursive: true });
 for (const [input, output, name] of [
   ["../../crates/aa-apple/tests/data/tiny.dmg", "out", "sample-report"],
   ["../../crates/aa-windows/tests/data/native.lnk", "relationships", "relationships-report"],
+  ["../../crates/aa-windows/tests/data/native-actions.msi", "msi-actions", "msi-actions-report"],
 ]) {
   const result = spawnSync("cargo", [
     "run", "-q", "--release", "-p", "aa-cli", "--", "analyze",

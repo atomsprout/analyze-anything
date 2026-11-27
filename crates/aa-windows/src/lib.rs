@@ -38,6 +38,7 @@ mod inno;
 mod installer;
 mod lnk;
 mod msi;
+mod msi_actions;
 mod msisig;
 mod msix_blockmap;
 mod msix_bundle;

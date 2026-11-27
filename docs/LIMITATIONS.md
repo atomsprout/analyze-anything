@@ -33,6 +33,19 @@ installation declarations from execution and explicitly report unsupported insta
 execution semantics and unread .NET IL method bodies. These corrections do not add MSI
 condition evaluation, managed call-flow analysis or new runtime/OS qualification.
 
+## MSI action-context profile
+
+The 0.2.2 increment preserves five sequence tables, literal conditions, CustomAction
+scheduling flags and supported Binary-source links. Windows Installer read-only references
+passed for a constructed inert package, 7-Zip 24.08 and OpenJDK 25.0.3+9; exact sample hashes,
+observations, native records and limits are in [W9](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
+No condition is evaluated. UI-event invocation, property substitution, effective privileges,
+installed-file action targets and action-code behavior are unresolved. A captured Binary
+stream is not proof that an action executes it. An action absent from the read sequence
+tables is not proof that it never executes. Table/field/index limits and unsupported schemas
+are reported explicitly; no host files are searched for targets. Python/.NET code-depth and
+portable raw-evidence retention remain later roadmap work.
+
 ## Parts not verified on real samples
 
 The initial Linux package readers have native Linux references for Debian node-isarray
