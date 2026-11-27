@@ -28,6 +28,34 @@ macro_rules! registry_pattern_rule {
 
 pub const RULES: &[Rule] = &[
     Rule {
+        id: "windows.msi-sequences",
+        title_en: "MSI action sequences and launch conditions",
+        title_zh: "MSI 动作序列与启动条件",
+        text_en: "Read {tables} tables for scheduling and {conditions} conditions for launch. Positions and conditions are declarations; conditions were not evaluated and execution was not established.",
+        text_zh: "读取了 {tables} 个序列表和 {conditions} 个启动条件。顺序与条件来自包内声明；未求值条件，也未确定实际执行情况。",
+    },
+    Rule {
+        id: "windows.msi-action",
+        title_en: "MSI custom action declaration",
+        title_zh: "MSI 自定义动作声明",
+        text_en: "Action {action} declares {execution} scheduling and appears in {count} rows across the read sequence tables. Evidence retains literal conditions, table rows and captured-source resolution. This does not establish execution, effective privileges or runtime behavior.",
+        text_zh: "动作 {action} 声明的调度模式为 {execution}，出现在 {count} 个序列表行中。证据保留条件原文、表行与采集目标关联结果。这不能确定实际执行、有效权限或运行时行为。",
+    },
+    Rule {
+        id: "windows.msi-actions-incomplete",
+        title_en: "MSI action declarations partially read",
+        title_zh: "MSI 动作声明读取不完整",
+        text_en: "A table, row, field, scheduling value or target index exceeds the supported profile or a reading limit. Unread declarations and their relationships remain unresolved.",
+        text_zh: "部分表、行、字段、调度值或目标索引超出支持范围或读取上限。未读声明及其关联仍未确定。",
+    },
+    Rule {
+        id: "windows.msi-target-unresolved",
+        title_en: "Some MSI action sources remain unresolved",
+        title_zh: "部分 MSI 动作来源尚未关联",
+        text_en: "Some custom-action sources could not be uniquely bound to captured Binary-table streams. The report records reasons; installed-file, property, directory and inline-code semantics are separate from this profile.",
+        text_zh: "部分自定义动作来源无法唯一关联到已采集的 Binary 表数据流。报告记录了原因；已安装文件、属性、目录及内联代码语义不属于此关联范围。",
+    },
+    Rule {
         id: "windows.installer-semantics-unresolved",
         title_zh: "安装执行语义未建立",
         title_en: "Installation execution semantics unresolved",

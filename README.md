@@ -20,7 +20,7 @@ That writes `App.ipa.report/` with the report as HTML, PDF, Markdown, plain text
 There are two ways to use it, on the same engine, giving the same report for the same input:
 
 - the **command line**, `analyze-anything` (short name `aaaa`);
-- the **desktop app** for macOS, with an unsigned Windows x64 preview: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history, and, if you set it up, have a model explain the report beside it.
+- the **desktop app** for macOS, with unsigned Windows x64 packages: drop a file, watch the progress, read the report, click a piece of evidence to see its bytes, export, keep a history, and, if you set it up, have a model explain the report beside it.
 
 ## What it looks like
 
@@ -57,11 +57,11 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
+The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
 
 ## Use
 
-Version [0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)
+Version [0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
 adds clearer identity previews, evidence-linked Apple components and explicit installer/.NET
 semantic limits. Its release pipeline checks the extracted CLI's analysis, offline queries,
 agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
@@ -163,14 +163,13 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The current release is 0.2.1. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
+The current release is 0.2.2. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-"Anything" is a promise about the floor and a direction for the ceiling: nothing is refused, and depth is added one format at a time, each as a small crate. Next, in order:
+Version 0.2.2 adds MSI action sequence/condition context and links supported Binary-table sources to captured payloads. Original table rows and hashes are evidence; conditions are not evaluated and execution is not inferred. The earlier 0.2–0.5 planning groups shipped together and are recorded as completed history. Next, in order:
 
-1. **0.2 — Reliable use**: qualify cross-platform delivery, cancellation, resource limits and incomplete analysis.
-2. **0.3 — Understand the supplied software**: connect entry points, payloads, components and integrity declarations, with useful report orientation and explicit coverage.
-3. **0.4 — Read more contents**: bounded .NET single-file, PyInstaller and Linux package profiles, reusing the existing analyzers.
-4. **0.5 — Find and reuse answers**: offline report queries, easier evidence navigation, JSON compatibility and explicit agent analysis workflows.
+1. **Static code evidence**: qualify one bounded .NET IL profile with method-level references and explainable capability evidence.
+2. **Software composition**: deepen one Electron/npm metadata profile, distinguishing dependency declarations from captured components and their source fields.
+3. **Portable evidence review**: consider optional bounded, hash-bound byte fragments for saved reports after defining selection and storage controls.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
 

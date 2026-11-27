@@ -82,7 +82,7 @@ jobs:
           $slow = Join-Path $env:RUNNER_TEMP 'aa-desktop-slow.bin'
           $file = [IO.File]::Create($slow)
           try { $file.SetLength(1GB) } finally { $file.Dispose() }
-          python -u tools/desktop-check/check.py target/debug/analyze-anything-desktop.exe target/debug/analyze-anything.exe crates/aa-unpack/tests/data/sample.zip crates/aa-unpack/tests/data/sample.tar.gz --slow $slow --timeout 300
+          python -u tools/desktop-check/check.py target/debug/analyze-anything-desktop.exe target/debug/analyze-anything.exe crates/aa-windows/tests/data/native-actions.msi crates/aa-unpack/tests/data/sample.tar.gz --slow $slow --timeout 300
       - name: Compare Linux WebKitGTK desktop exports with the CLI
         if: runner.os == 'Linux'
         working-directory: .
@@ -93,7 +93,7 @@ jobs:
           cargo build --locked -p aa-desktop -p aa-cli -F tauri/custom-protocol
           slow="$RUNNER_TEMP/aa-desktop-slow.bin"
           truncate -s 1G "$slow"
-          dbus-run-session -- xvfb-run -a python3 -u tools/desktop-check/check.py target/debug/analyze-anything-desktop target/debug/analyze-anything crates/aa-unpack/tests/data/sample.zip crates/aa-unpack/tests/data/sample.tar.gz --slow "$slow" --timeout 300
+          dbus-run-session -- xvfb-run -a python3 -u tools/desktop-check/check.py target/debug/analyze-anything-desktop target/debug/analyze-anything crates/aa-windows/tests/data/native-actions.msi crates/aa-unpack/tests/data/sample.tar.gz --slow "$slow" --timeout 300
 
   licenses:
     runs-on: ubuntu-latest

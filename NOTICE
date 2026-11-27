@@ -233,3 +233,19 @@ Copyright (c) Microsoft Corporation. MIT, see LICENSE-winget-pkgs.txt.
 The immutable source blob IDs are listed in docs/spikes/windows-winget.md.
 Only manifest text is redistributed. The referenced 7-Zip installers are
 separate downloads and are never executed by the analyzer.
+
+MSI action-context qualification inputs and records:
+- crates/aa-windows/tests/data/native-actions.msi and its .ref.json are project-authored
+  Apache-2.0 inert test data. The ignored write_msi_action_fixture test in pipeline.rs
+  reproduces the declarations and payload; Windows Installer reads the reference without
+  installing or executing it. Reproduction does not promise identical package timestamps.
+- External 7-Zip 24.08 x64 MSI, https://www.7-zip.org/a/7z2408-x64.msi:
+  Copyright Igor Pavlov; principally GNU LGPL, with BSD portions and the unRAR restriction.
+  Licence: https://www.7-zip.org/license.txt. The installer is not bundled here.
+- External Eclipse Temurin OpenJDK 25.0.3+9 x64 Windows MSI:
+  https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.3%2B9
+  OpenJDK is GPLv2 with the Classpath Exception; bundled components retain their notices.
+  Licence: https://github.com/adoptium/jdk25u/blob/master/LICENSE.
+  The installer is not bundled here. The local sample digest, read-only table observations
+  and native Binary-stream hashes are in docs/spikes/windows-msi-actions-openjdk.json;
+  the corresponding 7-Zip record is windows-msi-actions-7zip.json. No sample was launched.

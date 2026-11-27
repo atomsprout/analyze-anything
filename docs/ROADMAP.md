@@ -1,6 +1,8 @@
 # Roadmap
 
-The latest signed stable release is [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1) for Apple silicon Macs. The published [v0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable and offline NSIS packages. Its release tests, packaged self-tests and named Linux runtime checks passed. All 11 attachment digests were checked; the extracted Windows CLI also passed the query/agent workflow with an aged worker root.
+The current release is [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2), adding bounded MSI action sequence/condition context and captured Binary-source relationships. It uses the unsigned CLI and Windows desktop distribution channel; exact artifact checks and platform qualification are recorded in its release notes. The latest signed and notarized macOS/Homebrew release remains [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1).
+
+The preceding [v0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1) passed [source CI](https://github.com/atomsprout/analyze-anything/actions/runs/45893998208) and [release gates](https://github.com/atomsprout/analyze-anything/actions/runs/45893998676), including extracted-package analysis/query/agent workflows. Its Windows portable app passed 67 real-window checks. That record does not qualify later installers: the earlier disconnected Windows guest qualification was not repeated with the 0.2.1 or 0.2.2 installer.
 
 The previous **0.2–0.5 labels were implementation acceptance groups**, delivered together through [PR #6](https://github.com/atomsprout/analyze-anything/pull/6), with the worker-root correction in [PR #7](https://github.com/atomsprout/analyze-anything/pull/7). They are completed history, not four future releases. [PLAN-VERSIONS.md](PLAN-VERSIONS.md) retains that acceptance record; [TODO.md](TODO.md) tracks open work and [LIMITATIONS.md](LIMITATIONS.md) records its tested boundaries.
 
@@ -12,25 +14,51 @@ not be established. Existing opening questions, relationship indexes and offline
 already support this. The next work should complete useful explanations and evidence
 workflows around them, with a small acceptance set for each delivery.
 
-## Delivery order from preview.2
+## Related-project review (2026-11-27)
+
+This is a review of official project documentation, not an execution, accuracy or
+performance benchmark. The projects address different audiences; Malcat is a commercial
+product. Their useful design lessons are selected against this project's fixed guarantees.
+
+| Reference | Documented focus | Consequence for this roadmap |
+|---|---|---|
+| [Detect It Easy](https://github.com/horsicq/Detect-It-Easy) | File identification using signatures and heuristics | Make identity and toolchain hints explainable, retain uncertainty and test false positives; expand profiles when real reports justify them. |
+| [capa](https://github.com/mandiant/capa) | Capability rules with detailed match locations; offline result exploration | Explain a capability through scoped combinations of evidence and code locations. Static references must not become claims of execution. |
+| [Malcat](https://malcat.fr/features.html) | Structured file inspection and native, .NET, Python and installer-code readers | Read more of code already captured, starting with one bounded .NET IL profile; keep navigation from an observation to its source. |
+| [Syft](https://github.com/anchore/syft) and [ScanCode](https://github.com/aboutcode-org/scancode-toolkit) | Component inventories/SBOMs, package metadata and licence/origin evidence | Deepen the existing inventory and CycloneDX output: distinguish dependency declarations, captured components and their exact metadata sources. |
+| [MobSF](https://github.com/MobSF/Mobile-Security-Framework-MobSF) | Mobile static/dynamic analysis, including hybrid application code | Connect platform declarations to embedded contents. Hybrid code is a later candidate; running applications remains outside ordinary analysis. |
+| [Binwalk](https://github.com/ReFirmLabs/binwalk) | Embedded data identification and extraction, primarily for firmware | Preserve container provenance and unread regions. Broad carving and firmware/filesystem expansion need their own bounded profiles and real cases. |
+
+The resulting direction is an offline, reviewable explanation of one supplied software
+artifact: identity, composition, declared operations, static capability evidence and unknowns.
+Existing summaries, evidence/hex views, component inventories, CycloneDX, queries and MCP
+are foundations to deepen. Comparing two software versions is not a delivery priority.
+
+## Delivery order from 0.2.2
 
 | Order | User outcome | Bounded scope | Acceptance |
 |---|---|---|---|
-| 1. Complete the current workflow — implemented and reviewed | Read a useful report and reliably finish or stop an analysis | Five representative real-input scenarios, source corrections, packaged CLI/agent automation and delivery documentation | [Recorded Windows acceptance](spikes/report-workflow.md), with evidence or explicit unknowns for each reading question; lifecycle and partial-result checks are in CI/release gates |
-| 2. Explain installation and entry declarations | Follow a declared operation to its condition, source and supplied target | Start with MSI action sequence/condition context and supported Binary-table payload links; connect existing installer and entry-point facts | A report preserves action phase, order, literal conditions, target status and original table evidence without asserting execution |
-| 3. Reopen the evidence | Revisit selected raw evidence after the original input is unavailable | Optional bounded evidence fragments for saved reports/history, with hashes, explicit omissions and export controls | A reopened report can verify and display the retained byte ranges; limits and unavailable material remain explicit |
-| 4. Read an existing code blind spot | Inspect more of code already found inside supported bundles | Scope one .NET IL or Python bytecode/PYZ profile after a feasibility check and representative samples | Bounded static references/constants retain source locations, supported versions and tested gaps; no runtime loading or evaluation |
+| Completed foundation | Read a useful report and reliably finish or stop an analysis | Five representative real-input scenarios, source corrections and packaged CLI/agent automation, shipped through PR #8 in 0.2.1 | [Recorded report review](spikes/report-workflow.md); platform-specific CI/release gates retain their own revision and runtime scope |
+| Completed in 0.2.2: MSI action context | Follow a declared operation to its condition, source and supplied target | MSI action sequences, phase/order, literal conditions and supported Binary-table payload links; reuse existing entry-point relationships and evidence navigation | Preserve original table/row evidence, ambiguous or missing targets and unread semantics; validate real redistributable samples against read-only native inspection. Reports and queries must expose the same facts without asserting execution. |
+| Next: explain static code references | See which method contains a capability-related reference and why it matters | Start with one .NET IL profile using existing CLR metadata; bounded method-body decoding, supported call/string/token references and a small set of explainable same-method evidence combinations | Real licensed samples and independent static-reader references; method/token and proven byte locations, malformed/unsupported cases and budgets; no runtime loading and no inferred execution or complete reachability |
+| Then: clarify software composition | Distinguish a declared dependency from a component actually present | Extend one existing Electron/npm profile with selected packaged manifest/lockfile relationships, reusing component IDs and CycloneDX | Source file/field, declared range versus captured version, missing/ambiguous targets and declared licence provenance remain distinct; no registry lookup or host dependency resolution |
+| Optional follow-up: retain raw evidence | Revisit selected byte evidence after the original input is unavailable | User-selected bounded fragments for saved reports/history, with hashes, explicit omissions and export controls | Define storage caps and secret/redaction handling first; reopened fragments verify against their manifest; do not delay semantic readers for a full portable-evidence archive |
 
-These are delivery priorities. Assign release numbers after each scope is fixed. A stable
-0.2 release needs recorded acceptance for the packages and platform claims it actually
-ships; signing and notarization have their own credential and platform gates.
+Assign release numbers after each scope is fixed. Evidence navigation and explicit unknowns
+are acceptance requirements for every increment. Moving .NET IL ahead of raw-byte retention
+prioritizes explaining currently opaque captured contents; retention improves later review
+but does not explain those contents itself. Python bytecode/PYZ and hybrid JavaScript remain
+separate candidates after the first code profile is qualified.
+
+Signing/notarization, broader OS baselines and installed-package qualification continue as
+separate delivery work, with claims limited to the actual artifacts and environments tested.
 
 ### First work package: real reports and packaged workflows
 
 The scoped review and Windows process checks are complete; see
 [the inputs, reading answers, corrections and reproducible gates](spikes/report-workflow.md).
-The acceptance definition below is retained for subsequent deliveries. The next feature
-increment is MSI action context, informed by those cases.
+The acceptance definition below is retained for subsequent deliveries. The MSI action-context increment is implemented; its native references and remaining W9
+boundaries are recorded in [the Windows plan](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
 
 Use five scenarios spanning an installer with supplied payloads, an installed application
 folder, an Android or Apple application, a Linux package and a modern executable bundle.
@@ -52,8 +80,8 @@ roots, cancellation/EOF cleanup and explicit partial results. Update installatio
 qualification wording to distinguish published packages from earlier candidate checks.
 
 Exit with a recorded report review and automated packaged-workflow checks. Use those
-results to choose the next increment. The first planned feature increment is MSI action
-context; Burn, patch/transform semantics and broad script control-flow analysis have
+results to choose the next increment. The bounded MSI action-context increment is
+implemented; Burn, patch/transform semantics and broad script control-flow analysis have
 separate feasibility gates in [PLAN-WINDOWS.md](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
 
 ### Follow-up boundaries
@@ -79,11 +107,11 @@ reference does not establish a runtime call or a complete control-flow explanati
 |---|---|
 | Apple | App bundles, IPA, DMG with HFS+ or APFS, and pkg. Code signatures, sealed resources, entitlements, provisioning profiles and privacy manifests. |
 | Android | APK, AAB, and selected XAPK, APKS and APKM profiles. Signing schemes from v1 through v3.1, manifest and resources, DEX, permissions and network configuration. |
-| Windows | PE, Authenticode, .NET, MSI, NSIS, Inno Setup, CAB, Electron, and selected MSIX profiles. The preview adds Windows entry-point and script readers, INF and catalog relationships, and NuGet, VSIX and WinGet package metadata. |
+| Windows | PE, Authenticode, .NET, MSI, NSIS, Inno Setup, CAB, Electron, and selected MSIX profiles. Version 0.2.1 includes Windows entry-point and script readers, INF and catalog relationships, and NuGet, VSIX and WinGet package metadata. |
 | Executable bundles and Linux packages | Bounded .NET single-file and PyInstaller CArchive contents; deb control/data archives and RPM v4 headers/CPIO payloads, with dependency, script and link declarations. |
 | Other files and archives | Mach-O, ELF and PE hardening, nested ZIP, TAR, 7z and supported compressed streams, URLs and hosts, likely credentials, entropy and duplicate files. |
 
-Reports are available as HTML, PDF, Markdown, text, JSON, SARIF and CycloneDX. The CLI can explain a finding, query its evidence and verify exported files. The macOS desktop app adds a report and evidence viewer and history. A read-only MCP server serves finished reports; the separate rooted server accepts explicit analysis requests. Optional deep analysis uses [Ghidra or Hopper](DEEP.md). Optional [AI interpretation](AI.md) works from a finished report.
+Reports are available as HTML, PDF, Markdown, text, JSON, SARIF and CycloneDX. The CLI can explain a finding, query its evidence and verify exported files. The desktop app adds a report and evidence viewer and history. A read-only MCP server serves finished reports; the separate rooted server accepts explicit analysis requests. Optional deep analysis uses [Ghidra or Hopper](DEEP.md). Optional [AI interpretation](AI.md) works from a finished report.
 
 ## Windows x64 desktop acceptance
 
@@ -99,11 +127,11 @@ The portable and NSIS-installed builds passed real-window WebView2 checks with b
 
 | Area | Remaining work |
 |---|---|
-| Cross-platform delivery | Prepare formal distribution from the qualified unsigned archives and broaden OS baselines. Extend the hosted Linux window checks to physical-display and packaging acceptance. Move the signed and notarized macOS release into CI when signing material is available. Desktop automatic updates are a separate delivery milestone. |
+| Cross-platform delivery | Broaden OS baselines beyond those recorded for the published unsigned 0.2.1 packages. Extend the hosted Linux window checks to physical-display and packaging acceptance. Move the signed and notarized macOS release into CI when signing material is available. Desktop automatic updates are a separate delivery milestone. |
 | Entry points and scripts (W3–W4) | Broaden Unicode path and alias coverage for shortcut relationships. Extend bounded PowerShell and batch syntax coverage with real samples and native references where available. |
 | Driver packages (W5) | Add independent built INF/CAT packages, CAB and tag-media cases, and broader signature and catalog-member coverage. |
 | MSIX (W6, deferred follow-up) | Cover dependency and AppInstaller relationships, and extend manifest, signature and bundle profiles. |
-| Package metadata (W7) | Extend the version matching and relationship profiles behind the shared component inventory. The preview contains initial NuGet, VSIX and WinGet support. |
+| Package metadata (W7) | Extend the version matching and relationship profiles behind the shared component inventory. Version 0.2.1 contains initial NuGet, VSIX and WinGet support. |
 | Existing coverage gaps | Obtain representative packed APK, XAPK, encrypted DMG and Inno Setup 6.4 samples. Investigate the Xcode pkg CMS issue and the partially read device-support DMGs. |
 
 ## Later input formats and workflows
@@ -111,7 +139,7 @@ The portable and NSIS-installed builds passed real-window WebView2 checks with b
 Select from this backlog when the report reviews establish a recurring blind spot. Each
 new format retains the independent completion gates in [ANALYZERS.md](ANALYZERS.md).
 
-- **Executable bundles and installers.** Broaden the documented .NET single-file and PyInstaller profiles (W8), then address MSI action conditions and explicitly supplied payloads, and Burn (W9).
+- **Executable bundles and installers.** Broaden the documented .NET single-file and PyInstaller profiles (W8), broaden MSI declaration/payload profiles, and evaluate Burn separately (W9).
 - **Linux and language packages.** Broaden the initial deb/rpm profiles and add AppImage, Flatpak, snap, Python wheels, npm tarballs and Java archives. Reuse the component inventory for dependency and package metadata.
 - **Containers, platforms and documents.** Add OCI and Docker archives with layer provenance, HarmonyOS HAP, browser and VS Code extensions, Office macro and embedded-object analysis (W11), and PDF scripts and attachments.
 - **Disk images and firmware.** Evaluate ISO, WIM and virtual disks separately (W12). Expand filesystem coverage to ext4, squashfs and FAT where it enables useful, bounded readers.

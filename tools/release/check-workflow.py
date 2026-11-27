@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import queue
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -226,6 +227,71 @@ def check(program, base, aged, offline):
     return {"root": "aged" if aged else "fresh", "report_id": report_id, "checks": "analysis/repeat/query/explain/snapshot/source-removal/agent/partial/cancel/active-EOF/scratch/input-preservation"}
 
 
+def check_msi(program, base, offline):
+    """Exercise this release's MSI feature against a pinned native reference."""
+    base.mkdir()
+    fixtures = Path(__file__).resolve().parents[2] / "crates/aa-windows/tests/data"
+    original = (fixtures / "native-actions.msi").read_bytes()
+    native = json.loads((fixtures / "native-actions.msi.ref.json").read_text(encoding="utf-8"))
+    require(hashlib.sha256(original).hexdigest() == native["sha256"], "native MSI reference belongs to different bytes")
+    source = base / "中文 ' actions.msi"
+    source.write_bytes(original)
+    env = os.environ.copy()
+    for name in ("TMP", "TEMP", "TMPDIR"):
+        env[name] = str(base.resolve())
+    output = base / "report"
+    run(program, [source, "-o", output, "--format", "json,md,html", *offline], env)
+    report_path = output / "report.json"
+    report_bytes = report_path.read_bytes()
+    report = json.loads(report_bytes)
+    root = next(a for a in report["artifacts"] if a["parent"] is None)
+    model = root["facts"]["windows.msi-actions"]
+    require(not model["incomplete"] and not model["conditions_evaluated"] and not model["execution_established"], "MSI static profile")
+    rows = {s["table"]: [r["row"] for r in s["rows"]] for s in model["sequences"]}
+    rows["CustomAction"] = [a["row"] for a in model["custom_actions"]]
+    rows["LaunchCondition"] = model["launch_conditions"]
+    for table, expected in native["tables"].items():
+        if table == "Binary":
+            continue
+        ordered = lambda entries: sorted(entries, key=lambda r: json.dumps(r, sort_keys=True))
+        require(ordered(rows[table]) == ordered(expected), f"MSI {table} differs from native reference")
+    references = root["facts"]["windows.msi-action-targets"]["references"]
+    matched = [r for r in references if r["status"] == "matched-supplied-declaration"]
+    require(len(matched) == 5 and len(references) == 7, "MSI target resolution counts")
+    for reference in matched:
+        target = next(a for a in report["artifacts"] if a["path"] == reference["target"])
+        require(target["parent"] == root["path"], "MSI target escaped container")
+        require(target["digests"]["sha256"] == reference["target_sha256"] == native["tables"]["Binary"][0]["Data"]["sha256"], "MSI Binary stream digest")
+    repeat = base / "repeat"
+    run(program, [source, "-o", repeat, "--format", "json", *offline], env)
+    require((repeat / "report.json").read_bytes() == report_bytes, "MSI report is not deterministic")
+    require(source.read_bytes() == original, "MSI source was modified")
+    native_checks = None
+    if os.name == "nt":
+        native_record = base / "native.json"
+        reference_script = Path(__file__).resolve().parents[1] / "native-compare/windows-msi-actions.py"
+        checked = subprocess.run([sys.executable, str(reference_script), str(source), str(report_path), "--record", str(native_record)],
+                                 env=env, capture_output=True, encoding="utf-8", timeout=60)
+        require(checked.returncode == 0, f"fresh native MSI reference failed: {checked.stderr}")
+        native_checks = json.loads(native_record.read_text(encoding="utf-8"))["checks"]
+    source.unlink()
+    findings = json.loads(run(program, ["query", report_path, "findings", "--args", json.dumps({"rule": "windows.msi-action"})], env).stdout)
+    require(findings["matching"] == 7, "MSI finished-report finding query")
+    client = Client(program, ["mcp", report_path], env)
+    try:
+        client.initialize()
+        for finding in findings["findings"]:
+            detail = client.tool("get_finding", {"id": finding["full_id"]})
+            require("CustomAction" in json.dumps(detail), "MSI source evidence missing from MCP")
+    finally:
+        client.close()
+    markdown = (output / "report.md").read_text(encoding="utf-8")
+    require("CustomAction table, row RunPayload" in markdown and "binary-row-not-unique-or-missing" in markdown, "MSI relationship index")
+    return {"sample_sha256": native["sha256"], "actions": len(references), "matched_binary_sources": len(matched),
+            "fresh_windows_native_checks": native_checks,
+            "checks": "native-table-snapshot/binary-hashes/repeat/input-preservation/source-removal/query/MCP/relationship-index"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("program", type=Path)
@@ -236,7 +302,8 @@ def main():
     offline = ["--no-ai"] if "--no-ai" in help_text else []
     with tempfile.TemporaryDirectory(prefix="aa-packaged-workflow-") as folder:
         results = [check(program, Path(folder) / name, aged, offline) for name, aged in (("fresh", False), ("aged", True))]
-    record = {"program_sha256": hashlib.sha256(program.read_bytes()).hexdigest(), "results": results}
+        msi = check_msi(program, Path(folder) / "msi", offline)
+    record = {"program_sha256": hashlib.sha256(program.read_bytes()).hexdigest(), "results": results, "msi": msi}
     if args.record:
         args.record.parent.mkdir(parents=True, exist_ok=True)
         args.record.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")

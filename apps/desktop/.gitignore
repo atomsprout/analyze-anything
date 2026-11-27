@@ -4,6 +4,8 @@ src-tauri/gen
 tests/fixtures/sample-report.html
 tests/fixtures/relationships-report.html
 tests/fixtures/relationships
+tests/fixtures/msi-actions-report.html
+tests/fixtures/msi-actions
 tests/fixtures/out
 tests/fixtures/large
 tests/fixtures/large-report.html

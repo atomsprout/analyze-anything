@@ -135,6 +135,18 @@ test("unresolved relationships retain their reasons and open the source evidence
   await expect(page.locator("#detail")).toContainText("windows.input-references");
 });
 
+test("MSI action relationships retain captured targets and unresolved reasons", async ({ page }) => {
+  await page.goto("/msi-actions-report");
+  const relationships = page.locator("#relationships");
+  await expect(relationships.locator("tbody tr")).toHaveCount(7);
+  await expect(relationships).toContainText("native-actions.msi/[Binary]/Payload");
+  await expect(relationships).toContainText("binary-row-not-unique-or-missing");
+  await expect(relationships).toContainText("action-source-outside-binary-profile");
+  await relationships.getByRole("button").first().click();
+  await expect(page.locator("#detail")).toContainText("native-actions.msi");
+  await expect(page.locator("#detail")).toContainText("windows.msi-action-targets");
+});
+
 test("opening a file shows progress, then the report in a sandboxed frame", async ({ page }) => {
   await openSample(page);
   const frame = page.locator("iframe.report-frame");

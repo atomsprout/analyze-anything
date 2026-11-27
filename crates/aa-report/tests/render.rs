@@ -742,3 +742,26 @@ fn catalog_index_keeps_all_captured_digest_candidates_and_search_scope() {
             && row.reason.as_deref().is_some_and(|reason| reason.contains("\"search_complete\":false")))
     );
 }
+
+#[test]
+fn msi_actions_enter_the_existing_relationship_reading_index() {
+    let mut report = full();
+    report.artifacts[0].facts.insert(
+        "windows.msi-action-targets".into(),
+        json!({"truncated": false, "references": [
+            {"field": "CustomAction table, row RunPayload", "declared": "Payload", "status": "matched-supplied-declaration",
+             "target": "installer.msi/[Binary]/Payload", "target_sha256": "1234", "reason": null},
+            {"field": "CustomAction table, row Missing", "declared": "Absent", "status": "unresolved",
+             "target": null, "target_sha256": null, "reason": "binary-stream-not-captured"}
+        ]}),
+    );
+    let index = aa_report::relationships::collect(&report);
+    assert_eq!(index.total, 2);
+    assert_eq!(index.rows[0].location, "CustomAction table, row RunPayload");
+    assert_eq!(index.rows[0].target.as_deref(), Some("installer.msi/[Binary]/Payload"));
+    for format in [Format::Markdown, Format::Text, Format::Html] {
+        let output = String::from_utf8(render(&report, format, Lang::En).expect("MSI relationships render")).expect("text format");
+        assert!(output.contains("binary-stream-not-captured"));
+        assert!(output.contains("CustomAction table, row RunPayload"));
+    }
+}

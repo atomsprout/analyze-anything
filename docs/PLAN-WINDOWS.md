@@ -334,10 +334,57 @@ and releases if necessary; neither waits for pseudocode decompilation.
 
 ### W9 Installation declarations and payload relationships
 
-MSI CustomAction and launch-condition data are already read. Extend them with execution-sequence
-and condition context so a declared custom action is not described as unconditional behavior.
-Relate supported Binary-table code to child artifacts and script findings. Use read-only table
-inspection as a reference; [Orca](https://learn.microsoft.com/en-us/windows/win32/msi/orca-exe)
+#### MSI action-context increment (0.2.2)
+
+The `msi-actions-v1` profile reads InstallExecuteSequence, InstallUISequence,
+AdminExecuteSequence, AdminUISequence and AdvtExecuteSequence. It retains each original
+row, phase, nullable sequence number, termination selector and literal condition, and
+associates matching action names with CustomAction rows. LaunchCondition rows remain
+literal. Deferred, rollback and commit bits are distinguished from the immediate-action
+repeat-scheduling bits. No-impersonation is a request, not a claim of effective SYSTEM rights.
+
+`windows.msi-actions` contains declarations; `windows.msi-action-targets` records supported
+Binary-table references and captured target SHA-256 values. The existing relationship index
+and per-action finding evidence expose them in reports and finished-report queries/MCP.
+Only types 1, 2, 5 and 6 can bind to Binary streams in this increment. Other source forms,
+missing streams, non-unique names, normalized names and incomplete capture remain unresolved.
+The report does not infer execution from a match or from sequence membership. An action absent
+from these five tables may still be referenced by UI events or other unread logic.
+
+Limits are 2,000 rows per table, 8,192 bytes per string and 8 MiB of retained source text;
+target indexing stops above 100,000 artifacts or 32 MiB of paths; associations are limited to the first 500 MSI sources. Tree findings additionally stop above 10,000 actions or 16 MiB of action evidence across all MSI sources. Unsupported primary keys/column types and duplicate declared keys are rejected before association; Binary stream names must derive from the standard Name key. Limit/schema failures emit
+`windows.msi-actions-incomplete`, preserve recorded issues and prevent target binding.
+Conditions, property substitutions, effective host paths, custom-action code and control flow
+are not evaluated. Binary-source matching is limited to the recorded ASCII identifier profile.
+It does not establish the effect of a custom-action DLL or script. Embedded MSI streams above the existing 2 GiB stream limit are rejected rather than captured as prefixes; unread streams produce extraction limitations, and engine entry/total-byte limits still apply.
+
+Windows development references use `tools/native-compare/windows-msi-actions.py` with
+`MsiOpenDatabaseW` in read-only mode. No installer is launched or installed. Recorded runs:
+
+| Input | Native checks | Observation | Record |
+|---|---|---|---|
+| Project-authored inert `native-actions.msi` | 97 | 50 sequence rows, 7 custom actions, 5 captured Binary associations, 2 unresolved sources | [Fixture reference](../crates/aa-windows/tests/data/native-actions.msi.ref.json) |
+| 7-Zip 24.08 x64 | 75 | 63 sequence rows and no CustomAction rows; no action is invented | [Native record](spikes/windows-msi-actions-7zip.json) |
+| Eclipse Temurin OpenJDK 25.0.3+9 x64 | 107 | 76 sequence rows, 6 custom actions, 1 captured Binary association and 5 sources outside this binding profile | [Native record](spikes/windows-msi-actions-openjdk.json) |
+
+Source URLs, licences and redistribution boundaries are in NOTICE. The real installers
+are external inputs. Constructed tests additionally cover null/termination positions,
+rollback/commit/repeat flags, ambiguity, renamed entries, missing bytes, hostile keys,
+oversized fields, schema mismatches and row limits. Existing damaged-MSI regressions
+exercise mutated compound files. The extracted-package workflow gate now checks this
+fixture, its native snapshot, deterministic reports, input preservation, missing sources,
+relationship rendering and offline queries/MCP. Windows runs also repeat the native check.
+
+Reference semantics: [sequence positions and conditions](https://learn.microsoft.com/en-us/windows/win32/msi/installexecutesequence-table),
+[in-script flags](https://learn.microsoft.com/en-us/windows/win32/msi/custom-action-in-script-execution-options),
+[immediate repeat scheduling](https://learn.microsoft.com/en-us/windows/win32/msi/custom-action-execution-scheduling-options)
+and [Binary-table custom actions](https://learn.microsoft.com/en-us/windows/win32/msi/custom-action-type-1).
+
+#### Remaining W9 work
+
+The initial MSI action-context increment above is bounded. Broader UI-event invocation,
+installed-file targets, condition/property semantics and action-code interpretation remain open.
+Use read-only table inspection as a reference; [Orca](https://learn.microsoft.com/en-us/windows/win32/msi/orca-exe)
 is a development tool, not a runtime dependency or a reason to install the input.
 
 Resolve external CABs or loose payloads only inside an explicitly supplied package root.

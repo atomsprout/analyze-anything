@@ -4,35 +4,45 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Next delivery cycle
 
-Current baseline: [v0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2)
-is published, including the worker-root fix from PR #7. The delivery order and acceptance
-questions are in [ROADMAP.md](ROADMAP.md#delivery-order-from-preview2).
+Current baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
+is published as a formal release with unsigned packages, including the report-workflow
+corrections and gates from PR #8 and the bounded MSI action-context increment from PR #9.
+Signed macOS/Homebrew remains at 0.1.1. The priorities
+and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
 
-- [x] **First: complete the current report workflow.** [Review and reproduction](spikes/report-workflow.md),
-  with hash-bound reading/native/process records. Windows local acceptance passed;
-  hosted workflow results retain their own platform/revision scope.
-  - Select five representative real-input scenarios and record hashes, sources/licences,
-    expected observations and native references where available.
-  - Read each report through for identity, entries/components, declared operations,
-    traceable evidence and explicit unknowns; fix the concrete reading gaps found.
-  - Automate the extracted-package analysis/query/agent smoke used for preview.2,
-    including private fresh/aged scratch roots, cancellation/EOF and partial results.
-    Keep the existing engine marker/junction regressions and process tests.
-  - Synchronize README translations, installation guidance and platform/format limits
-    with published preview.2 and the exact qualification records.
-- [ ] **Then: MSI action context and supplied targets.** Extend the existing CustomAction
+- [x] **Complete the current report workflow.** [Review and reproduction](spikes/report-workflow.md),
+  with five hash-bound real-input scenarios, reading/native/process records and concrete
+  report corrections. Extracted-package analysis/query/agent gates passed for the four
+  0.2.1 CLI archives; the published Windows portable app passed 67 real-window checks.
+  Qualification of older candidates remains scoped to their named artifacts/environments.
+- [x] **MSI action context and captured Binary targets.** Extend the existing CustomAction
   and LaunchCondition inventory with supported action sequences, phase/order, literal
-  conditions and Binary-table payload links. Carry original row evidence and unresolved
-  states into reports and queries. Validate against read-only native table inspection.
-  Burn, external-payload profiles and MSP/MST semantics retain separate W9 gates.
-- [ ] **Then: optional retained byte evidence.** Define bounded selected fragments,
-  manifest/hash binding, omissions and secret/redaction handling before implementing
-  saved-report/history hex views without the original input. Existing textual evidence
-  and report-only queries remain the baseline.
-- [ ] **Later: inspect a selected code blind spot.** Use real report cases to choose one
-  bounded .NET IL or Python bytecode/PYZ profile. Establish static reference/constant
-  evidence and version limits without runtime loading, deserialization through a language
-  runtime, or evaluation.
+  conditions and Binary-table payload links. Preserve original table/row evidence,
+  ambiguity, unresolved states and unread semantics in reports and queries. Link supported
+  declarations to captured targets without predicting installation or consulting the host.
+  Read-only Windows Installer comparisons passed 97 constructed, 75 7-Zip and 107 OpenJDK
+  checks; the profile has malformed, missing/ambiguous target and resource-limit tests.
+  See [W9 scope and records](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
+  Burn, external-payload profiles
+  and MSP/MST semantics retain separate W9 gates.
+- [ ] **Then: bounded .NET IL references and capability explanations.** Qualify one
+  profile using existing CLR metadata: method bodies, supported call/string/token
+  references, and a small set of explicit same-method evidence combinations. Establish
+  method/token and proven byte locations, budgets, supported versions and tested gaps
+  with licensed real samples and independent static references. Do not load assemblies
+  into a runtime or claim execution/reachability from static references. Python bytecode
+  and hybrid JavaScript are separate later profiles.
+- [ ] **Then: deepen one component relationship profile.** Start from existing Electron/npm
+  metadata and scope packaged manifests/lockfiles. Distinguish declared ranges from
+  captured versions and declared dependencies from present components; retain source
+  fields, declared licence provenance, ambiguity and missing targets. Reuse component
+  IDs, queries and CycloneDX; no registry lookup or host resolution.
+- [ ] **Optional follow-up: retained byte evidence.** Define user-selected bounded
+  fragments, manifest/hash binding, omissions, storage caps and secret/redaction handling
+  before adding saved-report/history byte retention. Existing hex views, textual evidence
+  and report-only queries are the baseline. Improve evidence navigation within each
+  feature; retaining raw bytes is not a prerequisite for reading more captured code.
+
 
 ## Completed delivery groups: 0.2 through 0.5
 
@@ -127,7 +137,7 @@ The detailed scope and completion gates are in [PLAN-WINDOWS.md](PLAN-WINDOWS.md
 - [ ] **W7 — Package semantics**: NuGet, VSIX and WinGet metadata and supported dependency relationships in the existing component inventory.
   NuGet, VSIX 2.0 and WinGet 1.x now feed the shared component inventory. NuGet links supported exact stable dependencies and VSIX links qualifying exact nested dependencies. WinGet associates supplied manifest sets, links installer declarations to supplied bytes by SHA-256 and records supported package dependency candidates. See [NuGet](spikes/windows-nuget.md), [VSIX](spikes/windows-vsix.md) and [WinGet](spikes/windows-winget.md) for reference comparisons. Broader version matching and additional package and manifest profiles remain open.
 - [ ] **W8 — Modern bundles**: initial bounded .NET single-file and PyInstaller CArchive contents shipped in preview.2. Broader host/layout profiles and opaque code contents remain open; see [the qualified profiles](spikes/executable-bundles.md).
-- [ ] **W9 — Installer relationships**: MSI action conditions and ordering, explicitly supplied external payloads, and a separate Burn feasibility check.
+- [ ] **W9 — Installer relationships**: the initial five-table MSI sequence/condition and captured Binary-source profile shipped in 0.2.2. UI events, broader source/condition semantics, explicitly supplied external payloads and Burn retain separate gates.
 - [ ] **W11 — Documents**: staged Office container, macro-source and embedded-object analysis, with explicit limits for unread content.
 - [ ] **W12 — Images**: separate feasibility and implementation gates for ISO, WIM and virtual disks, without mounting them.
 

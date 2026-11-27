@@ -20,7 +20,7 @@ analyze-anything App.ipa
 有两种用法，共用同一套引擎，同一个输入得到相同的报告：
 
 - **命令行** `analyze-anything`（短名字 `aaaa`）；
-- macOS 的**桌面版**，另有 Windows x64 未签名预览版：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史；设置好之后，还可以让模型在报告旁边解读它。
+- macOS 的**桌面版**，另有 Windows x64 未签名安装包：拖入文件，看进度，读报告，点开证据看字节，导出，保留历史；设置好之后，还可以让模型在报告旁边解读它。
 
 报告默认是英文，加 `--lang zh` 写中文。
 
@@ -59,11 +59,11 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.1 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
+签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.2 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
 
 ## 使用
 
-[0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1)
+[0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
 改进了身份摘要、Apple 组件证据关联，以及安装程序和 .NET 的语义限制说明。
 发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
 详见[真实报告验收记录](docs/spikes/report-workflow.md)。
@@ -165,14 +165,13 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-当前发布版本是 0.2.1。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
+当前发布版本是 0.2.2。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
-“Anything”是对下限的承诺，也是上限的方向：什么都不拒绝，深度则一种格式一种格式地加，每种格式是一个小 crate。接下来按这个顺序做：
+0.2.2 增加了 MSI 动作顺序与条件上下文，并将支持的 Binary 表来源关联到采集的载荷。原始表行和哈希都是证据；不求值条件，也不推断实际执行。之前的 0.2–0.5 规划组已一起交付，作为完成记录保留。接下来按这个顺序做：
 
-1. **0.2 — 可靠使用**：验收跨平台交付、取消、资源限制和不完整分析的行为。
-2. **0.3 — 理解整个软件**：串联入口、载荷、组件和完整性声明，改善报告导读并明确覆盖范围。
-3. **0.4 — 看进更多内容**：有边界地读取 .NET single-file、PyInstaller 和 Linux 软件包，复用已有分析器。
-4. **0.5 — 更容易获取和复用答案**：离线查询报告、便捷查阅证据、明确 JSON 兼容性，并提供显式的 agent 分析流程。
+1. **静态代码证据**：验收一个有边界的 .NET IL 范围，给出方法级引用和可解释的能力证据。
+2. **软件组成**：深入一个 Electron/npm 元数据范围，区分依赖声明、实际采集组件和来源字段。
+3. **便于携带的证据复查**：定义选择和存储控制后，再考虑为保存的报告保留有上限、绑定哈希的字节片段。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
 

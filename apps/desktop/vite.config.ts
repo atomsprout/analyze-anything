@@ -11,7 +11,7 @@ function sampleReport(): Plugin {
   return {
     name: "sample-report",
     configureServer(server) {
-      for (const name of ["sample-report", "relationships-report", "large-report"]) {
+      for (const name of ["sample-report", "relationships-report", "msi-actions-report", "large-report"]) {
         server.middlewares.use(`/${name}`, (_request, response) => {
           readFile(new URL(`./tests/fixtures/${name}.html`, import.meta.url)).then(
             (page) => {

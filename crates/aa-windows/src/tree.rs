@@ -23,6 +23,7 @@ const MAX_SCRIPTS: usize = 3000;
 const MAX_JSON: u64 = 32 * 1024 * 1024;
 
 pub fn analyze(tree: &dyn Tree, out: &mut Output) {
+    crate::msi_actions::relate(tree, out);
     crate::nuspec::analyze_tree(tree, out);
     crate::vsix::analyze_tree(tree, out);
     crate::winget::analyze_tree(tree, out);

@@ -7,15 +7,30 @@ import { spawnSync } from "node:child_process";
 
 const desktop = fileURLToPath(new URL("../", import.meta.url));
 const fixtures = join(desktop, "tests", "fixtures");
+// A caller can reuse an already built CLI after clearing development caches.
+const suppliedCli = process.env.AA_FIXTURE_CLI;
+let acceptsNoAi = true;
+if (suppliedCli) {
+  const help = spawnSync(suppliedCli, ["analyze", "--help"], { cwd: desktop, encoding: "utf8", windowsHide: true });
+  if (help.error) throw help.error;
+  if (help.status !== 0) throw new Error(`Fixture CLI help failed: ${help.stderr}`);
+  acceptsNoAi = help.stdout.includes("--no-ai");
+}
+function runCli(args) {
+  const prefix = suppliedCli ? [] : ["run", "-q", "--release", "-p", "aa-cli", "--"];
+  return spawnSync(suppliedCli ?? "cargo", [...prefix, ...args.filter((arg) => acceptsNoAi || arg !== "--no-ai")],
+    { cwd: desktop, stdio: "inherit", windowsHide: true });
+}
 mkdirSync(fixtures, { recursive: true });
 for (const [input, output, name] of [
   ["../../crates/aa-apple/tests/data/tiny.dmg", "out", "sample-report"],
   ["../../crates/aa-windows/tests/data/native.lnk", "relationships", "relationships-report"],
+  ["../../crates/aa-windows/tests/data/native-actions.msi", "msi-actions", "msi-actions-report"],
 ]) {
-  const result = spawnSync("cargo", [
-    "run", "-q", "--release", "-p", "aa-cli", "--", "analyze",
+  const result = runCli([
+    "analyze",
     input, "-o", `tests/fixtures/${output}`, "-f", "html,json", "--no-ai",
-  ], { cwd: desktop, stdio: "inherit", windowsHide: true });
+  ]);
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
   copyFileSync(join(fixtures, output, "report.html"), join(fixtures, `${name}.html`));
@@ -44,8 +59,7 @@ large.findings = Array.from({ length: 12000 }, (_, index) => {
 });
 const largeJson = join(fixtures, "large-report.json");
 writeFileSync(largeJson, JSON.stringify(large));
-const rendered = spawnSync("cargo", ["run", "-q", "--release", "-p", "aa-cli", "--", "render", largeJson,
-  "-o", "tests/fixtures/large", "--format", "html"], { cwd: desktop, stdio: "inherit", windowsHide: true });
+const rendered = runCli(["render", largeJson, "-o", "tests/fixtures/large", "--format", "html"]);
 if (rendered.error) throw rendered.error;
 if (rendered.status !== 0) process.exit(rendered.status ?? 1);
 copyFileSync(join(fixtures, "large", "report.html"), join(fixtures, "large-report.html"));

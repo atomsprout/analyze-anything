@@ -2,7 +2,7 @@
 //! install paths, and the meaning of the database tables.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use aa_core::Artifact;
 use aa_core::plugin::{Output, Rule, SinkError, Unpack, UnpackSink, Unpacker};
@@ -15,7 +15,7 @@ const CFB_MAGIC: &[u8] = &[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 /// Largest embedded stream read into memory.
 const MAX_STREAM: u64 = 2 * 1024 * 1024 * 1024;
 
-type Package<'a> = msi::Package<Cursor<&'a [u8]>>;
+pub(super) type Package<'a> = msi::Package<Cursor<&'a [u8]>>;
 
 pub struct Msi;
 
@@ -31,8 +31,8 @@ pub const RULES: &[Rule] = &[
         id: "msi.files-unreadable",
         title_zh: "MSI 内部分文件无法提取",
         title_en: "Some files in the MSI could not be extracted",
-        text_zh: "MSI 内嵌的 CAB 中有文件无法解压，这些文件没有分析。",
-        text_en: "Some files in the MSI's embedded cabinets could not be decompressed. They were not analyzed.",
+        text_zh: "MSI 内嵌 CAB 的部分文件或内嵌数据流无法完整读取，或超出读取上限。这些内容没有分析。",
+        text_en: "Some cabinet entries or embedded streams in the MSI could not be read in full or exceeded a limit. Those contents were not analyzed.",
     },
 ];
 
@@ -137,9 +137,20 @@ fn file_paths(package: &mut Package) -> BTreeMap<String, String> {
 }
 
 fn read_stream(package: &mut Package, name: &str) -> Option<Vec<u8>> {
+    read_stream_limited(package, name, MAX_STREAM)
+}
+
+fn read_stream_limited(package: &mut Package, name: &str, limit: u64) -> Option<Vec<u8>> {
+    let mut stream = package.read_stream(name).ok()?;
+    let length = stream.seek(SeekFrom::End(0)).ok()?;
+    if length > limit {
+        return None;
+    }
+    stream.rewind().ok()?;
     let mut data = Vec::new();
-    package.read_stream(name).ok()?.take(MAX_STREAM).read_to_end(&mut data).ok()?;
-    Some(data)
+    stream.take(limit.saturating_add(1)).read_to_end(&mut data).ok()?;
+    // A truncated prefix must never become a captured Binary source with its own hash.
+    (data.len() as u64 == length).then_some(data)
 }
 
 impl Unpacker for Msi {
@@ -208,7 +219,10 @@ fn unpack(package: &mut Package, sink: &mut dyn UnpackSink) {
         if cabinets.contains(&name) || name.starts_with('\u{5}') {
             continue;
         }
-        let Some(data) = read_stream(package, &name) else { continue };
+        let Some(data) = read_stream(package, &name) else {
+            sink.limitation("msi.files-unreadable", Some(format!("stream {name} could not be read in full within the stream limit")));
+            continue;
+        };
         let path = match name.split_once('.') {
             Some((table @ ("Binary" | "Icon"), key)) => format!("[{table}]/{key}"),
             _ => format!("[stream]/{name}"),
@@ -278,7 +292,11 @@ fn custom_action(kind: i64, source: &str, target: &str) -> Option<String> {
 /// Reads the tables of an MSI. `None` when `bytes` is not one.
 pub fn analyze(file: &Artifact, bytes: &[u8], out: &mut Output) -> Option<Installer> {
     let mut package = open(bytes)?;
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| read_tables(&mut package)));
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let model = read_tables(&mut package);
+        crate::msi_actions::read(&mut package, file, out);
+        model
+    }));
     match result {
         Ok(model) => Some(model),
         Err(_) => {
@@ -368,10 +386,10 @@ fn read_tables(package: &mut Package) -> Installer {
         let (name, source, target) = (get(&row, "Action"), get(&row, "Source"), get(&row, "Target"));
         let mut flags = Vec::new();
         if kind & 0x400 != 0 {
-            flags.push("deferred");
+            flags.push(crate::msi_actions::execution(kind));
         }
-        if kind & 0x800 != 0 {
-            flags.push("runs as SYSTEM");
+        if kind & 0xc00 == 0xc00 {
+            flags.push("no impersonation requested");
         }
         if actions.len() < 2000 {
             actions.push(json!({ "action": name, "type": kind, "source": source, "target": target, "flags": flags }));
@@ -444,4 +462,21 @@ fn looks_like_command(value: &str) -> bool {
     [".exe", ".cmd", ".bat", ".ps1", ".vbs", "powershell", "cmd /c", "rundll32", "regsvr32", "msiexec"]
         .iter()
         .any(|needle| lower.contains(needle))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn a_stream_over_the_limit_never_becomes_a_captured_prefix() {
+        let mut package = msi::Package::create(msi::PackageType::Installer, Cursor::new(Vec::new())).expect("controlled package");
+        package.write_stream("Binary.Payload").expect("stream").write_all(b"abcd").expect("inert bytes");
+        let bytes = package.into_inner().expect("flush").into_inner();
+        let mut package = open(&bytes).expect("read controlled package");
+        assert!(read_stream_limited(&mut package, "Binary.Payload", 3).is_none());
+        assert_eq!(read_stream_limited(&mut package, "Binary.Payload", 4), Some(b"abcd".to_vec()));
+        assert!(read_stream_limited(&mut package, "Binary.Missing", 4).is_none());
+    }
 }

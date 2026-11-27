@@ -1,0 +1,365 @@
+{
+  "sample": "7z2408-x64.msi",
+  "sha256": "98330e7e6db3507b444d576dc437a9ac4d82333a88a6bb6ef36a91fe3d85fa92",
+  "reader": "Windows Installer msi.dll, MsiOpenDatabaseW read-only",
+  "tables": {
+    "Binary": [
+      {
+        "Name": "WixUI_Bmp_Up",
+        "Data": {
+          "sha256": "573e3260eed63604f24f6f10ce5294e25e22fda9e5bfd9010134de6e684bab98",
+          "size": 318
+        }
+      },
+      {
+        "Name": "WixUI_Bmp_New",
+        "Data": {
+          "sha256": "4f92e804a11453382ebff7fb0958879bae88fe3366306911dec9d811cd306eed",
+          "size": 318
+        }
+      },
+      {
+        "Name": "WixUI_Ico_Info",
+        "Data": {
+          "sha256": "9ae4a96bf2a349667e844acc1e2ac4f89361a6182268438f4d063df3a6fc47bc",
+          "size": 1078
+        }
+      },
+      {
+        "Name": "WixUI_Ico_Exclam",
+        "Data": {
+          "sha256": "593f94ef1405422b3e453f4422b22c990d84303668d60344c6fd257318e92428",
+          "size": 766
+        }
+      }
+    ],
+    "InstallExecuteSequence": [
+      {
+        "Action": "CostInitialize",
+        "Condition": null,
+        "Sequence": 800
+      },
+      {
+        "Action": "CostFinalize",
+        "Condition": null,
+        "Sequence": 1000
+      },
+      {
+        "Action": "InstallInitialize",
+        "Condition": null,
+        "Sequence": 1500
+      },
+      {
+        "Action": "InstallFiles",
+        "Condition": null,
+        "Sequence": 4000
+      },
+      {
+        "Action": "InstallFinalize",
+        "Condition": null,
+        "Sequence": 6600
+      },
+      {
+        "Action": "InstallValidate",
+        "Condition": null,
+        "Sequence": 1400
+      },
+      {
+        "Action": "FileCost",
+        "Condition": null,
+        "Sequence": 900
+      },
+      {
+        "Action": "AppSearch",
+        "Condition": null,
+        "Sequence": 50
+      },
+      {
+        "Action": "RemoveExistingProducts",
+        "Condition": null,
+        "Sequence": 1401
+      },
+      {
+        "Action": "RemoveFiles",
+        "Condition": null,
+        "Sequence": 3500
+      },
+      {
+        "Action": "UnpublishFeatures",
+        "Condition": null,
+        "Sequence": 1800
+      },
+      {
+        "Action": "ProcessComponents",
+        "Condition": null,
+        "Sequence": 1600
+      },
+      {
+        "Action": "PublishProduct",
+        "Condition": null,
+        "Sequence": 6400
+      },
+      {
+        "Action": "RegisterUser",
+        "Condition": null,
+        "Sequence": 6000
+      },
+      {
+        "Action": "RemoveRegistryValues",
+        "Condition": null,
+        "Sequence": 2600
+      },
+      {
+        "Action": "RegisterProduct",
+        "Condition": null,
+        "Sequence": 6100
+      },
+      {
+        "Action": "RemoveShortcuts",
+        "Condition": null,
+        "Sequence": 3200
+      },
+      {
+        "Action": "FindRelatedProducts",
+        "Condition": null,
+        "Sequence": 200
+      },
+      {
+        "Action": "PublishFeatures",
+        "Condition": null,
+        "Sequence": 6300
+      },
+      {
+        "Action": "MigrateFeatureStates",
+        "Condition": null,
+        "Sequence": 1200
+      },
+      {
+        "Action": "CreateShortcuts",
+        "Condition": null,
+        "Sequence": 4500
+      },
+      {
+        "Action": "ValidateProductID",
+        "Condition": null,
+        "Sequence": 700
+      },
+      {
+        "Action": "WriteRegistryValues",
+        "Condition": null,
+        "Sequence": 5000
+      }
+    ],
+    "InstallUISequence": [
+      {
+        "Action": "MaintenanceWelcomeDlg",
+        "Condition": "Installed AND NOT RESUME AND NOT Preselected",
+        "Sequence": 1203
+      },
+      {
+        "Action": "PrepareDlg",
+        "Condition": null,
+        "Sequence": 101
+      },
+      {
+        "Action": "ProgressDlg",
+        "Condition": null,
+        "Sequence": 1204
+      },
+      {
+        "Action": "ResumeDlg",
+        "Condition": "Installed AND (RESUME OR Preselected)",
+        "Sequence": 1202
+      },
+      {
+        "Action": "WelcomeDlg",
+        "Condition": "NOT Installed",
+        "Sequence": 1201
+      },
+      {
+        "Action": "ExitDialog",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "FatalError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "UserExit",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "CostInitialize",
+        "Condition": null,
+        "Sequence": 800
+      },
+      {
+        "Action": "CostFinalize",
+        "Condition": null,
+        "Sequence": 1000
+      },
+      {
+        "Action": "FileCost",
+        "Condition": null,
+        "Sequence": 900
+      },
+      {
+        "Action": "AppSearch",
+        "Condition": null,
+        "Sequence": 50
+      },
+      {
+        "Action": "FindRelatedProducts",
+        "Condition": null,
+        "Sequence": 200
+      },
+      {
+        "Action": "MigrateFeatureStates",
+        "Condition": null,
+        "Sequence": 1200
+      },
+      {
+        "Action": "ValidateProductID",
+        "Condition": null,
+        "Sequence": 700
+      },
+      {
+        "Action": "ExecuteAction",
+        "Condition": null,
+        "Sequence": 1300
+      },
+      {
+        "Action": "LaunchConditions",
+        "Condition": null,
+        "Sequence": 100
+      }
+    ],
+    "AdminExecuteSequence": [
+      {
+        "Action": "CostInitialize",
+        "Condition": null,
+        "Sequence": 800
+      },
+      {
+        "Action": "CostFinalize",
+        "Condition": null,
+        "Sequence": 1000
+      },
+      {
+        "Action": "InstallInitialize",
+        "Condition": null,
+        "Sequence": 1500
+      },
+      {
+        "Action": "InstallFiles",
+        "Condition": null,
+        "Sequence": 4000
+      },
+      {
+        "Action": "InstallFinalize",
+        "Condition": null,
+        "Sequence": 6600
+      },
+      {
+        "Action": "InstallValidate",
+        "Condition": null,
+        "Sequence": 1400
+      },
+      {
+        "Action": "FileCost",
+        "Condition": null,
+        "Sequence": 900
+      },
+      {
+        "Action": "InstallAdminPackage",
+        "Condition": null,
+        "Sequence": 3900
+      }
+    ],
+    "AdminUISequence": [
+      {
+        "Action": "ExitDialog",
+        "Condition": null,
+        "Sequence": -1
+      },
+      {
+        "Action": "FatalError",
+        "Condition": null,
+        "Sequence": -3
+      },
+      {
+        "Action": "UserExit",
+        "Condition": null,
+        "Sequence": -2
+      },
+      {
+        "Action": "CostInitialize",
+        "Condition": null,
+        "Sequence": 800
+      },
+      {
+        "Action": "CostFinalize",
+        "Condition": null,
+        "Sequence": 1000
+      },
+      {
+        "Action": "FileCost",
+        "Condition": null,
+        "Sequence": 900
+      },
+      {
+        "Action": "ExecuteAction",
+        "Condition": null,
+        "Sequence": 1300
+      }
+    ],
+    "AdvtExecuteSequence": [
+      {
+        "Action": "CostInitialize",
+        "Condition": null,
+        "Sequence": 800
+      },
+      {
+        "Action": "CostFinalize",
+        "Condition": null,
+        "Sequence": 1000
+      },
+      {
+        "Action": "InstallInitialize",
+        "Condition": null,
+        "Sequence": 1500
+      },
+      {
+        "Action": "InstallFinalize",
+        "Condition": null,
+        "Sequence": 6600
+      },
+      {
+        "Action": "InstallValidate",
+        "Condition": null,
+        "Sequence": 1400
+      },
+      {
+        "Action": "PublishProduct",
+        "Condition": null,
+        "Sequence": 6400
+      },
+      {
+        "Action": "PublishFeatures",
+        "Condition": null,
+        "Sequence": 6300
+      },
+      {
+        "Action": "CreateShortcuts",
+        "Condition": null,
+        "Sequence": 4500
+      }
+    ]
+  },
+  "checks": 75,
+  "execution": "none",
+  "installation": "none"
+}
