@@ -1,0 +1,13 @@
+{
+  "file": "appimagetool-12-x86_64.AppImage",
+  "source": "https://github.com/AppImage/AppImageKit/releases/download/12/appimagetool-x86_64.AppImage",
+  "sha256": "d918b4df547b388ef253f3c9e7f6529ca81a885395c31f619d9aaf7030499a13",
+  "size": 1974248,
+  "source_project": "https://github.com/AppImage/AppImageKit/tree/12",
+  "source_license": "MIT, Copyright (c) 2004-18 Simon Peter; bundled dependencies retain their own licences",
+  "license_source": "https://github.com/AppImage/AppImageKit/blob/12/LICENSE",
+  "redistributed_in_repository": false,
+  "filesystem_offset": 188392,
+  "compression_id": 1,
+  "input_executed": false
+}

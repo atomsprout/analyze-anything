@@ -1,6 +1,7 @@
 //! Linux packages and their declared contents, without installation or script evaluation.
 
 mod alpine;
+mod appimage;
 mod ar;
 mod arch;
 mod cpio;
@@ -9,6 +10,8 @@ mod declarations;
 mod flatpak;
 mod image;
 mod rpm;
+mod snap;
+mod squashfs;
 
 use aa_core::plugin::{Analyzer, Unpacker};
 
@@ -39,6 +42,8 @@ pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
         Box::new(deb::Deb),
         Box::new(rpm::Rpm),
         Box::new(ar::Ar),
+        Box::new(appimage::AppImage),
+        Box::new(squashfs::Squashfs),
         Box::new(cpio::Cpio),
     ]
 }
@@ -49,6 +54,9 @@ pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
         Box::new(alpine::Alpine),
         Box::new(deb::Deb),
         Box::new(rpm::Rpm),
+        Box::new(squashfs::Squashfs),
+        Box::new(appimage::AppImage),
+        Box::new(snap::Snap),
         Box::new(ar::Ar),
         Box::new(arch::Arch),
         Box::new(cpio::Cpio),

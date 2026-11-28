@@ -4,9 +4,11 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Next delivery cycle
 
-Current baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
-is published as a formal release with unsigned packages, including the report-workflow
-corrections and gates from PR #8 and the bounded MSI action-context increment from PR #9.
+Current published baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
+uses unsigned packages with the report-workflow corrections and MSI action context.
+The 0.2.3 breadth A candidate is still building and undergoing release qualification;
+the later 0.2.4 source candidate implements breadth B with its own publication gates.
+The merged A/B/C/D source is version 0.2.6; none of these four releases is published yet.
 Signed macOS/Homebrew remains at 0.1.1. The priorities
 and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
 
@@ -31,8 +33,8 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   distinguish implementation from independent qualification. Produce one machine-readable
   catalogue/support matrix from which README, website and release totals can be derived;
   check unique IDs, aliases and matching public totals in CI.
-  The A+C+D source catalogue now lists 32 primary + five compression families, and 11 separately
-  tracked declaration families. Extracted-package checks verify the compiled profiles/count
+  The merged 0.2.6 source catalogue now lists 35 primary + five compression families,
+  and 11 separately tracked declaration families. Extracted-package checks verify the compiled profiles/count
   and program version against source. See [count policy](ROADMAP.md#format-inventory-and-count-policy).
 - [x] **Linux breadth A implementation: Arch packages and general ar archives.** Target two new primary
   families (28 to 30 including streams), subject to the baseline audit. Reuse TAR/streams
@@ -44,16 +46,27 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   AppStream readers as three separately counted declaration families. Preserve source
   fields/lines, unknown keys and unsupported substitutions. Add unambiguous supplied-file
   entry and ELF-library relationships; no host lookup, startup or runtime-loader claims.
-- [ ] **Publish breadth A as formal 0.2.3.** Linux native references passed 22 ar, 56 Arch,
-  68 declaration and 125 existing Debian/RPM checks at 9731df0. Wait for final cross-platform
-  CI, release builds and extracted-package checks; verify public asset checksums before
-  publishing. The later batches each require their own formal release (0.2.4, 0.2.5, 0.2.6),
-  reaching 33, 36 and 40 primary/compression families in order.
-- [ ] **Linux breadth B: SquashFS, AppImage Type 2 and snap.** Target three new primary
-  families (30 to 33 including streams). First qualify bounded SquashFS metadata,
-  decompression, link and resource-limit profiles. Then qualify AppImage image extents and
-  AppRun entry relationships, and snap metadata/application/interface/hook declarations with
-  payload evidence. Never mount an image or invoke its runtime, including extract switches.
+- [ ] **Qualify and publish breadth A as 0.2.3.** Candidate builds and release
+  qualification are in progress; no 0.2.3 release is published yet. Linux native references
+  passed 22 ar, 56 Arch, 68 declaration and 125 existing Debian/RPM checks at 9731df0;
+  those checks qualify their recorded source and inputs, not final candidate packages.
+  Complete the final source, build and extracted-package gates and verify asset digests
+  before publication.
+- [x] **Linux breadth B implementation: SquashFS, AppImage Type 2 and snap.** The 0.2.4
+  source candidate adds three primary families (30 to 33 including streams): bounded
+  SquashFS v4 gzip/XZ metadata/file decoding, checked Type 2 extents and AppRun evidence,
+  and snap metadata/application/interface/hook declarations with supplied-file links.
+  Canonical hello-world 29 and external AppImageKit 12 have hash-bound Windows 7-Zip
+  records and 84 Linux unsquashfs checks at a600591; other ELF and fragment/inode
+  profiles retain constructed or pending native qualification. Never mount an image or
+  invoke its runtime, including extract switches.
+- [ ] **Qualify and publish breadth B as 0.2.4.** Linux native comparisons passed at
+  a600591; retain that source/sample scope. PR #12 and the source/release pipeline are
+  underway; no 0.2.4 release is published. Record final integrated-head native,
+  cross-platform CI, release-build and extracted-package checks, and verify public asset
+  checksums before publication. Keep the exact sample/compressor and platform scope in
+  [the image limitations](LIMITATIONS.md#linux-breadth-b-image-profiles). The later C/D
+  batches retain their own releases (0.2.5 and 0.2.6), targeting 36 and 40 families.
 - [x] **Language package breadth C implementation: wheel, npm tarball and JAR.** Three
   semantic readers are registered over the existing ZIP/TAR/stream pipeline. They retain
   identity, literal dependency/entry/script/manifest declarations, source metadata and
@@ -66,9 +79,8 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   Windows read-only reference records with 15 matching CLI comparisons (seven wheel,
   six npm, two JAR), plus the OpenJDK manifest/member reference. Final hosted native,
   cross-platform CI, release builds, extracted-package checks and public asset checksums
-  remain release gates. C adds three primary families: on the 30-entry A baseline
-  it reaches 33; after B's three families are merged and qualified it reaches the intended
-  36. Neither pending B support nor WAR/EAR aliases increase the current count.
+  remain release gates. C adds three primary families, reaching 36 in the ordered
+  A/B/C delivery sequence. WAR/EAR aliases add no family and remain unqualified.
 - [x] **Final breadth D implementation.** Alpine APK v2, full empty-base inline V0
   Flatpak bundles, one OCI/Docker-save family and independent-block LZ4 frames are
   registered with bounded metadata/payload provenance, licensed or project-owned native
@@ -77,10 +89,10 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   filesystem/runtime and compression profiles remain explicit unknowns. See
   [D scope and records](spikes/final-format-breadth.md).
 - [ ] **Publish breadth D as formal 0.2.6 after A/B/C.** A promotion remains pending;
-  do not treat source versions as published releases. The temporary A+C+D catalogue
-  counts 32 primary + five compression families = 37; B must be merged and qualified
-  before claiming the final 35 + five = 40. Wait for combined-source CI, all native
-  comparisons, release builds, extracted-package checks and public asset checksums.
+  do not treat source versions as published releases. The combined A/B/C/D source
+  catalogue is 35 primary + five compression families = 40, with 11 declaration families
+  separately counted. Wait for combined-source CI, all native comparisons, release builds,
+  extracted-package checks and public asset checksums.
   OCI/Docker variants count once; JAR does not automatically qualify WAR/EAR.
 - [ ] **Following breadth: bounded .NET IL references and capability explanations.** Qualify one
   profile using existing CLR metadata: method bodies, supported call/string/token
@@ -293,5 +305,5 @@ These formats were tested with constructed data only:
 
 ## Phase three: the ecosystem
 
-- [ ] More inputs: broaden the qualified initial deb/rpm and PyInstaller profiles; add AppImage, HarmonyOS HAP and similar bundles.
+- [ ] More inputs: broaden the qualified initial deb/rpm, PyInstaller and SquashFS/AppImage/snap profiles; add the planned language packages, HarmonyOS HAP and similar bundles.
 - [x] A `deep` level: done with Ghidra and Hopper; what is left of it is under "The deep level" above.

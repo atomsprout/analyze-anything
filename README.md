@@ -61,7 +61,7 @@ The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release
 
 ## Use
 
-Source version 0.2.6 includes the Arch/ar, Linux declaration, wheel/npm/JAR and
+Source version 0.2.6 includes the Arch/ar, Linux declaration, SquashFS/AppImage/snap, wheel/npm/JAR and
 Alpine/Flatpak/OCI/Docker/LZ4 profiles. The separate 0.2.3–0.2.6 deliveries remain
 pending their release gates. The release pipeline checks extracted CLI analysis, offline queries,
 agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
@@ -82,8 +82,10 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 
 ## What it reads
 
+The catalogue below describes the combined 0.2.6 source candidate. Published 0.2.2 packages retain their recorded profiles; the separate 0.2.3–0.2.6 deliveries still require their own release qualification.
+
 <!-- formats:begin -->
-**32 primary format families + 5 compression formats (37 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
+**35 primary format families + 5 compression formats (40 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
 <!-- formats:end -->
 
 | | |
@@ -92,7 +94,8 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 | Android | APK, AAB, XAPK / APKS / APKM; manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers |
 | Windows | PE, Authenticode, .NET assemblies and bounded single-file bundles, PyInstaller CArchive contents, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
 | Linux packages | Bounded deb, RPM v4 and Arch profiles: package metadata, literal dependencies and installation scripts, TAR/CPIO payloads and link declarations; ar static libraries, systemd/Desktop Entry/AppStream declarations; no installation or package authentication |
-| General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested to any depth; URLs, likely credentials, entropy, duplicate files |
+| Linux applications | SquashFS v4 gzip/XZ file contents and metadata; AppImage Type 2 image boundaries, identity and AppRun evidence; snap identity, application/interface/hook declarations and supplied-file links; no mounting or runtime invocation |
+| General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested within configured limits; URLs, likely credentials, entropy, duplicate files |
 
 ## How it works
 
@@ -169,9 +172,9 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 The current published release is 0.2.2; the 0.2.3 breadth build is pending promotion. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-The source implements Arch/ar, Linux entry declarations, wheel/npm/JAR, Alpine APK, full Flatpak bundles, one OCI/Docker family and LZ4. Counts describe bounded profiles from one catalogue: 37 before the separate SquashFS/AppImage/snap batch is merged, then the target of 40. Release work continues in order:
+The combined source implements Arch/ar, Linux entry declarations, SquashFS/AppImage/snap, wheel/npm/JAR, Alpine APK, full Flatpak bundles, one OCI/Docker family and LZ4: 35 primary plus five compression families, 40 in total, with 11 declaration families tracked separately. These are bounded profiles from one catalogue; their releases remain pending. Release work continues in order:
 
-1. **Linux application formats**: qualify SquashFS, AppImage Type 2 and snap, targeting 33 primary/compression families.
+1. **Linux application formats**: deliver the implemented SquashFS, AppImage Type 2 and snap profiles as 0.2.4 after integrated native, cross-platform and packaged checks. [Recorded profile boundaries](docs/LIMITATIONS.md#linux-breadth-b-image-profiles).
 2. **Language packages**: deliver the implemented wheel, npm tarball and JAR profiles, targeting 36 families after the Linux application batch. WAR/EAR remain unqualified profiles within the Java family.
 3. **Final breadth**: deliver the implemented Alpine APK v2, empty-base Flatpak bundle, OCI/Docker image and independent-block LZ4 profiles as 0.2.6 after the preceding batches, targeting 40 families. [Exact scope](docs/spikes/final-format-breadth.md). .NET IL and deeper component relationships follow; optional evidence retention remains separate.
 

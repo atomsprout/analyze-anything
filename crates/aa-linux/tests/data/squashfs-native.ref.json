@@ -1,0 +1,96 @@
+{
+  "records": [
+    {
+      "file": "upstream-hello-world-29.snap",
+      "sha256": "a14a4c44b085499d45f4182388b941fc9d5d87c5fe04f7405e087f52da61c407",
+      "size": 20480,
+      "tool": "7-Zip 25.00 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-07-05",
+      "entries": [
+        {
+          "path": "bin",
+          "type": "directory",
+          "mode": "drwxrwxr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 509
+        },
+        {
+          "path": "bin/echo",
+          "type": "file",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 493,
+          "size": 31,
+          "sha256": "ee4b6d1b0ff6ca50336bc2ac3026e3ecef4794f63cef52d2087cdecd5e5816c3"
+        },
+        {
+          "path": "bin/env",
+          "type": "file",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 493,
+          "size": 27,
+          "sha256": "fefaf91b06cff122faea5162e890b60f18e45dc5480976fcf36c2d070c0236ac"
+        },
+        {
+          "path": "bin/evil",
+          "type": "file",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 493,
+          "size": 274,
+          "sha256": "710e372f691e9747de5f3f5dcda2d5d3aa9bbaec8b11c450bcade6b2697d06a5"
+        },
+        {
+          "path": "bin/sh",
+          "type": "file",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 493,
+          "size": 271,
+          "sha256": "51e322b098fa84ec2c42f9d89598e3b8ca7171bdf1e4670c244986b2740796a7"
+        },
+        {
+          "path": "meta",
+          "type": "directory",
+          "mode": "drwxrwxr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 509
+        },
+        {
+          "path": "meta/gui",
+          "type": "directory",
+          "mode": "drwxrwxr-x",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 509
+        },
+        {
+          "path": "meta/gui/icon.png",
+          "type": "file",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 420,
+          "size": 18267,
+          "sha256": "6be05eb656db3fd5819455186e49854953a456bc775b49a93b087ce004ede12a"
+        },
+        {
+          "path": "meta/snap.yaml",
+          "type": "file",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "mode_bits": 420,
+          "size": 598,
+          "sha256": "66ab56dfacd057a098488f7762c929cd07e4604fdd9640355e2c415cb7be3865"
+        }
+      ]
+    }
+  ]
+}

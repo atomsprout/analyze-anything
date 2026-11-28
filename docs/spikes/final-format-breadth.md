@@ -2,10 +2,9 @@
 
 The fourth increment adds three primary families and one compression family:
 Alpine APK, full Flatpak single-file bundles, OCI/Docker-save images as one
-family, and LZ4 frames. The current A+C+D source catalogue contains 32 primary
-and five compression families: 37 in total. After the separate B increment is
-merged and qualified, the combined target is 35 primary plus five compression
-families: 40. Eleven declaration families remain separately counted. These are
+family, and LZ4 frames. With B merged, the combined A/B/C/D source catalogue
+contains 35 primary plus five compression families: 40 in total. Eleven
+declaration families remain separately counted. These are
 implemented source profiles for the pending 0.2.6 delivery; no 0.2.6 release is
 claimed here. Release notes identify immutable source and packaged runtime checks.
 

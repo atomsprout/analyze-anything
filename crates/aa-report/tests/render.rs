@@ -765,3 +765,64 @@ fn msi_actions_enter_the_existing_relationship_reading_index() {
         assert!(output.contains("CustomAction table, row RunPayload"));
     }
 }
+
+#[test]
+fn image_relationship_index_preserves_actual_hook_source_and_regular_apprun() {
+    let mut report = full();
+    report.artifacts[0].facts.insert(
+        "snap.package".into(),
+        json!({"references_truncated":true,"references":[
+            {"source":"sample.snap/meta/hooks/install","source_kind":"captured-hook-file","field":"meta/hooks/install",
+             "declared":"meta/hooks/install","status":"matched-supplied-declaration","target":"sample.snap/meta/hooks/install",
+             "target_sha256":"1234","runtime_target_resolved":false}
+        ]}),
+    );
+    report.artifacts[1].facts.insert(
+        "appimage.entry".into(),
+        json!({"field":"AppRun","declared":null,"source_entry":{"path":"AppRun","type":"file"},
+            "status":"unresolved","reason":"original captured file missing","target":null}),
+    );
+    let index = aa_report::relationships::collect(&report);
+    assert_eq!(index.total, 2);
+    assert!(index.source_truncated);
+    assert_eq!(index.rows[0].source, "sample.snap/meta/hooks/install");
+    assert_eq!(index.rows[0].location, "meta/hooks/install");
+    assert_eq!(index.rows[1].declaration, "AppRun");
+    assert_eq!(index.rows[1].reason.as_deref(), Some("original captured file missing"));
+    for lang in [Lang::En, Lang::Zh] {
+        for format in [Format::Markdown, Format::Text, Format::Html] {
+            let output = String::from_utf8(render(&report, format, lang).expect("image relationships render")).expect("text format");
+            assert!(output.contains("sample.snap/meta/hooks/install"));
+            assert!(output.contains("original captured file missing"));
+        }
+    }
+}
+
+#[test]
+fn real_snap_overview_identity_components_and_relationships_render_in_both_languages() {
+    let report = aa_engine::analyze_bytes(
+        &aa_engine::Registry::standard(),
+        "hello-world.snap",
+        include_bytes!("../../aa-linux/tests/data/upstream-hello-world-29.snap").to_vec(),
+        &aa_engine::Options::default(),
+        &mut aa_engine::NoProgress,
+    );
+    let index = aa_report::relationships::collect(&report);
+    assert_eq!(index.total, 4);
+    assert!(index.rows.iter().all(|row| row.source == "hello-world.snap/meta/snap.yaml"));
+    for lang in [Lang::En, Lang::Zh] {
+        for format in [Format::Markdown, Format::Text, Format::Html] {
+            let bytes = render(&report, format, lang).expect("real snap report renders");
+            assert_eq!(bytes, render(&report, format, lang).expect("deterministic render"));
+            let output = String::from_utf8(bytes).expect("text format");
+            assert!(output.contains("hello-world"));
+            assert!(output.contains("6.4"));
+            assert!(output.contains("meta/snap.yaml"));
+            assert!(output.contains("matched-supplied-declaration"));
+            assert!(output.contains(match lang {
+                Lang::En => "Snap installation and runtime semantics were not established",
+                Lang::Zh => "Snap 安装及运行时语义未确定",
+            }));
+        }
+    }
+}

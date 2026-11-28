@@ -1,0 +1,984 @@
+{
+  "source": {
+    "file": "appimagetool-12-x86_64.AppImage",
+    "source": "https://github.com/AppImage/AppImageKit/releases/download/12/appimagetool-x86_64.AppImage",
+    "sha256": "d918b4df547b388ef253f3c9e7f6529ca81a885395c31f619d9aaf7030499a13",
+    "size": 1974248,
+    "source_project": "https://github.com/AppImage/AppImageKit/tree/12",
+    "source_license": "MIT, Copyright (c) 2004-18 Simon Peter; bundled dependencies retain their own licences",
+    "license_source": "https://github.com/AppImage/AppImageKit/blob/12/LICENSE",
+    "redistributed_in_repository": false,
+    "filesystem_offset": 188392,
+    "compression_id": 1,
+    "input_executed": false
+  },
+  "native_filesystem": {
+    "file": "appimagetool-12.squashfs",
+    "sha256": "a5115318291e1ae1d89fc022f75c07f24819643cefd94c79eba8f0cc9d289ffa",
+    "size": 1785619,
+    "tool": "7-Zip 25.00 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-07-05",
+    "entries": [
+      {
+        "path": ".DirIcon",
+        "type": "symlink",
+        "mode": "lrwxrwxrwx",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 511,
+        "link_target": "appimagetool.svg"
+      },
+      {
+        "path": "AppRun",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 1330,
+        "sha256": "396a51cff782859a287d9f367485d1a39edbe007658ceab729ba403cd6ca1be3"
+      },
+      {
+        "path": "appimagetool.desktop",
+        "type": "file",
+        "mode": "-rw-r--r--",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 420,
+        "size": 174,
+        "sha256": "64483fc0330f0ba61fe440331fd8f7f8371e460cc7832826733f715d759d3776"
+      },
+      {
+        "path": "appimagetool.svg",
+        "type": "file",
+        "mode": "-rw-r--r--",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 420,
+        "size": 21585,
+        "sha256": "92feb5a08d153f430ad1ef791a32344f86cedbaec5cd9ddbc952edd7a16f87e7"
+      },
+      {
+        "path": "usr",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/bin",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/bin/AppRun",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 26010,
+        "sha256": "d69a9c8463d8b38f47112dec3f751d9d2bcb126f137e4753beaeeda8eb1e89a1"
+      },
+      {
+        "path": "usr/bin/appimagetool",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 492043,
+        "sha256": "bf743501b8639faff51bb7447c37e5727742f5853d12285ea4bbfcfd9886e9b9"
+      },
+      {
+        "path": "usr/bin/desktop-file-validate",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 42296,
+        "sha256": "8fa058a9b457149811a3134d0a4751ed656914e1f74d853fc72c762bb7d612b6"
+      },
+      {
+        "path": "usr/bin/zsyncmake",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 95479,
+        "sha256": "97012ad6d55bfa194f4889b511b89b9b746af160ec9ee610a969170c75dba749"
+      },
+      {
+        "path": "usr/lib",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/lib/appimagekit",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/lib/appimagekit/mksquashfs",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 390071,
+        "sha256": "0e8d607151b9b41421057011ad75cf65a73635f92c1599f335c167fb1185ddb6"
+      },
+      {
+        "path": "usr/lib/libffi.so.5",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 31720,
+        "sha256": "2009cab32d65011e653d7c87b49ad74541484467b3dc96be05bb2198b6c7a730"
+      },
+      {
+        "path": "usr/lib/libgio-2.0.so",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 2213919,
+        "sha256": "75dcbcc4c49b4866cf16bae30c885153779f0e7ebaca67e560cee87aa0a0ec53"
+      },
+      {
+        "path": "usr/lib/libgio-2.0.so.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 2213919,
+        "sha256": "75dcbcc4c49b4866cf16bae30c885153779f0e7ebaca67e560cee87aa0a0ec53"
+      },
+      {
+        "path": "usr/lib/libgio-2.0.so.0.4000.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 2213919,
+        "sha256": "75dcbcc4c49b4866cf16bae30c885153779f0e7ebaca67e560cee87aa0a0ec53"
+      },
+      {
+        "path": "usr/lib/libglib-2.0.so",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 1583066,
+        "sha256": "82c6753f405dfd5744c1df0cc178e168235f133b255a65db332561f8003cdd87"
+      },
+      {
+        "path": "usr/lib/libglib-2.0.so.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 1583066,
+        "sha256": "82c6753f405dfd5744c1df0cc178e168235f133b255a65db332561f8003cdd87"
+      },
+      {
+        "path": "usr/lib/libglib-2.0.so.0.4000.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 1583066,
+        "sha256": "82c6753f405dfd5744c1df0cc178e168235f133b255a65db332561f8003cdd87"
+      },
+      {
+        "path": "usr/lib/libgmodule-2.0.so",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 18302,
+        "sha256": "41ffd378dd85ecede58ab666fabaeacda6a5ea06f12e441703a08ab7929d0545"
+      },
+      {
+        "path": "usr/lib/libgmodule-2.0.so.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 18302,
+        "sha256": "41ffd378dd85ecede58ab666fabaeacda6a5ea06f12e441703a08ab7929d0545"
+      },
+      {
+        "path": "usr/lib/libgmodule-2.0.so.0.4000.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 18302,
+        "sha256": "41ffd378dd85ecede58ab666fabaeacda6a5ea06f12e441703a08ab7929d0545"
+      },
+      {
+        "path": "usr/lib/libgobject-2.0.so",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 424203,
+        "sha256": "323b9dde961971f4b6fd2c0d1ddf31140e4ba3fc2af53fcb94c2f836bcbcdca6"
+      },
+      {
+        "path": "usr/lib/libgobject-2.0.so.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 424203,
+        "sha256": "323b9dde961971f4b6fd2c0d1ddf31140e4ba3fc2af53fcb94c2f836bcbcdca6"
+      },
+      {
+        "path": "usr/lib/libgobject-2.0.so.0.4000.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 424203,
+        "sha256": "323b9dde961971f4b6fd2c0d1ddf31140e4ba3fc2af53fcb94c2f836bcbcdca6"
+      },
+      {
+        "path": "usr/lib/libgthread-2.0.so",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 7071,
+        "sha256": "453855b953b1a718f980205691fe7e234f57281dfad76960a18ac8b904d0ed9c"
+      },
+      {
+        "path": "usr/lib/libgthread-2.0.so.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 7071,
+        "sha256": "453855b953b1a718f980205691fe7e234f57281dfad76960a18ac8b904d0ed9c"
+      },
+      {
+        "path": "usr/lib/libgthread-2.0.so.0.4000.0",
+        "type": "file",
+        "mode": "-rwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493,
+        "size": 7071,
+        "sha256": "453855b953b1a718f980205691fe7e234f57281dfad76960a18ac8b904d0ed9c"
+      },
+      {
+        "path": "usr/share",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/applications",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/applications/appimagetool.desktop",
+        "type": "file",
+        "mode": "-rw-r--r--",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 420,
+        "size": 174,
+        "sha256": "64483fc0330f0ba61fe440331fd8f7f8371e460cc7832826733f715d759d3776"
+      },
+      {
+        "path": "usr/share/icons",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/icons/hicolor",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/icons/hicolor/scalable",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/icons/hicolor/scalable/apps",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+        "type": "file",
+        "mode": "-rw-r--r--",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 420,
+        "size": 21585,
+        "sha256": "92feb5a08d153f430ad1ef791a32344f86cedbaec5cd9ddbc952edd7a16f87e7"
+      },
+      {
+        "path": "usr/share/metainfo",
+        "type": "directory",
+        "mode": "drwxr-xr-x",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 493
+      },
+      {
+        "path": "usr/share/metainfo/appimagetool.appdata.xml",
+        "type": "file",
+        "mode": "-rw-r--r--",
+        "uid": 0,
+        "gid": 0,
+        "mode_bits": 420,
+        "size": 1247,
+        "sha256": "c57ad0df9a1600ed8da8555bd4c38c2183291ee0f0ceb6b4094dc76b2a467a12"
+      }
+    ],
+    "checks": [
+      {
+        "check": "input SHA-256",
+        "matches": true
+      },
+      {
+        "check": "paths/types",
+        "matches": true
+      },
+      {
+        "check": "owner: .DirIcon",
+        "matches": true
+      },
+      {
+        "check": "mode: .DirIcon",
+        "matches": true
+      },
+      {
+        "check": "link target: .DirIcon",
+        "matches": true
+      },
+      {
+        "check": "owner: AppRun",
+        "matches": true
+      },
+      {
+        "check": "mode: AppRun",
+        "matches": true
+      },
+      {
+        "check": "size: AppRun",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: AppRun",
+        "matches": true
+      },
+      {
+        "check": "owner: appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "mode: appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "size: appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "owner: appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "mode: appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "size: appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "owner: usr",
+        "matches": true
+      },
+      {
+        "check": "mode: usr",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/bin",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/bin",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/bin/AppRun",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/bin/AppRun",
+        "matches": true
+      },
+      {
+        "check": "size: usr/bin/AppRun",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/bin/AppRun",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/bin/appimagetool",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/bin/appimagetool",
+        "matches": true
+      },
+      {
+        "check": "size: usr/bin/appimagetool",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/bin/appimagetool",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/bin/desktop-file-validate",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/bin/desktop-file-validate",
+        "matches": true
+      },
+      {
+        "check": "size: usr/bin/desktop-file-validate",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/bin/desktop-file-validate",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/bin/zsyncmake",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/bin/zsyncmake",
+        "matches": true
+      },
+      {
+        "check": "size: usr/bin/zsyncmake",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/bin/zsyncmake",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/appimagekit",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/appimagekit",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/appimagekit/mksquashfs",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/appimagekit/mksquashfs",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/appimagekit/mksquashfs",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/appimagekit/mksquashfs",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libffi.so.5",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libffi.so.5",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libffi.so.5",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libffi.so.5",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgio-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgio-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgio-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgio-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgio-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgio-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgio-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgio-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgio-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgio-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgio-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgio-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libglib-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libglib-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libglib-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libglib-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libglib-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libglib-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libglib-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libglib-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libglib-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libglib-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libglib-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libglib-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgmodule-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgmodule-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgmodule-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgmodule-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgmodule-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgmodule-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgmodule-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgmodule-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgmodule-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgmodule-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgmodule-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgmodule-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgobject-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgobject-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgobject-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgobject-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgobject-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgobject-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgobject-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgobject-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgobject-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgobject-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgobject-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgobject-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgthread-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgthread-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgthread-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgthread-2.0.so",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgthread-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgthread-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgthread-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgthread-2.0.so.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/lib/libgthread-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/lib/libgthread-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "size: usr/lib/libgthread-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/lib/libgthread-2.0.so.0.4000.0",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/applications",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/applications",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/applications/appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/applications/appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "size: usr/share/applications/appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/share/applications/appimagetool.desktop",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/icons",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/icons",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/icons/hicolor",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/icons/hicolor",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/icons/hicolor/scalable",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/icons/hicolor/scalable",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/icons/hicolor/scalable/apps",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/icons/hicolor/scalable/apps",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "size: usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/metainfo",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/metainfo",
+        "matches": true
+      },
+      {
+        "check": "owner: usr/share/metainfo/appimagetool.appdata.xml",
+        "matches": true
+      },
+      {
+        "check": "mode: usr/share/metainfo/appimagetool.appdata.xml",
+        "matches": true
+      },
+      {
+        "check": "size: usr/share/metainfo/appimagetool.appdata.xml",
+        "matches": true
+      },
+      {
+        "check": "SHA-256: usr/share/metainfo/appimagetool.appdata.xml",
+        "matches": true
+      }
+    ]
+  },
+  "captured_appimage": {
+    "appimage.container": {
+      "elf_bits": 64,
+      "elf_little_endian": true,
+      "filesystem_child": "[filesystem].squashfs",
+      "filesystem_offset": 188392,
+      "filesystem_size": 1785619,
+      "machine": 62,
+      "runtime_invoked": false,
+      "section_count": 32,
+      "signature_verified": false,
+      "trailing_bytes": 237,
+      "trailing_zero_padding": true,
+      "type": 2
+    },
+    "appimage.identity": {
+      "name": "appimagetool",
+      "publisher_authenticated": false,
+      "source": "appimagetool-12-x86_64.AppImage/[filesystem].squashfs/appimagetool.desktop",
+      "source_sha256": "64483fc0330f0ba61fe440331fd8f7f8371e460cc7832826733f715d759d3776"
+    },
+    "appimage.entry": {
+      "basis": "captured-filesystem-entry",
+      "declared": null,
+      "field": "AppRun",
+      "runtime_target_resolved": false,
+      "source_entry": {
+        "gid": 0,
+        "inode": 2,
+        "inode_reference": 40,
+        "link_target": null,
+        "mode": 493,
+        "path": "AppRun",
+        "size": 1330,
+        "type": "file",
+        "uid": 0,
+        "unread": null
+      },
+      "status": "matched-supplied-declaration",
+      "target": "appimagetool-12-x86_64.AppImage/[filesystem].squashfs/AppRun",
+      "target_sha256": "396a51cff782859a287d9f367485d1a39edbe007658ceab729ba403cd6ca1be3"
+    }
+  },
+  "qualification": {
+    "platform": "Windows x64",
+    "cli_no_default_features": true,
+    "native_filesystem_checks_passed": 135,
+    "appimage_runtime_invoked": false,
+    "limitations": "Filesystem metadata and hashes qualified with 7-Zip. Runtime code, authentication and effective launcher behavior remain unchecked. Linux unsquashfs qualification is a separate gate.",
+    "repeated_reports_byte_equal": true,
+    "report_sha256": "2f8249148fa05d882bebea42b040d25ae9eb2e1a88b60fd630b801ce462da2bd"
+  }
+}

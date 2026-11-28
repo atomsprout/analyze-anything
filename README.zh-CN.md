@@ -63,7 +63,7 @@ target/release/analyze-anything <文件或文件夹>
 
 ## 使用
 
-0.2.6 源码包含 Arch/ar、Linux 声明、wheel/npm/JAR 以及
+0.2.6 源码包含 Arch/ar、Linux 声明、SquashFS/AppImage/snap、wheel/npm/JAR 以及
 Alpine/Flatpak/OCI/Docker/LZ4 范围。0.2.3 至 0.2.6 的各次交付仍待完成发布验收。
 发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
 详见[真实报告验收记录](docs/spikes/report-workflow.md)。
@@ -84,8 +84,10 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 
 ## 能读什么
 
+下面的目录描述合并后的 0.2.6 源码候选版。已发布的 0.2.2 安装包仍以其验收记录为准；0.2.3 至 0.2.6 的各次交付仍需完成自己的发行验收。
+
 <!-- formats:begin -->
-**32 类主要格式＋5 种压缩格式（共 37 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
+**35 类主要格式＋5 种压缩格式（共 40 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
 <!-- formats:end -->
 
 | | |
@@ -94,7 +96,8 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 | Android | APK、AAB、XAPK / APKS / APKM；清单、资源、签名方案 v1–v3.1、DEX、SDK 与加固壳 |
 | Windows | PE、Authenticode、.NET 程序集与有边界的单文件包、PyInstaller CArchive 内容、MSI（含它自身的签名）、NSIS、Inno Setup、CAB、自解压程序、Electron（asar）、MSIX、已安装程序目录 |
 | Linux 软件包 | 有边界的 deb、RPM v4 与 Arch 支持：包元数据、依赖与安装脚本的字面声明、TAR/CPIO 载荷及链接声明；ar 静态库、systemd/Desktop Entry/AppStream 声明；不安装或认证软件包 |
-| 通用 | Mach-O、ELF、PE 的结构与加固选项；zip、tar、7z、gzip、bzip2、xz、zstd，任意嵌套；URL、疑似凭据、熵、相同文件 |
+| Linux 应用 | SquashFS v4 gzip/XZ 文件内容与元数据；AppImage Type 2 映像边界、身份和 AppRun 证据；snap 身份、应用／接口／钩子声明与随附文件关联；不挂载或调用运行时 |
+| 通用 | Mach-O、ELF、PE 的结构与加固选项；zip、tar、7z、gzip、bzip2、xz、zstd，在配置限制内嵌套；URL、疑似凭据、熵、相同文件 |
 
 ## 工作原理
 
@@ -171,9 +174,9 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 当前已发布版本是 0.2.2；0.2.3 覆盖增量构建仍待正式发布。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
-源码已实现 Arch/ar、Linux 入口声明、wheel/npm/JAR、Alpine APK、完整 Flatpak 包、一个 OCI/Docker 家族和 LZ4。数量来自同一份有界支持范围目录：单独的 SquashFS/AppImage/snap 批次合并前为 37 类，合并后目标为 40 类。按顺序继续发布工作：
+合并后的源码已实现 Arch/ar、Linux 入口声明、SquashFS/AppImage/snap、wheel/npm/JAR、Alpine APK、完整 Flatpak 包、一个 OCI/Docker 家族和 LZ4：35 类主要格式加 5 种压缩格式，共 40 类，另列 11 类声明格式。这些数量来自同一份有界支持范围目录；各次发布仍待完成。按顺序继续发布工作：
 
-1. **Linux 应用格式**：验收 SquashFS、AppImage Type 2 与 snap，主要格式与压缩格式合计目标为 33 类。
+1. **Linux 应用格式**：完成集成原生工具、跨平台及发布包检查后，以 0.2.4 交付已实现的 SquashFS、AppImage Type 2 与 snap 范围。见[已记录的支持边界](docs/LIMITATIONS.md#linux-breadth-b-image-profiles)。
 2. **语言软件包**：交付已实现的 wheel、npm TAR 包和 JAR 范围，在 Linux 应用批次之后达到 36 类。WAR/EAR 仍是 Java 家族中尚未验收的范围。
 3. **最终覆盖增量**：在前述批次之后，以 0.2.6 交付已实现的 Alpine APK v2、空基础 Flatpak 包、OCI/Docker 镜像和独立块 LZ4 范围，目标为 40 类。见[具体范围](docs/spikes/final-format-breadth.md)。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
 
