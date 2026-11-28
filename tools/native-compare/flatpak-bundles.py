@@ -66,7 +66,7 @@ def metadata_fields(text):
         else:
             key, value = line.split("=", 1)
             fields.append({"group": group, "name": key.strip(), "value": value.strip(), "line": number,
-                           "interpreted": group in ("Application", "Runtime", "Context", "Session Bus Policy", "System Bus Policy")})
+                           "recognized_group": group in ("Application", "Runtime", "Context", "Session Bus Policy", "System Bus Policy")})
     return fields
 
 
@@ -86,7 +86,7 @@ def native(sample):
     declared = bytes(bundle.get_metadata().get_data())
     result = {"name": bundle.get_name(), "architecture": bundle.get_arch(), "branch": bundle.get_branch(),
               "reference": bundle.format_ref(), "commit": bundle.get_commit(), "metadata": declared.decode("utf-8"),
-              "parts": [], "objects": {}, "paths": []}
+              "parts": [], "objects": {}, "paths": [], "directories": [], "_decoded": {}}
     assert not raw(columns[2]) and not raw(columns[5]) and not children(columns[7])
     assert sha(raw(columns[4])) == raw(columns[3]).hex()
     inline = [value for key, value in metadata.items() if key.startswith("deltas/")]
@@ -98,12 +98,13 @@ def native(sample):
         stored = raw(part)
         assert len(stored) == number(size, byteorder) and sha(stored) == raw(checksum).hex()
         payload = lzma.decompress(raw(compressed)) if compression.get_byte() == ord("x") else raw(compressed)
+        result["_decoded"][index] = payload
         modes, xattrs, blob, operations = children(read_variant(PAYLOAD, payload))
         data, ops = raw(blob), raw(operations)
         descriptors = raw(object_list)
         at = 0
         result["parts"].append({"index": index, "sha256": sha(stored), "decoded_sha256": sha(payload),
-                                "decoded_size": len(payload), "objects": len(descriptors) // 33})
+                                "decoded_size": len(payload), "declared_objects": len(descriptors) // 33, "verified_objects": len(descriptors) // 33})
         for offset in range(0, len(descriptors), 33):
             kind = descriptors[offset]
             expected = descriptors[offset + 1:offset + 33].hex()
@@ -146,6 +147,10 @@ def native(sample):
     while pending:
         prefix, tree_hash, meta_hash = pending.pop()
         assert (3, meta_hash) in result["objects"]
+        declarations = children(read_variant("(uuua(ayay))", result["objects"][(3, meta_hash)]["data"]))
+        result["directories"].append({"path": prefix, "tree_checksum": tree_hash, "metadata_checksum": meta_hash,
+                                      "uid": number(declarations[0], "big"), "gid": number(declarations[1], "big"),
+                                      "mode": number(declarations[2], "big"), "xattr_count": declarations[3].n_children()})
         tree = read_variant("(a(say)a(sayay))", result["objects"][(2, tree_hash)]["data"])
         files, directories = children(tree)
         for row in children(files):
@@ -179,6 +184,7 @@ def analyze(cli, sample):
 
 def verify(cli, sample):
     reference = native(sample)
+    decoded_parts = reference.pop("_decoded")
     first = analyze(cli, sample)
     report = json.loads(first)
     root = next(file for file in report["artifacts"] if file["parent"] is None)
@@ -197,8 +203,12 @@ def verify(cli, sample):
         check("native Flatpak identity: " + key, facts[key], reference[key])
     check("native application declarations", root["facts"]["flatpak.application"]["fields"], metadata_fields(reference["metadata"]))
     check("native object/path names", [row["path"] for row in facts["entries"]], [row["path"] for row in reference["paths"]])
+    check("native part count", len(facts["parts"]), len(reference["parts"]))
+    check("native verified object count", sum(part["verified_objects"] for part in facts["parts"]), reference["object_count"])
+    check("native directory metadata and empty directories", sorted(facts["directories"], key=lambda row: row["path"]),
+          sorted(reference["directories"], key=lambda row: row["path"]))
     for actual, expected in zip(facts["parts"], reference["parts"]):
-        for key in ("index", "sha256", "decoded_sha256", "decoded_size", "objects"):
+        for key in ("index", "sha256", "decoded_sha256", "decoded_size", "declared_objects", "verified_objects"):
             check("native part " + str(expected["index"]) + ": " + key, actual[key], expected[key])
         decoded = next(file for file in report["artifacts"] if file["path"] == actual["decoded_artifact"])
         check("retained decoded part digest", decoded["digests"]["sha256"], expected["decoded_sha256"])
@@ -207,6 +217,11 @@ def verify(cli, sample):
             check(expected["path"] + ": " + key, actual[key], expected.get(key))
         check(expected["path"] + ": verified object checksum", actual["object_checksum"], expected["checksum"])
         check(expected["path"] + ": label checked", actual["object_label_verified"], True)
+        source = decoded_parts[actual["part"]]
+        check(expected["path"] + ": source span digest", sha(source[actual["offset"]:actual["offset"] + actual["size"]]), expected["sha256"])
+        declaration = actual["declaration"]
+        names = decoded_parts[declaration["part"]]
+        check(expected["path"] + ": filename declaration span", names[declaration["offset"]:declaration["offset"] + declaration["length"]], expected["path"].rsplit("/", 1)[-1].encode() + b"\0")
         if expected.get("link_target") is None:
             artifact = next(file for file in report["artifacts"] if file["path"] == actual["captured_path"])
             check(expected["path"] + ": captured payload SHA-256", artifact["digests"]["sha256"], expected["sha256"])

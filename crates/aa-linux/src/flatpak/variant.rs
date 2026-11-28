@@ -16,6 +16,15 @@ pub(super) enum Type {
 }
 
 impl Type {
+    fn weight(&self) -> usize {
+        match self {
+            Self::Array(child) | Self::Maybe(child) => 1 + child.weight(),
+            Self::Tuple(fields) => 1 + fields.iter().map(Self::weight).sum::<usize>(),
+            Self::Dict(key, value) => 1 + key.weight() + value.weight(),
+            _ => 1,
+        }
+    }
+
     fn alignment(&self) -> usize {
         match self {
             Self::Basic(b'y' | b'b' | b's' | b'o' | b'g') => 1,
@@ -244,7 +253,7 @@ impl<'a> Node<'a> {
                     }
                     (framing / w, end, None)
                 };
-                if count > max {
+                if count > max || count.saturating_mul(ty.weight()) > 1_000_000 {
                     return Err("GVariant array element budget exhausted".into());
                 }
                 let mut result = Vec::with_capacity(count);
@@ -281,7 +290,8 @@ impl<'a> Node<'a> {
         }
         budget.nodes -= 1;
         match &self.ty {
-            Type::Basic(b's' | b'o' | b'g') => {
+            Type::Basic(b'o' | b'g') => return Err("GVariant object-path/signature scalars are outside this bounded profile".into()),
+            Type::Basic(b's') => {
                 let text = self.string()?;
                 budget.strings = budget.strings.checked_sub(text.len()).ok_or("GVariant string budget exhausted")?;
                 if text.len() > 1024 * 1024 {

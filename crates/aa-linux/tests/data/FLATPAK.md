@@ -45,6 +45,13 @@ depth, compression-memory and output budgets are bounded. Links and extended
 attributes remain declarations. Original inline parts are retained as artifacts,
 with decoded-part layers and payload byte provenance.
 
+Object hashing has a cumulative 256 MiB work budget, including repeated ranges
+and attribute data; duplicate object identities are rejected before repeated hashing.
+Graph queues have a 16 MiB metadata budget. Declared and verified object counts,
+reconstructed and actually retained regular-file counts are separate. Evidence for
+captured contents names both the decoded payload range and the original directory
+filename declaration. Missing captured layers remain explicit.
+
 Nonempty bases, recursive/fallback/external objects, other delta operations,
 compression profiles, signed-superblock envelopes and unsupported metadata remain
 explicit gaps. AppStream/icon data, signatures, runtime availability, remote

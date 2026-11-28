@@ -215,6 +215,7 @@ dependencies = [
  "lzma-rust2 0.25.0",
  "roxmltree",
  "ruzstd",
+ "serde",
  "serde_json",
  "sha2 0.10.9",
  "tar",

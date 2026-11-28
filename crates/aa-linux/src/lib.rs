@@ -6,6 +6,7 @@ mod cpio;
 mod deb;
 mod declarations;
 mod flatpak;
+mod image;
 mod rpm;
 
 use aa_core::plugin::{Analyzer, Unpacker};
@@ -50,5 +51,6 @@ pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
         Box::new(cpio::Cpio),
         Box::new(declarations::Declarations),
         Box::new(flatpak::Flatpak),
+        Box::new(image::Image),
     ]
 }

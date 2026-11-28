@@ -229,6 +229,7 @@ struct Object {
     size: usize,
     mode: Option<u32>,
     xattrs: usize,
+    xattr_count: usize,
 }
 
 struct DecodedPart<'a> {
@@ -236,6 +237,7 @@ struct DecodedPart<'a> {
     raw: Node<'a>,
     bytes: Vec<u8>,
     objects: usize,
+    verified_objects: usize,
     complete: bool,
 }
 
@@ -257,6 +259,8 @@ struct Bundle<'a> {
     directories: Vec<Value>,
     issues: Vec<String>,
     complete: bool,
+    checksum_work: usize,
+    seen_objects: BTreeSet<(u8, [u8; 32])>,
 }
 
 fn varuint(bytes: &[u8], at: &mut usize) -> Result<usize> {
@@ -344,11 +348,13 @@ impl Bundle<'_> {
                 return Err("static-delta object budget exhausted".into());
             }
             let part_slot = self.parts.len();
-            self.parts.push(DecodedPart { index, raw, bytes, objects: objects.len() / 33, complete: false });
+            self.parts.push(DecodedPart { index, raw, bytes, objects: objects.len() / 33, verified_objects: 0, complete: false });
+            let verified_before = self.objects.len();
             match self.read_objects(part_slot, objects) {
                 Ok(()) => self.parts[part_slot].complete = true,
                 Err(detail) => self.issue(format!("part {index}: {detail}")),
             }
+            self.parts[part_slot].verified_objects = self.objects.len() - verified_before;
         }
         self.resolve_tree()
     }
@@ -368,6 +374,9 @@ impl Bundle<'_> {
             at += 1;
             let kind = descriptor[0];
             let checksum = checksum(&descriptor[1..])?;
+            if !self.seen_objects.insert((kind, checksum)) {
+                return Err("duplicate object identity in the delta records".into());
+            }
             let (mode, attrs, mode_values) = if kind == 1 {
                 let mode = varuint(ops, &mut at)?;
                 let attrs = varuint(ops, &mut at)?;
@@ -384,6 +393,11 @@ impl Bundle<'_> {
             let length = varuint(ops, &mut at)?;
             let offset = varuint(ops, &mut at)?;
             let data = crate::extent(blob, offset, length)?;
+            let attribute_bytes = if kind == 1 { xattrs[attrs].data.len() } else { 0 };
+            self.checksum_work = self.checksum_work.saturating_add(length).saturating_add(attribute_bytes);
+            if self.checksum_work > MAX_TOTAL {
+                return Err("cumulative object checksum work exceeds the 256 MiB profile".into());
+            }
             if kind != 1 && digest(data) != checksum {
                 return Err("metadata object digest mismatch".into());
             }
@@ -393,7 +407,16 @@ impl Bundle<'_> {
                     return Err("content object digest mismatch".into());
                 }
             }
-            self.objects.push(Object { kind, checksum, part: slot, offset: fields[2].offset + offset, size: length, mode, xattrs: attrs });
+            self.objects.push(Object {
+                kind,
+                checksum,
+                part: slot,
+                offset: fields[2].offset + offset,
+                size: length,
+                mode,
+                xattrs: attrs,
+                xattr_count: if kind == 1 { xattrs[attrs].children(4096)?.len() } else { 0 },
+            });
         }
         if at != ops.len() {
             return Err("operation stream has trailing or unmatched operations".into());
@@ -412,10 +435,12 @@ impl Bundle<'_> {
         let root_tree = checksum(commit[6].bytes()?)?;
         let root_meta = checksum(commit[7].bytes()?)?;
         let mut pending = vec![(String::new(), root_tree, root_meta, BTreeSet::new())];
+        let mut queue_bytes = 128usize;
         let mut paths = BTreeSet::new();
         let mut names = 0usize;
         let mut budget = Budget::default();
         while let Some((path, tree_hash, meta_hash, mut ancestors)) = pending.pop() {
+            queue_bytes = queue_bytes.saturating_sub(128 + path.len() + ancestors.len() * 64);
             if ancestors.len() >= 128 || !ancestors.insert(tree_hash) {
                 return Err("OSTree directory cycle or depth budget exhausted".into());
             }
@@ -423,65 +448,75 @@ impl Bundle<'_> {
             let meta_index = *map.get(&(3, meta_hash)).ok_or("directory-metadata object is missing from captured parts")?;
             let metadata = self.object_node(meta_index, "(uuua(ayay))")?;
             metadata.validate(&mut budget, 0)?;
-            let mode = metadata.children(4)?[2].number(false)?;
+            let declarations = metadata.children(4)?;
+            let mode = declarations[2].number(false)?;
             self.directories.push(
-                json!({"path": path, "tree_checksum": hex::encode(tree_hash), "metadata_checksum": hex::encode(meta_hash), "mode": mode}),
+                json!({"path": path, "tree_checksum": hex::encode(tree_hash), "metadata_checksum": hex::encode(meta_hash), "mode": mode,
+                    "uid": declarations[0].number(false)?, "gid": declarations[1].number(false)?, "xattr_count": declarations[3].children(4096)?.len()}),
             );
             if self.directories.len() > MAX_OBJECTS {
                 return Err("OSTree directory budget exhausted".into());
             }
-            let tree = self.object_node(tree_index, "(a(say)a(sayay))")?;
-            tree.validate(&mut budget, 0)?;
-            let lists = tree.children(2)?;
             let mut files = Vec::new();
-            for row in lists[0].children(MAX_OBJECTS)? {
-                let columns = row.children(2)?;
-                let name = columns[0].string()?;
-                let path = child_path(&path, name)?;
-                names = names.saturating_add(path.len());
-                if names > crate::MAX_METADATA || paths.len() >= MAX_OBJECTS || !paths.insert(path.clone()) {
-                    return Err("OSTree path budget exhausted or duplicate path declaration".into());
-                }
-                let checksum = checksum(columns[1].bytes()?)?;
-                let object = *map.get(&(1, checksum)).ok_or("file object is missing from captured parts")?;
-                let target = if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o120000) {
-                    let data = self.object_bytes(object)?;
-                    if data.len() > 4096 {
-                        return Err("symlink target exceeds the 4096-byte declaration profile".into());
+            let result = (|| -> Result<()> {
+                let tree = self.object_node(tree_index, "(a(say)a(sayay))")?;
+                tree.validate(&mut budget, 0)?;
+                let lists = tree.children(2)?;
+                for row in lists[0].children(MAX_OBJECTS)? {
+                    let columns = row.children(2)?;
+                    let name = columns[0].string()?;
+                    let path = child_path(&path, name)?;
+                    names = names.saturating_add(path.len());
+                    if names > crate::MAX_METADATA || paths.len() >= MAX_OBJECTS || !paths.insert(path.clone()) {
+                        return Err("OSTree path budget exhausted or duplicate path declaration".into());
                     }
-                    let target = std::str::from_utf8(data).map_err(|_| "symlink target is not UTF-8")?;
-                    if target.contains('\0') {
-                        return Err("symlink target contains NUL".into());
+                    let checksum = checksum(columns[1].bytes()?)?;
+                    let object = *map.get(&(1, checksum)).ok_or("file object is missing from captured parts")?;
+                    let target = if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o120000) {
+                        let data = self.object_bytes(object)?;
+                        if data.len() > 4096 {
+                            return Err("symlink target exceeds the 4096-byte declaration profile".into());
+                        }
+                        let target = std::str::from_utf8(data).map_err(|_| "symlink target is not UTF-8")?;
+                        if target.contains('\0') {
+                            return Err("symlink target contains NUL".into());
+                        }
+                        Some(aa_core::text::redact_sensitive_text(target).map_err(str::to_string)?)
+                    } else if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o100000) {
+                        None
+                    } else {
+                        return Err("special file mode is outside the payload profile".into());
+                    };
+                    files.push(File {
+                        path,
+                        checksum,
+                        object,
+                        target,
+                        declaration_part: self.objects[tree_index].part,
+                        declaration_offset: columns[0].offset,
+                        declaration_length: columns[0].data.len(),
+                    });
+                    if self.files.len().saturating_add(files.len()) > MAX_OBJECTS {
+                        return Err("OSTree file budget exhausted".into());
                     }
-                    Some(aa_core::text::redact_sensitive_text(target).map_err(str::to_string)?)
-                } else if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o100000) {
-                    None
-                } else {
-                    return Err("special file mode is outside the payload profile".into());
-                };
-                files.push(File {
-                    path,
-                    checksum,
-                    object,
-                    target,
-                    declaration_part: self.objects[tree_index].part,
-                    declaration_offset: columns[0].offset,
-                    declaration_length: columns[0].data.len(),
-                });
-                if self.files.len().saturating_add(files.len()) > MAX_OBJECTS {
-                    return Err("OSTree file budget exhausted".into());
                 }
-            }
-            for row in lists[1].children(MAX_OBJECTS)? {
-                let columns = row.children(3)?;
-                let child = child_path(&path, columns[0].string()?)?;
-                names = names.saturating_add(child.len());
-                if names > crate::MAX_METADATA || paths.len() >= MAX_OBJECTS || !paths.insert(child.clone()) {
-                    return Err("OSTree path budget exhausted or duplicate directory declaration".into());
+                for row in lists[1].children(MAX_OBJECTS)? {
+                    let columns = row.children(3)?;
+                    let child = child_path(&path, columns[0].string()?)?;
+                    names = names.saturating_add(child.len());
+                    if names > crate::MAX_METADATA || paths.len() >= MAX_OBJECTS || !paths.insert(child.clone()) {
+                        return Err("OSTree path budget exhausted or duplicate directory declaration".into());
+                    }
+                    queue_bytes = queue_bytes.saturating_add(128 + child.len() + ancestors.len() * 64);
+                    if queue_bytes > crate::MAX_METADATA {
+                        return Err("OSTree directory queue exceeds the 16 MiB metadata profile".into());
+                    }
+                    pending.push((child, checksum(columns[1].bytes()?)?, checksum(columns[2].bytes()?)?, ancestors.clone()));
                 }
-                pending.push((child, checksum(columns[1].bytes()?)?, checksum(columns[2].bytes()?)?, ancestors.clone()));
-            }
+                Ok(())
+            })();
             self.files.extend(files);
+            result?;
         }
         self.files.sort_by(|a, b| a.path.cmp(&b.path));
         Ok(())
@@ -565,10 +600,13 @@ fn bundle(bytes: &[u8]) -> Result<Bundle<'_>> {
         directories: Vec::new(),
         issues: Vec::new(),
         complete: true,
+        checksum_work: 0,
+        seen_objects: BTreeSet::new(),
     };
     if let Err(detail) = bundle.contents() {
         bundle.issue(detail);
     }
+    bundle.files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(bundle)
 }
 
@@ -596,16 +634,29 @@ impl Unpacker for Flatpak {
             Ok(parsed) => parsed,
             Err(detail) => return if candidate { Unpack::Failed { kind: "flatpak", detail } } else { Unpack::NotMine },
         };
-        if let Some(metadata) = &parsed.header.metadata
-            && !add(sink, "declared-metadata.ini", metadata.string().unwrap_or("").as_bytes())
-        {
-            return Unpack::Done { kind: "flatpak" };
+        if let Some(metadata) = &parsed.header.metadata {
+            match metadata.string() {
+                Ok(text) => {
+                    if !add(sink, "declared-metadata.ini", text.as_bytes()) {
+                        return Unpack::Done { kind: "flatpak" };
+                    }
+                }
+                Err(detail) => sink.limitation("flatpak.metadata-unread", Some(detail)),
+            }
         }
         let base64 = modified_base64(&parsed.header.to);
-        for (index, _) in parsed.header.fields[6].children(MAX_PARTS).unwrap_or_default().iter().enumerate() {
+        let headers = match parsed.header.fields[6].children(MAX_PARTS) {
+            Ok(headers) => headers,
+            Err(detail) => {
+                sink.limitation("flatpak.contents-unread", Some(detail));
+                return Unpack::Done { kind: "flatpak" };
+            }
+        };
+        let part_type = variant::signature("(yay)").expect("fixed valid part signature");
+        for (index, _) in headers.iter().enumerate() {
             let key = format!("deltas/{}/{}/{index}", &base64[..2], &base64[2..]);
             if let Some(part) = parsed.header.dictionary.get(key.as_str())
-                && part.ty == variant::signature("(yay)").unwrap_or(variant::Type::Variant)
+                && part.ty == part_type
                 && !add(sink, &part_name(index), part.data)
             {
                 return Unpack::Done { kind: "flatpak" };
@@ -674,7 +725,8 @@ fn retain(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output) -> R
     let reference = aa_core::text::redact_sensitive_text(bundle.header.reference).map_err(str::to_string)?;
     let parts: Vec<_> = bundle.parts.iter().map(|part| json!({"index": part.index, "source_offset": part.raw.offset, "source_length": part.raw.data.len(),
         "artifact": format!("{}/{}", file.path, part_name(part.index)), "decoded_artifact": format!("{}/{}/decoded", file.path, part_name(part.index)),
-        "sha256": aa_core::sha256_hex(part.raw.data), "decoded_sha256": aa_core::sha256_hex(&part.bytes), "decoded_size": part.bytes.len(), "objects": part.objects, "complete": part.complete})).collect();
+        "sha256": aa_core::sha256_hex(part.raw.data), "decoded_sha256": aa_core::sha256_hex(&part.bytes), "decoded_size": part.bytes.len(),
+        "declared_objects": part.objects, "verified_objects": part.verified_objects, "complete": part.complete})).collect();
     let entries: Vec<_> = bundle.files.iter().map(|entry| {
         let object = &bundle.objects[entry.object];
         let part = &bundle.parts[object.part];
@@ -683,16 +735,20 @@ fn retain(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output) -> R
         let captured = entry.target.is_none() && tree.get(&captured_path).is_some_and(|artifact| artifact.size == object.size as u64
             && !artifact.facts.get("engine.entry-name").and_then(|value| value.get("colliding")).and_then(Value::as_bool).unwrap_or(false));
         let declaration_part = &bundle.parts[entry.declaration_part];
+        let declaration_source = format!("{}/{}/decoded", file.path, part_name(declaration_part.index));
         json!({"path": entry.path, "object_checksum": hex::encode(entry.checksum), "object_label_verified": true,
-            "mode": object.mode, "xattr_index": object.xattrs, "link_target": entry.target, "size": object.size,
+            "mode": object.mode, "xattr_index": object.xattrs, "xattr_count": object.xattr_count, "link_target": entry.target, "size": object.size,
             "part": part.index, "source": tree.get(&decoded_path).map(|artifact| &artifact.path), "offset": object.offset,
             "bundle_source": {"artifact": file.path, "offset": part.raw.offset, "length": part.raw.data.len(), "decoded_offset": object.offset},
-            "declaration": {"part": declaration_part.index, "source": format!("{}/{}/decoded", file.path, part_name(declaration_part.index)), "offset": entry.declaration_offset, "length": entry.declaration_length},
+            "declaration": {"part": declaration_part.index, "source": tree.get(&declaration_source).map(|artifact| &artifact.path), "offset": entry.declaration_offset, "length": entry.declaration_length,
+                "bundle_source": {"artifact": file.path, "offset": declaration_part.raw.offset, "length": declaration_part.raw.data.len(), "decoded_offset": entry.declaration_offset}},
             "captured": captured, "captured_path": captured.then_some(captured_path)})
     }).collect();
     let identity: Vec<_> = reference.split('/').collect();
     let regular_files = bundle.files.iter().filter(|entry| entry.target.is_none()).count();
     let captured_files = entries.iter().filter(|entry| entry["captured"] == true).count();
+    let captured_names: BTreeSet<_> =
+        entries.iter().filter(|entry| entry["captured"] == true).filter_map(|entry| entry["path"].as_str()).collect();
     let capture_complete = captured_files == regular_files;
     out.fact(file, "flatpak.bundle", json!({"reference": reference, "name": identity[1], "architecture": identity[2], "branch": identity[3], "kind": identity[0],
         "commit": hex::encode(bundle.header.to), "complete": bundle.complete, "parts": parts, "entries": entries, "directories": bundle.directories,
@@ -729,7 +785,7 @@ fn retain(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output) -> R
     if captured_files > 0 {
         let mut finding = Finding::new(Section::Composition, "flatpak", "flatpak.contents", Confidence::Derived, Severity::Info)
             .param("count", captured_files);
-        for entry in bundle.files.iter().take(5) {
+        for entry in bundle.files.iter().filter(|entry| captured_names.contains(entry.path.as_str())).take(5) {
             let object = &bundle.objects[entry.object];
             let part = &bundle.parts[object.part];
             let path = format!("{}/{}/decoded", file.path, part_name(part.index));
@@ -739,26 +795,64 @@ fn retain(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output) -> R
             } else {
                 Evidence::bytes(file, part.raw.offset as u64, part.raw.data.len() as u64, value)
             });
+            let declaration_part = &bundle.parts[entry.declaration_part];
+            let declaration_source = format!("{}/{}/decoded", file.path, part_name(declaration_part.index));
+            let value = json!({"path": entry.path, "part": declaration_part.index, "decoded_offset": entry.declaration_offset, "role": "directory filename declaration"});
+            finding = finding.evidence(if let Some(decoded) = tree.get(&declaration_source) {
+                Evidence::bytes(decoded, entry.declaration_offset as u64, entry.declaration_length as u64, value)
+            } else {
+                Evidence::bytes(file, declaration_part.raw.offset as u64, declaration_part.raw.data.len() as u64, value)
+            });
         }
         out.finding(finding);
     }
-    if bundle.files.iter().any(|entry| entry.target.is_some()) || bundle.objects.iter().any(|object| object.xattrs != 0) {
+    if bundle.files.iter().any(|entry| entry.target.is_some())
+        || bundle.objects.iter().any(|object| object.xattr_count != 0)
+        || bundle.directories.iter().any(|entry| entry["xattr_count"].as_u64().unwrap_or(0) != 0)
+    {
         out.limitation("flatpak.link-semantics", Some(file), None);
     }
     if let Some(metadata) = &bundle.header.metadata {
         let text = metadata.string()?;
         match application_metadata(text) {
             Ok(fields) => {
+                let declared_name = fields
+                    .iter()
+                    .find(|field| matches!(field["group"].as_str(), Some("Application" | "Runtime")) && field["name"] == "name")
+                    .and_then(|field| field["value"].as_str());
+                if declared_name.is_none() {
+                    out.limitation(
+                        "flatpak.metadata-unread",
+                        Some(file),
+                        Some("application metadata has no supported name declaration".into()),
+                    );
+                } else if declared_name.is_some_and(|name| name != identity[1]) {
+                    out.limitation(
+                        "flatpak.metadata-unread",
+                        Some(file),
+                        Some("application metadata name differs from the bundle ref identity".into()),
+                    );
+                }
                 out.fact(
                     file,
                     "flatpak.application",
                     json!({"source": file.path, "offset": metadata.offset, "length": metadata.data.len(), "fields": fields}),
                 );
-                out.finding(
-                    Finding::new(Section::Capabilities, "flatpak", "flatpak.permissions", Confidence::Verified, Severity::Info).evidence(
-                        Evidence::bytes(file, metadata.offset as u64, metadata.data.len() as u64, json!({"declarations": fields})),
-                    ),
-                );
+                if fields.iter().any(|field| {
+                    matches!(field["group"].as_str(), Some("Context" | "Session Bus Policy" | "System Bus Policy"))
+                        || (matches!(field["group"].as_str(), Some("Application" | "Runtime"))
+                            && matches!(field["name"].as_str(), Some("runtime" | "sdk" | "command")))
+                }) {
+                    out.finding(
+                        Finding::new(Section::Capabilities, "flatpak", "flatpak.permissions", Confidence::Verified, Severity::Info)
+                            .evidence(Evidence::bytes(
+                                file,
+                                metadata.offset as u64,
+                                metadata.data.len() as u64,
+                                json!({"declarations": fields}),
+                            )),
+                    );
+                }
             }
             Err(detail) => out.limitation("flatpak.metadata-unread", Some(file), Some(detail)),
         }
@@ -804,7 +898,7 @@ fn application_metadata(text: &str) -> Result<Vec<Value>> {
                 return Err("application metadata has missing groups or duplicate keys".into());
             }
             let value = aa_core::text::redact_named_value(key, value.trim()).map_err(str::to_string)?;
-            fields.push(json!({"group": group, "name": key, "value": value, "line": index + 1, "interpreted": matches!(group.as_str(), "Application" | "Runtime" | "Context" | "Session Bus Policy" | "System Bus Policy")}));
+            fields.push(json!({"group": group, "name": key, "value": value, "line": index + 1, "recognized_group": matches!(group.as_str(), "Application" | "Runtime" | "Context" | "Session Bus Policy" | "System Bus Policy")}));
         }
     }
     Ok(fields)
@@ -1080,6 +1174,9 @@ mod tests {
             assert!(!parsed.issues.is_empty());
         }
         assert!(header(&fixture(Options { duplicate_metadata: true, ..Options::default() })).is_err());
+        let bytes = fixture(Options { missing_file: true, ..Options::default() });
+        let partial = bundle(&bytes).expect("partial bundle header");
+        assert!(partial.files.iter().any(|file| file.path == "metadata"), "completed file observations survive a later missing child");
     }
 
     #[test]
@@ -1151,6 +1248,79 @@ mod tests {
                 let data = parsed.object_bytes(entry.object).expect("native file bytes");
                 assert_eq!(data.len() as u64, expected["size"].as_u64().expect("recorded size"));
                 assert_eq!(aa_core::sha256_hex(data), expected["sha256"].as_str().expect("recorded digest"));
+            }
+        }
+    }
+
+    #[test]
+    fn checksum_work_and_type_expansion_are_bounded_before_repeated_processing() {
+        let bytes = fixture(Options::default());
+        let mut parsed = bundle(&bytes).expect("controlled bundle");
+        let descriptors = parsed.header.fields[6].children(1).expect("part descriptor")[0].children(5).expect("descriptor fields")[4]
+            .bytes()
+            .expect("object descriptors")
+            .to_vec();
+        let before = parsed.checksum_work;
+        assert!(parsed.read_objects(0, &descriptors).expect_err("duplicate identities rejected early").contains("duplicate"));
+        assert_eq!(parsed.checksum_work, before);
+        parsed.seen_objects.clear();
+        parsed.checksum_work = MAX_TOTAL;
+        assert!(parsed.read_objects(0, &descriptors).expect_err("checksum budget checked before hashing").contains("checksum work"));
+        let ty = format!("a({})", "y".repeat(64));
+        let data = vec![0; 64 * 16_385];
+        assert!(Node::new(&data, &ty).expect("bounded signature").children(MAX_OBJECTS).is_err());
+        assert!(variant::signature(&format!("{}y", "a".repeat(33))).is_err());
+        assert!(Node::new(&vec![b'a'; 1024 * 1024 + 2], "s").expect("string schema").validate(&mut Budget::default(), 0).is_err());
+    }
+
+    #[test]
+    fn oversized_xz_dictionary_is_rejected_before_allocation() {
+        // A native liblzma stream whose block property requests a 4 GiB dictionary;
+        // its block-header CRC was recomputed after changing that property.
+        let frame = hex::decode("fd377a585a000004e6d6b4460200210128000000e6a011b3e0001300065d00006e0047f800000000bce4bb48b4242072000122147627ee9d1fb6f37d010000000004595a").expect("controlled XZ framing");
+        let mut part = vec![b'x'];
+        part.extend(frame);
+        assert!(decode_part(&part).expect_err("dictionary limit").contains("memory"));
+    }
+
+    #[test]
+    fn captured_regular_file_evidence_points_to_both_payload_and_filename_bytes() {
+        let bytes = fixture(Options::default());
+        let root = artifact("bundle.flatpak", &bytes);
+        let mut sink = Sink::default();
+        Unpacker::unpack(&Flatpak, &root, &bytes, &mut sink);
+        let mut tree = TestTree { files: vec![root.clone()], bytes: BTreeMap::from([(root.path.clone(), bytes)]) };
+        for (name, data) in &sink.files {
+            let path = format!("{}/{}", root.path, name);
+            let mut child = artifact(&path, data);
+            child.parent = Some(root.path.clone());
+            tree.files.push(child.clone());
+            tree.bytes.insert(path.clone(), data.clone());
+            if name.ends_with(".flatpak-part") {
+                let decoded = decode_part(data).expect("decode source layer");
+                let mut source = artifact(&format!("{path}/decoded"), &decoded);
+                source.parent = Some(path);
+                tree.bytes.insert(source.path.clone(), decoded);
+                tree.files.push(source);
+            }
+        }
+        tree.files.sort_by(|a, b| a.path.cmp(&b.path));
+        let mut out = Output::default();
+        retain(&tree, &root, &tree.bytes[&root.path], &mut out).expect("retain real sources");
+        let finding = out.findings.iter().find(|finding| finding.rule == "flatpak.contents").expect("captured content finding");
+        assert_eq!(finding.params["count"], 2);
+        assert_eq!(finding.evidence.len(), 4);
+        for evidence in &finding.evidence {
+            assert!(evidence.artifact.ends_with("/decoded"));
+            let aa_core::Location::Bytes { offset, length } = evidence.location else {
+                panic!("byte evidence required");
+            };
+            let source = &tree.bytes[&evidence.artifact][offset as usize..(offset + length) as usize];
+            let path = evidence.value["path"].as_str().expect("associated file");
+            if evidence.value["role"] == "directory filename declaration" {
+                assert_eq!(source, string(path));
+            } else if path == "payload.txt" {
+                assert_eq!(source, b"payload-data\n");
             }
         }
     }

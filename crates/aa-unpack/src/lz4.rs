@@ -188,7 +188,7 @@ impl<'a> Decoder<'a> {
             return Err("LZ4 frame exceeds the 65,536 block budget".into());
         }
         let size = usize::try_from(descriptor & 0x7fff_ffff).map_err(|_| "LZ4 block size overflow")?;
-        if size == 0 || size > self.header.block_size {
+        if size > self.header.block_size || size == 0 && descriptor & 0x8000_0000 == 0 {
             return Err("LZ4 stored block size exceeds its bounded profile".into());
         }
         let data = take(self.input, &mut self.at, size)?;
@@ -314,7 +314,7 @@ mod tests {
     fn stored_and_overlapping_compressed_blocks_stream_with_all_checksums() {
         // One literal followed by an overlapping seven-byte match, then five literals.
         let encoded = [0x13, b'a', 1, 0, 0x50, b'b', b'c', b'd', b'e', b'f'];
-        for bytes in [frame(b"abcdef", false, b"abcdef"), frame(&encoded, true, b"aaaaaaaabcdef")] {
+        for bytes in [frame(b"abcdef", false, b"abcdef"), frame(&encoded, true, b"aaaaaaaabcdef"), frame(&[], false, &[])] {
             let mut decoder = Decoder::new(&bytes).expect("valid frame");
             let mut actual = Vec::new();
             decoder.read_to_end(&mut actual).expect("checksums and decoded stream");
