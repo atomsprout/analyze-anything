@@ -25,14 +25,47 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   See [W9 scope and records](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
   Burn, external-payload profiles
   and MSP/MST semantics retain separate W9 gates.
-- [ ] **Then: bounded .NET IL references and capability explanations.** Qualify one
+- [ ] **Next: audit the format catalogue and public count.** Start from the implemented
+  baseline of 24 primary input families plus four compressed-stream formats. Record stable
+  IDs, aliases, profiles, analysis depth, real-sample/reference evidence and limitations;
+  distinguish implementation from independent qualification. Produce one machine-readable
+  catalogue/support matrix from which README, website and release totals can be derived;
+  check unique IDs, aliases and matching public totals in CI.
+  Until the audit passes, use the conservative "more than 20 families plus four compression
+  formats" wording. See [count policy and inventory](ROADMAP.md#format-inventory-and-count-policy).
+- [ ] **Linux breadth A: Arch packages and general ar archives.** Target two new primary
+  families (28 to 30 including streams), subject to the baseline audit. Reuse TAR/streams
+  for package identity, bounded `.PKGINFO`, build/install declarations and payload/link
+  evidence. Qualify normal GNU/BSD ar names, indexes and captured member bytes; retain
+  thin references without reading outside the supplied input. Generic deb ar parsing is
+  not general ar support. Use licensed real packages/libraries and independent references.
+- [ ] **Linux declarations alongside A.** Add bounded systemd unit, Desktop Entry and
+  AppStream readers as three separately counted declaration families. Preserve source
+  fields/lines, unknown keys and unsupported substitutions. Add unambiguous supplied-file
+  entry and ELF-library relationships; no host lookup, startup or runtime-loader claims.
+- [ ] **Linux breadth B: SquashFS, AppImage Type 2 and snap.** Target three new primary
+  families (30 to 33 including streams). First qualify bounded SquashFS metadata,
+  decompression, link and resource-limit profiles. Then qualify AppImage image extents and
+  AppRun entry relationships, and snap metadata/application/interface/hook declarations with
+  payload evidence. Never mount an image or invoke its runtime, including extract switches.
+- [ ] **Language package breadth C: wheel, npm tarball and Java archives.** Target three
+  new primary families (33 to 36 including streams). Add package identity, useful metadata,
+  entry/dependency declarations and captured components over existing ZIP/TAR readers;
+  generic extraction is insufficient. Start Java with a qualified JAR profile, retaining
+  WAR/EAR as later profiles in the same family. Never import packages or run scripts.
+- [ ] **Later breadth feasibility.** Evaluate Alpine APK, full Flatpak single-file bundles,
+  one OCI/Docker image family and LZ4 framed streams for a later 40-entry target. Reference
+  documents alone do not qualify Flatpak bundles; image layer/whiteout semantics and
+  profile-specific compression need their own gates. Do not include candidates in released
+  counts. See [Linux increments](ROADMAP.md#linux-breadth-increments).
+- [ ] **Following breadth: bounded .NET IL references and capability explanations.** Qualify one
   profile using existing CLR metadata: method bodies, supported call/string/token
   references, and a small set of explicit same-method evidence combinations. Establish
   method/token and proven byte locations, budgets, supported versions and tested gaps
   with licensed real samples and independent static references. Do not load assemblies
   into a runtime or claim execution/reachability from static references. Python bytecode
   and hybrid JavaScript are separate later profiles.
-- [ ] **Then: deepen one component relationship profile.** Start from existing Electron/npm
+- [ ] **Following breadth: deepen one component relationship profile.** Build on Electron/npm
   metadata and scope packaged manifests/lockfiles. Distinguish declared ranges from
   captured versions and declared dependencies from present components; retain source
   fields, declared licence provenance, ambiguity and missing targets. Reuse component

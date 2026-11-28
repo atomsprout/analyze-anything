@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: python tools/formats/check.py
       # rust-toolchain.toml names the version; rustup installs it on first use.
       - run: rustup show
       - uses: Swatinem/rust-cache@v2

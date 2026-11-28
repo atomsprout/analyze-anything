@@ -1,7 +1,10 @@
 //! Linux packages and their declared contents, without installation or script evaluation.
 
+mod ar;
+mod arch;
 mod cpio;
 mod deb;
+mod declarations;
 mod rpm;
 
 use aa_core::plugin::{Analyzer, Unpacker};
@@ -26,10 +29,17 @@ fn number(bytes: &[u8], radix: u32) -> Result<u32> {
 
 /// Package containers precede generic archives; compressed payloads use the shared engine.
 pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
-    vec![Box::new(deb::Deb), Box::new(rpm::Rpm), Box::new(cpio::Cpio)]
+    vec![Box::new(deb::Deb), Box::new(rpm::Rpm), Box::new(ar::Ar), Box::new(cpio::Cpio)]
 }
 
 /// Ordered metadata declarations and installation scripts remain source data.
 pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
-    vec![Box::new(deb::Deb), Box::new(rpm::Rpm), Box::new(cpio::Cpio)]
+    vec![
+        Box::new(deb::Deb),
+        Box::new(rpm::Rpm),
+        Box::new(ar::Ar),
+        Box::new(arch::Arch),
+        Box::new(cpio::Cpio),
+        Box::new(declarations::Declarations),
+    ]
 }

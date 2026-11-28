@@ -57,13 +57,13 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
+The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
 
 ## Use
 
-Version [0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
-adds clearer identity previews, evidence-linked Apple components and explicit installer/.NET
-semantic limits. Its release pipeline checks the extracted CLI's analysis, offline queries,
+Version [0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)
+adds Arch Linux package and ar archive readers, Linux entry declarations and a shared
+format catalogue with explicit supported profiles. Its release pipeline checks the extracted CLI's analysis, offline queries,
 agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
 
 ```
@@ -82,12 +82,16 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 
 ## What it reads
 
+<!-- formats:begin -->
+**26 primary format families + 4 compression formats (30 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
+<!-- formats:end -->
+
 | | |
 |---|---|
 | Apple | `.app` and other bundles, IPA, DMG (HFS+ and APFS), pkg; Info.plist, code signatures and certificate chains, sealed resources, entitlements, provisioning profiles, privacy manifests, FairPlay encryption |
 | Android | APK, AAB, XAPK / APKS / APKM; manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers |
 | Windows | PE, Authenticode, .NET assemblies and bounded single-file bundles, PyInstaller CArchive contents, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
-| Linux packages | Bounded deb and RPM v4 profiles: package metadata, literal dependencies and installation scripts, TAR/CPIO payloads and link declarations; no installation or signature verification |
+| Linux packages | Bounded deb, RPM v4 and Arch profiles: package metadata, literal dependencies and installation scripts, TAR/CPIO payloads and link declarations; ar static libraries, systemd/Desktop Entry/AppStream declarations; no installation or package authentication |
 | General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested to any depth; URLs, likely credentials, entropy, duplicate files |
 
 ## How it works
@@ -163,13 +167,13 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The current release is 0.2.2. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
+The current release is 0.2.3. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-Version 0.2.2 adds MSI action sequence/condition context and links supported Binary-table sources to captured payloads. Original table rows and hashes are evidence; conditions are not evaluated and execution is not inferred. The earlier 0.2–0.5 planning groups shipped together and are recorded as completed history. Next, in order:
+Version 0.2.3 adds Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. Format counts come from one catalogue. Next, in order:
 
-1. **Static code evidence**: qualify one bounded .NET IL profile with method-level references and explainable capability evidence.
-2. **Software composition**: deepen one Electron/npm metadata profile, distinguishing dependency declarations from captured components and their source fields.
-3. **Portable evidence review**: consider optional bounded, hash-bound byte fragments for saved reports after defining selection and storage controls.
+1. **Linux application formats**: qualify SquashFS, AppImage Type 2 and snap, targeting 33 primary/compression families.
+2. **Language packages**: add wheel, npm tarball and Java archive profiles, targeting 36 families.
+3. **Further breadth**: qualify Alpine APK, Flatpak, one OCI/Docker family and LZ4, targeting 40 families. .NET IL and deeper component relationships follow; optional evidence retention remains separate.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
 

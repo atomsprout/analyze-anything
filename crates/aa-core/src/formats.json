@@ -1,0 +1,892 @@
+{
+  "schema_version": 1,
+  "counting_policy": "Count implemented primary families and compression formats, merging aliases and variants. Declaration families and nested structures are separate. Implementation counts are not universal format or platform qualification claims.",
+  "formats": [
+    {
+      "id": "elf",
+      "name": "ELF",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "ELF executable",
+        "shared object",
+        "relocatable object",
+        "core"
+      ],
+      "profile": "ELF32/64 structure, dynamic dependencies, symbols, notes and hardening; not general instruction behavior.",
+      "evidence": [
+        "crates/aa-binary/src/elf.rs",
+        "crates/aa-binary/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "pe",
+      "name": "PE",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "exe",
+        "dll",
+        "sys",
+        ".NET assembly"
+      ],
+      "profile": "PE structure, imports, hardening, Authenticode evidence and supported CLR metadata.",
+      "evidence": [
+        "crates/aa-windows/src/pefile.rs",
+        "crates/aa-windows/tests/pipeline.rs"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "macho",
+      "name": "Mach-O",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "thin Mach-O",
+        "universal Mach-O"
+      ],
+      "profile": "Thin and universal Mach-O structure, dependencies, hardening and captured signing evidence.",
+      "evidence": [
+        "crates/aa-binary/src/lib.rs",
+        "crates/aa-binary/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "dotnet-bundle",
+      "name": ".NET single-file bundle",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [],
+      "profile": "Bounded supported bundle manifests and stored/compressed members in native executable hosts.",
+      "evidence": [
+        "crates/aa-unpack/src/dotnet.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "pyinstaller",
+      "name": "PyInstaller CArchive",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [],
+      "profile": "Bounded CArchive table and captured stored/zlib members; Python code semantics remain unread.",
+      "evidence": [
+        "crates/aa-unpack/src/pyinstaller.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "ipa",
+      "name": "Apple IPA",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "ipa"
+      ],
+      "profile": "ZIP-contained Apple application bundles and supported bundle declarations/signing evidence.",
+      "evidence": [
+        "crates/aa-apple/src/bundle.rs",
+        "docs/LIMITATIONS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "dmg",
+      "name": "Apple DMG",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "dmg"
+      ],
+      "profile": "Supported UDIF containers and bounded HFS+/APFS payload profiles.",
+      "evidence": [
+        "crates/aa-apple/src/lib.rs",
+        "crates/aa-apple/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "apple-pkg",
+      "name": "macOS PKG/XAR",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "pkg",
+        "xar"
+      ],
+      "profile": "XAR package metadata and supported payload layers; package scripts remain source data.",
+      "evidence": [
+        "crates/aa-apple/src/lib.rs",
+        "crates/aa-apple/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "android-apk",
+      "name": "Android APK family",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "apk",
+        "apks",
+        "xapk",
+        "apkm"
+      ],
+      "profile": "APK manifest/resources/DEX/signing evidence and selected split-package wrapper profiles.",
+      "evidence": [
+        "crates/aa-android/src/lib.rs",
+        "crates/aa-android/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "android-aab",
+      "name": "Android App Bundle",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "aab"
+      ],
+      "profile": "Supported bundle/module manifests and captured members; no device-specific installation simulation.",
+      "evidence": [
+        "crates/aa-android/src/lib.rs",
+        "crates/aa-android/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "msi",
+      "name": "Windows Installer MSI",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "msi"
+      ],
+      "profile": "Bounded installer tables, payloads, actions, literal scheduling conditions and captured targets.",
+      "evidence": [
+        "crates/aa-windows/src/msi.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "nsis",
+      "name": "NSIS installer",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "NSIS exe"
+      ],
+      "profile": "Supported installer headers, declarations and captured payload profiles.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/LIMITATIONS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "inno",
+      "name": "Inno Setup installer",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "Inno Setup exe"
+      ],
+      "profile": "Supported installer versions, declarations and payload compression profiles.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/LIMITATIONS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "msix",
+      "name": "MSIX/AppX",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "msix",
+        "appx",
+        "msixbundle",
+        "appxbundle"
+      ],
+      "profile": "Selected package/bundle manifests, members and signature evidence; dependency and installation semantics are bounded.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "nuget",
+      "name": "NuGet package",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "nupkg"
+      ],
+      "profile": "Captured nuspec identity, dependency declarations and supported member relationships.",
+      "evidence": [
+        "crates/aa-windows/src/nuspec.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "vsix",
+      "name": "Visual Studio extension",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "vsix"
+      ],
+      "profile": "Supported VSIX manifests, identities, declarations and captured member relationships.",
+      "evidence": [
+        "crates/aa-windows/src/vsix.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "deb",
+      "name": "Debian package",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "deb"
+      ],
+      "profile": "Debian major-2 ar control/data layout, bounded Deb822 declarations, scripts and TAR payload metadata.",
+      "evidence": [
+        "crates/aa-linux/src/deb.rs",
+        "docs/spikes/linux-packages.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "rpm",
+      "name": "RPM package",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "rpm"
+      ],
+      "profile": "RPM v4 header layout and supported CPIO/compression payload, dependencies, scripts and triggers.",
+      "evidence": [
+        "crates/aa-linux/src/rpm.rs",
+        "docs/spikes/linux-packages.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "zip",
+      "name": "ZIP archive",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "zip",
+        "ZIP self-extractor"
+      ],
+      "profile": "Bounded supported ZIP members; package-specific semantics need a separate qualified reader.",
+      "evidence": [
+        "crates/aa-unpack/src/zip.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "tar",
+      "name": "TAR archive",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "tar"
+      ],
+      "profile": "Bounded regular TAR members; package-specific link/metadata semantics have separate profiles.",
+      "evidence": [
+        "crates/aa-unpack/src/tar.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "sevenz",
+      "name": "7z archive",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "7z"
+      ],
+      "profile": "Bounded supported unencrypted 7z entries and compression profiles.",
+      "evidence": [
+        "crates/aa-unpack/src/sevenz.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "cab",
+      "name": "Microsoft Cabinet",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "cab"
+      ],
+      "profile": "Supported CAB headers, folders and captured payload compression profiles.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/LIMITATIONS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "asar",
+      "name": "Electron ASAR",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "asar"
+      ],
+      "profile": "Bounded ASAR index and captured members; selected Electron metadata and component declarations.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/LIMITATIONS.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "cpio",
+      "name": "CPIO archive",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "newc",
+        "crc",
+        "odc"
+      ],
+      "profile": "Bounded newc/crc and Apple odc payload profiles; special files remain declarations.",
+      "evidence": [
+        "crates/aa-linux/src/cpio.rs",
+        "docs/spikes/linux-packages.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "gzip",
+      "name": "gzip stream",
+      "group": "compression",
+      "state": "implemented",
+      "aliases": [
+        "gz"
+      ],
+      "profile": "Bounded gzip decoding; a TAR+gzip combination contributes no additional format.",
+      "evidence": [
+        "crates/aa-unpack/src/stream.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "bzip2",
+      "name": "bzip2 stream",
+      "group": "compression",
+      "state": "implemented",
+      "aliases": [
+        "bz2"
+      ],
+      "profile": "Bounded bzip2 decoding with explicit decompression failures and engine budgets.",
+      "evidence": [
+        "crates/aa-unpack/src/stream.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "xz",
+      "name": "xz stream",
+      "group": "compression",
+      "state": "implemented",
+      "aliases": [
+        "xz"
+      ],
+      "profile": "Bounded xz decoding; raw LZMA is outside this profile.",
+      "evidence": [
+        "crates/aa-unpack/src/stream.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "zstd",
+      "name": "Zstandard stream",
+      "group": "compression",
+      "state": "implemented",
+      "aliases": [
+        "zst"
+      ],
+      "profile": "Bounded supported Zstandard framed decoding with engine output budgets.",
+      "evidence": [
+        "crates/aa-unpack/src/stream.rs",
+        "crates/aa-unpack/tests/data/README.md"
+      ],
+      "limitations": [
+        "Only the documented profile is implemented; see docs/LIMITATIONS.md and the linked source/qualification records.",
+        "This catalogue entry does not claim every variant or platform has independent real-sample qualification."
+      ]
+    },
+    {
+      "id": "arch",
+      "name": "Arch Linux package",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "pkg.tar.zst",
+        "pkg.tar.xz"
+      ],
+      "profile": "ALPM metadata, literal dependencies and install declarations, captured TAR payload/link evidence.",
+      "evidence": [
+        "crates/aa-linux/src/arch.rs",
+        "crates/aa-linux/tests/data/ARCH.md"
+      ],
+      "limitations": [
+        "Selected ALPM key = value metadata and bounded literal install-script text; no host or repository dependency resolution.",
+        "Package authentication and MTREE checksums are not verified. Links remain source declarations."
+      ]
+    },
+    {
+      "id": "ar",
+      "name": "Unix ar archive",
+      "group": "primary",
+      "state": "implemented",
+      "aliases": [
+        "a",
+        "GNU ar",
+        "BSD ar",
+        "thin ar"
+      ],
+      "profile": "Bounded archive members and indexes; thin references are recorded without host-file access.",
+      "evidence": [
+        "crates/aa-linux/src/ar.rs",
+        "crates/aa-linux/tests/data/AR.md"
+      ],
+      "limitations": [
+        "GNU/BSD ordinary archive members and GNU32/64 index declarations are read under fixed budgets.",
+        "BSD/COFF index semantics remain unread. Thin members retain references only; no external file is opened."
+      ]
+    },
+    {
+      "id": "squashfs",
+      "name": "SquashFS",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "squashfs"
+      ],
+      "profile": "Bounded read-only filesystem decoding with an explicit compression and metadata profile.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "appimage",
+      "name": "AppImage Type 2",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "AppImage"
+      ],
+      "profile": "Checked runtime/image boundaries, AppRun entry evidence and captured application contents.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "snap",
+      "name": "snap package",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "snap"
+      ],
+      "profile": "SquashFS-backed package metadata, application/interface/hook declarations and captured contents.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "wheel",
+      "name": "Python wheel",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "whl"
+      ],
+      "profile": "Wheel identity, dependency/entry-point metadata and captured distribution contents.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "npm",
+      "name": "npm package tarball",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "npm tgz"
+      ],
+      "profile": "Package identity, dependencies, literal lifecycle scripts and captured component contents.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "java-archive",
+      "name": "Java archive family",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "jar",
+        "war",
+        "ear"
+      ],
+      "profile": "Start with a qualified JAR manifest/entry/dependency profile; WAR/EAR require separate profile qualification.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "alpine-apk",
+      "name": "Alpine Linux package",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "Alpine apk"
+      ],
+      "profile": "Explicitly qualified Alpine package metadata, payload and signature-declaration profiles.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "flatpak",
+      "name": "Flatpak single-file bundle",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "flatpak"
+      ],
+      "profile": "Bounded OSTree-backed application-bundle structures and captured object relationships.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "oci-image",
+      "name": "OCI/Docker image family",
+      "group": "primary",
+      "state": "planned",
+      "aliases": [
+        "OCI image layout",
+        "docker-save archive"
+      ],
+      "profile": "Bounded image manifests, ordered layers, whiteout declarations and digest/source relationships.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "lz4",
+      "name": "LZ4 framed stream",
+      "group": "compression",
+      "state": "planned",
+      "aliases": [
+        "lz4"
+      ],
+      "profile": "Bounded LZ4 framed decoding; raw blocks are a separate unsupported profile.",
+      "evidence": [],
+      "limitations": [
+        "Not implemented or included in the supported total."
+      ]
+    },
+    {
+      "id": "systemd-unit",
+      "name": "systemd unit",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [],
+      "profile": "Bounded service/socket/timer and common unit declarations; substitutions and host state remain unresolved.",
+      "evidence": [
+        "crates/aa-linux/src/declarations.rs",
+        "crates/aa-linux/tests/data/declarations/README.md"
+      ],
+      "limitations": [
+        "Bounded declarations, without execution, host lookup, schema-complete validation or expansion of runtime substitutions.",
+        "Supplied Desktop Entry identity relationships do not establish runtime command selection."
+      ]
+    },
+    {
+      "id": "desktop-entry",
+      "name": "Desktop Entry",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [],
+      "profile": "Bounded desktop identity, literal launch/action declarations and supplied target evidence.",
+      "evidence": [
+        "crates/aa-linux/src/declarations.rs",
+        "crates/aa-linux/tests/data/declarations/README.md"
+      ],
+      "limitations": [
+        "Bounded declarations, without execution, host lookup, schema-complete validation or expansion of runtime substitutions.",
+        "Supplied Desktop Entry identity relationships do not establish runtime command selection."
+      ]
+    },
+    {
+      "id": "appstream",
+      "name": "AppStream metainfo",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [],
+      "profile": "Bounded upstream component identity, launchable/provided metadata and source evidence.",
+      "evidence": [
+        "crates/aa-linux/src/declarations.rs",
+        "crates/aa-linux/tests/data/declarations/README.md"
+      ],
+      "limitations": [
+        "Bounded declarations, without execution, host lookup, schema-complete validation or expansion of runtime substitutions.",
+        "Supplied Desktop Entry identity relationships do not establish runtime command selection."
+      ]
+    },
+    {
+      "id": "windows-inf",
+      "name": "Windows INF",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "inf"
+      ],
+      "profile": "Bounded sections, source declarations and supplied driver/catalog relationships; no installation selection.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "registry-export",
+      "name": "Windows Registry export",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "reg"
+      ],
+      "profile": "Bounded literal key/value write and deletion declarations; no registry import.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "shell-link",
+      "name": "Windows Shell Link",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "lnk"
+      ],
+      "profile": "Bounded target/launch declarations and selected supplied-file relationships.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "internet-shortcut",
+      "name": "Internet Shortcut",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "url"
+      ],
+      "profile": "Literal URL and icon declarations; destinations are never opened.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "scheduled-task",
+      "name": "Windows scheduled task",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "Task Scheduler XML"
+      ],
+      "profile": "Bounded task identity, trigger and action declarations; no task registration.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "winget",
+      "name": "WinGet manifest",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "WinGet YAML"
+      ],
+      "profile": "Selected identity, dependency and installer declarations and captured package relationships.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "powershell",
+      "name": "PowerShell script",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "ps1",
+        "psm1"
+      ],
+      "profile": "Bounded supported syntax and literal command declarations; no evaluation.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    },
+    {
+      "id": "batch",
+      "name": "Windows batch script",
+      "group": "declaration",
+      "state": "implemented",
+      "aliases": [
+        "bat",
+        "cmd"
+      ],
+      "profile": "Bounded literal command segments; no shell execution or complete control-flow analysis.",
+      "evidence": [
+        "crates/aa-windows/src/lib.rs",
+        "docs/PLAN-WINDOWS.md"
+      ],
+      "limitations": [
+        "Only the documented bounded declaration profile is read. Runtime effects and host state remain unresolved."
+      ]
+    }
+  ]
+}

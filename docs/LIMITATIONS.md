@@ -46,6 +46,37 @@ tables is not proof that it never executes. Table/field/index limits and unsuppo
 are reported explicitly; no host files are searched for targets. Python/.NET code-depth and
 portable raw-evidence retention remain later roadmap work.
 
+## Linux breadth A profiles
+
+The first breadth increment adds Arch Linux packages and general ar archives. The
+machine-readable [format catalogue](FORMATS.md) distinguishes primary families,
+compression and declaration readers; its counts describe implemented profiles, not
+complete qualification of every version, compression method or platform.
+
+- Arch: bounded root `.PKGINFO`/`.BUILDINFO`, literal dependencies and `.INSTALL`
+  text, `.MTREE` identity/digest only, and TAR entry/link declarations. Duplicate or
+  noncanonical controls, truncated archives, unsupported text and exhausted budgets
+  remain explicit. No package authentication, MTREE verification or dependency resolution.
+  The pinned real libutf8proc 2.12.0-1 fixture uses zstd; see [source and licence](../crates/aa-linux/tests/data/ARCH.md).
+- ar: normal GNU/BSD member names and GNU 32/64-bit symbol-index declarations.
+  BSD/COFF index semantics remain unread. Thin archives retain references and never
+  open external files. Pinned LLVM-generated GNU/BSD/thin archives and a real BSD-2-Clause
+  xxHash library have independent ar/nm references; [scope and source](../crates/aa-linux/tests/data/AR.md).
+- Linux declarations: selected systemd unit, Desktop Entry and upstream AppStream
+  metadata. Repeats, resets and source positions are retained; substitutions, unknown
+  schema semantics, host state and command execution remain unresolved. Pinned upstream
+  Syncthing and Flameshot files have [source/licence records](../crates/aa-linux/tests/data/declarations/README.md).
+- Supplied ELF relationships compare literal unmodified dependency names with filename
+  or SONAME in a complete captured namespace and the same recorded machine, class and
+  byte order. ABI compatibility, symbol versions, RPATH/RUNPATH search, symlink/loader
+  selection and host libraries remain unresolved. Truncated/sanitized names, ambiguous
+  candidates and incomplete listings cannot produce confirmed targets.
+
+Windows read-only CLI comparisons passed 22 ar checks over three archives and 68
+declaration checks over four upstream files. These are local reference records, not
+Linux native-validator qualification; the native-comparison workflow runs the same
+fixtures with Linux tools before release. No local Linux VM was qualified.
+
 ## Parts not verified on real samples
 
 The initial Linux package readers have native Linux references for Debian node-isarray
