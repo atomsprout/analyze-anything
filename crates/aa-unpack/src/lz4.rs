@@ -295,7 +295,6 @@ impl Analyzer for Lz4 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sha2::{Digest, Sha256};
 
     #[test]
     fn native_writer_samples_match_pinned_reference_and_original_text() {
@@ -311,7 +310,7 @@ mod tests {
         for (name, bytes) in samples {
             let row =
                 reference["samples"].as_array().expect("sample records").iter().find(|row| row["file"] == *name).expect("pinned sample");
-            assert_eq!(hex::encode(Sha256::digest(bytes)), row["sha256"]);
+            assert_eq!(aa_core::sha256_hex(bytes), row["sha256"]);
             let mut decoder = Decoder::new(bytes).expect("native frame header");
             let mut decoded = Vec::new();
             decoder.read_to_end(&mut decoded).expect("native blocks and checksums");
@@ -321,7 +320,7 @@ mod tests {
                 b"Analyze Anything native LZ4 fixture. Project-authored Apache-2.0 data.\n".repeat(3000)
             };
             assert_eq!(decoded, expected);
-            assert_eq!(hex::encode(Sha256::digest(&decoded)), row["source_sha256"]);
+            assert_eq!(aa_core::sha256_hex(&decoded), row["source_sha256"]);
             assert!(decoder.finished);
         }
     }

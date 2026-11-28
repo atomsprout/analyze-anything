@@ -10,6 +10,27 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-alpine-apk",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is an Alpine APK v2 package. Control and payload declarations were read separately; scripts were not run and signature trust was not established.",
+        text_zh: "这是 Alpine APK v2 软件包。分别读取了控制信息和载荷声明；没有运行脚本，也没有确立签名信任。",
+    },
+    Rule {
+        id: "overview.kind-flatpak",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a Flatpak single-file bundle. Supported inline OSTree contents and application declarations were read without importing or installing it.",
+        text_zh: "这是 Flatpak 单文件包。读取了支持的内联 OSTree 内容和应用声明，没有导入或安装。",
+    },
+    Rule {
+        id: "overview.kind-container-image",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This input declares a container image. Captured manifests, configuration and ordered layer declarations are retained separately; no merged filesystem or runtime behavior is established.",
+        text_zh: "此输入声明了容器镜像。分别保留已捕获的清单、配置和有序层声明；没有确立合并文件系统或运行时行为。",
+    },
+    Rule {
         id: "overview.kind-arch",
         title_en: "Kind of input",
         title_zh: "输入类型",
@@ -488,6 +509,9 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let unpacker = root.unpacked_by.as_deref().unwrap_or("");
     let installer_format = root.facts.get("windows.installer").and_then(|f| text(f, "format").or_else(|| text(f, "kind")));
     let made = match (kind, unpacker) {
+        ("alpine-apk", _) => finding("overview.kind-alpine-apk", Confidence::Verified),
+        ("flatpak", _) => finding("overview.kind-flatpak", Confidence::Verified),
+        ("oci-image" | "docker-image", _) => finding("overview.kind-container-image", Confidence::Verified),
         ("arch-package", _) => finding("overview.kind-arch", Confidence::Verified),
         ("systemd-unit", _) => finding("overview.kind-systemd-unit", Confidence::Verified),
         ("desktop-entry", _) => finding("overview.kind-desktop-entry", Confidence::Verified),

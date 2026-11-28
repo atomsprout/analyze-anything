@@ -24,8 +24,18 @@ const MAX_TOTAL: usize = 256 * 1024 * 1024;
 const MAX_OBJECTS: usize = 100_000;
 const MAX_PARTS: usize = 4096;
 const MAX_ISSUES: usize = 64;
+const MAX_FULL_PATH: usize = 8192;
+const MAX_OFFERED_PATHS: usize = 32 * 1024 * 1024;
+const MAX_SERIALIZED_INVENTORY: usize = 16 * 1024 * 1024;
 
 const RULES: &[Rule] = &[
+    Rule {
+        id: "flatpak.output-limited",
+        title_en: "Flatpak output profile exceeded",
+        title_zh: "Flatpak 输出超出支持范围",
+        text_en: "A full artifact path exceeds 8192 bytes, offered paths exceed 32 MiB, or the serialized inventory exceeds 16 MiB. Complete capture or inventory was not established.",
+        text_zh: "完整产物路径超过 8192 字节、所提供的路径总计超过 32 MiB，或序列化清单超过 16 MiB。无法确立完整捕获或清单。",
+    },
     Rule {
         id: "flatpak.identity",
         title_en: "Declared Flatpak bundle identity",
@@ -639,6 +649,25 @@ fn add(sink: &mut dyn UnpackSink, path: &str, bytes: &[u8]) -> bool {
     }
 }
 
+fn offer(file: &Artifact, sink: &mut dyn UnpackSink, path: &str, bytes: &[u8], remaining: &mut usize) -> bool {
+    let length = file.path.len().saturating_add(1).saturating_add(path.len());
+    if length > MAX_FULL_PATH || length > *remaining {
+        sink.limitation("flatpak.output-limited", Some("full artifact path or aggregate offered path budget exceeded".into()));
+        return false;
+    }
+    *remaining -= length;
+    add(sink, path, bytes)
+}
+
+fn inventory_row(value: Value, remaining: &mut usize) -> Result<Value> {
+    let size = serde_json::to_vec(&value).map_err(|error| error.to_string())?.len().saturating_add(1);
+    if size > *remaining {
+        return Err("output profile: serialized inventory exceeds 16 MiB".into());
+    }
+    *remaining -= size;
+    Ok(value)
+}
+
 impl Unpacker for Flatpak {
     fn id(&self) -> &'static str {
         "flatpak"
@@ -652,10 +681,15 @@ impl Unpacker for Flatpak {
             Ok(parsed) => parsed,
             Err(detail) => return if candidate { Unpack::Failed { kind: "flatpak", detail } } else { Unpack::NotMine },
         };
+        if file.path.len() > MAX_FULL_PATH {
+            sink.limitation("flatpak.output-limited", Some("source artifact path exceeds 8192 bytes".into()));
+            return Unpack::Done { kind: "flatpak" };
+        }
+        let mut remaining = MAX_OFFERED_PATHS;
         if let Some(metadata) = &parsed.header.metadata {
             match metadata.string() {
                 Ok(text) => {
-                    if !add(sink, "declared-metadata.ini", text.as_bytes()) {
+                    if !offer(file, sink, "declared-metadata.ini", text.as_bytes(), &mut remaining) {
                         return Unpack::Done { kind: "flatpak" };
                     }
                 }
@@ -675,16 +709,16 @@ impl Unpacker for Flatpak {
             let key = format!("deltas/{}/{}/{index}", &base64[..2], &base64[2..]);
             if let Some(part) = parsed.header.dictionary.get(key.as_str())
                 && part.ty == part_type
-                && !add(sink, &part_name(index), part.data)
+                && !offer(file, sink, &part_name(index), part.data, &mut remaining)
             {
                 return Unpack::Done { kind: "flatpak" };
             }
         }
-        for file in &parsed.files {
-            if file.target.is_none() {
-                match parsed.object_bytes(file.object) {
+        for entry in &parsed.files {
+            if entry.target.is_none() {
+                match parsed.object_bytes(entry.object) {
                     Ok(bytes) => {
-                        if !add(sink, &format!("root/{}", file.path), bytes) {
+                        if !offer(file, sink, &format!("root/{}", entry.path), bytes, &mut remaining) {
                             break;
                         }
                     }
@@ -712,7 +746,8 @@ impl Unpacker for Part {
         }
         match decode_part(bytes) {
             Ok(bytes) => {
-                add(sink, "decoded", &bytes);
+                let mut remaining = MAX_OFFERED_PATHS;
+                offer(file, sink, "decoded", &bytes, &mut remaining);
                 Unpack::Done { kind: "flatpak-part" }
             }
             Err(detail) => Unpack::Failed { kind: "flatpak-part", detail },
@@ -733,18 +768,27 @@ impl Analyzer for Flatpak {
         }
         let parsed = tree.read(&file.path).map_err(|error| error.to_string()).and_then(|bytes| retain(tree, file, &bytes, out));
         if let Err(detail) = parsed {
-            out.limitation("flatpak.bundle-unread", Some(file), Some(detail));
+            let code = if detail.starts_with("output profile:") { "flatpak.output-limited" } else { "flatpak.bundle-unread" };
+            out.limitation(code, Some(file), Some(detail));
         }
     }
 }
 
 fn retain(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output) -> Result<()> {
+    if file.path.len() > MAX_FULL_PATH {
+        return Err("output profile: source artifact path exceeds 8192 bytes".into());
+    }
     let bundle = bundle(bytes)?;
+    retain_bundle(tree, file, bundle, out)
+}
+
+fn retain_bundle(tree: &dyn Tree, file: &Artifact, bundle: Bundle<'_>, out: &mut Output) -> Result<()> {
+    let mut remaining = MAX_SERIALIZED_INVENTORY;
     let reference = aa_core::text::redact_sensitive_text(bundle.header.reference).map_err(str::to_string)?;
-    let parts: Vec<_> = bundle.parts.iter().map(|part| json!({"index": part.index, "source_offset": part.raw.offset, "source_length": part.raw.data.len(),
+    let parts: Vec<_> = bundle.parts.iter().map(|part| inventory_row(json!({"index": part.index, "source_offset": part.raw.offset, "source_length": part.raw.data.len(),
         "artifact": format!("{}/{}", file.path, part_name(part.index)), "decoded_artifact": format!("{}/{}/decoded", file.path, part_name(part.index)),
         "sha256": aa_core::sha256_hex(part.raw.data), "decoded_sha256": aa_core::sha256_hex(&part.bytes), "decoded_size": part.bytes.len(),
-        "declared_objects": part.objects, "verified_objects": part.verified_objects, "complete": part.complete})).collect();
+        "declared_objects": part.objects, "verified_objects": part.verified_objects, "complete": part.complete}), &mut remaining)).collect::<Result<_>>()?;
     let entries: Vec<_> = bundle.files.iter().map(|entry| {
         let object = &bundle.objects[entry.object];
         let part = &bundle.parts[object.part];
@@ -754,14 +798,17 @@ fn retain(tree: &dyn Tree, file: &Artifact, bytes: &[u8], out: &mut Output) -> R
             && !artifact.facts.get("engine.entry-name").and_then(|value| value.get("colliding")).and_then(Value::as_bool).unwrap_or(false));
         let declaration_part = &bundle.parts[entry.declaration_part];
         let declaration_source = format!("{}/{}/decoded", file.path, part_name(declaration_part.index));
-        json!({"path": entry.path, "object_checksum": hex::encode(entry.checksum), "object_label_verified": true,
+        inventory_row(json!({"path": entry.path, "object_checksum": hex::encode(entry.checksum), "object_label_verified": true,
             "mode": object.mode, "xattr_index": object.xattrs, "xattr_count": object.xattr_count, "link_target": entry.target, "size": object.size,
             "part": part.index, "source": tree.get(&decoded_path).map(|artifact| &artifact.path), "offset": object.offset,
             "bundle_source": {"artifact": file.path, "offset": part.raw.offset, "length": part.raw.data.len(), "decoded_offset": object.offset},
             "declaration": {"part": declaration_part.index, "source": tree.get(&declaration_source).map(|artifact| &artifact.path), "offset": entry.declaration_offset, "length": entry.declaration_length,
                 "bundle_source": {"artifact": file.path, "offset": declaration_part.raw.offset, "length": declaration_part.raw.data.len(), "decoded_offset": entry.declaration_offset}},
-            "captured": captured, "captured_path": captured.then_some(captured_path)})
-    }).collect();
+            "captured": captured, "captured_path": captured.then_some(captured_path)}), &mut remaining)
+    }).collect::<Result<_>>()?;
+    for directory in &bundle.directories {
+        let _ = inventory_row(directory.clone(), &mut remaining)?;
+    }
     let identity: Vec<_> = reference.split('/').collect();
     let regular_files = bundle.files.iter().filter(|entry| entry.target.is_none()).count();
     let captured_files = entries.iter().filter(|entry| entry["captured"] == true).count();
@@ -1282,6 +1329,46 @@ mod tests {
         let mut sink = Sink { stop: true, ..Sink::default() };
         assert!(matches!(Unpacker::unpack(&Flatpak, &file, &tree.bytes[&file.path], &mut sink), Unpack::Done { .. }));
         assert!(sink.files.is_empty());
+    }
+
+    #[test]
+    fn nested_source_paths_and_serialized_inventories_are_bounded_before_publication() {
+        let bytes = fixture(Options::default());
+        let mut file = artifact(&format!("{}.flatpak", "x".repeat(60 * 1024)), &bytes);
+        let tree = TestTree { files: vec![file.clone()], bytes: BTreeMap::from([(file.path.clone(), bytes.clone())]) };
+        let mut sink = Sink::default();
+        let _ = Unpacker::unpack(&Flatpak, &file, &bytes, &mut sink);
+        assert!(sink.files.is_empty());
+        assert!(sink.limits.iter().any(|gap| gap.starts_with("flatpak.output-limited:")));
+        let mut out = Output::default();
+        Analyzer::analyze_file(&Flatpak, &tree, &file, &mut out);
+        assert!(out.facts.is_empty());
+        assert_eq!(out.limitations[0].code, "flatpak.output-limited");
+
+        file.path = format!("{}.flatpak", "x".repeat(7000));
+        let mut paths = MAX_OFFERED_PATHS;
+        let mut sink = Sink::default();
+        while offer(&file, &mut sink, "root/empty", b"", &mut paths) {}
+        assert!(paths < file.path.len());
+        assert!(sink.limits.iter().any(|gap| gap.starts_with("flatpak.output-limited:")));
+
+        let mut parsed = bundle(&bytes).expect("valid source bundle");
+        let original = &parsed.files[0];
+        parsed.files = (0..3000)
+            .map(|index| File {
+                path: format!("file-{index}"),
+                checksum: original.checksum,
+                object: original.object,
+                target: None,
+                declaration_part: original.declaration_part,
+                declaration_offset: original.declaration_offset,
+                declaration_length: original.declaration_length,
+            })
+            .collect();
+        let mut out = Output::default();
+        let error = retain_bundle(&tree, &file, parsed, &mut out).expect_err("expanded source paths exceed inventory profile");
+        assert!(error.starts_with("output profile:"));
+        assert!(out.facts.is_empty());
     }
 
     #[test]

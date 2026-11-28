@@ -1,5 +1,11 @@
 # Flatpak single-file fixtures
 
+Full source and offered artifact paths are limited to 8,192 bytes, with 32 MiB
+of aggregate offered paths. The shared serialized part/file/directory inventory
+is limited to 16 MiB before publication; exceeding it reports
+`flatpak.output-limited` rather than building an unbounded expanded inventory.
+Nested long source paths and aggregate limits have default regression coverage.
+
 `native-inert.flatpak` is an unmodified native Flatpak-writer output containing
 project-authored Apache-2.0 inert text, an empty file, a Unicode filename and a
 symlink declaration. It is 1,884 bytes, SHA-256
