@@ -30,7 +30,14 @@ fn number(bytes: &[u8], radix: u32) -> Result<u32> {
 
 /// Package containers precede generic archives; compressed payloads use the shared engine.
 pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
-    vec![Box::new(flatpak::Flatpak), Box::new(flatpak::Part), Box::new(deb::Deb), Box::new(rpm::Rpm), Box::new(ar::Ar), Box::new(cpio::Cpio)]
+    vec![
+        Box::new(flatpak::Flatpak),
+        Box::new(flatpak::Part),
+        Box::new(deb::Deb),
+        Box::new(rpm::Rpm),
+        Box::new(ar::Ar),
+        Box::new(cpio::Cpio),
+    ]
 }
 
 /// Ordered metadata declarations and installation scripts remain source data.

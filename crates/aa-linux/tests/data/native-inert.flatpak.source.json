@@ -1,0 +1,26 @@
+[
+  {
+    "link_target": "message.txt",
+    "path": "files/share/fixture/alias"
+  },
+  {
+    "path": "files/share/fixture/empty",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+  },
+  {
+    "path": "files/share/fixture/message.txt",
+    "sha256": "6b9c32f9d33e7db26720dad4844bebddc46ed9989e53c37e7540b861a0cb4b16",
+    "size": 34
+  },
+  {
+    "path": "files/share/fixture/\u4e2d\u6587.txt",
+    "sha256": "6dd50f8058cde1611e2b3c2315a0ebde575e2009a3bcdd2d9e7015287861706c",
+    "size": 13
+  },
+  {
+    "path": "metadata",
+    "sha256": "42a18fb54af381eaff54ccfe7445e8e99476be70128583c1d3fe61bc10010a32",
+    "size": 178
+  }
+]

@@ -13,6 +13,7 @@ workspace = true
 aa-core.workspace = true
 serde_json.workspace = true
 memchr = "2"
+twox-hash = { version = "2", default-features = false, features = ["std", "xxhash32"] }
 zip.workspace = true
 tar.workspace = true
 flate2.workspace = true

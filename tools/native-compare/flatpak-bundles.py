@@ -169,8 +169,10 @@ def native(sample):
 
 def analyze(cli, sample):
     with tempfile.TemporaryDirectory(prefix="aa-flatpak-reference-") as directory:
-        completed = subprocess.run([str(cli), str(sample), "-o", directory, "--format", "json", "--no-ai"], capture_output=True)
-        if completed.returncode not in (0, 2):
+        help_text = subprocess.run([str(cli), "analyze", "--help"], capture_output=True, check=True).stdout
+        offline = ["--no-ai"] if b"--no-ai" in help_text else []
+        completed = subprocess.run([str(cli), str(sample), "-o", directory, "--format", "json", *offline], capture_output=True)
+        if completed.returncode not in (0, 2) or not (Path(directory) / "report.json").is_file():
             raise RuntimeError(completed.stderr.decode(errors="replace"))
         return (Path(directory) / "report.json").read_bytes()
 

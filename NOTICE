@@ -284,3 +284,15 @@ Linux declaration fixtures in crates/aa-linux/tests/data/declarations:
   upstream desktop build template is GPL-3.0-or-later; LICENSE-flameshot.txt
   preserves that licence. Its build placeholders are retained, never substituted.
   Only declaration text is redistributed; no input program is run or installed.
+
+Flatpak single-file bundle qualification:
+- crates/aa-linux/tests/data/native-inert.flatpak and its source-reference JSON
+  contain project-authored Apache-2.0 inert data, packaged by native OSTree and
+  Flatpak tools. The recipe is tools/native-compare/flatpak-bundle-fixture.py;
+  the source, hash and precise scope are recorded in the adjacent FLATPAK.md.
+  No bundle is installed, imported, applied or launched during comparison.
+- The external RustDesk 1.5.3 x86_64 Flutter bundle is not redistributed:
+  https://github.com/rustdesk/rustdesk/releases/download/1.5.3/rustdesk-1.5.3-x86_64.flatpak.
+  Upstream RustDesk source is AGPL-3.0; source and licence are available at
+  https://github.com/rustdesk/rustdesk/tree/1.5.3. Its hash-bound local parser
+  observations are recorded in crates/aa-linux/tests/data/FLATPAK.md.

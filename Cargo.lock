@@ -257,6 +257,7 @@ dependencies = [
  "serde_json",
  "sevenz-rust2",
  "tar",
+ "twox-hash",
  "zip",
 ]
 

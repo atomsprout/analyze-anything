@@ -15,3 +15,4 @@ crates/aa-linux/tests/data/*.deb -text
 crates/aa-linux/tests/data/*.rpm -text
 crates/aa-linux/tests/data/COPYRIGHT-node-isarray.txt -text
 crates/aa-linux/tests/data/LICENSE-xxhash.txt -text
+crates/aa-linux/tests/data/*.flatpak -text

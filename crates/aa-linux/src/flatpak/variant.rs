@@ -35,7 +35,9 @@ impl Type {
             Self::Basic(b'i' | b'u' | b'h') => Some(4),
             Self::Basic(b'x' | b't' | b'd') => Some(8),
             Self::Tuple(children) => {
-                if children.is_empty() { return Some(1); }
+                if children.is_empty() {
+                    return Some(1);
+                }
                 let mut offset = 0;
                 for child in children {
                     offset = crate::align(offset, child.alignment()).ok()?.checked_add(child.fixed()?)?;
@@ -49,9 +51,13 @@ impl Type {
 }
 
 pub(super) fn signature(text: &str) -> Result<Type> {
-    if text.is_empty() || text.len() > 255 { return Err("GVariant signature length is outside the profile".into()); }
+    if text.is_empty() || text.len() > 255 {
+        return Err("GVariant signature length is outside the profile".into());
+    }
     fn read(bytes: &[u8], at: &mut usize, depth: usize) -> Result<Type> {
-        if depth >= 32 { return Err("GVariant type nesting budget exhausted".into()); }
+        if depth >= 32 {
+            return Err("GVariant type nesting budget exhausted".into());
+        }
         let byte = *bytes.get(*at).ok_or("GVariant signature cut short")?;
         *at += 1;
         Ok(match byte {
@@ -62,7 +68,9 @@ pub(super) fn signature(text: &str) -> Result<Type> {
             b'(' => {
                 let mut children = Vec::new();
                 while bytes.get(*at) != Some(&b')') {
-                    if children.len() >= 64 { return Err("GVariant tuple field budget exhausted".into()); }
+                    if children.len() >= 64 {
+                        return Err("GVariant tuple field budget exhausted".into());
+                    }
                     children.push(read(bytes, at, depth + 1)?);
                 }
                 *at += 1;
@@ -70,9 +78,13 @@ pub(super) fn signature(text: &str) -> Result<Type> {
             }
             b'{' => {
                 let key = read(bytes, at, depth + 1)?;
-                if !matches!(key, Type::Basic(_)) { return Err("GVariant dictionary key is not basic".into()); }
+                if !matches!(key, Type::Basic(_)) {
+                    return Err("GVariant dictionary key is not basic".into());
+                }
                 let value = read(bytes, at, depth + 1)?;
-                if bytes.get(*at) != Some(&b'}') { return Err("GVariant dictionary signature is not terminated".into()); }
+                if bytes.get(*at) != Some(&b'}') {
+                    return Err("GVariant dictionary signature is not terminated".into());
+                }
                 *at += 1;
                 Type::Dict(Box::new(key), Box::new(value))
             }
@@ -81,18 +93,32 @@ pub(super) fn signature(text: &str) -> Result<Type> {
     }
     let mut at = 0;
     let ty = read(text.as_bytes(), &mut at, 0)?;
-    if at != text.len() { return Err("GVariant signature contains more than one type".into()); }
+    if at != text.len() {
+        return Err("GVariant signature contains more than one type".into());
+    }
     Ok(ty)
 }
 
 fn width(length: usize) -> usize {
-    if length <= 0xff { 1 } else if length <= 0xffff { 2 } else if length <= 0xffff_ffff { 4 } else { 8 }
+    if length <= 0xff {
+        1
+    } else if length <= 0xffff {
+        2
+    } else if length <= 0xffff_ffff {
+        4
+    } else {
+        8
+    }
 }
 
 fn offset(bytes: &[u8]) -> Result<usize> {
-    if !matches!(bytes.len(), 1 | 2 | 4 | 8) { return Err("invalid GVariant framing offset width".into()); }
+    if !matches!(bytes.len(), 1 | 2 | 4 | 8) {
+        return Err("invalid GVariant framing offset width".into());
+    }
     let mut value = 0u64;
-    for (index, byte) in bytes.iter().enumerate() { value |= u64::from(*byte) << (index * 8); }
+    for (index, byte) in bytes.iter().enumerate() {
+        value |= u64::from(*byte) << (index * 8);
+    }
     usize::try_from(value).map_err(|_| "GVariant framing offset exceeds the address space".into())
 }
 
@@ -114,20 +140,28 @@ impl<'a> Node<'a> {
     }
 
     pub fn bytes(&self) -> Result<&'a [u8]> {
-        if self.ty != Type::Array(Box::new(Type::Basic(b'y'))) { return Err("expected GVariant byte array".into()); }
+        if self.ty != Type::Array(Box::new(Type::Basic(b'y'))) {
+            return Err("expected GVariant byte array".into());
+        }
         Ok(self.data)
     }
 
     pub fn string(&self) -> Result<&'a str> {
-        if !matches!(self.ty, Type::Basic(b's' | b'o' | b'g')) { return Err("expected GVariant string".into()); }
+        if !matches!(self.ty, Type::Basic(b's' | b'o' | b'g')) {
+            return Err("expected GVariant string".into());
+        }
         let text = self.data.strip_suffix(&[0]).ok_or("GVariant string is not NUL-terminated")?;
-        if text.contains(&0) { return Err("GVariant string has an embedded NUL".into()); }
+        if text.contains(&0) {
+            return Err("GVariant string has an embedded NUL".into());
+        }
         std::str::from_utf8(text).map_err(|_| "GVariant string is not UTF-8".into())
     }
 
     pub fn number(&self, little: bool) -> Result<u64> {
         let size = self.ty.fixed().ok_or("expected GVariant fixed scalar")?;
-        if !matches!(self.ty, Type::Basic(_)) || self.data.len() != size { return Err("invalid GVariant scalar size".into()); }
+        if !matches!(self.ty, Type::Basic(_)) || self.data.len() != size {
+            return Err("invalid GVariant scalar size".into());
+        }
         let mut value = 0u64;
         for (index, byte) in self.data.iter().enumerate() {
             let shift = if little { index * 8 } else { (size - index - 1) * 8 };
@@ -137,9 +171,12 @@ impl<'a> Node<'a> {
     }
 
     pub fn variant(&self) -> Result<Self> {
-        if self.ty != Type::Variant { return Err("expected GVariant variant".into()); }
+        if self.ty != Type::Variant {
+            return Err("expected GVariant variant".into());
+        }
         let separator = self.data.iter().rposition(|byte| *byte == 0).ok_or("GVariant variant lacks a type separator")?;
-        let text = std::str::from_utf8(self.data.get(separator + 1..).ok_or("GVariant variant type missing")?).map_err(|_| "GVariant variant type is not ASCII")?;
+        let text = std::str::from_utf8(self.data.get(separator + 1..).ok_or("GVariant variant type missing")?)
+            .map_err(|_| "GVariant variant type is not ASCII")?;
         self.slice(0, separator, signature(text)?)
     }
 
@@ -148,7 +185,9 @@ impl<'a> Node<'a> {
             return if self.data == [0] { Ok(Vec::new()) } else { Err("invalid GVariant unit tuple".into()) };
         }
         let fixed = self.ty.fixed();
-        if fixed.is_some_and(|size| size != self.data.len()) { return Err("GVariant fixed tuple has the wrong size".into()); }
+        if fixed.is_some_and(|size| size != self.data.len()) {
+            return Err("GVariant fixed tuple has the wrong size".into());
+        }
         let offsets = fields.iter().enumerate().filter(|(index, ty)| ty.fixed().is_none() && index + 1 != fields.len()).count();
         let framing = offsets.checked_mul(width(self.data.len())).ok_or("GVariant tuple framing overflow")?;
         let end = self.data.len().checked_sub(framing).ok_or("GVariant tuple framing cut short")?;
@@ -157,7 +196,9 @@ impl<'a> Node<'a> {
         let mut children = Vec::with_capacity(fields.len());
         for (position, ty) in fields.iter().enumerate() {
             let start = crate::align(at, ty.alignment())?;
-            if self.data.get(at..start).is_none_or(|padding| padding.iter().any(|byte| *byte != 0)) { return Err("GVariant tuple has invalid alignment padding".into()); }
+            if self.data.get(at..start).is_none_or(|padding| padding.iter().any(|byte| *byte != 0)) {
+                return Err("GVariant tuple has invalid alignment padding".into());
+            }
             let stop = if let Some(size) = ty.fixed() {
                 start.checked_add(size).ok_or("GVariant tuple child overflow")?
             } else if position + 1 == fields.len() {
@@ -167,11 +208,16 @@ impl<'a> Node<'a> {
                 let start = self.data.len().checked_sub(index * width(self.data.len())).ok_or("GVariant tuple offset cut short")?;
                 offset(self.data.get(start..start + width(self.data.len())).ok_or("GVariant tuple offset cut short")?)?
             };
-            if stop > end || stop < start { return Err("GVariant tuple child framing is out of order".into()); }
+            if stop > end || stop < start {
+                return Err("GVariant tuple child framing is out of order".into());
+            }
             children.push(self.slice(start, stop, ty.clone())?);
             at = stop;
         }
-        if at > end || self.data.get(at..end).is_none_or(|padding| padding.iter().any(|byte| *byte != 0)) { return Err("GVariant tuple has trailing non-padding data".into()); }
+        if (fixed.is_none() && at != end) || at > end || self.data.get(at..end).is_none_or(|padding| padding.iter().any(|byte| *byte != 0))
+        {
+            return Err("GVariant tuple has trailing non-padding data".into());
+        }
         Ok(children)
     }
 
@@ -180,33 +226,49 @@ impl<'a> Node<'a> {
             Type::Tuple(fields) => self.tuple(fields),
             Type::Dict(key, value) => self.tuple(&[(**key).clone(), (**value).clone()]),
             Type::Array(ty) => {
-                if self.data.is_empty() { return Ok(Vec::new()); }
+                if self.data.is_empty() {
+                    return Ok(Vec::new());
+                }
                 let (count, end, step) = if let Some(size) = ty.fixed() {
-                    if self.data.len() % size != 0 { return Err("GVariant fixed array is not a multiple of its element size".into()); }
+                    if !self.data.len().is_multiple_of(size) {
+                        return Err("GVariant fixed array is not a multiple of its element size".into());
+                    }
                     (self.data.len() / size, self.data.len(), Some(size))
                 } else {
                     let w = width(self.data.len());
                     let last = self.data.len().checked_sub(w).ok_or("GVariant array offset cut short")?;
                     let end = offset(&self.data[last..])?;
                     let framing = self.data.len().checked_sub(end).ok_or("GVariant array offset is outside its bytes")?;
-                    if framing == 0 || framing % w != 0 { return Err("invalid GVariant variable-array framing".into()); }
+                    if framing == 0 || framing % w != 0 {
+                        return Err("invalid GVariant variable-array framing".into());
+                    }
                     (framing / w, end, None)
                 };
-                if count > max { return Err("GVariant array element budget exhausted".into()); }
+                if count > max {
+                    return Err("GVariant array element budget exhausted".into());
+                }
                 let mut result = Vec::with_capacity(count);
                 let mut at = 0usize;
                 for index in 0..count {
                     let start = crate::align(at, ty.alignment())?;
-                    if self.data.get(at..start).is_none_or(|padding| padding.iter().any(|byte| *byte != 0)) { return Err("GVariant array alignment padding is invalid".into()); }
-                    let stop = if let Some(size) = step { start.checked_add(size).ok_or("GVariant array element overflow")? } else {
+                    if self.data.get(at..start).is_none_or(|padding| padding.iter().any(|byte| *byte != 0)) {
+                        return Err("GVariant array alignment padding is invalid".into());
+                    }
+                    let stop = if let Some(size) = step {
+                        start.checked_add(size).ok_or("GVariant array element overflow")?
+                    } else {
                         let base = end.checked_add(index * width(self.data.len())).ok_or("GVariant array offset overflow")?;
                         offset(self.data.get(base..base + width(self.data.len())).ok_or("GVariant array offset cut short")?)?
                     };
-                    if stop < start || stop > end { return Err("GVariant array offsets are out of order".into()); }
+                    if stop < start || stop > end {
+                        return Err("GVariant array offsets are out of order".into());
+                    }
                     result.push(self.slice(start, stop, (**ty).clone())?);
                     at = stop;
                 }
-                if at != end { return Err("GVariant array leaves unclaimed data".into()); }
+                if at != end {
+                    return Err("GVariant array leaves unclaimed data".into());
+                }
                 Ok(result)
             }
             _ => Err("expected GVariant tuple or array".into()),
@@ -214,28 +276,42 @@ impl<'a> Node<'a> {
     }
 
     pub fn validate(&self, budget: &mut Budget, depth: usize) -> Result<()> {
-        if depth > 32 || budget.nodes == 0 { return Err("GVariant nesting or node budget exhausted".into()); }
+        if depth > 32 || budget.nodes == 0 {
+            return Err("GVariant nesting or node budget exhausted".into());
+        }
         budget.nodes -= 1;
         match &self.ty {
             Type::Basic(b's' | b'o' | b'g') => {
                 let text = self.string()?;
                 budget.strings = budget.strings.checked_sub(text.len()).ok_or("GVariant string budget exhausted")?;
-                if text.len() > 1024 * 1024 { return Err("GVariant string exceeds the 1 MiB profile".into()); }
+                if text.len() > 1024 * 1024 {
+                    return Err("GVariant string exceeds the 1 MiB profile".into());
+                }
             }
             Type::Basic(b'b') if self.data != [0] && self.data != [1] => return Err("invalid GVariant boolean".into()),
-            Type::Basic(_) => { self.number(true)?; }
+            Type::Basic(_) => {
+                self.number(true)?;
+            }
             Type::Variant => self.variant()?.validate(budget, depth + 1)?,
             Type::Array(ty) if **ty == Type::Basic(b'y') => {}
             Type::Maybe(ty) => {
                 if !self.data.is_empty() {
-                    let end = if ty.fixed().is_some() { self.data.len() } else {
-                        if self.data.last() != Some(&0) { return Err("invalid GVariant maybe terminator".into()); }
+                    let end = if ty.fixed().is_some() {
+                        self.data.len()
+                    } else {
+                        if self.data.last() != Some(&0) {
+                            return Err("invalid GVariant maybe terminator".into());
+                        }
                         self.data.len() - 1
                     };
                     self.slice(0, end, (**ty).clone())?.validate(budget, depth + 1)?;
                 }
             }
-            _ => for child in self.children(100_000)? { child.validate(budget, depth + 1)?; },
+            _ => {
+                for child in self.children(100_000)? {
+                    child.validate(budget, depth + 1)?;
+                }
+            }
         }
         Ok(())
     }
@@ -246,12 +322,19 @@ pub(super) struct Budget {
     pub strings: usize,
 }
 impl Default for Budget {
-    fn default() -> Self { Self { nodes: 1_000_000, strings: 16 * 1024 * 1024 } }
+    fn default() -> Self {
+        Self { nodes: 1_000_000, strings: 16 * 1024 * 1024 }
+    }
 }
 
 fn append_offsets(data: &mut Vec<u8>, offsets: &[usize]) -> Result<()> {
     let mut w = 1;
-    while width(data.len().checked_add(offsets.len().checked_mul(w).ok_or("GVariant encoding overflow")?).ok_or("GVariant encoding overflow")?) != w { w *= 2; }
+    while width(
+        data.len().checked_add(offsets.len().checked_mul(w).ok_or("GVariant encoding overflow")?).ok_or("GVariant encoding overflow")?,
+    ) != w
+    {
+        w *= 2;
+    }
     for offset in offsets {
         let bytes = (*offset as u64).to_le_bytes();
         data.extend_from_slice(bytes.get(..w).ok_or("GVariant encoding offset width overflow")?);
@@ -271,10 +354,16 @@ pub(super) fn encode_tuple(fields: &[(&str, &[u8])]) -> Result<Vec<u8>> {
         fixed &= ty.fixed().is_some();
         data.resize(crate::align(data.len(), ty.alignment())?, 0);
         data.extend_from_slice(bytes);
-        if ty.fixed().is_none() && index + 1 != fields.len() { offsets.push(data.len()); }
+        if ty.fixed().is_none() && index + 1 != fields.len() {
+            offsets.push(data.len());
+        }
     }
-    if fields.is_empty() { data.push(0); }
-    if fixed { data.resize(crate::align(data.len(), alignment)?, 0); }
+    if fields.is_empty() {
+        data.push(0);
+    }
+    if fixed {
+        data.resize(crate::align(data.len(), alignment)?, 0);
+    }
     offsets.reverse();
     append_offsets(&mut data, &offsets)?;
     Ok(data)
@@ -287,7 +376,9 @@ pub(super) fn encode_array(text: &str, values: &[&[u8]]) -> Result<Vec<u8>> {
     for value in values {
         data.resize(crate::align(data.len(), ty.alignment())?, 0);
         data.extend_from_slice(value);
-        if ty.fixed().is_none() { offsets.push(data.len()); }
+        if ty.fixed().is_none() {
+            offsets.push(data.len());
+        }
     }
     append_offsets(&mut data, &offsets)?;
     Ok(data)
