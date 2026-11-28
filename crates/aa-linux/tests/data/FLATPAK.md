@@ -37,6 +37,16 @@ It is not redistributed here. Upstream source and AGPL-3.0 licence are at
 parts, 150 checksum-verified objects, 120 file/link paths and 44 directories.
 This local reading alone is not an independent native comparison.
 
+The subsequent native comparison run
+[46107713148](https://github.com/atomsprout/analyze-anything/actions/runs/46107713148)
+at `69e9821` passed 1,104 checks: 58 for the checked-in writer fixture, 58 for a
+fresh writer fixture and 988 for the external RustDesk bundle. Native Flatpak and
+GLib checked identity, application declarations, object checksums, every file/link
+path, empty directories and modes, retained payload digests, and decoded payload
+and filename source spans. The hash-bound observations are preserved in
+`native-flatpak.ref.json`. Nothing was installed, imported or launched, and the
+external executable bundle was excluded from the uploaded artifact.
+
 The supported profile is empty-base OSTree static-delta single-file bundles with
 an explicit little/big endianness marker, inline version-0 parts, stored/XZ
 compression and complete literal `S` object records. Root/part framing offsets,

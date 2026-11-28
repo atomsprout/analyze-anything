@@ -3,6 +3,7 @@
 mod json;
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use aa_core::plugin::{Analyzer, Output, Rule, Tree};
 use aa_core::{Artifact, Confidence, Evidence, Finding, Section, Severity};
@@ -90,10 +91,11 @@ struct TarIndex {
     entries: Vec<TarEntry>,
     complete: bool,
     issues: Vec<String>,
+    names: BTreeMap<String, usize>,
 }
 
 fn logical(path: &str) -> Option<String> {
-    let path = path.strip_prefix("./").unwrap_or(path).trim_end_matches('/');
+    let path = path.strip_prefix("./").unwrap_or(path);
     if path.is_empty()
         || path.starts_with('/')
         || path.contains(['\\', '\0'])
@@ -156,7 +158,13 @@ fn tar_index(bytes: &[u8], remaining: &mut usize) -> TarIndex {
             }
         };
         let kind = entry.header().entry_type().as_byte();
-        let logical = if matches!(path.as_str(), "." | "./") && kind == b'5' { Some(String::new()) } else { logical(&path) };
+        let logical = if matches!(path.as_str(), "." | "./") && kind == b'5' {
+            Some(String::new())
+        } else if kind == b'5' {
+            logical(path.trim_end_matches('/'))
+        } else {
+            logical(&path)
+        };
         if logical.is_none() {
             index.issues.push("noncanonical or unsafe image TAR path declaration".into());
         }
@@ -193,6 +201,9 @@ fn tar_index(bytes: &[u8], remaining: &mut usize) -> TarIndex {
         if kind == b'S' {
             index.issues.push("sparse image TAR entries are outside this profile".into());
         }
+        if let Some(name) = &logical {
+            index.names.insert(name.clone(), index.entries.len());
+        }
         index.entries.push(TarEntry { path, logical, header: entry.raw_header_position(), offset, size, mode, kind, link });
     }
     if bytes.get(trailer..).is_none_or(|tail| tail.len() < 1024 || tail.iter().any(|byte| *byte != 0)) {
@@ -211,25 +222,52 @@ struct Namespace<'a> {
     owner: &'a Artifact,
     prefix: String,
     parent: Option<&'a str>,
-    original: Option<TarIndex>,
+    original: Option<Arc<TarIndex>>,
+}
+
+struct NamespaceCache {
+    indexes: BTreeMap<String, Arc<TarIndex>>,
+    bytes: usize,
+    entries: usize,
+}
+impl Default for NamespaceCache {
+    fn default() -> Self {
+        Self { indexes: BTreeMap::new(), bytes: 0, entries: crate::MAX_ENTRIES }
+    }
 }
 
 impl<'a> Namespace<'a> {
+    #[cfg(test)]
     fn new(tree: &'a dyn Tree, marker: &'a Artifact) -> Result<Self> {
+        Self::new_cached(tree, marker, &mut NamespaceCache::default())
+    }
+    fn new_cached(tree: &'a dyn Tree, marker: &'a Artifact, cache: &mut NamespaceCache) -> Result<Self> {
         let prefix = marker.path.rsplit_once('/').map_or(String::new(), |(prefix, _)| prefix.to_string());
         let parent = marker.parent.as_deref();
         let mut owner = marker;
         let original = if let Some(container) = parent.and_then(|parent| tree.get(parent)) {
-            owner = container;
+            if prefix == container.path {
+                owner = container;
+            }
             if container.unpacked_by.as_deref() != Some("tar") {
                 return Err("image metadata is not in a supported original TAR namespace".into());
             }
             if container.size > MAX_BYTES as u64 {
                 return Err("image archive exceeds the 256 MiB metadata-indexing profile".into());
             }
-            let bytes = tree.read(&container.path).map_err(|error| error.to_string())?;
-            let mut remaining = crate::MAX_ENTRIES;
-            let directory = tar_index(&bytes, &mut remaining);
+            let directory = if let Some(directory) = cache.indexes.get(&container.path) {
+                Arc::clone(directory)
+            } else {
+                cache.bytes =
+                    cache.bytes.saturating_add(usize::try_from(container.size).map_err(|_| "container size exceeds address space")?);
+                if cache.bytes > MAX_BYTES {
+                    return Err("global original-image TAR indexing byte budget exhausted".into());
+                }
+                let bytes = tree.read(&container.path).map_err(|error| error.to_string())?;
+                let directory = Arc::new(tar_index(&bytes, &mut cache.entries));
+                cache.indexes.insert(container.path.clone(), Arc::clone(&directory));
+                directory
+            };
             if !directory.complete {
                 return Err(format!("original image archive is not unambiguous: {}", directory.issues.join("; ")));
             }
@@ -257,8 +295,8 @@ impl<'a> Namespace<'a> {
             let root = self.parent.ok_or("missing original image parent")?;
             let relative =
                 path.strip_prefix(root).and_then(|path| path.strip_prefix('/')).ok_or("image namespace differs from its container")?;
-            let entries: Vec<_> = original.entries.iter().filter(|entry| entry.logical.as_deref() == Some(relative)).collect();
-            if !matches!(entries.as_slice(),[entry] if matches!(entry.kind,0|b'0') && entry.size == file.size) {
+            let entry = original.names.get(relative).and_then(|index| original.entries.get(*index));
+            if !matches!(entry,Some(entry) if matches!(entry.kind,0|b'0') && entry.size == file.size) {
                 return Err("image member is not an unambiguous regular original TAR entry".into());
             }
         }
@@ -438,26 +476,32 @@ impl<'a> Reader<'a> {
             "reference_annotations":annotations(descriptor.get("annotations"))?,"config_source":null,"config_digest":null,"layers":null,"complete":false});
         let mut complete = true;
         let config = document.get("config").ok_or("OCI manifest has no config descriptor")?;
+        row["config_descriptor"] = json!({"digest":config.get("digest"),"size":config.get("size"),"media_type":config.get("mediaType"),"urls_present":config.get("urls").is_some()});
+        row["config_state"] = json!("unresolved");
         let config_media = config.get("mediaType").and_then(Value::as_str);
         let mut diff_ids = None;
         if !matches!(config_media, Some("application/vnd.oci.image.config.v1+json" | "application/vnd.docker.container.image.v1+json")) {
             self.issue("image.metadata-unread", "unsupported image config media type");
             complete = false;
         } else {
-            match self.descriptor(config).and_then(|file| self.read_json(file).map(|value| (file, value))) {
-                Ok((file, value)) => match config_fields(&value) {
-                    Ok((fields, diffs)) => {
-                        merge_fields(&mut row, fields);
-                        row["config_source"] = json!(file.path);
-                        row["config_digest"] = config["digest"].clone();
-                        diff_ids = diffs;
+            match self.descriptor(config) {
+                Ok(file) => {
+                    row["config_source"] = json!(file.path);
+                    row["config_digest"] = config["digest"].clone();
+                    row["config_state"] = json!("matched");
+                    match self.read_json(file).and_then(|value| config_fields(&value)) {
+                        Ok((fields, diffs)) => {
+                            merge_fields(&mut row, fields);
+                            diff_ids = diffs;
+                        }
+                        Err(detail) => {
+                            self.issue("image.metadata-unread", detail);
+                            complete = false;
+                        }
                     }
-                    Err(detail) => {
-                        self.issue("image.metadata-unread", detail);
-                        complete = false;
-                    }
-                },
+                }
                 Err(detail) => {
+                    row["config_state"] = json!(if detail.contains("differs") { "digest-mismatch" } else { "unresolved" });
                     self.issue(if detail.contains("differs") { "image.digest-mismatch" } else { "image.metadata-unread" }, detail);
                     complete = false;
                 }
@@ -618,7 +662,7 @@ impl<'a> Reader<'a> {
             }
             let children: Vec<_> =
                 self.namespace.tree.artifacts().iter().filter(|file| file.parent.as_deref() == Some(&source.path) && clean(file)).collect();
-            if children.len() != 1 || children[0].unpacked_by.as_deref() != Some("tar") {
+            if children.len() != 1 {
                 return Err("decompressed layer TAR was not captured uniquely".into());
             }
             children[0]
@@ -649,7 +693,7 @@ impl<'a> Reader<'a> {
         let mut whiteout_invalid = false;
         for entry in &index.entries {
             let logical = entry.logical.as_deref();
-            let whiteout = logical.and_then(|path| {
+            let mut whiteout = logical.and_then(|path| {
                 let (parent, name) = path.rsplit_once('/').unwrap_or(("", path));
                 let target = |name: &str| if parent.is_empty() { name.to_string() } else { format!("{parent}/{name}") };
                 if name == ".wh..wh..opq" {
@@ -658,8 +702,15 @@ impl<'a> Reader<'a> {
                     name.strip_prefix(".wh.").map(|name| json!({"kind":"remove","target":target(name)}))
                 }
             });
-            if whiteout.is_some() && (!matches!(entry.kind, 0 | b'0') || entry.size != 0) {
+            if whiteout.is_some()
+                && (!matches!(entry.kind, 0 | b'0')
+                    || entry.size != 0
+                    || logical.is_some_and(|path| matches!(path.rsplit('/').next(), Some(".wh." | ".wh.." | ".wh..."))))
+            {
                 whiteout_invalid = true;
+                if let Some(value) = &mut whiteout {
+                    value["supported"] = json!(false);
+                }
             }
             let path = aa_core::text::redact_sensitive_text(&entry.path).map_err(str::to_string)?;
             let link = entry.link.as_deref().map(aa_core::text::redact_sensitive_text).transpose().map_err(str::to_string)?;
@@ -668,7 +719,7 @@ impl<'a> Reader<'a> {
                 && child_path
                     .as_deref()
                     .and_then(|path| self.namespace.tree.get(path))
-                    .is_some_and(|file| clean(file) && file.size == entry.size);
+                    .is_some_and(|file| clean(file) && file.size == entry.size && file.parent.as_deref() == Some(&tar.path));
             rows.push(json!({"path":path,"type":entry.kind,"link_target":link,"whiteout":whiteout,"header_offset":entry.header,"offset":entry.offset,
                 "size":entry.size,"mode":entry.mode,"captured":captured,"captured_source":if captured{child_path}else{None}}));
         }
@@ -740,8 +791,12 @@ fn redacted_json(value: &Value) -> Result<Value> {
         Value::Object(values) => {
             let mut result = serde_json::Map::new();
             for (key, value) in values {
+                let key_display = aa_core::text::redact_sensitive_text(key).map_err(str::to_string)?;
+                if result.contains_key(&key_display) {
+                    return Err("redacted image metadata keys are ambiguous".into());
+                }
                 result.insert(
-                    key.clone(),
+                    key_display,
                     if let Some(text) = value.as_str() {
                         json!(aa_core::text::redact_named_value(key, text).map_err(str::to_string)?)
                     } else {
@@ -765,8 +820,8 @@ fn annotations(value: Option<&Value>) -> Result<Value> {
 }
 
 fn config_fields(value: &Value) -> Result<(Value, Option<Vec<String>>)> {
-    let architecture = text(value, "architecture")?;
-    let os = text(value, "os")?;
+    let architecture = scalar(Some(value.get("architecture").ok_or("image architecture is absent")?))?;
+    let os = scalar(Some(value.get("os").ok_or("image os is absent")?))?;
     let config = value.get("config").filter(|value| !value.is_null()).cloned().unwrap_or_else(|| json!({}));
     let config = config.as_object().ok_or("image config is not an object")?;
     let mut environment = Value::Null;
@@ -779,7 +834,11 @@ fn config_fields(value: &Value) -> Result<(Value, Option<Vec<String>>)> {
         for entry in values {
             let entry = entry.as_str().ok_or("image Env contains a non-string declaration")?;
             let redacted = if let Some((key, value)) = entry.split_once('=') {
-                format!("{key}={}", aa_core::text::redact_named_value(key, value).map_err(str::to_string)?)
+                format!(
+                    "{}={}",
+                    aa_core::text::redact_sensitive_text(key).map_err(str::to_string)?,
+                    aa_core::text::redact_named_value(key, value).map_err(str::to_string)?
+                )
             } else {
                 aa_core::text::redact_sensitive_text(entry).map_err(str::to_string)?
             };
@@ -801,6 +860,7 @@ fn config_fields(value: &Value) -> Result<(Value, Option<Vec<String>>)> {
         }
     };
     let rootfs = value.get("rootfs").ok_or("image config has no rootfs declaration")?;
+    let rootfs_type = scalar(rootfs.get("type"))?;
     let diffs = if rootfs.get("type").and_then(Value::as_str) == Some("layers") {
         let rows = array(rootfs, "diff_ids", MAX_LAYERS)?;
         let mut diffs = Vec::new();
@@ -813,11 +873,20 @@ fn config_fields(value: &Value) -> Result<(Value, Option<Vec<String>>)> {
     } else {
         None
     };
-    let fields = json!({"architecture":architecture,"os":os,"variant":value.get("variant"),"entrypoint":string_array(config.get("Entrypoint"),4096)?,
+    let fields = json!({"architecture":architecture,"os":os,"variant":scalar(value.get("variant"))?,"entrypoint":string_array(config.get("Entrypoint"),4096)?,
         "cmd":string_array(config.get("Cmd"),4096)?,"env":environment,"ports":keys("ExposedPorts")?,"volumes":keys("Volumes")?,"labels":annotations(config.get("Labels"))?,
-        "user":config.get("User").map(redacted_json).transpose()?,"working_directory":config.get("WorkingDir").map(redacted_json).transpose()?,"rootfs_type":rootfs.get("type"),
-        "uninterpreted_config_keys":config.keys().filter(|key| !matches!(key.as_str(),"Entrypoint"|"Cmd"|"Env"|"ExposedPorts"|"Volumes"|"Labels"|"User"|"WorkingDir")).collect::<Vec<_>>()});
+        "user":scalar(config.get("User"))?,"working_directory":scalar(config.get("WorkingDir"))?,"rootfs_type":rootfs_type,
+        "uninterpreted_config_keys":config.keys().filter(|key| !matches!(key.as_str(),"Entrypoint"|"Cmd"|"Env"|"ExposedPorts"|"Volumes"|"Labels"|"User"|"WorkingDir")).map(|key|aa_core::text::redact_sensitive_text(key).map_err(str::to_string)).collect::<Result<Vec<_>>>()?});
     Ok((fields, diffs))
+}
+
+fn scalar(value: Option<&Value>) -> Result<Value> {
+    let Some(value) = value.filter(|value| !value.is_null()) else { return Ok(Value::Null) };
+    let text = value.as_str().ok_or("selected image scalar field is not a string")?;
+    if text.len() > 4096 {
+        return Err("selected image scalar exceeds the 4096-byte profile".into());
+    }
+    Ok(json!(aa_core::text::redact_sensitive_text(text).map_err(str::to_string)?))
 }
 
 fn merge_fields(target: &mut Value, fields: Value) {
@@ -838,13 +907,15 @@ impl Analyzer for Image {
     fn analyze_tree(&self, tree: &dyn Tree, out: &mut Output) {
         let mut scopes = BTreeSet::new();
         let mut candidates = 0usize;
+        let mut cache = NamespaceCache::default();
+        let mut candidate_json = json::Budget::default();
         for marker in tree.artifacts().iter().filter(|file| file.name() == "oci-layout") {
             candidates += 1;
             if candidates > MAX_MANIFESTS {
                 out.limitation("image.metadata-unread", Some(marker), Some("image namespace budget exhausted".into()));
                 break;
             }
-            let namespace = match Namespace::new(tree, marker) {
+            let namespace = match Namespace::new_cached(tree, marker, &mut cache) {
                 Ok(namespace) => namespace,
                 Err(detail) => {
                     out.limitation("image.metadata-unread", Some(marker), Some(detail));
@@ -871,7 +942,11 @@ impl Analyzer for Image {
                 Ok(bytes) => bytes,
                 Err(_) => continue,
             };
-            if !bytes.windows(8).any(|window| window == b"\"Config\"") || !bytes.windows(8).any(|window| window == b"\"Layers\"") {
+            let document = match json::parse(&bytes, &mut candidate_json) {
+                Ok(value) => value,
+                Err(_) => continue,
+            };
+            if !document.as_array().is_some_and(|rows| rows.iter().any(|row| row.get("Config").is_some() && row.get("Layers").is_some())) {
                 continue;
             }
             candidates += 1;
@@ -879,7 +954,7 @@ impl Analyzer for Image {
                 out.limitation("image.metadata-unread", Some(marker), Some("image namespace budget exhausted".into()));
                 break;
             }
-            let namespace = match Namespace::new(tree, marker) {
+            let namespace = match Namespace::new_cached(tree, marker, &mut cache) {
                 Ok(namespace) => namespace,
                 Err(detail) => {
                     out.limitation("image.metadata-unread", Some(marker), Some(detail));
@@ -887,7 +962,7 @@ impl Analyzer for Image {
                 }
             };
             let mut reader = Reader::new(namespace);
-            match reader.read_json(marker).and_then(|document| reader.docker(marker, &document)) {
+            match reader.docker(marker, &document) {
                 Ok(()) => {}
                 Err(detail) => reader.issue("image.metadata-unread", detail),
             }
@@ -1202,5 +1277,120 @@ mod tests {
         reader.layer(layer, "application/vnd.oci.image.layer.v1.tar", Some(&expected), &mut row).expect("partial inventory retained");
         assert_eq!(row["complete"], false);
         assert!(reader.issues.iter().any(|(_, detail)| detail.contains("budget")));
+    }
+
+    #[test]
+    fn compressed_empty_layers_and_escaped_docker_keys_keep_their_original_meaning() {
+        let (_, out) = analyze(fixture(Options { empty_layer: true, ..Options::default() }));
+        let package = &out.facts.iter().find(|fact| fact.key == "image.package").expect("gzip empty image layer").value;
+        assert_eq!(package["complete"], true, "{:?}", out.limitations);
+        let original = fixture(Options { docker: true, ..Options::default() });
+        let mut remaining = crate::MAX_ENTRIES;
+        let index = tar_index(&original, &mut remaining);
+        let owned: Vec<_> = index
+            .entries
+            .iter()
+            .filter(|entry| matches!(entry.kind, 0 | b'0'))
+            .map(|entry| {
+                let mut bytes = crate::extent(&original, entry.offset as usize, entry.size as usize).expect("original member").to_vec();
+                if entry.path == "manifest.json" {
+                    bytes = String::from_utf8(bytes)
+                        .expect("manifest JSON")
+                        .replace("\"Config\"", "\"Con\\u0066ig\"")
+                        .replace("\"Layers\"", "\"\\u004cayers\"")
+                        .into_bytes();
+                }
+                (entry.path.clone(), bytes)
+            })
+            .collect();
+        let rows: Vec<_> = owned.iter().map(|(name, bytes)| (name.as_str(), bytes.as_slice(), b'0', None)).collect();
+        let (_, out) = analyze(tar(&rows));
+        assert!(out.facts.iter().any(|fact| fact.key == "image.package" && fact.value["complete"] == true));
+    }
+
+    #[test]
+    fn archive_scope_cache_is_shared_and_nested_layouts_have_distinct_owners() {
+        let bytes = tar(&[("first/oci-layout", b"{}", b'0', None), ("second/oci-layout", b"{}", b'0', None)]);
+        let tree = TestTree::new(bytes);
+        let mut cache = NamespaceCache::default();
+        let first = tree.files.iter().find(|file| file.path.ends_with("first/oci-layout")).expect("first layout marker");
+        let second = tree.files.iter().find(|file| file.path.ends_with("second/oci-layout")).expect("second layout marker");
+        let first_scope = Namespace::new_cached(&tree, first, &mut cache).expect("first original namespace");
+        let bytes = cache.bytes;
+        let entries = cache.entries;
+        let second_scope = Namespace::new_cached(&tree, second, &mut cache).expect("shared original namespace");
+        assert_eq!(cache.indexes.len(), 1);
+        assert_eq!(cache.bytes, bytes);
+        assert_eq!(cache.entries, entries);
+        assert_ne!(first_scope.owner.path, second_scope.owner.path);
+        let mut exhausted = NamespaceCache { bytes: MAX_BYTES, ..NamespaceCache::default() };
+        assert!(Namespace::new_cached(&tree, first, &mut exhausted).is_err());
+    }
+
+    #[test]
+    fn unrelated_nested_artifacts_never_satisfy_an_original_layer_member() {
+        let mut tree = TestTree::new(fixture(Options::default()));
+        let payload =
+            tree.files.iter_mut().find(|file| file.path.ends_with("/content/etc/config")).expect("captured ordinary layer payload");
+        payload.parent = Some("another-container".into());
+        let mut out = Output::default();
+        Image.analyze_tree(&tree, &mut out);
+        let package = &out.facts.iter().find(|fact| fact.key == "image.package").expect("partial image").value;
+        assert_eq!(package["complete"], false);
+        let entries = package["manifests"][0]["layers"][0]["entries"].as_array().expect("layer inventory");
+        assert_eq!(entries.iter().find(|entry| entry["path"] == "etc/config").expect("original declaration")["captured"], false);
+    }
+
+    #[test]
+    fn unsafe_control_spellings_whiteout_targets_and_selected_scalars_are_explicit() {
+        let bytes = tar(&[("index.json/", b"[]", b'0', None)]);
+        let mut remaining = crate::MAX_ENTRIES;
+        assert!(!tar_index(&bytes, &mut remaining).complete);
+        assert_eq!(logical("./valid/name").as_deref(), Some("valid/name"));
+        assert!(logical("valid/name/").is_none());
+        let token = format!("ghp_{}", "a".repeat(36));
+        let config = json!({"architecture":token,"os":"password=fixture","variant":"token=fixture","config":{"User":"secret=fixture","WorkingDir":"password=fixture"},"rootfs":{"type":"layers","diff_ids":[]}});
+        let (fields, _) = config_fields(&config).expect("literal redacted scalar profile");
+        let output = fields.to_string();
+        assert!(!output.contains(&token));
+        assert!(!output.contains("=fixture"));
+        let mut invalid = config;
+        invalid["variant"] = json!({"unexpected":"object"});
+        assert!(config_fields(&invalid).is_err());
+        for name in [".wh.", ".wh..", ".wh..."] {
+            let bytes = tar(&[(name, b"", b'0', None)]);
+            let mut tree = TestTree::new(fixture(Options { docker: true, ..Options::default() }));
+            let source_path = "image.tar/layer/layer.tar";
+            tree.bytes.insert(source_path.into(), bytes.clone());
+            let source = tree.files.iter_mut().find(|file| file.path == source_path).expect("layer source");
+            source.size = bytes.len() as u64;
+            source.digests.as_mut().expect("measured test digest").sha256 = aa_core::sha256_hex(&bytes);
+            let marker = tree.files.iter().find(|file| file.name() == "manifest.json").expect("Docker marker");
+            let mut reader = Reader::new(Namespace::new(&tree, marker).expect("original metadata namespace"));
+            let source = tree.files.iter().find(|file| file.path == source_path).expect("bounded layer");
+            let mut row = json!({});
+            let diff = digest(&bytes);
+            reader.layer(source, "application/vnd.oci.image.layer.v1.tar", Some(&diff), &mut row).expect("invalid declaration retained");
+            assert_eq!(row["complete"], false);
+            assert_eq!(row["entries"][0]["whiteout"]["supported"], false);
+        }
+    }
+
+    #[test]
+    fn native_unfinalized_layer_descriptors_do_not_establish_complete_tar_coverage() {
+        let bytes = include_bytes!("../tests/data/native-unfinalized.oci.tar");
+        assert_eq!(aa_core::sha256_hex(bytes), "1666785aa68325bdb9cbeb129bbbd50a97d5f68e5f37ef0ea0b00987a67b652d");
+        let (_, out) = analyze(bytes.to_vec());
+        let package = &out.facts.iter().find(|fact| fact.key == "image.package").expect("native OCI metadata remains readable").value;
+        assert_eq!(package["complete"], false);
+        let layers = package["manifests"][0]["layers"].as_array().expect("native ordered layers");
+        assert_eq!(layers.len(), 3);
+        assert!(layers.iter().all(|layer| layer["diff_id_state"] == "matched"));
+        assert!(layers.iter().all(|layer| layer["complete"] == false));
+        assert!(
+            out.limitations
+                .iter()
+                .any(|gap| gap.code == "image.layer-unread" && gap.detail.as_deref().is_some_and(|detail| detail.contains("trailer")))
+        );
     }
 }

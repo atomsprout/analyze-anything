@@ -16,3 +16,6 @@ crates/aa-linux/tests/data/*.rpm -text
 crates/aa-linux/tests/data/COPYRIGHT-node-isarray.txt -text
 crates/aa-linux/tests/data/LICENSE-xxhash.txt -text
 crates/aa-linux/tests/data/*.flatpak -text
+crates/aa-linux/tests/data/*.apk -text
+crates/aa-linux/tests/data/*.oci.tar -text
+crates/aa-linux/tests/data/*.docker.tar -text

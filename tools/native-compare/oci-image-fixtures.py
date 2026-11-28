@@ -8,10 +8,12 @@ there is no RUN, image import, daemon load, container launch or registry access.
 
 import argparse
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import subprocess
+import tarfile
 
 
 STAMP = 1577836800
@@ -35,6 +37,38 @@ def freeze(tree):
     for path in sorted(tree.rglob("*"), key=lambda path: len(path.parts), reverse=True):
         os.utime(path, (STAMP, STAMP), follow_symlinks=False)
     os.utime(tree, (STAMP, STAMP), follow_symlinks=False)
+
+
+def layer_member(archive, name, body=b"", kind=tarfile.REGTYPE, target="", mode=0o644):
+    header = tarfile.TarInfo(name)
+    header.type = kind
+    header.mode = mode
+    header.mtime = STAMP
+    header.uid = header.gid = 0
+    header.linkname = target
+    header.size = len(body) if kind == tarfile.REGTYPE else 0
+    archive.addfile(header, io.BytesIO(body) if header.size else None)
+
+
+def write_layers(output, base, replacement):
+    """Finalize ordinary PAX TARs before handing them to the native image writer."""
+    first = output / "source-layer.tar"
+    with tarfile.open(first, "w", format=tarfile.PAX_FORMAT) as archive:
+        layer_member(archive, "fixture/", kind=tarfile.DIRTYPE, mode=0o755)
+        layer_member(archive, "fixture/message.txt", (base / "message.txt").read_bytes())
+        layer_member(archive, "fixture/alias", kind=tarfile.SYMTYPE, target="message.txt", mode=0o777)
+        layer_member(archive, "fixture/hardlink", kind=tarfile.LNKTYPE, target="fixture/message.txt")
+        for name in ("empty", "obsolete.txt", "中文.txt"):
+            layer_member(archive, "fixture/" + name, (base / name).read_bytes())
+    second = output / "whiteout-layer.tar"
+    with tarfile.open(second, "w", format=tarfile.PAX_FORMAT) as archive:
+        layer_member(archive, "fixture/.wh.obsolete.txt", mode=0)
+    third = output / "opaque-layer.tar"
+    with tarfile.open(third, "w", format=tarfile.PAX_FORMAT) as archive:
+        layer_member(archive, "opaque/.wh..wh..opq", mode=0)
+        layer_member(archive, "opaque/", kind=tarfile.DIRTYPE, mode=0o755)
+        layer_member(archive, "opaque/replacement.txt", (replacement / "replacement.txt").read_bytes())
+    return [first, second, third]
 
 
 def main():
@@ -70,9 +104,13 @@ def main():
         "--config.env", "FIXTURE_LITERAL=present", "--config.env", "PASSWORD=synthetic-redaction-probe",
         "--config.exposedports", "8080/tcp", "--config.volume", "/state",
         "--manifest.annotation", "org.opencontainers.image.title=Inert native image fixture")
-    run("umoci", "insert", "--image", image, "--rootless", "--no-history", base, "/fixture")
-    run("umoci", "insert", "--image", image, "--rootless", "--no-history", "--whiteout", "/fixture/obsolete.txt")
-    run("umoci", "insert", "--image", image, "--rootless", "--no-history", "--opaque", replacement, "/opaque")
+    # Ubuntu's umoci 0.4.7 insert path can omit final TAR padding/trailers. Keep
+    # that boundary explicit rather than silently repairing bytes in a reader.
+    # raw add-layer consumes these finalized, project-authored TARs verbatim and
+    # natively writes gzip blobs, diff_ids, config and manifest descriptors.
+    layers = write_layers(output, base, replacement)
+    for layer in layers:
+        run("umoci", "raw", "add-layer", "--image", image, "--no-history", layer)
     oci = output / "native-inert.oci.tar"
     docker = output / "native-inert.docker.tar"
     run("skopeo", "--insecure-policy", "copy", "oci:" + image, "oci-archive:" + str(oci) + ":fixture")
@@ -90,6 +128,8 @@ def main():
     native = {"tools": {"umoci": run("umoci", "--version").decode().strip(),
                          "skopeo": run("skopeo", "--version").decode().strip()},
               "source_entries": originals,
+              "source_layers": [{"sample": path.name, "sha256": sha(path.read_bytes()), "size": path.stat().st_size}
+                                for path in layers],
               "umoci_stat": json.loads(run("umoci", "stat", "--image", image, "--json")),
               "archives": []}
     for path, transport in [(oci, "oci-archive"), (docker, "docker-archive")]:

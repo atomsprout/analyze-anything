@@ -1,0 +1,48 @@
+name: Alpine APK native inspection
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'crates/aa-linux/**'
+      - 'crates/aa-engine/**'
+      - 'tools/native-compare/alpine-*.py'
+      - '.github/workflows/alpine-native.yml'
+  pull_request:
+    paths:
+      - 'crates/aa-linux/**'
+      - 'tools/native-compare/alpine-*.py'
+      - '.github/workflows/alpine-native.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install read-only reference tools
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools gzip
+      - name: Build the offline CLI
+        run: cargo build --locked -p aa-cli --no-default-features
+      - name: Build inert declaration fixtures
+        run: python3 tools/native-compare/alpine-fixtures.py out/native-alpine
+      - name: Read the real package with apk-tools without installation or networking
+        run: |
+          docker pull alpine:3.22
+          docker run --rm --network none --read-only --tmpfs /tmp:rw,nosuid,nodev -v "$PWD/crates/aa-linux/tests/data:/samples:ro" alpine:3.22 apk --no-network --allow-untrusted manifest /samples/libxxhash-0.8.3-r0.apk > out/native-alpine/apk-manifest.txt
+          docker run --rm --network none --read-only alpine:3.22 apk --version > out/native-alpine/apk-version.txt
+          docker image inspect alpine:3.22 --format '{{index .RepoDigests 0}}' > out/native-alpine/container-digest.txt
+      - name: Compare exact members, declarations and payloads
+        run: |
+          python3 tools/native-compare/alpine-packages.py target/debug/analyze-anything \
+            crates/aa-linux/tests/data/libxxhash-0.8.3-r0.apk \
+            out/native-alpine/native-unsigned.apk out/native-alpine/native-signature-declaration.apk \
+            --native --apk-manifest out/native-alpine/apk-manifest.txt --record out/native-alpine/reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: alpine-native-reference
+          path: out/native-alpine/

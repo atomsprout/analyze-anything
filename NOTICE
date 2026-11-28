@@ -296,3 +296,14 @@ Flatpak single-file bundle qualification:
   Upstream RustDesk source is AGPL-3.0; source and licence are available at
   https://github.com/rustdesk/rustdesk/tree/1.5.3. Its hash-bound local parser
   observations are recorded in crates/aa-linux/tests/data/FLATPAK.md.
+Alpine APK v2 fixture in crates/aa-linux/tests/data:
+- libxxhash-0.8.3-r0.apk is the unchanged Alpine Linux v3.22 main/x86_64 package,
+  https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/libxxhash-0.8.3-r0.apk .
+  xxHash 0.8.3, BSD-2-Clause, Copyright Yann Collet. LICENSE-alpine-xxhash.txt
+  preserves the upstream notice from Cyan4973/xxHash v0.8.3. Packaging commit,
+  source URL and exact digest are recorded in alpine-source.json and ALPINE.md.
+  Its .SIGN.RSA.*.rsa.pub entry contains signature bytes, not a certificate or key.
+  No input file is installed, loaded or executed, and no signature is called verified.
+- alpine-fixtures.py builds separate project-authored Apache-2.0 inert declaration
+  fixtures for native inspection. Their hook source and synthetic signature bytes
+  are data only; no declared script is run and no signing key is included.

@@ -1,8 +1,9 @@
 # OCI and Docker-save native fixtures
 
 The native writer recipe is `tools/native-compare/oci-image-fixtures.py`. It
-creates a new empty OCI image with `umoci`, inserts only project-authored
-Apache-2.0 inert data, and exports local OCI and Docker-save archives with
+creates a new empty OCI image with `umoci`, writes finalized PAX TARs containing
+only project-authored Apache-2.0 inert data, adds them verbatim with native
+`umoci raw add-layer`, and exports local OCI and Docker-save archives with
 `skopeo`. This is the writer equivalent of an image built from `FROM scratch`
 with `COPY` and configuration declarations; no image command or `RUN` step is
 executed. No image is loaded into a daemon, installed, imported or unpacked into
@@ -41,6 +42,14 @@ Layers are retained separately. Whiteouts, links, permissions, entrypoint, comma
 environment, exposed ports and volumes are read as data; no merged filesystem,
 effective configuration, installation eligibility, signature trust or registry
 resolution is established.
+
+The initial Ubuntu 24.04 comparison at run 46107713227 found an independent writer
+boundary: `umoci insert` emitted decoded layers of 5,651, 512 and 1,573 bytes whose
+last entries were present, but final TAR padding and zero trailers were absent.
+Python's TAR reader stopped with an unexpected-end error. Those initial archives
+do not qualify the strict complete-TAR profile. The recipe now finalizes the TAR
+layers before handing them to native `raw add-layer`; neither parser nor reference
+silently pads or reinterprets the old bytes.
 
 Primary format references:
 [OCI image layout](https://github.com/opencontainers/image-spec/blob/main/image-layout.md),
