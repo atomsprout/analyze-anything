@@ -60,7 +60,13 @@ OpenJDK `JarFile` reference comparing all 20 main-manifest attributes and every 
 of its 60 regular member digests; no sample class was placed on a classpath.
 
 The engine integration test verifies all three semantic readers are reached
-through the existing container pipeline and that repeated reports are equal.
+through the existing container pipeline, captured metadata sources and ecosystem
+package URLs reach component/CycloneDX output, and repeated reports are equal.
+PyPI identities come from METADATA, npm identities from package.json, and Maven
+coordinates only from properties whose identity agrees with their source path.
+Manifest-only JAR titles do not establish Maven coordinates. The report relationship
+index retains literal unresolved dependency/class-path declarations; it creates no
+resolved component edge from a range, marker or filename.
 These scoped checks do not qualify every package-tool version, operating system
 or archive variant.
 

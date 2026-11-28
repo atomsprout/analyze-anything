@@ -83,7 +83,7 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 ## What it reads
 
 <!-- formats:begin -->
-**26 primary format families + 4 compression formats (30 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
+**29 primary format families + 4 compression formats (33 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
 <!-- formats:end -->
 
 | | |
@@ -169,10 +169,10 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 The current release is 0.2.3. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-Version 0.2.3 adds Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. Format counts come from one catalogue. Next, in order:
+Version 0.2.3 adds Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. The 0.2.5 source also reads wheel, npm tarball and JAR declarations, with captured component identities and literal unresolved dependencies; publication is pending. Format counts come from one catalogue. Next, in order:
 
 1. **Linux application formats**: qualify SquashFS, AppImage Type 2 and snap, targeting 33 primary/compression families.
-2. **Language packages**: add wheel, npm tarball and Java archive profiles, targeting 36 families.
+2. **Language packages**: deliver the implemented wheel, npm tarball and JAR profiles, targeting 36 families after the Linux application batch. WAR/EAR remain unqualified profiles within the Java family.
 3. **Further breadth**: qualify Alpine APK, Flatpak, one OCI/Docker family and LZ4, targeting 40 families. .NET IL and deeper component relationships follow; optional evidence retention remains separate.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).

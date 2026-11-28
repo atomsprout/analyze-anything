@@ -58,6 +58,35 @@ impl Relationships {
 pub fn collect(report: &Report) -> Relationships {
     let mut result = Relationships::default();
     for artifact in &report.artifacts {
+        if let Some(package) = artifact.facts.get("wheel.package") {
+            for (ordinal, row) in package["dependencies"].as_array().into_iter().flatten().enumerate() {
+                result.add(
+                    package["source_metadata"].as_str().unwrap_or(&artifact.path),
+                    "wheel.package/dependencies",
+                    ordinal,
+                    &json!({"field":format!("Requires-Dist[{ordinal}]"),"declared":row["declaration"],"status":"declared-unresolved",
+                        "reason":"Dependency markers, extras and installed versions were not resolved."}),
+                );
+            }
+        }
+        if let Some(package) = artifact.facts.get("npm.package") {
+            for (ordinal, row) in package["dependencies"].as_array().into_iter().flatten().enumerate() {
+                result.add(package["source_metadata"].as_str().unwrap_or(&artifact.path), "npm.package/dependencies", ordinal,
+                    &json!({"field":row["field"],"declared":format!("{}@{}",row["name"].as_str().unwrap_or(""),row["declaration"].as_str().unwrap_or("")),
+                        "status":"declared-unresolved","reason":"The dependency declaration does not establish a captured or installed package."}));
+            }
+        }
+        if let Some(package) = artifact.facts.get("java.jar") {
+            for (ordinal, row) in package["manifest"]["class_path"].as_array().into_iter().flatten().enumerate() {
+                result.add(
+                    package["source_manifest"].as_str().unwrap_or(&artifact.path),
+                    "java.jar/manifest/class_path",
+                    ordinal,
+                    &json!({"field":format!("Class-Path[{ordinal}]"),"declared":row["declared"],"status":"declared-unresolved",
+                        "reason":"The manifest class path was not resolved against the host, a registry or nested archives."}),
+                );
+            }
+        }
         for (key, list) in [
             ("windows.input-references", "references"),
             ("windows.source-files", "records"),

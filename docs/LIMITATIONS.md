@@ -81,6 +81,69 @@ unsupported templates or absent host executables are not represented as validati
 success. No local Linux VM was qualified. Later source changes still require their
 own final CI and package checks.
 
+## Language package breadth C profiles
+
+The C source at 929703f registers three semantic readers over already captured ZIP,
+TAR and compressed-stream children. This is implemented scope for the pending 0.2.5
+delivery, not a published release or qualification of every package variant. The Java
+archive family is counted once, with JAR qualified; WAR/EAR application profiles remain
+explicitly unread. See [the reader profile](../crates/aa-packages/README.md).
+
+- Wheel: one root `.dist-info` directory, numeric WHEEL 1.x/Core Metadata 2.x,
+  literal identity, compatibility tags, repeated `Requires-Dist` and entry-point metadata.
+  Ranges, extras and environment markers are not evaluated. RECORD and signatures are
+  not verified; installation eligibility, description-body semantics, Python source,
+  bytecode and `.pth` effects are not established. Ambiguous scalar fields and indented
+  entry-point continuations remain explicit gaps.
+- npm: one original regular `package/package.json`, bound to the exact original TAR
+  bytes; identity, four dependency groups, script text, selected module/platform fields,
+  TAR paths/link declarations and captured inventory. The initial profile accepts normal
+  octal-sized common/USTAR TAR within 256 MiB. PAX/GNU-long-name/sparse extensions and
+  concatenated archives remain unsupported. Links and special files are declarations;
+  targets are not followed. Registry authenticity, dependency/module/exports resolution,
+  platform eligibility and lifecycle effects are unresolved. Retained text redacts
+  recognizable credentials.
+- JAR: canonical UTF-8 `META-INF/MANIFEST.MF` 1.0 with folded attribute source spans,
+  main/entry attributes, literal launch/module/agent/class-path declarations and simple
+  Maven `pom.properties` identities with source-path agreement. The manifest profile is
+  bounded to 1 MiB, 72-byte physical lines, 65,535-byte unfolded values, 8,192 attributes
+  and 256 sections. Class-path previews stop at 1,024 declarations; URLs are never opened.
+  Maven properties are literal UTF-8 `key=value`, at most 64 KiB/256 fields per file and
+  256 files; Java escapes, continuations and legacy encodings are unsupported. Bytecode,
+  module dependencies, OSGi/service-provider behavior, effective sealing, versioned-class
+  selection, signatures and runtime privileges are not established.
+
+All three require a complete captured namespace with original unique member names.
+Normalized/colliding names and incomplete listings prevent confirmed identity. Shared
+bounds are 256 package candidates, 100,000 members, 4,096-byte member paths and 16 MiB
+of aggregate member paths; inventory previews retain 5,000 rows with a total and explicit
+truncation. Wheel/npm metadata is UTF-8 within 1 MiB. Wheel lines/unfolded fields and
+npm JSON strings are bounded to 16 KiB; wheel headers/entry-point rows and npm JSON
+values are bounded to 8,192. npm JSON additionally rejects duplicate keys at every object
+depth and nesting beyond 32. Malformed metadata, unsupported profiles and exceeded budgets
+have constructed coverage and explicit limitations. No package, class, entry point or
+script is imported, loaded or executed; no host or package registry is consulted.
+
+The unchanged MIT-licensed samples are sampleproject 4.0.0, isarray 2.0.5 and SLF4J API
+2.0.16. [Sources, licences and hashes](../crates/aa-packages/tests/data/SOURCES.md) and
+`NOTICE` bind those inputs. The checked-in Windows
+[CLI reference record](../crates/aa-packages/tests/data/native-cli.ref.json) contains
+15 matching checks: seven wheel, six npm and two JAR, including every regular member's
+name/size/SHA-256 (9, 4 and 60 members respectively). The
+[comparison helper](../tools/native-compare/language-packages.py) uses independent Python
+metadata readers and JDK `jar`/Windows `tar` listings. A separate
+[OpenJDK 25.0.3+9 JarFile reference](../crates/aa-packages/tests/data/java/README.md) supplies
+all 20 main-manifest attributes and 60 member digests, compared in the hash-bound Rust
+fixture test without loading input classes. Captured component identities use actual
+METADATA/package.json sources, or Maven properties whose identity agrees with their path.
+PyPI names and package URLs are normalized by ecosystem rules; JAR display titles never
+become inferred Maven coordinates. Dependency markers/ranges and class-path entries stay
+literal unresolved declarations in every report view, without resolved CycloneDX edges.
+The engine integration test covers all three
+readers through the shared container pipeline, evidence presence and repeated-report
+equality. These records do not establish hosted cross-platform, final release-package or
+every tool-version qualification; those release gates remain pending.
+
 ## Parts not verified on real samples
 
 The initial Linux package readers have native Linux references for Debian node-isarray
