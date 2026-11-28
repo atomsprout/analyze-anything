@@ -52,7 +52,7 @@ def reference(path):
                     if member.name == ".PKGINFO":
                         entry["control_text"] = body.decode("utf-8")
                 entries.append(entry)
-        if not seen_control and entries and all(logical(entry["path"]).startswith(".SIGN.") for entry in entries):
+        if not seen_control and entries and all(entry["path"].startswith(".SIGN.") and "/" not in entry["path"] for entry in entries):
             role = "signature"
         elif not seen_control:
             role = "control"
@@ -91,10 +91,17 @@ def verify(cli, sample, no_ai, native=False, apk_manifest=None, gzip_tool="gzip"
 
     check("input SHA-256", root["digests"]["sha256"], expected["sha256"])
     check("exact gzip member count", len(container["layers"]), len(expected["layers"]))
+    check("complete entry previews", container["entry_preview_complete"], True)
+    check("no omitted entries", container["entries_omitted"], 0)
+    check("shared output preview complete", root["facts"]["alpine-apk.output"]["preview_truncated"], False)
     for index, layer in enumerate(expected["layers"]):
         observed = container["layers"][index]
         for field in ("role", "offset", "compressed_size", "decoded_size", "decoded_sha256"):
             check(f"layer {index}: {field}", observed[field], layer[field])
+        check(f"layer {index}: total entries", observed["entries_total"], len(layer["entries"]))
+        check(f"layer {index}: retained entries", observed["entries_retained"], len(layer["entries"]))
+        check(f"layer {index}: omitted entries", observed["entries_omitted"], 0)
+        check(f"layer {index}: complete entry preview", observed["entry_preview_complete"], True)
         check(f"layer {index}: paths", [logical(entry["path"]) for entry in observed["entries"]], [logical(entry["path"]) for entry in layer["entries"]])
         for entry, found in zip(layer["entries"], observed["entries"]):
             for field in ("type", "size", "mode", "uid", "gid", "link_target"):
@@ -105,9 +112,14 @@ def verify(cli, sample, no_ai, native=False, apk_manifest=None, gzip_tool="gzip"
             if layer["role"] == "control" and entry["path"] == ".PKGINFO":
                 fields = [line.split(" = ", 1) for line in entry["control_text"].splitlines() if line and not line.startswith("#")]
                 metadata = root["facts"]["alpine-apk.package"]
+                check("total control fields", metadata["fields_total"], len(fields))
+                check("omitted control fields", metadata["fields_omitted"], 0)
+                check("complete control fields", metadata["fields_complete"], True)
                 for field, key in [("pkgname", "name"), ("pkgver", "version"), ("arch", "architecture")]:
                     check("control identity: " + field, metadata[key], next(value for name, value in fields if name == field))
                 relationships = [(name, value) for name, value in fields if name in ("depend", "provides", "replaces", "install_if", "triggers")]
+                check("total relationship fields", metadata["dependency_fields_total"], len(relationships))
+                check("omitted relationship fields", metadata["dependency_fields_omitted"], 0)
                 check("literal dependency declarations", [(row["name"], row["value"]) for row in metadata["dependencies"]], relationships)
     native_results = {}
     if native:

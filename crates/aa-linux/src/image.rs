@@ -15,6 +15,7 @@ pub struct Image;
 
 const MAX_BYTES: usize = 256 * 1024 * 1024;
 const MAX_JSON_TOTAL: usize = 16 * 1024 * 1024;
+const MAX_PUBLISHED: usize = 16 * 1024 * 1024;
 const MAX_LAYERS: usize = 1024;
 const MAX_MANIFESTS: usize = 64;
 const OCI_INDEX: &str = "application/vnd.oci.image.index.v1+json";
@@ -79,6 +80,8 @@ struct TarEntry {
     path: String,
     logical: Option<String>,
     header: u64,
+    metadata_offset: u64,
+    metadata_length: u64,
     offset: u64,
     size: u64,
     mode: Option<u32>,
@@ -175,6 +178,11 @@ fn tar_index(bytes: &[u8], remaining: &mut usize) -> TarIndex {
             return index;
         }
         let offset = entry.raw_file_position();
+        let metadata_offset = trailer as u64;
+        let Some(metadata_length) = offset.checked_sub(metadata_offset) else {
+            index.issues.push("image TAR metadata source extent is reversed".into());
+            return index;
+        };
         let size = entry.size();
         let range =
             usize::try_from(offset).ok().zip(usize::try_from(size).ok()).and_then(|(offset, size)| crate::extent(bytes, offset, size).ok());
@@ -201,10 +209,24 @@ fn tar_index(bytes: &[u8], remaining: &mut usize) -> TarIndex {
         if kind == b'S' {
             index.issues.push("sparse image TAR entries are outside this profile".into());
         }
+        if kind == b'g' {
+            index.issues.push("global PAX defaults are outside this image TAR profile".into());
+        }
         if let Some(name) = &logical {
             index.names.insert(name.clone(), index.entries.len());
         }
-        index.entries.push(TarEntry { path, logical, header: entry.raw_header_position(), offset, size, mode, kind, link });
+        index.entries.push(TarEntry {
+            path,
+            logical,
+            header: entry.raw_header_position(),
+            metadata_offset,
+            metadata_length,
+            offset,
+            size,
+            mode,
+            kind,
+            link,
+        });
     }
     if bytes.get(trailer..).is_none_or(|tail| tail.len() < 1024 || tail.iter().any(|byte| *byte != 0)) {
         index.issues.push("image TAR has an incomplete zero trailer or unread trailing data".into());
@@ -243,6 +265,9 @@ impl<'a> Namespace<'a> {
     }
     fn new_cached(tree: &'a dyn Tree, marker: &'a Artifact, cache: &mut NamespaceCache) -> Result<Self> {
         let prefix = marker.path.rsplit_once('/').map_or(String::new(), |(prefix, _)| prefix.to_string());
+        if prefix.len() > 4096 {
+            return Err("image namespace path exceeds the 4096-byte profile".into());
+        }
         let parent = marker.parent.as_deref();
         let mut owner = marker;
         let original = if let Some(container) = parent.and_then(|parent| tree.get(parent)) {
@@ -309,6 +334,7 @@ struct Reader<'a> {
     json_budget: json::Budget,
     json_bytes: usize,
     data_bytes: usize,
+    published_bytes: usize,
     entries: usize,
     layers: usize,
     manifests: Vec<Value>,
@@ -326,6 +352,7 @@ impl<'a> Reader<'a> {
             json_budget: json::Budget::default(),
             json_bytes: 0,
             data_bytes: 0,
+            published_bytes: 0,
             entries: crate::MAX_ENTRIES,
             layers: 0,
             manifests: Vec::new(),
@@ -421,8 +448,17 @@ impl<'a> Reader<'a> {
                         continue;
                     }
                 };
+                let optional = redacted_json(descriptor.get("platform").unwrap_or(&Value::Null))
+                    .and_then(|platform| Ok((platform, annotations(descriptor.get("annotations"))?)));
+                let (platform, annotations) = match optional {
+                    Ok(fields) => fields,
+                    Err(detail) => {
+                        self.issue("image.metadata-unread", detail);
+                        continue;
+                    }
+                };
                 let mut edge = json!({"source":source.path,"field":format!("/manifests/{position}"),"media_type":media,"digest":descriptor.get("digest"),"size":descriptor.get("size"),
-                    "platform":redacted_json(descriptor.get("platform").unwrap_or(&Value::Null))?,"annotations":annotations(descriptor.get("annotations"))?,
+                    "platform":platform,"annotations":annotations,
                     "urls_present":descriptor.get("urls").is_some(),"inline_data_present":descriptor.get("data").is_some(),"state":"unresolved","target":null});
                 if !matches!(media, OCI_INDEX | DOCKER_INDEX | OCI_MANIFEST | DOCKER_MANIFEST) {
                     edge["state"] = json!("unsupported-media-type");
@@ -566,71 +602,80 @@ impl<'a> Reader<'a> {
             return Err("Docker-save manifest count is outside the profile".into());
         }
         for (index, document) in rows.iter().enumerate() {
-            let config_name = text(document, "Config")?;
-            let config_source = self.namespace.lookup(config_name)?;
-            let expected = config_name.strip_suffix(".json").ok_or("Docker-save config filename has no .json suffix")?;
-            if expected.len() != 64 || !expected.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
-                return Err("Docker-save config filename is not a canonical SHA-256 name".into());
+            if let Err(detail) = self.docker_manifest(source, index, document) {
+                self.issue(if detail.contains("differs") { "image.digest-mismatch" } else { "image.metadata-unread" }, detail);
             }
-            if self.hash(config_source)? != expected {
-                self.issue("image.digest-mismatch", "Docker-save config filename differs from its captured SHA-256");
-                continue;
-            }
-            let config = self.read_json(config_source)?;
-            let (fields, diffs) = config_fields(&config)?;
-            let tags = string_array(document.get("RepoTags"), 4096)?;
-            let mut row = json!({"source":source.path,"manifest_position":index,"digest":null,"tags":tags,"annotations":{},"config_source":config_source.path,
+        }
+        Ok(())
+    }
+
+    fn docker_manifest(&mut self, source: &'a Artifact, index: usize, document: &Value) -> Result<()> {
+        let config_name = text(document, "Config")?;
+        let config_source = self.namespace.lookup(config_name)?;
+        let expected = config_name.strip_suffix(".json").ok_or("Docker-save config filename has no .json suffix")?;
+        if expected.len() != 64 || !expected.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
+            return Err("Docker-save config filename is not a canonical SHA-256 name".into());
+        }
+        if self.hash(config_source)? != expected {
+            return Err("Docker-save config filename differs from its captured SHA-256".into());
+        }
+        let config = self.read_json(config_source)?;
+        let (fields, diffs) = config_fields(&config)?;
+        let tags = string_array(document.get("RepoTags"), 4096)?;
+        let mut row = json!({"source":source.path,"manifest_position":index,"digest":null,"tags":tags,"annotations":{},"config_source":config_source.path,
                 "config_digest":format!("sha256:{expected}"),"complete":true});
-            merge_fields(&mut row, fields);
-            let names = array(document, "Layers", MAX_LAYERS)?;
-            let mut complete = diffs.as_ref().is_some_and(|diffs| diffs.len() == names.len());
-            if !complete {
-                self.issue("image.metadata-unread", "Docker-save layer count differs from rootfs.diff_ids or the rootfs profile is unread");
+        merge_fields(&mut row, fields);
+        let names = array(document, "Layers", MAX_LAYERS)?;
+        let mut complete = diffs.as_ref().is_some_and(|diffs| diffs.len() == names.len());
+        if !complete {
+            self.issue("image.metadata-unread", "Docker-save layer count differs from rootfs.diff_ids or the rootfs profile is unread");
+        }
+        let mut layers = Vec::new();
+        for (order, name) in names.iter().enumerate() {
+            self.layers += 1;
+            if self.layers > MAX_LAYERS {
+                self.issue("image.layer-unread", "global image layer count exhausted");
+                complete = false;
+                break;
             }
-            let mut layers = Vec::new();
-            for (order, name) in names.iter().enumerate() {
-                self.layers += 1;
-                if self.layers > MAX_LAYERS {
-                    self.issue("image.layer-unread", "global image layer count exhausted");
-                    complete = false;
-                    break;
-                }
-                let mut layer = json!({"order":order,"source":null,"declared_digest":null,"digest":null,"size":null,"media_type":"application/vnd.oci.image.layer.v1.tar",
+            let mut layer = json!({"order":order,"source":null,"declared_digest":null,"digest":null,"size":null,"media_type":"application/vnd.oci.image.layer.v1.tar",
                     "state":"unresolved","diff_id":diffs.as_ref().and_then(|diffs|diffs.get(order)),"diff_id_state":"unresolved","tar_source":null,"entries":null,"complete":false});
-                let result = name
-                    .as_str()
-                    .ok_or_else(|| "Docker-save layer path is not a string".to_string())
-                    .and_then(|name| self.namespace.lookup(name));
-                match result {
-                    Ok(file) => {
-                        layer["source"] = json!(file.path);
-                        layer["size"] = json!(file.size);
-                        layer["digest"] = json!(format!("sha256:{}", self.hash(file)?));
-                        layer["state"] = json!("captured");
-                        if let Err(detail) = self.layer(
+            let result = name
+                .as_str()
+                .ok_or_else(|| "Docker-save layer path is not a string".to_string())
+                .and_then(|name| self.namespace.lookup(name));
+            match result {
+                Ok(file) => {
+                    layer["source"] = json!(file.path);
+                    layer["size"] = json!(file.size);
+                    layer["state"] = json!("captured");
+                    let result = self.hash(file).and_then(|digest| {
+                        layer["digest"] = json!(format!("sha256:{digest}"));
+                        self.layer(
                             file,
                             "application/vnd.oci.image.layer.v1.tar",
                             diffs.as_ref().and_then(|diffs| diffs.get(order)).map(String::as_str),
                             &mut layer,
-                        ) {
-                            self.issue(if detail.contains("differs") { "image.digest-mismatch" } else { "image.layer-unread" }, detail);
-                            complete = false;
-                        }
-                    }
-                    Err(detail) => {
-                        self.issue("image.layer-unread", detail);
+                        )
+                    });
+                    if let Err(detail) = result {
+                        self.issue(if detail.contains("differs") { "image.digest-mismatch" } else { "image.layer-unread" }, detail);
                         complete = false;
                     }
                 }
-                layers.push(layer);
-                if layers.last().is_some_and(|layer| layer["complete"] != true) {
+                Err(detail) => {
+                    self.issue("image.layer-unread", detail);
                     complete = false;
                 }
             }
-            row["layers"] = json!(layers);
-            row["complete"] = json!(complete);
-            self.manifests.push(row);
+            layers.push(layer);
+            if layers.last().is_some_and(|layer| layer["complete"] != true) {
+                complete = false;
+            }
         }
+        row["layers"] = json!(layers);
+        row["complete"] = json!(complete);
+        self.manifests.push(row);
         Ok(())
     }
 
@@ -691,6 +736,7 @@ impl<'a> Reader<'a> {
         let index = tar_index(&bytes, &mut self.entries);
         let mut rows = Vec::new();
         let mut whiteout_invalid = false;
+        let mut output_complete = true;
         for entry in &index.entries {
             let logical = entry.logical.as_deref();
             let mut whiteout = logical.and_then(|path| {
@@ -720,8 +766,19 @@ impl<'a> Reader<'a> {
                     .as_deref()
                     .and_then(|path| self.namespace.tree.get(path))
                     .is_some_and(|file| clean(file) && file.size == entry.size && file.parent.as_deref() == Some(&tar.path));
-            rows.push(json!({"path":path,"type":entry.kind,"link_target":link,"whiteout":whiteout,"header_offset":entry.header,"offset":entry.offset,
-                "size":entry.size,"mode":entry.mode,"captured":captured,"captured_source":if captured{child_path}else{None}}));
+            let value = json!({"path":path,"type":entry.kind,"link_target":link,"whiteout":whiteout,"header_offset":entry.header,"offset":entry.offset,
+                "metadata_offset":entry.metadata_offset,"metadata_length":entry.metadata_length,"metadata_scope":"entry-and-local-extensions",
+                "size":entry.size,"mode":entry.mode,"captured":captured,"captured_source":if captured{child_path}else{None}});
+            // Each inventory is retained in both its package and source-TAR facts.
+            // Charge the actual escaped representation, including repeated source paths.
+            let size = serde_json::to_vec(&value).map_err(|error| error.to_string())?.len().saturating_mul(2);
+            if self.published_bytes.saturating_add(size) > MAX_PUBLISHED {
+                output_complete = false;
+                self.issue("image.layer-unread", "global image published-inventory byte budget exhausted");
+                break;
+            }
+            self.published_bytes += size;
+            rows.push(value);
         }
         for detail in &index.issues {
             self.issue("image.layer-unread", detail.clone());
@@ -729,8 +786,8 @@ impl<'a> Reader<'a> {
         if whiteout_invalid {
             self.issue("image.layer-unread", "whiteout marker is not an empty regular TAR entry");
         }
-        let capture_complete =
-            rows.iter().filter(|entry| matches!(entry["type"].as_u64(), Some(0 | 48))).all(|entry| entry["captured"] == true);
+        let capture_complete = output_complete
+            && rows.iter().filter(|entry| matches!(entry["type"].as_u64(), Some(0 | 48))).all(|entry| entry["captured"] == true);
         if !capture_complete {
             self.issue("image.layer-unread", "some regular layer entries were not captured unambiguously");
         }
@@ -738,7 +795,12 @@ impl<'a> Reader<'a> {
         row["entries"] = json!(rows);
         row["complete"] = json!(complete);
         row["capture_complete"] = json!(capture_complete);
-        self.layer_facts.push((tar,json!({"package":self.namespace.owner.path,"source":source.path,"computed_diff_id":actual_diff,"complete":complete,"entries":rows})));
+        row["inventory_complete"] = json!(index.complete && output_complete);
+        self.layer_facts.push((
+            tar,
+            json!({"package":self.namespace.owner.path,"source":source.path,"computed_diff_id":actual_diff,"complete":complete,
+            "inventory_complete":index.complete && output_complete,"entries":rows}),
+        ));
         if !complete {
             self.failed = true;
         }
@@ -909,6 +971,7 @@ impl Analyzer for Image {
         let mut candidates = 0usize;
         let mut cache = NamespaceCache::default();
         let mut candidate_json = json::Budget::default();
+        let mut published_bytes = 0usize;
         for marker in tree.artifacts().iter().filter(|file| file.name() == "oci-layout") {
             candidates += 1;
             if candidates > MAX_MANIFESTS {
@@ -924,6 +987,7 @@ impl Analyzer for Image {
             };
             scopes.insert((namespace.prefix.clone(), namespace.parent.map(str::to_string)));
             let mut reader = Reader::new(namespace);
+            reader.published_bytes = published_bytes;
             let source = match reader.oci(marker) {
                 Ok(source) => source,
                 Err(detail) => {
@@ -931,6 +995,7 @@ impl Analyzer for Image {
                     marker
                 }
             };
+            published_bytes = reader.published_bytes;
             retain(reader, "oci", source, out);
         }
         for marker in tree.artifacts().iter().filter(|file| file.name() == "manifest.json") {
@@ -962,10 +1027,12 @@ impl Analyzer for Image {
                 }
             };
             let mut reader = Reader::new(namespace);
+            reader.published_bytes = published_bytes;
             match reader.docker(marker, &document) {
                 Ok(()) => {}
                 Err(detail) => reader.issue("image.metadata-unread", detail),
             }
+            published_bytes = reader.published_bytes;
             retain(reader, "docker-save", marker, out);
         }
     }
@@ -1007,7 +1074,14 @@ fn retain(reader: Reader<'_>, format: &str, source: &Artifact, out: &mut Output)
             if let Some(entry) = entries.and_then(|entries| {
                 entries.iter().find(|entry| !entry["whiteout"].is_null() || !entry["link_target"].is_null()).or(entries.first())
             }) {
-                finding = finding.evidence(Evidence::bytes(tar, entry["header_offset"].as_u64().unwrap_or(0), 512, entry.clone()));
+                // Effective names, link targets and sizes may come from preceding
+                // PAX/GNU records rather than the final 512-byte entry header.
+                finding = finding.evidence(Evidence::bytes(
+                    tar,
+                    entry["metadata_offset"].as_u64().unwrap_or(0),
+                    entry["metadata_length"].as_u64().unwrap_or(0),
+                    entry.clone(),
+                ));
             } else {
                 finding = finding.evidence(Evidence::whole(tar, json!({"entries":0})));
             }
@@ -1190,6 +1264,167 @@ mod tests {
         (tree, out)
     }
 
+    fn members(bytes: &[u8]) -> Vec<(String, Vec<u8>)> {
+        let mut remaining = crate::MAX_ENTRIES;
+        tar_index(bytes, &mut remaining)
+            .entries
+            .iter()
+            .filter(|entry| matches!(entry.kind, 0 | b'0'))
+            .map(|entry| {
+                (entry.path.clone(), crate::extent(bytes, entry.offset as usize, entry.size as usize).expect("member extent").to_vec())
+            })
+            .collect()
+    }
+    fn repack(rows: &[(String, Vec<u8>)]) -> Vec<u8> {
+        let borrowed: Vec<_> = rows.iter().map(|(name, bytes)| (name.as_str(), bytes.as_slice(), b'0', None)).collect();
+        tar(&borrowed)
+    }
+
+    #[test]
+    fn invalid_first_image_records_do_not_hide_independent_valid_siblings() {
+        for (field, invalid) in
+            [("Config", json!("missing-config.json")), ("Config", json!({"invalid":"value"})), ("RepoTags", json!({"invalid":"value"}))]
+        {
+            let mut rows = members(&fixture(Options { docker: true, ..Options::default() }));
+            let manifest = rows.iter_mut().find(|(name, _)| name == "manifest.json").expect("Docker control");
+            let mut document: Value = serde_json::from_slice(&manifest.1).expect("manifest");
+            let good = document[0].clone();
+            let mut bad = good.clone();
+            bad[field] = invalid;
+            document = json!([bad, good]);
+            manifest.1 = serde_json::to_vec(&document).expect("two image records");
+            let (_, out) = analyze(repack(&rows));
+            let package = &out.facts.iter().find(|fact| fact.key == "image.package").expect("partial package").value;
+            assert_eq!(package["complete"], false);
+            let retained = package["manifests"].as_array().expect("retained independent manifests");
+            assert_eq!(retained.len(), 1);
+            assert_eq!(retained[0]["manifest_position"], 1);
+            assert_eq!(retained[0]["complete"], true);
+            assert_eq!(retained[0]["layers"][0]["entries"].as_array().expect("captured good layer").len(), 5);
+        }
+        let mut rows = members(&fixture(Options::default()));
+        let index = rows.iter_mut().find(|(name, _)| name == "index.json").expect("OCI index");
+        let mut document: Value = serde_json::from_slice(&index.1).expect("index");
+        let good = document["manifests"][0].clone();
+        let mut bad = good.clone();
+        bad["annotations"] = json!(["invalid object"]);
+        document["manifests"] = json!([bad, good]);
+        index.1 = serde_json::to_vec(&document).expect("two descriptors");
+        let (_, out) = analyze(repack(&rows));
+        let package = &out.facts.iter().find(|fact| fact.key == "image.package").expect("partial OCI package").value;
+        assert_eq!(package["complete"], false);
+        assert_eq!(package["manifests"].as_array().expect("valid later descriptor").len(), 1);
+        assert_eq!(package["manifests"][0]["complete"], true);
+    }
+
+    #[test]
+    fn effective_pax_link_declarations_reference_their_extension_bytes() {
+        let mut builder = tar::Builder::new(Vec::new());
+        builder
+            .append_pax_extensions([("linkpath", b"../outside".as_slice()), ("path", b"effective-alias".as_slice())])
+            .expect("PAX declarations");
+        let mut header = tar::Header::new_ustar();
+        header.set_entry_type(tar::EntryType::Symlink);
+        header.set_mode(0o777);
+        header.set_size(0);
+        header.set_link_name("benign").expect("raw base link");
+        header.set_cksum();
+        builder.append_data(&mut header, "alias", Cursor::new([])).expect("link header");
+        let layer = builder.into_inner().expect("finalized PAX layer");
+        let mut remaining = crate::MAX_ENTRIES;
+        let parsed = tar_index(&layer, &mut remaining);
+        assert!(parsed.complete, "{:?}", parsed.issues);
+        let entry = &parsed.entries[0];
+        assert_eq!(entry.link.as_deref(), Some("../outside"));
+        assert_eq!(entry.path, "effective-alias");
+        let raw_header = &layer[entry.header as usize..entry.header as usize + 512];
+        assert!(!raw_header.windows(10).any(|window| window == b"../outside"));
+        let metadata = &layer[entry.metadata_offset as usize..(entry.metadata_offset + entry.metadata_length) as usize];
+        assert!(metadata.windows(10).any(|window| window == b"../outside"));
+        assert!(metadata.windows(15).any(|window| window == b"effective-alias"));
+        assert_eq!(entry.metadata_length, 1536);
+        let mut tree = TestTree::new(fixture(Options::default()));
+        tree.add("pax.tar", layer.clone(), None);
+        let marker = tree.files.iter().find(|file| file.name() == "oci-layout").expect("namespace marker");
+        let mut reader = Reader::new(Namespace::new(&tree, marker).expect("original namespace"));
+        let source = tree.files.iter().find(|file| file.path == "pax.tar").expect("source TAR");
+        reader.layer(source, "application/vnd.oci.image.layer.v1.tar", Some(&digest(&layer)), &mut json!({})).expect("PAX layer inventory");
+        let mut out = Output::default();
+        retain(reader, "oci", marker, &mut out);
+        let finding = out.findings.iter().find(|finding| finding.rule == "image.layers").expect("layer evidence");
+        let evidence = &finding.evidence[0];
+        assert_eq!(evidence.value["link_target"], "../outside");
+        let aa_core::Location::Bytes { offset, length } = evidence.location else { panic!("expected exact metadata byte span") };
+        let observed = &tree.bytes[&evidence.artifact][offset as usize..(offset + length) as usize];
+        assert!(observed.windows(10).any(|window| window == b"../outside"));
+    }
+
+    #[test]
+    fn native_writer_archives_match_hash_bound_independent_config_and_every_layer_entry() {
+        let references: Value =
+            serde_json::from_str(include_str!("../tests/data/native-image.ref.json")).expect("native comparison record");
+        let fixtures: &[(&[u8], &str, &str)] = &[
+            (
+                include_bytes!("../tests/data/native-image.oci.tar"),
+                "oci",
+                "2f2df7cea6652176d4dd23de2e143510ab423a9ec45ad89daeb1c46c16a686c5",
+            ),
+            (
+                include_bytes!("../tests/data/native-image.docker.tar"),
+                "docker-save",
+                "7f212f0198616f6618b5d0dc1b2a66de9f25b2fa2e1ab8a1bc80c1070626d2fd",
+            ),
+        ];
+        for (bytes, format, hash) in fixtures {
+            assert_eq!(aa_core::sha256_hex(bytes), *hash);
+            let reference = references
+                .as_array()
+                .expect("comparison records")
+                .iter()
+                .find(|row| row["sha256"] == *hash)
+                .expect("exact native source hash");
+            assert!(reference["checks"].as_array().expect("native checks").iter().all(|check| check["matches"] == true));
+            let (tree, out) = analyze(bytes.to_vec());
+            let package = &out.facts.iter().find(|fact| fact.key == "image.package").expect("real native image archive").value;
+            assert_eq!(package["format"], *format);
+            assert_eq!(package["complete"], true, "{:?}", out.limitations);
+            assert_eq!(package["merged_filesystem"], false);
+            let actual = &package["manifests"][0];
+            let native = &reference["native"]["manifests"][0];
+            for key in ["architecture", "os"] {
+                assert_eq!(actual[key], native["config"][key]);
+            }
+            assert_eq!(actual["config_digest"], native["config_digest"]);
+            assert_eq!(actual["entrypoint"], native["config"]["config"]["Entrypoint"]);
+            assert_eq!(actual["cmd"], native["config"]["config"]["Cmd"]);
+            assert_eq!(actual["env"][1], "PASSWORD=[redacted]");
+            assert_eq!(actual["layers"].as_array().expect("actual layers").len(), 3);
+            for (layer, expected) in
+                actual["layers"].as_array().expect("actual layers").iter().zip(native["layers"].as_array().expect("native layers"))
+            {
+                assert_eq!(layer["diff_id_state"], "matched");
+                assert_eq!(layer["computed_diff_id"], expected["diff_id"]);
+                assert_eq!(layer["declared_digest"], expected["declared_digest"]);
+                let entries = layer["entries"].as_array().expect("original TAR inventory");
+                let expected_entries = expected["entries"].as_array().expect("native TAR inventory");
+                assert_eq!(entries.len(), expected_entries.len());
+                for (entry, expected) in entries.iter().zip(expected_entries) {
+                    assert_eq!(
+                        entry["path"].as_str().expect("declared path").trim_end_matches('/'),
+                        expected["path"].as_str().expect("native path").trim_end_matches('/')
+                    );
+                    for key in ["type", "link_target", "whiteout", "header_offset", "offset", "size", "mode"] {
+                        assert_eq!(entry[key], expected[key], "native entry field {key}");
+                    }
+                    if let Some(hash) = expected["sha256"].as_str() {
+                        let path = entry["captured_source"].as_str().expect("captured original regular data");
+                        assert_eq!(aa_core::sha256_hex(&tree.bytes[path]), hash);
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn oci_and_docker_save_bind_configs_ordered_layers_diffids_and_literal_declarations() {
         for docker in [false, true] {
@@ -1277,6 +1512,16 @@ mod tests {
         reader.layer(layer, "application/vnd.oci.image.layer.v1.tar", Some(&expected), &mut row).expect("partial inventory retained");
         assert_eq!(row["complete"], false);
         assert!(reader.issues.iter().any(|(_, detail)| detail.contains("budget")));
+        let marker = tree.files.iter().find(|file| file.name() == "oci-layout").expect("marker");
+        let mut reader = Reader::new(Namespace::new(&tree, marker).expect("original namespace"));
+        reader.published_bytes = MAX_PUBLISHED;
+        let mut row = json!({});
+        reader.layer(layer, "application/vnd.oci.image.layer.v1.tar", Some(&expected), &mut row).expect("bounded published prefix");
+        assert_eq!(row["entries"], json!([]));
+        assert_eq!(row["inventory_complete"], false);
+        assert_eq!(row["capture_complete"], false);
+        assert_eq!(row["complete"], false);
+        assert!(reader.issues.iter().any(|(_, detail)| detail.contains("published-inventory")));
     }
 
     #[test]

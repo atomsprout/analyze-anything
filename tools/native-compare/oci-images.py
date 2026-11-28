@@ -81,26 +81,73 @@ class Supplied:
         return path.read_bytes()
 
 
+def raw_header(data, at):
+    header = data[at:at + 512]
+    assert len(header) == 512
+    declared_checksum = int(header[148:156].rstrip(b"\0 ") or b"0", 8)
+    assert declared_checksum == sum(header[:148]) + 8 * 32 + sum(header[156:])
+    header_name = header[:100].split(b"\0", 1)[0]
+    prefix = header[345:500].split(b"\0", 1)[0]
+    if prefix and header[257:263] == b"ustar\0":
+        header_name = prefix + b"/" + header_name
+    return {"path": header_name.decode("utf-8", errors="replace"),
+            "link_target": header[157:257].split(b"\0", 1)[0].decode("utf-8", errors="replace") or None,
+            "size": int(header[124:136].rstrip(b"\0 ") or b"0", 8), "type": header[156]}
+
+
+def local_extensions(data, start, stop):
+    records = []
+    while start < stop:
+        header = raw_header(data, start)
+        payload = start + 512
+        end = payload + header["size"]
+        assert end <= stop
+        if header["type"] == ord("x"):
+            at = payload
+            while at < end:
+                separator = data.index(b" ", at, end)
+                length = int(data[at:separator])
+                record_end = at + length
+                assert separator < record_end <= end and data[record_end - 1] == 10
+                assignment = data[separator + 1:record_end - 1]
+                key, value = assignment.split(b"=", 1)
+                records.append({"name": key.decode("utf-8"), "value": value.decode("utf-8"),
+                                "offset": at, "length": length,
+                                "value_offset": separator + 1 + len(key) + 1, "value_length": len(value)})
+                at = record_end
+        elif header["type"] in (ord("L"), ord("K")):
+            value = data[payload:end].rstrip(b"\0")
+            records.append({"name": "path" if header["type"] == ord("L") else "linkpath",
+                            "value": value.decode("utf-8"), "offset": start, "length": end - start,
+                            "value_offset": payload, "value_length": len(value)})
+        else:
+            raise ValueError("unexpected or global extension outside the native local-extension reference profile")
+        start = (end + 511) // 512 * 512
+    assert start == stop
+    return records
+
+
 def layer(bytes_):
     decoded = gzip.decompress(bytes_) if bytes_.startswith(b"\x1f\x8b\x08") else bytes_
     rows = []
+    next_metadata = 0
     with tarfile.open(fileobj=io.BytesIO(decoded), mode="r:") as archive:
         for entry in archive:
-            header = decoded[entry.offset_data - 512:entry.offset_data]
-            assert len(header) == 512
-            declared_checksum = int(header[148:156].rstrip(b"\0 ") or b"0", 8)
-            assert declared_checksum == sum(header[:148]) + 8 * 32 + sum(header[156:])
-            header_type = header[156] or ord("0")
-            assert header_type == entry.type[0]
-            header_name = header[:100].split(b"\0", 1)[0]
-            prefix = header[345:500].split(b"\0", 1)[0]
-            if prefix:
-                header_name = prefix + b"/" + header_name
-            declared_path = header_name.decode("utf-8", errors="replace")
-            assert logical(declared_path) == logical(entry.name) or entry.pax_headers.get("path") == entry.name
+            actual_header = entry.offset_data - 512
+            header = raw_header(decoded, actual_header)
+            assert header["type"] == entry.type[0]
+            extensions = local_extensions(decoded, next_metadata, actual_header)
+            effective = {record["name"]: record["value"] for record in extensions}
+            assert logical(header["path"]) == logical(entry.name) or effective.get("path") == entry.name
+            assert header["link_target"] == (entry.linkname or None) or effective.get("linkpath") == entry.linkname
+            for record in extensions:
+                assert decoded[record["value_offset"]:record["value_offset"] + record["value_length"]] == record["value"].encode("utf-8")
             row = {"path": entry.name, "type": entry.type[0], "link_target": entry.linkname or None,
                    "whiteout": whiteout(entry.name), "header_offset": entry.offset_data - 512,
-                   "offset": entry.offset_data, "size": entry.size, "mode": entry.mode}
+                   "offset": entry.offset_data, "size": entry.size, "mode": entry.mode,
+                   "metadata_offset": next_metadata, "metadata_length": entry.offset_data - next_metadata,
+                   "metadata_scope": "entry-and-local-extensions", "raw_header": header, "local_extensions": extensions}
+            next_metadata = (entry.offset_data + entry.size + 511) // 512 * 512
             if entry.isfile():
                 contents = archive.extractfile(entry).read()
                 row["sha256"] = sha(contents)
@@ -253,7 +300,7 @@ def verify(cli, sample, expected):
             check(f"layer {number}: decoded TAR SHA-256", artifacts[row["tar_source"]]["digests"]["sha256"], layer_reference["diff_id"].split(":", 1)[1])
             check(f"layer {number}: entry count", len(row["entries"]), len(layer_reference["entries"]))
             for entry, original in zip(row["entries"], layer_reference["entries"]):
-                for key in ("path", "type", "link_target", "whiteout", "header_offset", "offset", "size", "mode"):
+                for key in ("path", "type", "link_target", "whiteout", "header_offset", "offset", "size", "mode", "metadata_offset", "metadata_length", "metadata_scope"):
                     actual_value, expected_value = entry[key], original[key]
                     if key == "path":
                         actual_value, expected_value = logical(actual_value), logical(expected_value)
@@ -262,6 +309,14 @@ def verify(cli, sample, expected):
                     path = row["tar_source"] + "/" + logical(original["path"])
                     check(f"layer {number}: {original['path']}: payload captured", path in artifacts, True)
                     check(f"layer {number}: {original['path']}: payload SHA-256", artifacts[path]["digests"]["sha256"], original["sha256"])
+            evidence = [item for finding in report["findings"] if finding["rule"] == "image.layers"
+                        for item in finding["evidence"] if item["artifact"] == row["tar_source"]]
+            check(f"layer {number}: metadata finding source present", len(evidence) > 0, True)
+            for item in evidence:
+                original = next(entry for entry in layer_reference["entries"] if logical(entry["path"]) == logical(item["value"]["path"]))
+                check(f"layer {number}: metadata evidence spans extensions and header", item["location"],
+                      {"bytes": {"offset": original["metadata_offset"], "length": original["metadata_length"]}})
+                check(f"layer {number}: evidence resolved link matches original metadata", item["value"]["link_target"], original["link_target"])
     check("synthetic credential absent from image facts", "synthetic-redaction-probe" in json.dumps(facts), False)
     return {"sample": sample.name, "sha256": sha(sample.read_bytes()) if sample.is_file() else None,
             "native": expected, "checks": checks,

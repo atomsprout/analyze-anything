@@ -39,13 +39,14 @@ def freeze(tree):
     os.utime(tree, (STAMP, STAMP), follow_symlinks=False)
 
 
-def layer_member(archive, name, body=b"", kind=tarfile.REGTYPE, target="", mode=0o644):
+def layer_member(archive, name, body=b"", kind=tarfile.REGTYPE, target="", mode=0o644, pax=None):
     header = tarfile.TarInfo(name)
     header.type = kind
     header.mode = mode
     header.mtime = STAMP
     header.uid = header.gid = 0
     header.linkname = target
+    header.pax_headers = dict(pax or {})
     header.size = len(body) if kind == tarfile.REGTYPE else 0
     archive.addfile(header, io.BytesIO(body) if header.size else None)
 
@@ -56,10 +57,17 @@ def write_layers(output, base, replacement):
     with tarfile.open(first, "w", format=tarfile.PAX_FORMAT) as archive:
         layer_member(archive, "fixture/", kind=tarfile.DIRTYPE, mode=0o755)
         layer_member(archive, "fixture/message.txt", (base / "message.txt").read_bytes())
+        # These conflicting base headers remain inert TAR data. The effective
+        # values exist in local PAX records and must not be attributed to the
+        # following 512-byte base header alone.
+        layer_member(archive, "fixture/pax-link", kind=tarfile.SYMTYPE, target="benign", mode=0o777,
+                     pax={"linkpath": "../outside"})
         layer_member(archive, "fixture/alias", kind=tarfile.SYMTYPE, target="message.txt", mode=0o777)
         layer_member(archive, "fixture/hardlink", kind=tarfile.LNKTYPE, target="fixture/message.txt")
         for name in ("empty", "obsolete.txt", "中文.txt"):
             layer_member(archive, "fixture/" + name, (base / name).read_bytes())
+        layer_member(archive, "fixture/pax-base-name.txt", b"PAX metadata source provenance.\n",
+                     pax={"path": "fixture/pax-effective-name.txt"})
     second = output / "whiteout-layer.tar"
     with tarfile.open(second, "w", format=tarfile.PAX_FORMAT) as archive:
         layer_member(archive, "fixture/.wh.obsolete.txt", mode=0)
@@ -128,6 +136,9 @@ def main():
     native = {"tools": {"umoci": run("umoci", "--version").decode().strip(),
                          "skopeo": run("skopeo", "--version").decode().strip()},
               "source_entries": originals,
+              "layer_only_declarations": [
+                  {"path": "fixture/pax-link", "raw_header_link_target": "benign", "pax_linkpath": "../outside"},
+                  {"raw_header_path": "fixture/pax-base-name.txt", "pax_path": "fixture/pax-effective-name.txt"}],
               "source_layers": [{"sample": path.name, "sha256": sha(path.read_bytes()), "size": path.stat().st_size}
                                 for path in layers],
               "umoci_stat": json.loads(run("umoci", "stat", "--image", image, "--json")),

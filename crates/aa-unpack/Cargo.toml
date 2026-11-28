@@ -21,3 +21,7 @@ bzip2.workspace = true
 lzma-rust2.workspace = true
 ruzstd.workspace = true
 sevenz-rust2.workspace = true
+
+[dev-dependencies]
+sha2.workspace = true
+hex.workspace = true

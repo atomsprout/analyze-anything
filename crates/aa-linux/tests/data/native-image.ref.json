@@ -1,0 +1,1870 @@
+[
+  {
+    "checks": [
+      {
+        "check": "repeated report bytes",
+        "matches": true
+      },
+      {
+        "check": "one image-package scope",
+        "matches": true
+      },
+      {
+        "check": "native archive family profile",
+        "matches": true
+      },
+      {
+        "check": "complete supported source graph",
+        "matches": true
+      },
+      {
+        "check": "layers never presented as merged filesystem",
+        "matches": true
+      },
+      {
+        "check": "native manifest count",
+        "matches": true
+      },
+      {
+        "check": "manifest source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "manifest source original member path",
+        "matches": true
+      },
+      {
+        "check": "config source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "config source original member path",
+        "matches": true
+      },
+      {
+        "check": "original manifest descriptor digest",
+        "matches": true
+      },
+      {
+        "check": "literal manifest annotations",
+        "matches": true
+      },
+      {
+        "check": "config source digest",
+        "matches": true
+      },
+      {
+        "check": "native config identity: architecture",
+        "matches": true
+      },
+      {
+        "check": "native config identity: os",
+        "matches": true
+      },
+      {
+        "check": "literal config argv: entrypoint",
+        "matches": true
+      },
+      {
+        "check": "literal config argv: cmd",
+        "matches": true
+      },
+      {
+        "check": "recognizable secret in environment redacted",
+        "matches": true
+      },
+      {
+        "check": "literal exposed ports",
+        "matches": true
+      },
+      {
+        "check": "literal volumes",
+        "matches": true
+      },
+      {
+        "check": "rootfs declaration type",
+        "matches": true
+      },
+      {
+        "check": "native ordered layer count",
+        "matches": true
+      },
+      {
+        "check": "layer 0 source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "layer 0 source original member path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: order",
+        "matches": true
+      },
+      {
+        "check": "layer 0: digest",
+        "matches": true
+      },
+      {
+        "check": "layer 0: declared_digest",
+        "matches": true
+      },
+      {
+        "check": "layer 0: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: state",
+        "matches": true
+      },
+      {
+        "check": "layer 0: diff_id",
+        "matches": true
+      },
+      {
+        "check": "layer 0: diff_id agrees with captured uncompressed TAR",
+        "matches": true
+      },
+      {
+        "check": "layer 0: complete metadata index",
+        "matches": true
+      },
+      {
+        "check": "layer 0: decoded TAR source retained",
+        "matches": true
+      },
+      {
+        "check": "layer 0: decoded TAR SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: entry count",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 1 source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "layer 1 source original member path",
+        "matches": true
+      },
+      {
+        "check": "layer 1: order",
+        "matches": true
+      },
+      {
+        "check": "layer 1: digest",
+        "matches": true
+      },
+      {
+        "check": "layer 1: declared_digest",
+        "matches": true
+      },
+      {
+        "check": "layer 1: size",
+        "matches": true
+      },
+      {
+        "check": "layer 1: state",
+        "matches": true
+      },
+      {
+        "check": "layer 1: diff_id",
+        "matches": true
+      },
+      {
+        "check": "layer 1: diff_id agrees with captured uncompressed TAR",
+        "matches": true
+      },
+      {
+        "check": "layer 1: complete metadata index",
+        "matches": true
+      },
+      {
+        "check": "layer 1: decoded TAR source retained",
+        "matches": true
+      },
+      {
+        "check": "layer 1: decoded TAR SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 1: entry count",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 2 source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "layer 2 source original member path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: order",
+        "matches": true
+      },
+      {
+        "check": "layer 2: digest",
+        "matches": true
+      },
+      {
+        "check": "layer 2: declared_digest",
+        "matches": true
+      },
+      {
+        "check": "layer 2: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: state",
+        "matches": true
+      },
+      {
+        "check": "layer 2: diff_id",
+        "matches": true
+      },
+      {
+        "check": "layer 2: diff_id agrees with captured uncompressed TAR",
+        "matches": true
+      },
+      {
+        "check": "layer 2: complete metadata index",
+        "matches": true
+      },
+      {
+        "check": "layer 2: decoded TAR source retained",
+        "matches": true
+      },
+      {
+        "check": "layer 2: decoded TAR SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 2: entry count",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: type",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: type",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "synthetic credential absent from image facts",
+        "matches": true
+      }
+    ],
+    "limitations": [
+      {
+        "artifact": "native-inert.oci.tar",
+        "code": "image.layer-semantics"
+      }
+    ],
+    "native": {
+      "format": "oci",
+      "manifests": [
+        {
+          "annotations": {
+            "org.opencontainers.image.title": "Inert native image fixture"
+          },
+          "config": {
+            "architecture": "amd64",
+            "config": {
+              "Cmd": [
+                "literal-argument",
+                "--literal-option"
+              ],
+              "Entrypoint": [
+                "/never-run"
+              ],
+              "Env": [
+                "FIXTURE_LITERAL=present",
+                "PASSWORD=synthetic-redaction-probe"
+              ],
+              "ExposedPorts": {
+                "8080/tcp": {}
+              },
+              "User": "123:456",
+              "Volumes": {
+                "/state": {}
+              },
+              "WorkingDir": "/fixture"
+            },
+            "created": "2020-01-01T00:00:00Z",
+            "os": "linux",
+            "rootfs": {
+              "diff_ids": [
+                "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+                "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+                "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df"
+              ],
+              "type": "layers"
+            }
+          },
+          "config_digest": "sha256:7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "config_source": "blobs/sha256/7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "digest": "sha256:648a0812a84e0bc02d65d29656a1016a830520b7394b7ce024b607ba302716be",
+          "layers": [
+            {
+              "declared_digest": "sha256:3dd53b9d24fa1db91afd6d470dd9de24d10587132054ff15db558558c62fefb4",
+              "diff_id": "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+              "digest": "sha256:3dd53b9d24fa1db91afd6d470dd9de24d10587132054ff15db558558c62fefb4",
+              "entries": [
+                {
+                  "header_offset": 0,
+                  "link_target": null,
+                  "mode": 493,
+                  "offset": 512,
+                  "path": "fixture",
+                  "size": 0,
+                  "type": 53,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 512,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 1024,
+                  "path": "fixture/message.txt",
+                  "sha256": "ac56b9c2bedcf52d2ebeaf7878b3471c131bb8f6950d6494917a998674c0ed13",
+                  "size": 40,
+                  "type": 48,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 1536,
+                  "link_target": "message.txt",
+                  "mode": 511,
+                  "offset": 2048,
+                  "path": "fixture/alias",
+                  "size": 0,
+                  "type": 50,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 2048,
+                  "link_target": "fixture/message.txt",
+                  "mode": 420,
+                  "offset": 2560,
+                  "path": "fixture/hardlink",
+                  "size": 0,
+                  "type": 49,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 2560,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 3072,
+                  "path": "fixture/empty",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "size": 0,
+                  "type": 48,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 3072,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 3584,
+                  "path": "fixture/obsolete.txt",
+                  "sha256": "a4d30a2680ff314cdf78a5fad52990e7d7faeb1c5a8d22d490ca8f52547280fe",
+                  "size": 49,
+                  "type": 48,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 5120,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 5632,
+                  "path": "fixture/\u4e2d\u6587.txt",
+                  "sha256": "0bb5546474ca6e8ffd3af8c7db3d842da2e607016356850d68f32f215fe07b01",
+                  "size": 19,
+                  "type": 48,
+                  "whiteout": null
+                }
+              ],
+              "media_type": "application/vnd.oci.image.layer.v1.tar+gzip",
+              "order": 0,
+              "size": 458,
+              "source": "blobs/sha256/3dd53b9d24fa1db91afd6d470dd9de24d10587132054ff15db558558c62fefb4",
+              "state": "matched"
+            },
+            {
+              "declared_digest": "sha256:959bfe142446c9aec560de53255083b8cddb9405ab3ab6d33304c462fd2864af",
+              "diff_id": "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+              "digest": "sha256:959bfe142446c9aec560de53255083b8cddb9405ab3ab6d33304c462fd2864af",
+              "entries": [
+                {
+                  "header_offset": 0,
+                  "link_target": null,
+                  "mode": 0,
+                  "offset": 512,
+                  "path": "fixture/.wh.obsolete.txt",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "size": 0,
+                  "type": 48,
+                  "whiteout": {
+                    "kind": "remove",
+                    "target": "fixture/obsolete.txt"
+                  }
+                }
+              ],
+              "media_type": "application/vnd.oci.image.layer.v1.tar+gzip",
+              "order": 1,
+              "size": 123,
+              "source": "blobs/sha256/959bfe142446c9aec560de53255083b8cddb9405ab3ab6d33304c462fd2864af",
+              "state": "matched"
+            },
+            {
+              "declared_digest": "sha256:09906c3bffdd910501ac3daf7f143744ecfc123d202f76f70635ee801866092d",
+              "diff_id": "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df",
+              "digest": "sha256:09906c3bffdd910501ac3daf7f143744ecfc123d202f76f70635ee801866092d",
+              "entries": [
+                {
+                  "header_offset": 0,
+                  "link_target": null,
+                  "mode": 0,
+                  "offset": 512,
+                  "path": "opaque/.wh..wh..opq",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "size": 0,
+                  "type": 48,
+                  "whiteout": {
+                    "kind": "opaque",
+                    "target": "opaque"
+                  }
+                },
+                {
+                  "header_offset": 512,
+                  "link_target": null,
+                  "mode": 493,
+                  "offset": 1024,
+                  "path": "opaque",
+                  "size": 0,
+                  "type": 53,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 1024,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 1536,
+                  "path": "opaque/replacement.txt",
+                  "sha256": "8868d0228b82729741b5a15e57392baf324f5aa626dc58fda8da950bcd075d8a",
+                  "size": 37,
+                  "type": 48,
+                  "whiteout": null
+                }
+              ],
+              "media_type": "application/vnd.oci.image.layer.v1.tar+gzip",
+              "order": 2,
+              "size": 214,
+              "source": "blobs/sha256/09906c3bffdd910501ac3daf7f143744ecfc123d202f76f70635ee801866092d",
+              "state": "matched"
+            }
+          ],
+          "source": "blobs/sha256/648a0812a84e0bc02d65d29656a1016a830520b7394b7ce024b607ba302716be"
+        }
+      ],
+      "skopeo_config": {
+        "architecture": "amd64",
+        "config": {
+          "Cmd": [
+            "literal-argument",
+            "--literal-option"
+          ],
+          "Entrypoint": [
+            "/never-run"
+          ],
+          "Env": [
+            "FIXTURE_LITERAL=present",
+            "PASSWORD=synthetic-redaction-probe"
+          ],
+          "ExposedPorts": {
+            "8080/tcp": {}
+          },
+          "User": "123:456",
+          "Volumes": {
+            "/state": {}
+          },
+          "WorkingDir": "/fixture"
+        },
+        "created": "2020-01-01T00:00:00Z",
+        "os": "linux",
+        "rootfs": {
+          "diff_ids": [
+            "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+            "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+            "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df"
+          ],
+          "type": "layers"
+        }
+      },
+      "skopeo_manifest": {
+        "annotations": {
+          "org.opencontainers.image.title": "Inert native image fixture"
+        },
+        "config": {
+          "digest": "sha256:7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 585
+        },
+        "layers": [
+          {
+            "digest": "sha256:3dd53b9d24fa1db91afd6d470dd9de24d10587132054ff15db558558c62fefb4",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 458
+          },
+          {
+            "digest": "sha256:959bfe142446c9aec560de53255083b8cddb9405ab3ab6d33304c462fd2864af",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 123
+          },
+          {
+            "digest": "sha256:09906c3bffdd910501ac3daf7f143744ecfc123d202f76f70635ee801866092d",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 214
+          }
+        ],
+        "schemaVersion": 2
+      },
+      "tool": "skopeo version 1.13.3"
+    },
+    "sample": "native-inert.oci.tar",
+    "sha256": "2f2df7cea6652176d4dd23de2e143510ab423a9ec45ad89daeb1c46c16a686c5"
+  },
+  {
+    "checks": [
+      {
+        "check": "repeated report bytes",
+        "matches": true
+      },
+      {
+        "check": "one image-package scope",
+        "matches": true
+      },
+      {
+        "check": "native archive family profile",
+        "matches": true
+      },
+      {
+        "check": "complete supported source graph",
+        "matches": true
+      },
+      {
+        "check": "layers never presented as merged filesystem",
+        "matches": true
+      },
+      {
+        "check": "native manifest count",
+        "matches": true
+      },
+      {
+        "check": "manifest source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "manifest source original member path",
+        "matches": true
+      },
+      {
+        "check": "config source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "config source original member path",
+        "matches": true
+      },
+      {
+        "check": "config source digest",
+        "matches": true
+      },
+      {
+        "check": "native config identity: architecture",
+        "matches": true
+      },
+      {
+        "check": "native config identity: os",
+        "matches": true
+      },
+      {
+        "check": "literal config argv: entrypoint",
+        "matches": true
+      },
+      {
+        "check": "literal config argv: cmd",
+        "matches": true
+      },
+      {
+        "check": "recognizable secret in environment redacted",
+        "matches": true
+      },
+      {
+        "check": "literal exposed ports",
+        "matches": true
+      },
+      {
+        "check": "literal volumes",
+        "matches": true
+      },
+      {
+        "check": "rootfs declaration type",
+        "matches": true
+      },
+      {
+        "check": "native ordered layer count",
+        "matches": true
+      },
+      {
+        "check": "layer 0 source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "layer 0 source original member path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: order",
+        "matches": true
+      },
+      {
+        "check": "layer 0: digest",
+        "matches": true
+      },
+      {
+        "check": "layer 0: declared_digest",
+        "matches": true
+      },
+      {
+        "check": "layer 0: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: state",
+        "matches": true
+      },
+      {
+        "check": "layer 0: diff_id",
+        "matches": true
+      },
+      {
+        "check": "layer 0: diff_id agrees with captured uncompressed TAR",
+        "matches": true
+      },
+      {
+        "check": "layer 0: complete metadata index",
+        "matches": true
+      },
+      {
+        "check": "layer 0: decoded TAR source retained",
+        "matches": true
+      },
+      {
+        "check": "layer 0: decoded TAR SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: entry count",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/message.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/alias: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/hardlink: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/empty: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/obsolete.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 0: fixture/\u4e2d\u6587.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 1 source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "layer 1 source original member path",
+        "matches": true
+      },
+      {
+        "check": "layer 1: order",
+        "matches": true
+      },
+      {
+        "check": "layer 1: digest",
+        "matches": true
+      },
+      {
+        "check": "layer 1: declared_digest",
+        "matches": true
+      },
+      {
+        "check": "layer 1: size",
+        "matches": true
+      },
+      {
+        "check": "layer 1: state",
+        "matches": true
+      },
+      {
+        "check": "layer 1: diff_id",
+        "matches": true
+      },
+      {
+        "check": "layer 1: diff_id agrees with captured uncompressed TAR",
+        "matches": true
+      },
+      {
+        "check": "layer 1: complete metadata index",
+        "matches": true
+      },
+      {
+        "check": "layer 1: decoded TAR source retained",
+        "matches": true
+      },
+      {
+        "check": "layer 1: decoded TAR SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 1: entry count",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 1: fixture/.wh.obsolete.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 2 source exists as captured artifact",
+        "matches": true
+      },
+      {
+        "check": "layer 2 source original member path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: order",
+        "matches": true
+      },
+      {
+        "check": "layer 2: digest",
+        "matches": true
+      },
+      {
+        "check": "layer 2: declared_digest",
+        "matches": true
+      },
+      {
+        "check": "layer 2: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: state",
+        "matches": true
+      },
+      {
+        "check": "layer 2: diff_id",
+        "matches": true
+      },
+      {
+        "check": "layer 2: diff_id agrees with captured uncompressed TAR",
+        "matches": true
+      },
+      {
+        "check": "layer 2: complete metadata index",
+        "matches": true
+      },
+      {
+        "check": "layer 2: decoded TAR source retained",
+        "matches": true
+      },
+      {
+        "check": "layer 2: decoded TAR SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 2: entry count",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: type",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/.wh..wh..opq: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: type",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: path",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: type",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: link_target",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: whiteout",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: header_offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: offset",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: size",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: mode",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: payload captured",
+        "matches": true
+      },
+      {
+        "check": "layer 2: opaque/replacement.txt: payload SHA-256",
+        "matches": true
+      },
+      {
+        "check": "synthetic credential absent from image facts",
+        "matches": true
+      }
+    ],
+    "limitations": [
+      {
+        "artifact": "native-inert.docker.tar",
+        "code": "image.layer-semantics"
+      }
+    ],
+    "native": {
+      "format": "docker-save",
+      "manifests": [
+        {
+          "annotations": null,
+          "config": {
+            "architecture": "amd64",
+            "config": {
+              "Cmd": [
+                "literal-argument",
+                "--literal-option"
+              ],
+              "Entrypoint": [
+                "/never-run"
+              ],
+              "Env": [
+                "FIXTURE_LITERAL=present",
+                "PASSWORD=synthetic-redaction-probe"
+              ],
+              "ExposedPorts": {
+                "8080/tcp": {}
+              },
+              "User": "123:456",
+              "Volumes": {
+                "/state": {}
+              },
+              "WorkingDir": "/fixture"
+            },
+            "created": "2020-01-01T00:00:00Z",
+            "os": "linux",
+            "rootfs": {
+              "diff_ids": [
+                "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+                "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+                "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df"
+              ],
+              "type": "layers"
+            }
+          },
+          "config_digest": "sha256:7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "config_source": "7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016.json",
+          "digest": null,
+          "layers": [
+            {
+              "declared_digest": null,
+              "diff_id": "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+              "digest": "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+              "entries": [
+                {
+                  "header_offset": 0,
+                  "link_target": null,
+                  "mode": 493,
+                  "offset": 512,
+                  "path": "fixture",
+                  "size": 0,
+                  "type": 53,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 512,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 1024,
+                  "path": "fixture/message.txt",
+                  "sha256": "ac56b9c2bedcf52d2ebeaf7878b3471c131bb8f6950d6494917a998674c0ed13",
+                  "size": 40,
+                  "type": 48,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 1536,
+                  "link_target": "message.txt",
+                  "mode": 511,
+                  "offset": 2048,
+                  "path": "fixture/alias",
+                  "size": 0,
+                  "type": 50,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 2048,
+                  "link_target": "fixture/message.txt",
+                  "mode": 420,
+                  "offset": 2560,
+                  "path": "fixture/hardlink",
+                  "size": 0,
+                  "type": 49,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 2560,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 3072,
+                  "path": "fixture/empty",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "size": 0,
+                  "type": 48,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 3072,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 3584,
+                  "path": "fixture/obsolete.txt",
+                  "sha256": "a4d30a2680ff314cdf78a5fad52990e7d7faeb1c5a8d22d490ca8f52547280fe",
+                  "size": 49,
+                  "type": 48,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 5120,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 5632,
+                  "path": "fixture/\u4e2d\u6587.txt",
+                  "sha256": "0bb5546474ca6e8ffd3af8c7db3d842da2e607016356850d68f32f215fe07b01",
+                  "size": 19,
+                  "type": 48,
+                  "whiteout": null
+                }
+              ],
+              "order": 0,
+              "size": 10240,
+              "source": "d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64.tar",
+              "state": "captured"
+            },
+            {
+              "declared_digest": null,
+              "diff_id": "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+              "digest": "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+              "entries": [
+                {
+                  "header_offset": 0,
+                  "link_target": null,
+                  "mode": 0,
+                  "offset": 512,
+                  "path": "fixture/.wh.obsolete.txt",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "size": 0,
+                  "type": 48,
+                  "whiteout": {
+                    "kind": "remove",
+                    "target": "fixture/obsolete.txt"
+                  }
+                }
+              ],
+              "order": 1,
+              "size": 10240,
+              "source": "4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672.tar",
+              "state": "captured"
+            },
+            {
+              "declared_digest": null,
+              "diff_id": "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df",
+              "digest": "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df",
+              "entries": [
+                {
+                  "header_offset": 0,
+                  "link_target": null,
+                  "mode": 0,
+                  "offset": 512,
+                  "path": "opaque/.wh..wh..opq",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "size": 0,
+                  "type": 48,
+                  "whiteout": {
+                    "kind": "opaque",
+                    "target": "opaque"
+                  }
+                },
+                {
+                  "header_offset": 512,
+                  "link_target": null,
+                  "mode": 493,
+                  "offset": 1024,
+                  "path": "opaque",
+                  "size": 0,
+                  "type": 53,
+                  "whiteout": null
+                },
+                {
+                  "header_offset": 1024,
+                  "link_target": null,
+                  "mode": 420,
+                  "offset": 1536,
+                  "path": "opaque/replacement.txt",
+                  "sha256": "8868d0228b82729741b5a15e57392baf324f5aa626dc58fda8da950bcd075d8a",
+                  "size": 37,
+                  "type": 48,
+                  "whiteout": null
+                }
+              ],
+              "order": 2,
+              "size": 10240,
+              "source": "dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df.tar",
+              "state": "captured"
+            }
+          ],
+          "repo_tags": [
+            "example.invalid/inert:fixture"
+          ],
+          "source": "manifest.json"
+        }
+      ],
+      "skopeo_config": {
+        "architecture": "amd64",
+        "config": {
+          "Cmd": [
+            "literal-argument",
+            "--literal-option"
+          ],
+          "Entrypoint": [
+            "/never-run"
+          ],
+          "Env": [
+            "FIXTURE_LITERAL=present",
+            "PASSWORD=synthetic-redaction-probe"
+          ],
+          "ExposedPorts": {
+            "8080/tcp": {}
+          },
+          "User": "123:456",
+          "Volumes": {
+            "/state": {}
+          },
+          "WorkingDir": "/fixture"
+        },
+        "created": "2020-01-01T00:00:00Z",
+        "os": "linux",
+        "rootfs": {
+          "diff_ids": [
+            "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+            "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+            "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df"
+          ],
+          "type": "layers"
+        }
+      },
+      "skopeo_manifest": {
+        "config": {
+          "digest": "sha256:7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "mediaType": "application/vnd.docker.container.image.v1+json",
+          "size": 585
+        },
+        "layers": [
+          {
+            "digest": "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 10240
+          },
+          {
+            "digest": "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 10240
+          },
+          {
+            "digest": "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df",
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 10240
+          }
+        ],
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "schemaVersion": 2
+      },
+      "tool": "skopeo version 1.13.3"
+    },
+    "sample": "native-inert.docker.tar",
+    "sha256": "7f212f0198616f6618b5d0dc1b2a66de9f25b2fa2e1ab8a1bc80c1070626d2fd"
+  }
+]

@@ -458,6 +458,7 @@ impl Bundle<'_> {
                 return Err("OSTree directory budget exhausted".into());
             }
             let mut files = Vec::new();
+            let mut file_issues = Vec::new();
             let result = (|| -> Result<()> {
                 let tree = self.object_node(tree_index, "(a(say)a(sayay))")?;
                 tree.validate(&mut budget, 0)?;
@@ -470,22 +471,36 @@ impl Bundle<'_> {
                     if names > crate::MAX_METADATA || paths.len() >= MAX_OBJECTS || !paths.insert(path.clone()) {
                         return Err("OSTree path budget exhausted or duplicate path declaration".into());
                     }
-                    let checksum = checksum(columns[1].bytes()?)?;
-                    let object = *map.get(&(1, checksum)).ok_or("file object is missing from captured parts")?;
-                    let target = if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o120000) {
-                        let data = self.object_bytes(object)?;
-                        if data.len() > 4096 {
-                            return Err("symlink target exceeds the 4096-byte declaration profile".into());
+                    // A file's missing object or unsupported declaration does not make
+                    // independently named siblings or queued directories unreadable.
+                    let resolved = (|| -> Result<_> {
+                        let checksum = checksum(columns[1].bytes()?)?;
+                        let object = *map.get(&(1, checksum)).ok_or("file object is missing from captured parts")?;
+                        let target = if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o120000) {
+                            let data = self.object_bytes(object)?;
+                            if data.len() > 4096 {
+                                return Err("symlink target exceeds the 4096-byte declaration profile".into());
+                            }
+                            let target = std::str::from_utf8(data).map_err(|_| "symlink target is not UTF-8")?;
+                            if target.contains('\0') {
+                                return Err("symlink target contains NUL".into());
+                            }
+                            Some(aa_core::text::redact_sensitive_text(target).map_err(str::to_string)?)
+                        } else if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o100000) {
+                            None
+                        } else {
+                            return Err("special file mode is outside the payload profile".into());
+                        };
+                        Ok((checksum, object, target))
+                    })();
+                    let (checksum, object, target) = match resolved {
+                        Ok(file) => file,
+                        Err(detail) => {
+                            if file_issues.len() < MAX_ISSUES {
+                                file_issues.push(format!("file {path:?}: {detail}"));
+                            }
+                            continue;
                         }
-                        let target = std::str::from_utf8(data).map_err(|_| "symlink target is not UTF-8")?;
-                        if target.contains('\0') {
-                            return Err("symlink target contains NUL".into());
-                        }
-                        Some(aa_core::text::redact_sensitive_text(target).map_err(str::to_string)?)
-                    } else if self.objects[object].mode.is_some_and(|mode| mode & 0o170000 == 0o100000) {
-                        None
-                    } else {
-                        return Err("special file mode is outside the payload profile".into());
                     };
                     files.push(File {
                         path,
@@ -516,6 +531,9 @@ impl Bundle<'_> {
                 Ok(())
             })();
             self.files.extend(files);
+            for detail in file_issues {
+                self.issue(detail);
+            }
             result?;
         }
         self.files.sort_by(|a, b| a.path.cmp(&b.path));
@@ -952,6 +970,7 @@ mod tests {
         bad_part_digest: bool,
         bad_content_digest: bool,
         missing_file: bool,
+        missing_first_file: bool,
         duplicate_path: bool,
         duplicate_metadata: bool,
         unsafe_name: bool,
@@ -1007,7 +1026,7 @@ mod tests {
             (1, contents[1], hashes[1], Some(0)),
             (1, contents[2], hashes[2], Some(1)),
         ] {
-            if options.missing_file && kind == 1 && body == contents[1] {
+            if kind == 1 && (options.missing_file && body == contents[1] || options.missing_first_file && body == contents[0]) {
                 continue;
             }
             descriptors.push(kind);
@@ -1180,6 +1199,47 @@ mod tests {
     }
 
     #[test]
+    fn unread_first_file_preserves_later_siblings_and_independently_queued_directories() {
+        let bytes = fixture(Options { missing_first_file: true, ..Options::default() });
+        let partial = bundle(&bytes).expect("missing file keeps the supported header");
+        assert!(!partial.complete);
+        assert_eq!(partial.issues.len(), 1);
+        assert!(partial.issues[0].contains("metadata"));
+        assert!(partial.files.iter().any(|file| file.path == "payload.txt"), "a good second file must still be read");
+        assert!(partial.files.iter().any(|file| file.path == "alias"), "later siblings remain available");
+
+        let bytes = fixture(Options::default());
+        let mut partial = bundle(&bytes).expect("supported constructed bundle");
+        let first = partial.files.iter().find(|file| file.path == "metadata").expect("first root declaration").object;
+        partial.objects[first].mode = Some(0o020600);
+        partial.files.clear();
+        partial.directories.clear();
+        partial.complete = true;
+        partial.resolve_tree().expect("an unsupported file mode is local to that declaration");
+        assert!(!partial.complete);
+        assert_eq!(partial.issues.len(), 1);
+        assert!(partial.issues[0].contains("special file mode"));
+        assert!(partial.files.iter().any(|file| file.path == "payload.txt"));
+
+        // The native writer fixture has a root metadata file followed by separate
+        // export and payload directories. An unavailable file object must not
+        // prevent traversal of either independently supplied directory.
+        let native = include_bytes!("../tests/data/native-inert.flatpak");
+        let mut partial = bundle(native).expect("native writer bundle");
+        let first = partial.files.iter().find(|file| file.path == "metadata").expect("native root metadata").object;
+        partial.objects.remove(first);
+        partial.files.clear();
+        partial.directories.clear();
+        partial.complete = true;
+        partial.resolve_tree().expect("missing file does not abort the directory queue");
+        assert!(!partial.complete);
+        assert_eq!(partial.issues.len(), 1);
+        assert!(partial.files.iter().any(|file| file.path == "files/share/fixture/message.txt"));
+        assert!(partial.directories.iter().any(|directory| directory["path"] == "export"));
+        assert!(partial.directories.iter().any(|directory| directory["path"] == "files/share/fixture"));
+    }
+
+    #[test]
     fn malformed_frames_prefixes_strings_and_delta_varints_are_rejected_without_defaults() {
         let bytes = fixture(Options::default());
         for end in 0..bytes.len() {
@@ -1249,6 +1309,22 @@ mod tests {
                 assert_eq!(data.len() as u64, expected["size"].as_u64().expect("recorded size"));
                 assert_eq!(aa_core::sha256_hex(data), expected["sha256"].as_str().expect("recorded digest"));
             }
+        }
+        let references: Vec<Value> =
+            serde_json::from_str(include_str!("../tests/data/native-flatpak.ref.json")).expect("native Flatpak/GLib record");
+        let reference = references
+            .iter()
+            .find(|reference| reference["sha256"].as_str() == Some(aa_core::sha256_hex(bytes).as_str()))
+            .expect("native comparison bound to this exact fixture");
+        assert!(reference["checks"].as_array().expect("native checks").iter().all(|check| check["matches"] == true));
+        for expected in reference["native"]["paths"].as_array().expect("native object paths") {
+            let entry =
+                parsed.files.iter().find(|entry| expected["path"].as_str() == Some(entry.path.as_str())).expect("native path retained");
+            assert_eq!(hex::encode(entry.checksum), expected["checksum"].as_str().expect("native canonical object checksum"));
+            assert_eq!(
+                aa_core::sha256_hex(parsed.object_bytes(entry.object).expect("supplied object bytes")),
+                expected["sha256"].as_str().expect("native raw payload hash")
+            );
         }
     }
 

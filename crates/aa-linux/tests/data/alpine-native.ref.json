@@ -131,6 +131,18 @@
           "matches": true
         },
         {
+          "check": "complete entry previews",
+          "matches": true
+        },
+        {
+          "check": "no omitted entries",
+          "matches": true
+        },
+        {
+          "check": "shared output preview complete",
+          "matches": true
+        },
+        {
           "check": "layer 0: role",
           "matches": true
         },
@@ -148,6 +160,22 @@
         },
         {
           "check": "layer 0: decoded_sha256",
+          "matches": true
+        },
+        {
+          "check": "layer 0: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: complete entry preview",
           "matches": true
         },
         {
@@ -203,6 +231,22 @@
           "matches": true
         },
         {
+          "check": "layer 1: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: complete entry preview",
+          "matches": true
+        },
+        {
           "check": "layer 1: paths",
           "matches": true
         },
@@ -235,6 +279,18 @@
           "matches": true
         },
         {
+          "check": "total control fields",
+          "matches": true
+        },
+        {
+          "check": "omitted control fields",
+          "matches": true
+        },
+        {
+          "check": "complete control fields",
+          "matches": true
+        },
+        {
           "check": "control identity: pkgname",
           "matches": true
         },
@@ -244,6 +300,14 @@
         },
         {
           "check": "control identity: arch",
+          "matches": true
+        },
+        {
+          "check": "total relationship fields",
+          "matches": true
+        },
+        {
+          "check": "omitted relationship fields",
           "matches": true
         },
         {
@@ -268,6 +332,22 @@
         },
         {
           "check": "layer 2: decoded_sha256",
+          "matches": true
+        },
+        {
+          "check": "layer 2: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 2: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 2: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 2: complete entry preview",
           "matches": true
         },
         {
@@ -379,7 +459,7 @@
           "matches": true
         }
       ],
-      "passed": 64,
+      "passed": 84,
       "native": {
         "gzip_version": "gzip 1.13",
         "bsdtar_version": "bsdtar 3.8.9 - libarchive 3.8.9 zlib/1.2.13.1-motley liblzma/5.8.3 bz2lib/1.0.8 libzstd/1.5.7 cng/2.0 libb2/bundled"
@@ -471,6 +551,18 @@
           "matches": true
         },
         {
+          "check": "complete entry previews",
+          "matches": true
+        },
+        {
+          "check": "no omitted entries",
+          "matches": true
+        },
+        {
+          "check": "shared output preview complete",
+          "matches": true
+        },
+        {
           "check": "layer 0: role",
           "matches": true
         },
@@ -488,6 +580,22 @@
         },
         {
           "check": "layer 0: decoded_sha256",
+          "matches": true
+        },
+        {
+          "check": "layer 0: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: complete entry preview",
           "matches": true
         },
         {
@@ -523,6 +631,18 @@
           "matches": true
         },
         {
+          "check": "total control fields",
+          "matches": true
+        },
+        {
+          "check": "omitted control fields",
+          "matches": true
+        },
+        {
+          "check": "complete control fields",
+          "matches": true
+        },
+        {
           "check": "control identity: pkgname",
           "matches": true
         },
@@ -532,6 +652,14 @@
         },
         {
           "check": "control identity: arch",
+          "matches": true
+        },
+        {
+          "check": "total relationship fields",
+          "matches": true
+        },
+        {
+          "check": "omitted relationship fields",
           "matches": true
         },
         {
@@ -615,6 +743,22 @@
           "matches": true
         },
         {
+          "check": "layer 1: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: complete entry preview",
+          "matches": true
+        },
+        {
           "check": "layer 1: paths",
           "matches": true
         },
@@ -651,7 +795,7 @@
           "matches": true
         }
       ],
-      "passed": 47,
+      "passed": 63,
       "native": {
         "gzip_version": "gzip 1.13",
         "bsdtar_version": "bsdtar 3.8.9 - libarchive 3.8.9 zlib/1.2.13.1-motley liblzma/5.8.3 bz2lib/1.0.8 libzstd/1.5.7 cng/2.0 libb2/bundled"
@@ -764,6 +908,18 @@
           "matches": true
         },
         {
+          "check": "complete entry previews",
+          "matches": true
+        },
+        {
+          "check": "no omitted entries",
+          "matches": true
+        },
+        {
+          "check": "shared output preview complete",
+          "matches": true
+        },
+        {
           "check": "layer 0: role",
           "matches": true
         },
@@ -781,6 +937,22 @@
         },
         {
           "check": "layer 0: decoded_sha256",
+          "matches": true
+        },
+        {
+          "check": "layer 0: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 0: complete entry preview",
           "matches": true
         },
         {
@@ -836,6 +1008,22 @@
           "matches": true
         },
         {
+          "check": "layer 1: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 1: complete entry preview",
+          "matches": true
+        },
+        {
           "check": "layer 1: paths",
           "matches": true
         },
@@ -868,6 +1056,18 @@
           "matches": true
         },
         {
+          "check": "total control fields",
+          "matches": true
+        },
+        {
+          "check": "omitted control fields",
+          "matches": true
+        },
+        {
+          "check": "complete control fields",
+          "matches": true
+        },
+        {
           "check": "control identity: pkgname",
           "matches": true
         },
@@ -877,6 +1077,14 @@
         },
         {
           "check": "control identity: arch",
+          "matches": true
+        },
+        {
+          "check": "total relationship fields",
+          "matches": true
+        },
+        {
+          "check": "omitted relationship fields",
           "matches": true
         },
         {
@@ -960,6 +1168,22 @@
           "matches": true
         },
         {
+          "check": "layer 2: total entries",
+          "matches": true
+        },
+        {
+          "check": "layer 2: retained entries",
+          "matches": true
+        },
+        {
+          "check": "layer 2: omitted entries",
+          "matches": true
+        },
+        {
+          "check": "layer 2: complete entry preview",
+          "matches": true
+        },
+        {
           "check": "layer 2: paths",
           "matches": true
         },
@@ -996,7 +1220,7 @@
           "matches": true
         }
       ],
-      "passed": 60,
+      "passed": 80,
       "native": {
         "gzip_version": "gzip 1.13",
         "bsdtar_version": "bsdtar 3.8.9 - libarchive 3.8.9 zlib/1.2.13.1-motley liblzma/5.8.3 bz2lib/1.0.8 libzstd/1.5.7 cng/2.0 libb2/bundled"
@@ -1004,5 +1228,5 @@
       "scope": "Exact gzip extents/CRC, TAR declarations, control identity/relationships and every ordinary-file digest; no signature/authentication conclusion"
     }
   ],
-  "passed": 171
+  "passed": 227
 }

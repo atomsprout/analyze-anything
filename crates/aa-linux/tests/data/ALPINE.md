@@ -11,6 +11,11 @@ Alpine ADB/v3 containers are explicitly unsupported.
   exactly one control member beginning with one root `.PKGINFO`, then one payload
   member. Each gzip member has exact source extents and checked CRC/ISIZE. Optional
   gzip name/comment/extra fields are bounded before decoder allocation.
+- Control and signature authority uses the exact effective TAR filename and the
+  regular-file typeflag `0`. Leading `./`, trailing `/`, duplicate control names
+  and NUL control typeflags are outside this profile. A nonempty prefix applies
+  to GNU headers too, matching apk-tools; local PAX path overrides apply before
+  deciding the entry's role. Normalized aliases cannot become control metadata.
 - Signature and control TAR layers omit zero terminators; the payload requires a
   complete zero trailer with no hidden archive or nonzero bytes after it.
 - Checked USTAR/GNU numeric and header checksums; local PAX metadata, including
@@ -32,6 +37,12 @@ Limits are 256 MiB compressed input, 1 MiB per signature/control member, 128 MiB
 payload, 136 MiB total decoded data, 100000 entries per TAR, 16 MiB of names per
 TAR, 1 MiB of PAX metadata per TAR, 4096-byte paths/link targets, 4096 `.PKGINFO`
 fields and 16 KiB per metadata line. Script text retention is capped at 256 KiB.
+Source and full captured artifact paths are capped at 8192 bytes; the unpacker
+offers at most 32 MiB of full paths before stopping. Entry records, metadata and
+script previews share a 16 MiB serialized-output budget, including charges for
+repeated relationship and script text. Total, retained and omitted counts identify
+partial previews; omitted records or unavailable captured sources are unknown,
+not evidence that contents are absent.
 Unsupported lengths, malformed trailers and exhausted bounds have explicit limits.
 
 Signatures, declared datahash and per-member hashes are **not verified**. Gzip CRC
@@ -56,7 +67,8 @@ eligibility or host/repository state is evaluated.
 The real sample covers local PAX headers in all three layers, a cut control TAR,
 one shared-library payload and a symlink declaration. Unsigned streams, scripts,
 trigger declarations, duplicate controls, path escapes, malformed lengths/CRCs,
-truncations and resource bounds also have constructed tests. APK v3, unusual TAR
+truncations, literal/PAX control aliases, GNU prefixes, long nested source paths,
+aggregate path offers and escaped-output bounds also have constructed tests. APK v3, unusual TAR
 variants and broader real installation-script packages have not been qualified.
 
 ## Independent inspection
@@ -67,7 +79,7 @@ never run or called verified. `alpine-packages.py` uses independent Python zlib 
 tarfile readers to compare exact stream boundaries, decoded hashes, every TAR
 entry, authoritative identity/relationships and ordinary-file digests.
 
-`alpine-native.ref.json` records 171 passing checks across the real package and
+`alpine-native.ref.json` records 227 passing checks across the real package and
 the two constructed packages on Windows x64, with GNU gzip 1.13 and Windows'
 bsdtar/libarchive 3.8.9. The no-default-features CLI was used. This record qualifies
 those bytes and tools; it does not substitute for integrated-head Linux checks.

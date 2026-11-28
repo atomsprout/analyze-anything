@@ -6,7 +6,7 @@ use std::io::Read;
 use aa_core::plugin::{Analyzer, Output, Rule, SinkError, Tree, Unpack, UnpackSink, Unpacker};
 use aa_core::text::{redact_named_value, redact_sensitive_text};
 use aa_core::{Artifact, Confidence, Evidence, Finding, Section, Severity};
-use serde_json::json;
+use serde_json::{Value, json};
 
 pub struct Alpine;
 
@@ -18,6 +18,12 @@ const MAX_ENTRIES: usize = 100_000;
 const MAX_NAMES: usize = 16 * 1024 * 1024;
 const MAX_PAX: usize = 1024 * 1024;
 const MAX_FIELDS: usize = 4096;
+const MAX_ARTIFACT_PATH: usize = 8192;
+const MAX_OFFERED_PATHS: usize = 32 * 1024 * 1024;
+const MAX_SERIALIZED_OUTPUT: usize = 16 * 1024 * 1024;
+// Source paths recur in the fixed number of facts, evidence records and limits.
+// Reserve their worst-case JSON escaping separately from variable previews.
+const FIXED_OUTPUT_RESERVE: usize = 4 * 1024 * 1024;
 const CONTROL: &str = "[control]";
 const PAYLOAD: &str = "[payload]";
 const SCRIPTS: &[&str] =
@@ -25,6 +31,13 @@ const SCRIPTS: &[&str] =
 type Result<T> = std::result::Result<T, &'static str>;
 
 const RULES: &[Rule] = &[
+    Rule {
+        id: "alpine-apk.output-limited",
+        title_en: "Alpine declaration preview was limited",
+        title_zh: "Alpine 声明预览已限制",
+        text_en: "Some captured-entry records, metadata fields or script text were omitted to bound output. Total and retained counts are separate; omitted previews are not absent contents.",
+        text_zh: "为限制输出，省略了部分已捕获条目记录、元数据字段或脚本文本。分别记录总数与保留数；省略预览不代表内容不存在。",
+    },
     Rule {
         id: "alpine-apk.contents",
         title_en: "Alpine APK v2 layers",
@@ -255,7 +268,9 @@ fn tar(bytes: &[u8]) -> Result<(Vec<Entry>, bool)> {
             return Err("global PAX, GNU long names and sparse TAR profiles are unsupported");
         }
         let raw_name = text(&header[..100])?;
-        let prefix = if header[262] == 0 { text(&header[345..500])? } else { String::new() };
+        // apk-tools applies this prefix even with GNU magic. Using generic GNU
+        // header semantics here would misidentify a prefixed control filename.
+        let prefix = text(&header[345..500])?;
         let mut path = if prefix.is_empty() { raw_name } else { format!("{prefix}/{raw_name}") };
         let mut link = if matches!(kind, b'1' | b'2') { Some(text(&header[157..257])?) } else { None };
         for field in &pending {
@@ -346,7 +361,7 @@ fn gzip(bytes: &[u8], maximum: usize) -> Result<(Vec<u8>, usize)> {
 }
 
 fn signature(entry: &Entry) -> bool {
-    entry.logical.as_deref().is_some_and(|name| name.starts_with(".SIGN.") && !name.contains('/')) && matches!(entry.kind, 0 | b'0')
+    entry.path.starts_with(".SIGN.") && !entry.path.contains('/') && entry.kind == b'0'
 }
 fn parse(bytes: &[u8]) -> Result<Package> {
     if bytes.len() > MAX_COMPRESSED {
@@ -377,13 +392,17 @@ fn parse(bytes: &[u8]) -> Result<Package> {
             if trailer {
                 return Err("control TAR must omit its zero trailer in the supported APK v2 profile");
             }
-            let controls: Vec<_> = entries.iter().filter(|entry| entry.logical.as_deref() == Some(".PKGINFO")).collect();
+            let controls: Vec<_> = entries.iter().filter(|entry| entry.path == ".PKGINFO").collect();
+            let mut names = BTreeSet::new();
             if controls.len() != 1
-                || !matches!(controls[0].kind, 0 | b'0')
-                || entries.first().and_then(|entry| entry.logical.as_deref()) != Some(".PKGINFO")
+                || controls[0].kind != b'0'
+                || entries.first().map(|entry| entry.path.as_str()) != Some(".PKGINFO")
                 || entries.iter().any(|entry| {
-                    entry.logical.as_deref().is_none_or(|name| !name.starts_with('.') || name.contains('/'))
-                        || !matches!(entry.kind, 0 | b'0')
+                    !entry.path.starts_with('.')
+                        || entry.path.contains('/')
+                        || !names.insert(entry.path.as_str())
+                        || entry.logical.as_deref() != Some(entry.path.as_str())
+                        || entry.kind != b'0'
                 })
             {
                 return Err("one first regular root .PKGINFO is required in the control-only layer");
@@ -427,22 +446,45 @@ impl Unpacker for Alpine {
             Ok(package) => package,
             Err(detail) => return if named { Unpack::Failed { kind: "alpine-apk", detail: detail.into() } } else { Unpack::NotMine },
         };
+        if file.path.len() > MAX_ARTIFACT_PATH {
+            return Unpack::Failed { kind: "alpine-apk", detail: "source artifact path exceeds the 8192-byte Alpine profile".into() };
+        }
+        let mut offered_paths = 0usize;
+        let mut invalid_names = 0usize;
         for layer in &package.layers {
             for entry in &layer.entries {
                 if !matches!(entry.kind, 0 | b'0') {
                     continue;
                 }
                 let Some(name) = &entry.logical else {
-                    sink.limitation("alpine-apk.archive-semantics", Some(format!("unsupported logical entry name in {}", layer.role)));
+                    invalid_names += 1;
                     continue;
                 };
+                let full_length = file.path.len().saturating_add(layer.prefix.len()).saturating_add(name.len()).saturating_add(2);
+                if full_length > MAX_ARTIFACT_PATH || offered_paths.saturating_add(full_length) > MAX_OFFERED_PATHS {
+                    sink.limitation(
+                        "alpine-apk.output-limited",
+                        Some("full captured path or aggregate offered-path budget exhausted".into()),
+                    );
+                    return Unpack::Done { kind: "alpine-apk" };
+                }
+                offered_paths += full_length;
                 let path = format!("{}/{name}", layer.prefix);
                 match sink.add(&path, &mut &layer.bytes[entry.offset..entry.offset + entry.size]) {
                     Ok(()) => {}
                     Err(SinkError::LimitReached) => return Unpack::Done { kind: "alpine-apk" },
-                    Err(SinkError::Read(detail)) => sink.limitation("alpine-apk.unread", Some(detail)),
+                    Err(SinkError::Read(detail)) => {
+                        sink.limitation("alpine-apk.unread", Some(detail));
+                        return Unpack::Done { kind: "alpine-apk" };
+                    }
                 }
             }
+        }
+        if invalid_names != 0 {
+            sink.limitation(
+                "alpine-apk.archive-semantics",
+                Some(format!("{invalid_names} unsupported logical entry names were not offered")),
+            );
         }
         Unpack::Done { kind: "alpine-apk" }
     }
@@ -493,7 +535,11 @@ fn original(file: &Artifact) -> bool {
     file.facts.get("engine.entry-name").is_none_or(|name| name["normalized"] != true && name["colliding"] != true)
 }
 fn child<'a>(tree: &'a dyn Tree, file: &Artifact, layer: &Layer, entry: &Entry) -> Option<&'a Artifact> {
-    let path = format!("{}/{}/{}", file.path, layer.prefix, entry.logical.as_deref()?);
+    let name = entry.logical.as_deref()?;
+    if file.path.len().saturating_add(layer.prefix.len()).saturating_add(name.len()).saturating_add(2) > MAX_ARTIFACT_PATH {
+        return None;
+    }
+    let path = format!("{}/{}/{name}", file.path, layer.prefix);
     tree.get(&path).filter(|child| {
         child.parent.as_deref() == Some(file.path.as_str())
             && original(child)
@@ -503,6 +549,37 @@ fn child<'a>(tree: &'a dyn Tree, file: &Artifact, layer: &Layer, entry: &Entry) 
                 .as_ref()
                 .is_some_and(|digest| digest.sha256 == aa_core::sha256_hex(&layer.bytes[entry.offset..entry.offset + entry.size]))
     })
+}
+
+struct OutputBudget {
+    remaining: usize,
+    limited: bool,
+    reported: bool,
+}
+impl OutputBudget {
+    fn new() -> Self {
+        Self { remaining: MAX_SERIALIZED_OUTPUT - FIXED_OUTPUT_RESERVE, limited: false, reported: false }
+    }
+    fn take(&mut self, value: &Value, copies: usize, reserve: usize) -> bool {
+        let size = serde_json::to_vec(value).ok().and_then(|bytes| bytes.len().checked_mul(copies));
+        if let Some(size) = size.filter(|size| *size <= self.remaining.saturating_sub(reserve)) {
+            self.remaining -= size;
+            true
+        } else {
+            self.limited = true;
+            false
+        }
+    }
+    fn report(&mut self, file: &Artifact, out: &mut Output) {
+        if self.limited && !self.reported {
+            out.limitation(
+                "alpine-apk.output-limited",
+                Some(file),
+                Some("serialized declaration previews exceed the shared 16 MiB output profile".into()),
+            );
+            self.reported = true;
+        }
+    }
 }
 
 impl Analyzer for Alpine {
@@ -516,6 +593,10 @@ impl Analyzer for Alpine {
         if file.unpacked_by.as_deref() != Some("alpine-apk") {
             return;
         }
+        if file.path.len() > MAX_ARTIFACT_PATH {
+            out.limitation("alpine-apk.output-limited", Some(file), Some("source artifact path exceeds the 8192-byte profile".into()));
+            return;
+        }
         let parsed = tree.read(&file.path).map_err(|_| "Alpine bytes unavailable").and_then(|bytes| parse(&bytes));
         let package = match parsed {
             Ok(package) => package,
@@ -526,25 +607,38 @@ impl Analyzer for Alpine {
         };
         let mut layers = Vec::new();
         let mut link_semantics = false;
+        let mut budget = OutputBudget::new();
+        let mut omitted_entries = 0usize;
         for layer in &package.layers {
-            let entries=layer.entries.iter().map(|entry|{
-                if !matches!(entry.kind,0|b'0'|b'5') || entry.logical.is_none() {link_semantics=true;}
-                let pax=entry.pax.iter().map(|field|Ok(json!({"name":field.name,"value":redact_named_value(&field.name,&field.value)?,"offset":field.offset,"length":field.length}))).collect::<Result<Vec<_>>>()?;
-                Ok(json!({"path":entry.path,"logical_path":entry.logical,"header_offset":entry.header,"offset":entry.offset,"size":entry.size,
+            link_semantics |= layer.entries.iter().any(|entry| !matches!(entry.kind, 0 | b'0' | b'5') || entry.logical.is_none());
+            let mut entries = Vec::new();
+            for entry in &layer.entries {
+                let pax=entry.pax.iter().map(|field|Ok(json!({"name":field.name,"value":redact_named_value(&field.name,&field.value)?,"offset":field.offset,"length":field.length}))).collect::<Result<Vec<_>>>();
+                let pax = match pax {
+                    Ok(pax) => pax,
+                    Err(reason) => {
+                        out.limitation("alpine-apk.unread", Some(file), Some(reason.into()));
+                        return;
+                    }
+                };
+                let value = json!({"path":entry.path,"logical_path":entry.logical,"header_offset":entry.header,"offset":entry.offset,"size":entry.size,
                     "type":entry.kind,"mode":entry.mode,"uid":entry.uid,"gid":entry.gid,"link_target":entry.link,"pax":pax,
-                    "captured_source":if matches!(entry.kind,0|b'0'){child(tree,file,layer,entry).map(|child|&child.path)}else{None}}))
-            }).collect::<Result<Vec<_>>>();
-            let entries = match entries {
-                Ok(entries) => entries,
-                Err(reason) => {
-                    out.limitation("alpine-apk.unread", Some(file), Some(reason.into()));
-                    return;
+                    "captured_source":if matches!(entry.kind,0|b'0'){child(tree,file,layer,entry).map(|child|&child.path)}else{None}});
+                // Keep room for control identity, dependencies and script source.
+                if !budget.take(&value, 1, 4 * 1024 * 1024) {
+                    break;
                 }
-            };
-            layers.push(json!({"role":layer.role,"prefix":layer.prefix,"offset":layer.offset,"compressed_size":layer.length,"decoded_size":layer.bytes.len(),"decoded_sha256":aa_core::sha256_hex(&layer.bytes),"gzip_crc_and_size_checked":true,"tar_zero_trailer":layer.trailer,"entries":entries}));
+                entries.push(value);
+            }
+            let omitted = layer.entries.len() - entries.len();
+            omitted_entries += omitted;
+            layers.push(json!({"role":layer.role,"prefix":layer.prefix,"offset":layer.offset,"compressed_size":layer.length,"decoded_size":layer.bytes.len(),"decoded_sha256":aa_core::sha256_hex(&layer.bytes),"gzip_crc_and_size_checked":true,"tar_zero_trailer":layer.trailer,
+                "entries_total":layer.entries.len(),"entries_retained":entries.len(),"entries_omitted":omitted,"entry_preview_complete":omitted==0,"entries":entries}));
         }
+        budget.report(file, out);
         out.kind(file, "alpine-apk");
         out.fact(file,"alpine-apk.container",json!({"format_version":2,"layers":layers,"signature_layers":package.control,"control_layer":package.control,"payload_layer":package.payload,
+            "entry_preview_complete":omitted_entries==0,"entries_omitted":omitted_entries,
             "signatures_verified":false,"declared_checksums_verified":false,"keys_loaded":false}));
         let mut contents = Finding::new(Section::Structure, "alpine-apk", "alpine-apk.contents", Confidence::Verified, Severity::Info)
             .param("count", package.layers.len());
@@ -562,8 +656,7 @@ impl Analyzer for Alpine {
             out.limitation("alpine-apk.archive-semantics", Some(file), None);
         }
         let control = &package.layers[package.control];
-        let info =
-            control.entries.iter().find(|entry| entry.logical.as_deref() == Some(".PKGINFO")).expect("validated control identity entry");
+        let info = control.entries.iter().find(|entry| entry.path == ".PKGINFO").expect("validated control identity entry");
         let Some(source) = child(tree, file, control, info) else {
             out.limitation("alpine-apk.unread", Some(file), Some("one original captured control .PKGINFO was not established".into()));
             return;
@@ -584,16 +677,26 @@ impl Analyzer for Alpine {
             out.limitation("alpine-apk.unread", Some(source), Some("literal pkgname, pkgver and arch are required".into()));
             return;
         };
-        let values: Vec<_> = metadata
-            .iter()
-            .map(|field| json!({"name":field.name,"value":field.value,"line":field.line,"offset":field.offset,"length":field.length}))
-            .collect();
-        let dependencies: Vec<_> = values
-            .iter()
-            .filter(|field| matches!(field["name"].as_str(), Some("depend" | "provides" | "replaces" | "install_if" | "triggers")))
-            .cloned()
-            .collect();
+        let relationship = |name: &str| matches!(name, "depend" | "provides" | "replaces" | "install_if" | "triggers");
+        let dependency_total = metadata.iter().filter(|field| relationship(&field.name)).count();
+        let mut values = Vec::new();
+        let mut dependencies = Vec::new();
+        for field in &metadata {
+            let value = json!({"name":field.name,"value":field.value,"line":field.line,"offset":field.offset,"length":field.length});
+            // A relationship appears in the field preview, relationship preview
+            // and its finding's evidence. Charge all three serialized copies.
+            if !budget.take(&value, if relationship(&field.name) { 3 } else { 1 }, 0) {
+                break;
+            }
+            if relationship(&field.name) {
+                dependencies.push(value.clone());
+            }
+            values.push(value);
+        }
+        budget.report(file, out);
         out.fact(file,"alpine-apk.package",json!({"name":name,"version":version,"architecture":architecture,"source":source.path,"source_sha256":source.digests.as_ref().map(|digest|&digest.sha256),"fields":values,"dependencies":dependencies,
+            "fields_total":metadata.len(),"fields_omitted":metadata.len()-values.len(),"fields_complete":metadata.len()==values.len(),
+            "dependency_fields_total":dependency_total,"dependency_fields_omitted":dependency_total-dependencies.len(),
             "origin":identity("origin"),"commit":identity("commit"),"declared_license":identity("license"),"dependency_resolution_performed":false}));
         let mut finding = Finding::new(Section::Identity, "alpine-apk", "alpine-apk.identity", Confidence::Verified, Severity::Info)
             .param("name", name)
@@ -608,11 +711,15 @@ impl Analyzer for Alpine {
             ));
         }
         out.finding(finding);
-        if !dependencies.is_empty() {
+        if dependency_total != 0 {
             out.finding(
                 Finding::new(Section::Composition, "alpine-apk", "alpine-apk.dependencies", Confidence::Verified, Severity::Info)
-                    .param("count", dependencies.len())
-                    .evidence(Evidence::field(source, ".PKGINFO relationships", json!(dependencies))),
+                    .param("count", dependency_total)
+                    .evidence(Evidence::field(
+                        source,
+                        ".PKGINFO relationships",
+                        json!({"total":dependency_total,"retained":dependencies,"complete":dependencies.len()==dependency_total}),
+                    )),
             );
         }
         let known = [
@@ -638,17 +745,19 @@ impl Analyzer for Alpine {
             "replaces_priority",
         ];
         if metadata.iter().any(|field| !known.contains(&field.name.as_str()))
-            || control
-                .entries
-                .iter()
-                .any(|entry| entry.logical.as_deref().is_some_and(|name| name != ".PKGINFO" && !SCRIPTS.contains(&name)))
+            || control.entries.iter().any(|entry| entry.path != ".PKGINFO" && !SCRIPTS.contains(&entry.path.as_str()))
         {
             out.limitation("alpine-apk.control-partial", Some(source), None);
         }
         if metadata.iter().any(|field| field.name == "triggers") {
             out.limitation("alpine-apk.script-semantics", Some(source), None);
         }
-        for entry in control.entries.iter().filter(|entry| entry.logical.as_deref().is_some_and(|name| SCRIPTS.contains(&name))) {
+        let mut script_retained = 0usize;
+        let script_total = control.entries.iter().filter(|entry| SCRIPTS.contains(&entry.path.as_str())).count();
+        if script_total != 0 {
+            out.limitation("alpine-apk.script-semantics", Some(source), None);
+        }
+        for entry in control.entries.iter().filter(|entry| SCRIPTS.contains(&entry.path.as_str())) {
             let Some(script) = child(tree, file, control, entry) else {
                 out.limitation("alpine-apk.unread", Some(file), Some("control script was not captured uniquely".into()));
                 continue;
@@ -662,17 +771,29 @@ impl Analyzer for Alpine {
             };
             match retained {
                 Ok(text) => {
-                    out.fact(script, "alpine-apk.installation-declaration", json!({"package":file.path,"role":entry.logical,"text":text}));
+                    let value = json!({"package":file.path,"role":entry.path,"text":text});
+                    if !budget.take(&value, 2, 0) {
+                        continue;
+                    }
+                    script_retained += 1;
+                    out.fact(script, "alpine-apk.installation-declaration", value);
                     out.finding(
                         Finding::new(Section::Capabilities, "alpine-apk", "alpine-apk.script", Confidence::Verified, Severity::Info)
-                            .param("name", entry.logical.clone())
-                            .evidence(Evidence::bytes(script, 0, script.size, json!({"role":entry.logical,"text":text}))),
+                            .param("name", entry.path.clone())
+                            .evidence(Evidence::bytes(script, 0, script.size, json!({"role":entry.path,"text":text}))),
                     );
                 }
                 Err(reason) => out.limitation("alpine-apk.unread", Some(script), Some(reason.into())),
             }
-            out.limitation("alpine-apk.script-semantics", Some(script), None);
         }
+        budget.report(file, out);
+        out.fact(
+            file,
+            "alpine-apk.output",
+            json!({"preview_truncated":budget.limited,"serialized_budget":MAX_SERIALIZED_OUTPUT,
+            "entries_omitted":omitted_entries,"metadata_fields_omitted":metadata.len()-values.len(),
+            "script_text_total":script_total,"script_text_retained":script_retained,"script_text_omitted":script_total-script_retained}),
+        );
     }
 }
 
@@ -730,6 +851,7 @@ mod tests {
         for (name, bytes) in entries {
             let mut header = tar::Header::new_ustar();
             header.set_path(name).expect("fixture path");
+            header.set_entry_type(tar::EntryType::Regular);
             header.set_size(bytes.len() as u64);
             header.set_mode(0o644);
             header.set_uid(0);
@@ -751,6 +873,37 @@ mod tests {
         encoder.write_all(bytes).expect("compress fixture");
         encoder.finish().expect("finish fixture gzip")
     }
+    fn header_name(bytes: &mut [u8], at: usize, name: &str, prefix: Option<&str>) {
+        let header = &mut bytes[at..at + 512];
+        assert!(name.len() <= 100);
+        header[..100].fill(0);
+        header[..name.len()].copy_from_slice(name.as_bytes());
+        if let Some(prefix) = prefix {
+            assert!(prefix.len() <= 155);
+            header[262] = b' ';
+            header[345..500].fill(0);
+            header[345..345 + prefix.len()].copy_from_slice(prefix.as_bytes());
+        }
+        header[148..156].fill(b' ');
+        let sum = header.iter().map(|byte| u64::from(*byte)).sum::<u64>();
+        header[148..156].copy_from_slice(format!("{sum:06o}\0 ").as_bytes());
+    }
+    fn pax_control(path: &str) -> Vec<u8> {
+        let data = format!("path={path}\n");
+        let mut length = data.len() + 2;
+        loop {
+            let next = length.to_string().len() + 1 + data.len();
+            if next == length {
+                break;
+            }
+            length = next;
+        }
+        let record = format!("{length} {data}");
+        let mut bytes = archive(&[("PaxHeaders/fixture", record.as_bytes()), ("placeholder", INFO)], true);
+        bytes[156] = b'x';
+        header_name(&mut bytes, 0, "PaxHeaders/fixture", None);
+        bytes
+    }
     const INFO:&[u8]=b"pkgname = fixture\npkgver = 1.2-r0\narch = noarch\nlicense = Apache-2.0\ndepend = so:libc.musl.so.1\nprovides = fixture=1.2\ntriggers = /usr/share/fixture/*\n";
     fn package_bytes(signed: bool, control: &[(&str, &[u8])], payload: &[(&str, &[u8])]) -> Vec<u8> {
         let mut bytes =
@@ -760,15 +913,18 @@ mod tests {
         bytes
     }
     fn report(bytes: &[u8]) -> (Supplied, Output) {
-        let mut root = artifact("fixture.apk", None, bytes);
+        report_at(bytes, "fixture.apk")
+    }
+    fn report_at(bytes: &[u8], path: &str) -> (Supplied, Output) {
+        let mut root = artifact(path, None, bytes);
         let mut capture = Captured::default();
         assert_eq!(Alpine.unpack(&root, bytes, &mut capture), Unpack::Done { kind: "alpine-apk" });
         root.unpacked_by = Some("alpine-apk".into());
         let mut files = vec![root.clone()];
         let mut data = BTreeMap::from([(root.path.clone(), bytes.to_vec())]);
         for (path, bytes) in capture.files {
-            let path = format!("fixture.apk/{path}");
-            files.push(artifact(&path, Some("fixture.apk"), &bytes));
+            let path = format!("{}/{path}", root.path);
+            files.push(artifact(&path, Some(&root.path), &bytes));
             data.insert(path, bytes);
         }
         files.sort_by(|a, b| a.path.cmp(&b.path));
@@ -859,6 +1015,159 @@ mod tests {
         let mut ended = compressed(&archive(&[(".PKGINFO", INFO)], false));
         ended.extend(compressed(&archive(&[], false)));
         assert!(parse(&ended).is_err());
+    }
+
+    #[test]
+    fn effective_literal_control_names_and_gnu_prefixes_cannot_gain_authority() {
+        let payload = compressed(&archive(&[], false));
+        for alias in ["./.PKGINFO", ".PKGINFO/", "././.PKGINFO"] {
+            // Header::set_path removes leading ./, so preserve these spellings
+            // by changing the checked raw header before gzip encoding.
+            let mut control = archive(&[(".PKGINFO", INFO)], true);
+            header_name(&mut control, 0, alias, None);
+            assert_eq!(tar(&control).expect("checksummed alias").0[0].path, alias);
+            let mut bytes = compressed(&control);
+            bytes.extend(&payload);
+            assert!(parse(&bytes).is_err(), "literal control alias {alias}");
+            let mut captured = Captured::default();
+            assert!(matches!(Alpine.unpack(&artifact("alias.apk", None, &bytes), &bytes, &mut captured), Unpack::Failed { .. }));
+            assert!(captured.files.is_empty());
+            let mut bytes = compressed(&pax_control(alias));
+            bytes.extend(&payload);
+            assert!(parse(&bytes).is_err(), "effective PAX control alias {alias}");
+        }
+        let mut bytes = compressed(&pax_control(".PKGINFO"));
+        bytes.extend(&payload);
+        assert_eq!(fact(&report(&bytes).1, "alpine-apk.package")["name"], "fixture", "literal effective PAX path is authoritative");
+        for alias in ["./.post-install", ".post-install/"] {
+            let mut control = archive(&[(".PKGINFO", INFO), (".post-install", b"inert script")], true);
+            let at = tar(&control).expect("control records").0[1].header;
+            header_name(&mut control, at, alias, None);
+            let mut bytes = compressed(&control);
+            bytes.extend(&payload);
+            assert!(parse(&bytes).is_err(), "literal script alias {alias}");
+        }
+        for alias in ["./.SIGN.RSA.fixture", ".SIGN.RSA.fixture/"] {
+            let mut signature = archive(&[(".SIGN.RSA.fixture", b"inert")], true);
+            header_name(&mut signature, 0, alias, None);
+            let mut bytes = compressed(&signature);
+            bytes.extend(package_bytes(false, &[(".PKGINFO", INFO)], &[]));
+            assert!(parse(&bytes).is_err(), "literal signature alias {alias}");
+        }
+        for name in [".PKGINFO", ".SIGN.RSA.fixture"] {
+            let mut control = archive(&[(name, INFO)], true);
+            header_name(&mut control, 0, name, Some("payload"));
+            assert_ne!(control[262], 0, "GNU header marker");
+            assert_eq!(tar(&control).expect("GNU effective prefix").0[0].path, format!("payload/{name}"));
+            let mut bytes = compressed(&control);
+            bytes.extend(&payload);
+            assert!(parse(&bytes).is_err(), "GNU prefixed {name}");
+            let mut control = archive(&[(name, INFO)], true);
+            control[156] = 0;
+            header_name(&mut control, 0, name, None);
+            let mut bytes = compressed(&control);
+            bytes.extend(&payload);
+            assert!(parse(&bytes).is_err(), "NUL typeflag is not an apk-tools control file");
+        }
+        let repeated_script = package_bytes(false, &[(".PKGINFO", INFO), (".post-install", b"one"), (".post-install", b"two")], &[]);
+        assert!(parse(&repeated_script).is_err(), "duplicate controls cannot amplify script findings");
+    }
+
+    #[test]
+    fn full_artifact_paths_and_aggregate_offers_are_bounded_before_the_sink() {
+        struct Counted {
+            root_length: usize,
+            offered: usize,
+            bytes: usize,
+            limits: Vec<String>,
+        }
+        impl UnpackSink for Counted {
+            fn add(&mut self, path: &str, _reader: &mut dyn Read) -> std::result::Result<(), SinkError> {
+                let full_length = self.root_length + 1 + path.len();
+                assert!(full_length <= MAX_ARTIFACT_PATH, "overlong child must not reach the sink");
+                self.bytes += full_length;
+                assert!(self.bytes <= MAX_OFFERED_PATHS, "aggregate offers must be checked first");
+                self.offered += 1;
+                Ok(())
+            }
+            fn limitation(&mut self, code: &str, _detail: Option<String>) {
+                self.limits.push(code.into());
+            }
+        }
+        let bytes = package_bytes(false, &[(".PKGINFO", INFO)], &[]);
+        for length in [MAX_ARTIFACT_PATH - 5, MAX_ARTIFACT_PATH + 1, 60 * 1024] {
+            let path = format!("{}.apk", "x".repeat(length - 4));
+            let root = artifact(&path, None, &bytes);
+            let mut sink = Counted { root_length: path.len(), offered: 0, bytes: 0, limits: Vec::new() };
+            let result = Alpine.unpack(&root, &bytes, &mut sink);
+            assert_eq!(sink.offered, 0);
+            if length > MAX_ARTIFACT_PATH {
+                assert!(matches!(result, Unpack::Failed { .. }));
+                let mut root = root;
+                root.unpacked_by = Some("alpine-apk".into());
+                let tree = Supplied { files: vec![root.clone()], data: BTreeMap::new() };
+                let mut out = Output::default();
+                Alpine.analyze_file(&tree, &root, &mut out);
+                assert!(out.facts.is_empty());
+                assert_eq!(out.limitations.len(), 1);
+                assert_eq!(out.limitations[0].code, "alpine-apk.output-limited");
+            } else {
+                assert_eq!(result, Unpack::Done { kind: "alpine-apk" });
+                assert_eq!(sink.limits, ["alpine-apk.output-limited"]);
+            }
+        }
+        let names = (0..9000).map(|index| format!("file{index:05}")).collect::<Vec<_>>();
+        let entries = names.iter().map(|name| (name.as_str(), &b""[..])).collect::<Vec<_>>();
+        let bytes = package_bytes(false, &[(".PKGINFO", INFO)], &entries);
+        let path = format!("{}fixture.apk", "nested/".repeat(850));
+        let mut sink = Counted { root_length: path.len(), offered: 0, bytes: 0, limits: Vec::new() };
+        assert_eq!(Alpine.unpack(&artifact(&path, None, &bytes), &bytes, &mut sink), Unpack::Done { kind: "alpine-apk" });
+        assert!(sink.offered > 1 && sink.offered < entries.len());
+        assert!(sink.bytes > MAX_OFFERED_PATHS - MAX_ARTIFACT_PATH);
+        assert_eq!(sink.limits, ["alpine-apk.output-limited"]);
+    }
+
+    #[test]
+    fn shared_serialized_preview_budget_accounts_for_long_paths_and_escaped_metadata() {
+        let names = (0..2500).map(|index| format!("file{index:05}")).collect::<Vec<_>>();
+        let entries = names.iter().map(|name| (name.as_str(), &b""[..])).collect::<Vec<_>>();
+        let mut metadata = INFO.to_vec();
+        // JSON escaping and the three copies of each relationship are charged.
+        for _ in 0..110 {
+            metadata.extend(format!("depend = {}\n", "\u{1}".repeat(8000)).as_bytes());
+        }
+        let bytes = package_bytes(false, &[(".PKGINFO", &metadata), (".post-install", b"inert text")], &entries);
+        let path = format!("{}fixture.apk", "n/".repeat(3000));
+        let (_, out) = report_at(&bytes, &path);
+        let container = fact(&out, "alpine-apk.container");
+        assert_eq!(container["entry_preview_complete"], false);
+        assert!(container["entries_omitted"].as_u64().expect("omitted total") > 0);
+        let payload = &container["layers"][1];
+        assert_eq!(payload["entries_total"], entries.len());
+        assert!(payload["entries_retained"].as_u64().expect("retained count") > 0);
+        assert_eq!(
+            payload["entries_retained"].as_u64().expect("retained count") + payload["entries_omitted"].as_u64().expect("omitted count"),
+            entries.len() as u64
+        );
+        let package = fact(&out, "alpine-apk.package");
+        assert_eq!(package["fields_complete"], false);
+        assert_eq!(package["dependency_fields_total"], 113);
+        assert!(package["dependency_fields_omitted"].as_u64().expect("omitted fields") > 0);
+        assert_eq!(fact(&out, "alpine-apk.output")["preview_truncated"], true);
+        assert_eq!(out.limitations.iter().filter(|limit| limit.code == "alpine-apk.output-limited").count(), 1);
+        let facts = out.facts.iter().map(|fact| json!({"artifact":fact.artifact,"key":fact.key,"value":fact.value})).collect::<Vec<_>>();
+        let serialized =
+            serde_json::to_vec(&json!({"facts":facts,"findings":out.findings,"kinds":out.kinds,"limitations":out.limitations}))
+                .expect("serialized Alpine output");
+        assert!(serialized.len() <= MAX_SERIALIZED_OUTPUT, "{} bytes exceed the output profile", serialized.len());
+
+        // Fixed evidence paths can themselves expand sixfold in JSON. Their
+        // reserve is independent of the variable entry/field previews above.
+        let bytes = package_bytes(true, &[(".PKGINFO", INFO), (".post-install", b"inert")], &[]);
+        let path = format!("{}.apk", "\u{1}".repeat(8000));
+        let (_, out) = report_at(&bytes, &path);
+        let serialized = serde_json::to_vec(&json!({"facts":out.facts.iter().map(|fact|json!({"artifact":fact.artifact,"key":fact.key,"value":fact.value})).collect::<Vec<_>>(),"findings":out.findings,"kinds":out.kinds,"limitations":out.limitations})).expect("escaped evidence output");
+        assert!(serialized.len() <= FIXED_OUTPUT_RESERVE);
     }
 
     #[test]
