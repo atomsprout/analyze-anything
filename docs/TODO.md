@@ -7,7 +7,8 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 Current published baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
 uses unsigned packages with the report-workflow corrections and MSI action context.
 The 0.2.3 breadth A candidate is still building and undergoing release qualification;
-the later 0.2.4 source candidate implements breadth B with its own publication gates.
+the later 0.2.4 candidate implements breadth B, and the integrated 0.2.5 source candidate
+implements breadth C. Each retains its own qualification and publication gates.
 Signed macOS/Homebrew remains at 0.1.1. The priorities
 and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
 
@@ -32,7 +33,7 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   distinguish implementation from independent qualification. Produce one machine-readable
   catalogue/support matrix from which README, website and release totals can be derived;
   check unique IDs, aliases and matching public totals in CI.
-  The 0.2.4 source catalogue now lists 29 primary + four compression families, and 11 separately
+  The integrated 0.2.5 source catalogue now lists 32 primary + four compression families, and 11 separately
   tracked declaration families. Extracted-package checks verify the compiled profiles/count
   and program version against source. See [count policy](ROADMAP.md#format-inventory-and-count-policy).
 - [x] **Linux breadth A implementation: Arch packages and general ar archives.** Target two new primary
@@ -64,11 +65,21 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   checksums before publication. Keep the exact sample/compressor and platform scope in
   [the image limitations](LIMITATIONS.md#linux-breadth-b-image-profiles). The later C/D
   batches retain their own releases (0.2.5 and 0.2.6), targeting 36 and 40 families.
-- [ ] **Language package breadth C: wheel, npm tarball and Java archives.** Target three
-  new primary families (33 to 36 including streams). Add package identity, useful metadata,
-  entry/dependency declarations and captured components over existing ZIP/TAR readers;
-  generic extraction is insufficient. Start Java with a qualified JAR profile, retaining
-  WAR/EAR as later profiles in the same family. Never import packages or run scripts.
+- [x] **Language package breadth C implementation: wheel, npm tarball and JAR.** Three
+  semantic readers are registered over the existing ZIP/TAR/stream pipeline. They retain
+  identity, literal dependency/entry/script/manifest declarations, source metadata and
+  captured member inventories. Constructed ambiguity, malformed-input and budget cases,
+  three unchanged MIT-licensed published samples and independent references are checked
+  in; the engine integration test covers source evidence and deterministic repeated reports.
+  Java contributes one family with a qualified JAR profile; WAR/EAR remain unqualified.
+  See [profile boundaries and records](LIMITATIONS.md#language-package-breadth-c-profiles).
+- [ ] **Publish breadth C as formal 0.2.5 after breadth B.** The C source at 929703f has
+  Windows read-only reference records with 15 matching CLI comparisons (seven wheel,
+  six npm, two JAR), plus the OpenJDK manifest/member reference. Final hosted native,
+  cross-platform CI, release builds, extracted-package checks and public asset checksums
+  remain release gates. C adds three primary families to the integrated B baseline of 33, giving 36 in the
+  source catalogue. Implementation counts do not establish release qualification; WAR/EAR
+  aliases add no families.
 - [ ] **Later breadth feasibility.** Evaluate Alpine APK, full Flatpak single-file bundles,
   one OCI/Docker image family and LZ4 framed streams for a later 40-entry target. Reference
   documents alone do not qualify Flatpak bundles; image layer/whiteout semantics and

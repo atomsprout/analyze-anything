@@ -20,3 +20,4 @@ crates/aa-linux/tests/data/*.pkg.tar.zst -text
 crates/aa-linux/tests/data/ar-native.c text eol=lf
 crates/aa-linux/tests/data/ar-native.ref.json text eol=lf
 crates/aa-linux/tests/data/declarations/* -text
+crates/aa-packages/tests/data/** -text

@@ -82,10 +82,10 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 
 ## What it reads
 
-The catalogue below describes the 0.2.4 source candidate. Published 0.2.2 packages retain their recorded profiles; 0.2.3 is still building, and the new image readers require their own release qualification.
+The catalogue below describes the integrated 0.2.5 source candidate. Published 0.2.2 packages retain their recorded profiles; 0.2.3 is still building, and the later image and language readers require their own release qualification.
 
 <!-- formats:begin -->
-**29 primary format families + 4 compression formats (33 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
+**32 primary format families + 4 compression formats (36 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
 <!-- formats:end -->
 
 | | |
@@ -172,10 +172,10 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 The current published release is 0.2.2; the 0.2.3 candidate is still building. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-The 0.2.3 candidate implements Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. The later 0.2.4 source candidate adds bounded SquashFS, AppImage Type 2 and snap readers, bringing the source catalogue to 33 primary/compression families. [Recorded sample and native scope](docs/LIMITATIONS.md#linux-breadth-b-image-profiles) distinguishes implemented profiles from qualification and publication. Next, in order:
+The 0.2.3 candidate implements Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. The later 0.2.4 candidate adds SquashFS, AppImage Type 2 and snap. The 0.2.5 source candidate also reads wheel, npm tarball and JAR declarations, with captured component identities and literal unresolved dependencies, bringing the source catalogue to 36 primary/compression families. [Image](docs/LIMITATIONS.md#linux-breadth-b-image-profiles) and [language package](docs/LIMITATIONS.md#language-package-breadth-c-profiles) records distinguish implemented profiles from qualification and publication. Next, in order:
 
 1. **Linux application qualification**: complete the integrated native, cross-platform and packaged checks for the 0.2.4 candidate before publication; broaden the documented image profiles separately.
-2. **Language packages**: add wheel, npm tarball and Java archive profiles, targeting 36 families.
+2. **Language package qualification**: deliver the implemented wheel, npm tarball and JAR profiles after the Linux application batch, with their own native, cross-platform and packaged checks. WAR/EAR remain unqualified profiles within the Java family.
 3. **Further breadth**: qualify Alpine APK, Flatpak, one OCI/Docker family and LZ4, targeting 40 families. .NET IL and deeper component relationships follow; optional evidence retention remains separate.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).

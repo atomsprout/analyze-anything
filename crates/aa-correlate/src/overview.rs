@@ -10,6 +10,27 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-wheel",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a Python wheel. Distribution identity, dependency and entry-point declarations were read from captured metadata without installation or import.",
+        text_zh: "这是 Python wheel。发行包身份、依赖和入口点声明从捕获的元数据读取，没有安装或导入。",
+    },
+    Rule {
+        id: "overview.kind-npm",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is an npm package tarball. Package identity, dependencies and literal lifecycle scripts were read as data without running package commands.",
+        text_zh: "这是 npm 软件包 TAR 包。包身份、依赖和字面生命周期脚本作为数据读取，没有运行包命令。",
+    },
+    Rule {
+        id: "overview.kind-jar",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a Java JAR. Supported manifest and Maven declarations and captured entries were read without loading classes or resolving the runtime class path.",
+        text_zh: "这是 Java JAR。受支持的清单和 Maven 声明以及捕获的条目作为数据读取，没有加载类或解析运行时类路径。",
+    },
+    Rule {
         id: "overview.kind-squashfs",
         title_en: "Kind of input",
         title_zh: "输入类型",
@@ -504,6 +525,30 @@ fn bundle_plist(tree: &dyn Tree) -> Option<&Artifact> {
 }
 
 fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
+    let mut content = root;
+    // A gzip wrapper contains one TAR artifact. Its package reader, rather than
+    // the compression alias, establishes the useful identity of that input.
+    for _ in 0..32 {
+        let rule = match content.kind.as_deref() {
+            Some("wheel") => Some("overview.kind-wheel"),
+            Some("npm") => Some("overview.kind-npm"),
+            Some("jar") => Some("overview.kind-jar"),
+            _ => None,
+        };
+        if let Some(rule) = rule {
+            out.finding(finding(rule, Confidence::Verified).evidence(Evidence::whole(content, content.kind.as_deref().unwrap_or(""))));
+            return;
+        }
+        if content.unpacked_by.as_deref() != Some("stream") {
+            break;
+        }
+        let mut children = tree.artifacts().iter().filter(|file| file.parent.as_deref() == Some(&content.path));
+        let Some(child) = children.next() else { break };
+        if children.next().is_some() {
+            break;
+        }
+        content = child;
+    }
     let children = || tree.under(&root.path).len();
     let kind = root.kind.as_deref().unwrap_or("");
     let unpacker = root.unpacked_by.as_deref().unwrap_or("");
