@@ -284,3 +284,27 @@ Linux declaration fixtures in crates/aa-linux/tests/data/declarations:
   upstream desktop build template is GPL-3.0-or-later; LICENSE-flameshot.txt
   preserves that licence. Its build placeholders are retained, never substituted.
   Only declaration text is redistributed; no input program is run or installed.
+
+Java archive fixture in crates/aa-packages/tests/data/java:
+- slf4j-api-2.0.16.jar is the unchanged SLF4J API artifact from Maven Central:
+  https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar
+  Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland), MIT license. Its unchanged
+  META-INF/LICENSE.txt is preserved as LICENSE-slf4j.txt. Upstream licensing:
+  https://www.slf4j.org/license.html. All contained classes remain static data.
+- JarReference.java and native.ref.json are project-authored Apache-2.0 source
+  and read-only OpenJDK java.util.jar reference observations. No input class was
+  loaded or executed. The adjacent README.md records hashes and the qualified scope.
+
+Language package fixtures in crates/aa-packages/tests/data:
+- wheel/sampleproject-4.0.0-py3-none-any.whl is unchanged from PyPI sampleproject 4.0.0:
+  https://pypi.org/project/sampleproject/4.0.0/
+  Copyright (c) 2016 The Python Packaging Authority (PyPA), MIT license. The
+  unchanged wheel license is preserved in wheel/LICENSE-sampleproject.txt.
+- npm/isarray-2.0.5.tgz is unchanged from the npm registry:
+  https://registry.npmjs.org/isarray/-/isarray-2.0.5.tgz
+  Copyright (c) 2013 Julian Gruber, MIT license. The unchanged package LICENSE
+  member is preserved in npm/LICENSE-isarray.txt.
+- The adjacent native.ref.json/native-cli.ref.json are project-authored Apache-2.0
+  static ZIP/TAR/metadata observations. Sources, digest checks and qualified scope
+  are recorded in crates/aa-packages/tests/data/SOURCES.md and its crate README.
+  No package, module, entry point or lifecycle script was installed, loaded or executed.

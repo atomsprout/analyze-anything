@@ -28,6 +28,7 @@ aa-apple.workspace = true
 aa-windows.workspace = true
 aa-android.workspace = true
 aa-linux.workspace = true
+aa-packages.workspace = true
 aa-correlate.workspace = true
 
 [dev-dependencies]

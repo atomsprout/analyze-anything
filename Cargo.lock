@@ -162,6 +162,7 @@ dependencies = [
  "aa-core",
  "aa-correlate",
  "aa-linux",
+ "aa-packages",
  "aa-unpack",
  "aa-windows",
  "flate2",
@@ -215,6 +216,18 @@ dependencies = [
  "ruzstd",
  "serde_json",
  "tar",
+]
+
+[[package]]
+name = "aa-packages"
+version = "0.2.3"
+dependencies = [
+ "aa-core",
+ "flate2",
+ "serde",
+ "serde_json",
+ "tar",
+ "zip",
 ]
 
 [[package]]

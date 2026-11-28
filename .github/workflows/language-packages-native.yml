@@ -1,0 +1,32 @@
+name: Language package native comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/format-breadth-c]
+  pull_request:
+    paths:
+      - crates/aa-packages/**
+      - crates/aa-engine/tests/language_packages.rs
+      - tools/native-compare/language-packages.py
+      - .github/workflows/language-packages-native.yml
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y default-jdk-headless
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build -p aa-cli --no-default-features
+      - run: >-
+          /usr/bin/python3 tools/native-compare/language-packages.py --cli target/debug/analyze-anything
+          --record out/language-packages-native/reference.json
+          crates/aa-packages/tests/data/wheel/sampleproject-4.0.0-py3-none-any.whl
+          crates/aa-packages/tests/data/npm/isarray-2.0.5.tgz
+          crates/aa-packages/tests/data/java/slf4j-api-2.0.16.jar
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: language-packages-native-reference
+          path: out/language-packages-native
