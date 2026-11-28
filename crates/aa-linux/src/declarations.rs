@@ -13,6 +13,8 @@ const MAX_LINE: usize = 32 * 1024;
 const MAX_XML_NODES: u32 = 16_384;
 const MAX_XML_DEPTH: usize = 32;
 const MAX_ISSUES: usize = 32;
+const MAX_REFERENCE_PATH: usize = 8192;
+const MAX_REFERENCE_OUTPUT: usize = 16 * 1024 * 1024;
 const APPSTREAM_NS: &str = "https://specifications.freedesktop.org/metainfo/1.0";
 
 pub struct Declarations;
@@ -528,8 +530,15 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
     if !artifacts.iter().any(|file| file.facts.contains_key("linux.appstream")) {
         return;
     }
-    if artifacts.len() > 100_000 || artifacts.iter().fold(0usize, |total, file| total.saturating_add(file.path.len())) > 16 * MAX_BYTES {
-        out.limitation("linux.declaration-partial", None, Some("supplied declaration index exceeds its file or path-byte budget".into()));
+    if artifacts.len() > 100_000
+        || artifacts.iter().any(|file| file.path.len() > MAX_REFERENCE_PATH)
+        || artifacts.iter().fold(0usize, |total, file| total.saturating_add(file.path.len())) > 16 * MAX_BYTES
+    {
+        out.limitation(
+            "linux.declaration-partial",
+            None,
+            Some("supplied declaration index exceeds 100,000 files, 8 KiB per path or 16 MiB of path bytes".into()),
+        );
         return;
     }
     if tree.summary().get("engine.input-listing").and_then(|listing| listing["complete"].as_bool()) != Some(true) {
@@ -547,6 +556,7 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
         }
     }
     let mut reference_count = 0usize;
+    let mut output_bytes = 0usize;
     for (source_index, file) in artifacts.iter().filter(|file| file.facts.contains_key("linux.appstream")).enumerate() {
         if source_index == 1024 {
             out.limitation("linux.declaration-partial", None, Some("supplied launchable source budget exhausted".into()));
@@ -554,8 +564,10 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
         }
         let Some(launchables) = file.facts["linux.appstream"]["launchables"].as_array() else { continue };
         let mut references = Vec::new();
+        let mut truncated = false;
         for declaration in launchables {
             if reference_count == MAX_FIELDS {
+                truncated = true;
                 out.limitation("linux.declaration-partial", Some(file), Some("supplied launchable reference budget exhausted".into()));
                 break;
             }
@@ -578,25 +590,48 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
             } else {
                 None
             };
-            references.push(json!({"field": format!("launchable (line {})", declaration["line"]), "basis": "captured-desktop-file-id",
+            let reference = json!({"field": format!("launchable (line {})", declaration["line"]), "basis": "captured-desktop-file-id",
                 "declared": literal, "status": if target.is_some() { "matched-supplied-declaration" } else { "unresolved" },
                 "target": target.map(|target| &target.path), "target_sha256": target.and_then(|target| target.digests.as_ref().map(|digest| &digest.sha256)),
-                "reason": if target.is_some() { None } else { Some("no unambiguous original desktop-id target in the supplied applications namespace") }}));
-            if let Some(target) = target {
-                out.finding(
-                    Finding::new(Section::Structure, "linux", "linux.supplied-entry", Confidence::Verified, Severity::Info)
-                        .evidence(Evidence::bytes(
-                            file,
-                            declaration["offset"].as_u64().unwrap_or(0),
-                            declaration["length"].as_u64().unwrap_or(0),
-                            declaration.clone(),
-                        ))
-                        .evidence(Evidence::whole(target, json!({"path": target.path, "desktop_file_id": literal}))),
+                "reason": if target.is_some() { None } else { Some("no unambiguous original desktop-id target in the supplied applications namespace") }});
+            let finding = target.map(|target| {
+                Finding::new(Section::Structure, "linux", "linux.supplied-entry", Confidence::Verified, Severity::Info)
+                    .evidence(Evidence::bytes(
+                        file,
+                        declaration["offset"].as_u64().unwrap_or(0),
+                        declaration["length"].as_u64().unwrap_or(0),
+                        declaration.clone(),
+                    ))
+                    .evidence(Evidence::whole(target, json!({"path": target.path, "desktop_file_id": literal})))
+            });
+            // Count serialized evidence as well as rows: repeated short declarations can
+            // otherwise multiply one long archive namespace into a much larger report.
+            let finding_bytes = finding
+                .as_ref()
+                .map_or(0, |finding| serde_json::to_vec(finding).map_or(MAX_REFERENCE_OUTPUT + 1, |bytes| bytes.len().saturating_add(128)));
+            let needed = reference.to_string().len().saturating_add(finding_bytes).saturating_add(file.path.len());
+            if needed > MAX_REFERENCE_OUTPUT.saturating_sub(output_bytes) {
+                truncated = true;
+                reference_count = MAX_FIELDS;
+                out.limitation(
+                    "linux.declaration-partial",
+                    Some(file),
+                    Some("shared 16 MiB supplied relationship/evidence budget exhausted".into()),
                 );
+                break;
+            }
+            output_bytes += needed;
+            references.push(reference);
+            if let Some(finding) = finding {
+                out.finding(finding);
             }
         }
         if !references.is_empty() {
-            out.fact(file, "linux.supplied-file", json!({"references": references, "runtime_target_resolved": false}));
+            out.fact(
+                file,
+                "linux.supplied-file",
+                json!({"references": references, "runtime_target_resolved": false,"truncated":truncated}),
+            );
         }
     }
 }
@@ -786,6 +821,40 @@ mod tests {
         let out = analyze("org.flameshot.Flameshot.desktop", template);
         assert!(fact(&out, "linux.desktop-entry")["commands"][0]["value"].as_str().expect("command").contains("@LAUNCHER_EXECUTABLE@"));
         assert!(out.limitations.iter().any(|limit| limit.code == "linux.declaration-partial"));
+    }
+
+    #[test]
+    fn long_namespaces_and_repeated_launchables_cannot_expand_relationship_evidence_without_limit() {
+        for prefix in ["z".repeat(64 * 1024), "z".repeat(7000)] {
+            let mut container = file(&prefix, b"archive");
+            container.facts.insert("engine.container-listing".into(), json!({"complete":true}));
+            let mut source = file(&format!("{prefix}/usr/share/metainfo/example.metainfo.xml"), b"metadata");
+            source.parent = Some(prefix.clone());
+            let declaration = json!({"value":"example.desktop","attributes":{"type":"desktop-id"},"line":1,"offset":0,"length":8});
+            source.facts.insert("linux.appstream".into(), json!({"launchables":vec![declaration;MAX_FIELDS]}));
+            let mut target = file(&format!("{prefix}/usr/share/applications/example.desktop"), b"desktop");
+            target.parent = Some(prefix.clone());
+            target.facts.insert("linux.desktop-entry".into(), json!({"name":"Example"}));
+            let mut files = vec![container, source, target];
+            files.sort_by(|a, b| a.path.cmp(&b.path));
+            let tree = Supplied {
+                files,
+                contents: BTreeMap::new(),
+                summary: BTreeMap::from([("engine.input-listing".into(), json!({"complete":true}))]),
+            };
+            let mut out = Output::default();
+            supplied(&tree, &mut out);
+            assert!(out.limitations.iter().any(|limit| limit.code == "linux.declaration-partial"));
+            let evidence_bytes = serde_json::to_vec(&out.findings).expect("serialized findings").len();
+            let fact_bytes = out.facts.iter().map(|fact| fact.value.to_string().len()).sum::<usize>();
+            assert!(evidence_bytes + fact_bytes <= MAX_REFERENCE_OUTPUT, "shared rows and evidence budget");
+            if prefix.len() > MAX_REFERENCE_PATH {
+                assert!(out.facts.is_empty() && out.findings.is_empty());
+            } else {
+                assert_eq!(fact(&out, "linux.supplied-file")["truncated"], true);
+                assert!(out.findings.len() < MAX_FIELDS);
+            }
+        }
     }
 
     #[test]
