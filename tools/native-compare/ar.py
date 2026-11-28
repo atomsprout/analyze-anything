@@ -41,9 +41,16 @@ def reference(sample, ar, nm):
     if any(name.startswith(("-", "@")) for name in names):
         raise ValueError(f"{sample.name}: native reference arguments require literal member names")
     members = []
+    symbol_index_members = []
     for name in names:
         contents = run([ar, "p", "--", sample, name])
-        members.append({"name": name, "size": len(contents), "sha256": digest(contents)})
+        row = {"name": name, "size": len(contents), "sha256": digest(contents)}
+        # GNU ar lists BSD indexes as members; LLVM hides them. Keep their bytes
+        # separately so both tools describe the same ordinary member set.
+        if name in {"__.SYMDEF", "__.SYMDEF SORTED", "__.SYMDEF_64", "__.SYMDEF_64 SORTED"}:
+            symbol_index_members.append(row)
+        else:
+            members.append(row)
     symbol_map = []
     in_map = False
     for line in run([nm, "--print-armap", sample]).decode("utf-8").splitlines():
@@ -55,7 +62,7 @@ def reference(sample, ar, nm):
             symbol, member = line.rsplit(" in ", 1)
             symbol_map.append({"name": symbol, "member": member})
     return {"file": sample.name, "sha256": digest(data), "size": len(data),
-            "members": members, "symbol_map": symbol_map}
+            "members": members, "symbol_index_members": symbol_index_members, "symbol_map": symbol_map}
 
 
 def compare(cli, sample, native):

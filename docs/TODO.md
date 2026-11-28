@@ -25,24 +25,30 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   See [W9 scope and records](PLAN-WINDOWS.md#w9-installation-declarations-and-payload-relationships).
   Burn, external-payload profiles
   and MSP/MST semantics retain separate W9 gates.
-- [ ] **Next: audit the format catalogue and public count.** Start from the implemented
+- [x] **Audit the format catalogue and public count.** Start from the implemented
   baseline of 24 primary input families plus four compressed-stream formats. Record stable
   IDs, aliases, profiles, analysis depth, real-sample/reference evidence and limitations;
   distinguish implementation from independent qualification. Produce one machine-readable
   catalogue/support matrix from which README, website and release totals can be derived;
   check unique IDs, aliases and matching public totals in CI.
-  Until the audit passes, use the conservative "more than 20 families plus four compression
-  formats" wording. See [count policy and inventory](ROADMAP.md#format-inventory-and-count-policy).
-- [ ] **Linux breadth A: Arch packages and general ar archives.** Target two new primary
+  The source catalogue now lists 26 primary + four compression families, and 11 separately
+  tracked declaration families. Extracted-package checks verify the compiled profiles/count
+  and program version against source. See [count policy](ROADMAP.md#format-inventory-and-count-policy).
+- [x] **Linux breadth A implementation: Arch packages and general ar archives.** Target two new primary
   families (28 to 30 including streams), subject to the baseline audit. Reuse TAR/streams
   for package identity, bounded `.PKGINFO`, build/install declarations and payload/link
   evidence. Qualify normal GNU/BSD ar names, indexes and captured member bytes; retain
   thin references without reading outside the supplied input. Generic deb ar parsing is
   not general ar support. Use licensed real packages/libraries and independent references.
-- [ ] **Linux declarations alongside A.** Add bounded systemd unit, Desktop Entry and
+- [x] **Linux declarations alongside A.** Add bounded systemd unit, Desktop Entry and
   AppStream readers as three separately counted declaration families. Preserve source
   fields/lines, unknown keys and unsupported substitutions. Add unambiguous supplied-file
   entry and ELF-library relationships; no host lookup, startup or runtime-loader claims.
+- [ ] **Publish breadth A as formal 0.2.3.** Linux native references passed 22 ar, 56 Arch,
+  68 declaration and 125 existing Debian/RPM checks at 9731df0. Wait for final cross-platform
+  CI, release builds and extracted-package checks; verify public asset checksums before
+  publishing. The later batches each require their own formal release (0.2.4, 0.2.5, 0.2.6),
+  reaching 33, 36 and 40 primary/compression families in order.
 - [ ] **Linux breadth B: SquashFS, AppImage Type 2 and snap.** Target three new primary
   families (30 to 33 including streams). First qualify bounded SquashFS metadata,
   decompression, link and resource-limit profiles. Then qualify AppImage image extents and
