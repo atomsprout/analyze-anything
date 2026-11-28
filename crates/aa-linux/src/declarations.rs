@@ -12,7 +12,11 @@ const MAX_FIELDS: usize = 4096;
 const MAX_LINE: usize = 32 * 1024;
 const MAX_XML_NODES: u32 = 16_384;
 const MAX_XML_DEPTH: usize = 32;
+const MAX_XML_NAMESPACE: usize = 1024;
+const MAX_XML_EXPANDED: usize = 4 * 1024 * 1024;
 const MAX_ISSUES: usize = 32;
+const MAX_REFERENCE_PATH: usize = 8192;
+const MAX_REFERENCE_OUTPUT: usize = 16 * 1024 * 1024;
 const APPSTREAM_NS: &str = "https://specifications.freedesktop.org/metainfo/1.0";
 
 pub struct Declarations;
@@ -383,6 +387,7 @@ fn appstream(file: &Artifact, text: &str, out: &mut Output) -> Result<(), &'stat
     }
     let mut state = State::default();
     let mut declarations = Vec::new();
+    let mut expanded_bytes = 0usize;
     for node in root.descendants().filter(roxmltree::Node::is_element) {
         if declarations.len() == MAX_FIELDS || node.ancestors().count() > MAX_XML_DEPTH {
             return Err("AppStream declaration count or XML depth budget exceeded");
@@ -438,6 +443,11 @@ fn appstream(file: &Artifact, text: &str, out: &mut Output) -> Result<(), &'stat
             if attribute.value().len() > MAX_LINE || attributes.len() == 32 {
                 return Err("AppStream attribute budget exceeded");
             }
+            // Namespace URIs are interned by XML readers. Repeating a short prefix
+            // must not expand a shared long URI into every retained attribute key.
+            if attribute.name().len() > 512 || attribute.namespace().is_some_and(|namespace| namespace.len() > MAX_XML_NAMESPACE) {
+                return Err("AppStream namespace or attribute-name budget exceeded");
+            }
             let key = if attribute.namespace() == Some("http://www.w3.org/XML/1998/namespace") {
                 format!("xml:{}", attribute.name())
             } else if let Some(namespace) = attribute.namespace() {
@@ -461,9 +471,15 @@ fn appstream(file: &Artifact, text: &str, out: &mut Output) -> Result<(), &'stat
         if matches!(name, "id" | "launchable") && !literal_text {
             state.issue(line, "structured identity or launchable text is outside the literal profile");
         }
-        declarations.push(json!({"element": name, "parent": parent, "line": line, "offset": range.start,
+        let declaration = json!({"element": name, "parent": parent, "line": line, "offset": range.start,
             "length": range.len(), "attributes": attributes, "value": value,
-            "direct_component_child": node.parent_element() == Some(root), "literal_text": literal_text, "interpreted": supported && matches!(node.tag_name().namespace(), None | Some(APPSTREAM_NS))}));
+            "direct_component_child": node.parent_element() == Some(root), "literal_text": literal_text, "interpreted": supported && matches!(node.tag_name().namespace(), None | Some(APPSTREAM_NS))});
+        let needed = declaration.to_string().len();
+        if needed > MAX_XML_EXPANDED.saturating_sub(expanded_bytes) {
+            return Err("AppStream expanded declaration budget exceeded");
+        }
+        expanded_bytes += needed;
+        declarations.push(declaration);
     }
     let ids: Vec<_> = declarations
         .iter()
@@ -528,8 +544,15 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
     if !artifacts.iter().any(|file| file.facts.contains_key("linux.appstream")) {
         return;
     }
-    if artifacts.len() > 100_000 || artifacts.iter().fold(0usize, |total, file| total.saturating_add(file.path.len())) > 16 * MAX_BYTES {
-        out.limitation("linux.declaration-partial", None, Some("supplied declaration index exceeds its file or path-byte budget".into()));
+    if artifacts.len() > 100_000
+        || artifacts.iter().any(|file| file.path.len() > MAX_REFERENCE_PATH)
+        || artifacts.iter().fold(0usize, |total, file| total.saturating_add(file.path.len())) > 16 * MAX_BYTES
+    {
+        out.limitation(
+            "linux.declaration-partial",
+            None,
+            Some("supplied declaration index exceeds 100,000 files, 8 KiB per path or 16 MiB of path bytes".into()),
+        );
         return;
     }
     if tree.summary().get("engine.input-listing").and_then(|listing| listing["complete"].as_bool()) != Some(true) {
@@ -547,6 +570,7 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
         }
     }
     let mut reference_count = 0usize;
+    let mut output_bytes = 0usize;
     for (source_index, file) in artifacts.iter().filter(|file| file.facts.contains_key("linux.appstream")).enumerate() {
         if source_index == 1024 {
             out.limitation("linux.declaration-partial", None, Some("supplied launchable source budget exhausted".into()));
@@ -554,8 +578,10 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
         }
         let Some(launchables) = file.facts["linux.appstream"]["launchables"].as_array() else { continue };
         let mut references = Vec::new();
+        let mut truncated = false;
         for declaration in launchables {
             if reference_count == MAX_FIELDS {
+                truncated = true;
                 out.limitation("linux.declaration-partial", Some(file), Some("supplied launchable reference budget exhausted".into()));
                 break;
             }
@@ -578,25 +604,48 @@ fn supplied(tree: &dyn Tree, out: &mut Output) {
             } else {
                 None
             };
-            references.push(json!({"field": format!("launchable (line {})", declaration["line"]), "basis": "captured-desktop-file-id",
+            let reference = json!({"field": format!("launchable (line {})", declaration["line"]), "basis": "captured-desktop-file-id",
                 "declared": literal, "status": if target.is_some() { "matched-supplied-declaration" } else { "unresolved" },
                 "target": target.map(|target| &target.path), "target_sha256": target.and_then(|target| target.digests.as_ref().map(|digest| &digest.sha256)),
-                "reason": if target.is_some() { None } else { Some("no unambiguous original desktop-id target in the supplied applications namespace") }}));
-            if let Some(target) = target {
-                out.finding(
-                    Finding::new(Section::Structure, "linux", "linux.supplied-entry", Confidence::Verified, Severity::Info)
-                        .evidence(Evidence::bytes(
-                            file,
-                            declaration["offset"].as_u64().unwrap_or(0),
-                            declaration["length"].as_u64().unwrap_or(0),
-                            declaration.clone(),
-                        ))
-                        .evidence(Evidence::whole(target, json!({"path": target.path, "desktop_file_id": literal}))),
+                "reason": if target.is_some() { None } else { Some("no unambiguous original desktop-id target in the supplied applications namespace") }});
+            let finding = target.map(|target| {
+                Finding::new(Section::Structure, "linux", "linux.supplied-entry", Confidence::Verified, Severity::Info)
+                    .evidence(Evidence::bytes(
+                        file,
+                        declaration["offset"].as_u64().unwrap_or(0),
+                        declaration["length"].as_u64().unwrap_or(0),
+                        declaration.clone(),
+                    ))
+                    .evidence(Evidence::whole(target, json!({"path": target.path, "desktop_file_id": literal})))
+            });
+            // Count serialized evidence as well as rows: repeated short declarations can
+            // otherwise multiply one long archive namespace into a much larger report.
+            let finding_bytes = finding
+                .as_ref()
+                .map_or(0, |finding| serde_json::to_vec(finding).map_or(MAX_REFERENCE_OUTPUT + 1, |bytes| bytes.len().saturating_add(128)));
+            let needed = reference.to_string().len().saturating_add(finding_bytes).saturating_add(file.path.len());
+            if needed > MAX_REFERENCE_OUTPUT.saturating_sub(output_bytes) {
+                truncated = true;
+                reference_count = MAX_FIELDS;
+                out.limitation(
+                    "linux.declaration-partial",
+                    Some(file),
+                    Some("shared 16 MiB supplied relationship/evidence budget exhausted".into()),
                 );
+                break;
+            }
+            output_bytes += needed;
+            references.push(reference);
+            if let Some(finding) = finding {
+                out.finding(finding);
             }
         }
         if !references.is_empty() {
-            out.fact(file, "linux.supplied-file", json!({"references": references, "runtime_target_resolved": false}));
+            out.fact(
+                file,
+                "linux.supplied-file",
+                json!({"references": references, "runtime_target_resolved": false,"truncated":truncated}),
+            );
         }
     }
 }
@@ -786,6 +835,57 @@ mod tests {
         let out = analyze("org.flameshot.Flameshot.desktop", template);
         assert!(fact(&out, "linux.desktop-entry")["commands"][0]["value"].as_str().expect("command").contains("@LAUNCHER_EXECUTABLE@"));
         assert!(out.limitations.iter().any(|limit| limit.code == "linux.declaration-partial"));
+    }
+
+    #[test]
+    fn shared_xml_namespace_uris_cannot_multiply_into_unbounded_attribute_keys() {
+        let attributes = (0..32).map(|index| format!(" n:a{index}=\"\"")).collect::<String>();
+        for namespace_length in [16 * 1024, 700] {
+            let namespace = format!("urn:foreign:{}", "a".repeat(namespace_length));
+            let nodes = format!("<name{attributes}>x</name>").repeat(1000);
+            let text = format!("<component xmlns:n=\"{namespace}\"><id>example</id>{nodes}</component>");
+            assert!(text.len() < MAX_BYTES, "small XML source");
+            let output = analyze("example.metainfo.xml", text.as_bytes());
+            assert!(!output.facts.iter().any(|fact| fact.key == "linux.appstream"));
+            assert!(output.limitations.iter().any(|limit| limit.code == "linux.declaration-unread"));
+        }
+        let valid = format!("<component xmlns:n=\"urn:foreign\"><id>example</id><name{attributes}>x</name></component>");
+        let output = analyze("example.metainfo.xml", valid.as_bytes());
+        assert_eq!(fact(&output, "linux.appstream")["name"], "example");
+    }
+
+    #[test]
+    fn long_namespaces_and_repeated_launchables_cannot_expand_relationship_evidence_without_limit() {
+        for prefix in ["z".repeat(64 * 1024), "z".repeat(7000)] {
+            let mut container = file(&prefix, b"archive");
+            container.facts.insert("engine.container-listing".into(), json!({"complete":true}));
+            let mut source = file(&format!("{prefix}/usr/share/metainfo/example.metainfo.xml"), b"metadata");
+            source.parent = Some(prefix.clone());
+            let declaration = json!({"value":"example.desktop","attributes":{"type":"desktop-id"},"line":1,"offset":0,"length":8});
+            source.facts.insert("linux.appstream".into(), json!({"launchables":vec![declaration;MAX_FIELDS]}));
+            let mut target = file(&format!("{prefix}/usr/share/applications/example.desktop"), b"desktop");
+            target.parent = Some(prefix.clone());
+            target.facts.insert("linux.desktop-entry".into(), json!({"name":"Example"}));
+            let mut files = vec![container, source, target];
+            files.sort_by(|a, b| a.path.cmp(&b.path));
+            let tree = Supplied {
+                files,
+                contents: BTreeMap::new(),
+                summary: BTreeMap::from([("engine.input-listing".into(), json!({"complete":true}))]),
+            };
+            let mut out = Output::default();
+            supplied(&tree, &mut out);
+            assert!(out.limitations.iter().any(|limit| limit.code == "linux.declaration-partial"));
+            let evidence_bytes = serde_json::to_vec(&out.findings).expect("serialized findings").len();
+            let fact_bytes = out.facts.iter().map(|fact| fact.value.to_string().len()).sum::<usize>();
+            assert!(evidence_bytes + fact_bytes <= MAX_REFERENCE_OUTPUT, "shared rows and evidence budget");
+            if prefix.len() > MAX_REFERENCE_PATH {
+                assert!(out.facts.is_empty() && out.findings.is_empty());
+            } else {
+                assert_eq!(fact(&out, "linux.supplied-file")["truncated"], true);
+                assert!(out.findings.len() < MAX_FIELDS);
+            }
+        }
     }
 
     #[test]
