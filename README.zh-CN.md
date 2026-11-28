@@ -59,12 +59,12 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.3 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
+签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.2 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
 
 ## 使用
 
-[0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)
-增加了 Arch 软件包与 ar 归档解析、Linux 入口声明，以及明确支持范围的共享格式目录。
+0.2.6 源码包含 Arch/ar、Linux 声明、wheel/npm/JAR 以及
+Alpine/Flatpak/OCI/Docker/LZ4 范围。0.2.3 至 0.2.6 的各次交付仍待完成发布验收。
 发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
 详见[真实报告验收记录](docs/spikes/report-workflow.md)。
 
@@ -85,7 +85,7 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 ## 能读什么
 
 <!-- formats:begin -->
-**29 类主要格式＋4 种压缩格式（共 33 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
+**32 类主要格式＋5 种压缩格式（共 37 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
 <!-- formats:end -->
 
 | | |
@@ -169,13 +169,13 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-当前发布版本是 0.2.3。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
+当前已发布版本是 0.2.2；0.2.3 覆盖增量构建仍待正式发布。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
-0.2.3 增加了 Arch 包与 ar 归档、systemd/Desktop Entry/AppStream 声明，以及有边界的随附库关系。0.2.5 源码还可读取 wheel、npm TAR 包和 JAR 声明，记录捕获的组件身份与尚未解析的字面依赖；发布仍待完成。格式数量来自同一份目录。接下来按这个顺序做：
+源码已实现 Arch/ar、Linux 入口声明、wheel/npm/JAR、Alpine APK、完整 Flatpak 包、一个 OCI/Docker 家族和 LZ4。数量来自同一份有界支持范围目录：单独的 SquashFS/AppImage/snap 批次合并前为 37 类，合并后目标为 40 类。按顺序继续发布工作：
 
 1. **Linux 应用格式**：验收 SquashFS、AppImage Type 2 与 snap，主要格式与压缩格式合计目标为 33 类。
 2. **语言软件包**：交付已实现的 wheel、npm TAR 包和 JAR 范围，在 Linux 应用批次之后达到 36 类。WAR/EAR 仍是 Java 家族中尚未验收的范围。
-3. **后续覆盖**：验收 Alpine APK、Flatpak、一个 OCI/Docker 格式家族与 LZ4，目标为 40 类。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
+3. **最终覆盖增量**：在前述批次之后，以 0.2.6 交付已实现的 Alpine APK v2、空基础 Flatpak 包、OCI/Docker 镜像和独立块 LZ4 范围，目标为 40 类。见[具体范围](docs/spikes/final-format-breadth.md)。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
 

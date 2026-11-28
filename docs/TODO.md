@@ -31,7 +31,7 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   distinguish implementation from independent qualification. Produce one machine-readable
   catalogue/support matrix from which README, website and release totals can be derived;
   check unique IDs, aliases and matching public totals in CI.
-  The C source catalogue now lists 29 primary + four compression families, and 11 separately
+  The A+C+D source catalogue now lists 32 primary + five compression families, and 11 separately
   tracked declaration families. Extracted-package checks verify the compiled profiles/count
   and program version against source. See [count policy](ROADMAP.md#format-inventory-and-count-policy).
 - [x] **Linux breadth A implementation: Arch packages and general ar archives.** Target two new primary
@@ -66,14 +66,22 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   Windows read-only reference records with 15 matching CLI comparisons (seven wheel,
   six npm, two JAR), plus the OpenJDK manifest/member reference. Final hosted native,
   cross-platform CI, release builds, extracted-package checks and public asset checksums
-  remain release gates. C adds three primary families: on the current 30-entry A baseline
+  remain release gates. C adds three primary families: on the 30-entry A baseline
   it reaches 33; after B's three families are merged and qualified it reaches the intended
   36. Neither pending B support nor WAR/EAR aliases increase the current count.
-- [ ] **Later breadth feasibility.** Evaluate Alpine APK, full Flatpak single-file bundles,
-  one OCI/Docker image family and LZ4 framed streams for a later 40-entry target. Reference
-  documents alone do not qualify Flatpak bundles; image layer/whiteout semantics and
-  profile-specific compression need their own gates. Do not include candidates in released
-  counts. See [Linux increments](ROADMAP.md#linux-breadth-increments).
+- [x] **Final breadth D implementation.** Alpine APK v2, full empty-base inline V0
+  Flatpak bundles, one OCI/Docker-save family and independent-block LZ4 frames are
+  registered with bounded metadata/payload provenance, licensed or project-owned native
+  fixtures, independent static references and real engine/component tests. Flatpak
+  output/path guards at 56fce92 passed native run 46109882704. Other base/opcode,
+  filesystem/runtime and compression profiles remain explicit unknowns. See
+  [D scope and records](spikes/final-format-breadth.md).
+- [ ] **Publish breadth D as formal 0.2.6 after A/B/C.** A promotion remains pending;
+  do not treat source versions as published releases. The temporary A+C+D catalogue
+  counts 32 primary + five compression families = 37; B must be merged and qualified
+  before claiming the final 35 + five = 40. Wait for combined-source CI, all native
+  comparisons, release builds, extracted-package checks and public asset checksums.
+  OCI/Docker variants count once; JAR does not automatically qualify WAR/EAR.
 - [ ] **Following breadth: bounded .NET IL references and capability explanations.** Qualify one
   profile using existing CLR metadata: method bodies, supported call/string/token
   references, and a small set of explicit same-method evidence combinations. Establish

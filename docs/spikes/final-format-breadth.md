@@ -2,10 +2,12 @@
 
 The fourth increment adds three primary families and one compression family:
 Alpine APK, full Flatpak single-file bundles, OCI/Docker-save images as one
-family, and LZ4 frames. Combined with the preceding three increments the
-catalogue contains 35 primary and five compression families: 40 in total.
-Eleven declaration families remain separately counted. This is source scope;
-release notes identify the immutable source and packaged runtime checks.
+family, and LZ4 frames. The current A+C+D source catalogue contains 32 primary
+and five compression families: 37 in total. After the separate B increment is
+merged and qualified, the combined target is 35 primary plus five compression
+families: 40. Eleven declaration families remain separately counted. These are
+implemented source profiles for the pending 0.2.6 delivery; no 0.2.6 release is
+claimed here. Release notes identify immutable source and packaged runtime checks.
 
 ## Qualified inputs and references
 
@@ -32,7 +34,11 @@ or bounded XZ parts. It checks canonical object labels and retains part and byte
 provenance for file contents and filename declarations. Missing or unsupported
 objects preserve independently readable siblings. Other base/fallback/opcode
 profiles and trust are explicit unknowns. A branch is never reported as a
-software version.
+software version. Serialized inventory is limited to 16 MiB and paths offered
+to extraction to 32 MiB, including repeated outer-container prefixes. Native
+[run 46109882704](https://github.com/atomsprout/analyze-anything/actions/runs/46109882704)
+passed at `56fce92` with those guards, comparing the checked-in and fresh inert
+writer fixtures and the pinned external RustDesk bundle.
 
 OCI and Docker-save are one family. Captured descriptors, configuration and
 ordered layers remain separate; whiteouts and links are declarations. There is
