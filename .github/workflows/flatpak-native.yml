@@ -1,0 +1,33 @@
+name: Flatpak native reader comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/format-breadth-d]
+    paths:
+      - crates/aa-linux/src/flatpak/**
+      - crates/aa-linux/src/flatpak.rs
+      - tools/native-compare/flatpak-*.py
+      - .github/workflows/flatpak-native.yml
+  pull_request:
+    paths:
+      - crates/aa-linux/src/flatpak/**
+      - crates/aa-linux/src/flatpak.rs
+      - tools/native-compare/flatpak-*.py
+      - .github/workflows/flatpak-native.yml
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y flatpak ostree python3-gi gir1.2-flatpak-1.0
+      - run: cargo build -p aa-cli --no-default-features
+      - run: /usr/bin/python3 tools/native-compare/flatpak-bundle-fixture.py out/flatpak-native
+      - run: /usr/bin/python3 tools/native-compare/flatpak-bundles.py target/debug/analyze-anything out/flatpak-native/native-inert.flatpak --record out/flatpak-native/reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flatpak-native-reference
+          path: out/flatpak-native

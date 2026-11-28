@@ -211,9 +211,12 @@ version = "0.2.3"
 dependencies = [
  "aa-core",
  "flate2",
+ "hex",
+ "lzma-rust2 0.25.0",
  "roxmltree",
  "ruzstd",
  "serde_json",
+ "sha2 0.10.9",
  "tar",
 ]
 
