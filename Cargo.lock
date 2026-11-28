@@ -211,10 +211,12 @@ version = "0.2.3"
 dependencies = [
  "aa-core",
  "flate2",
+ "lzma-rust2 0.25.0",
  "roxmltree",
  "ruzstd",
  "serde_json",
  "tar",
+ "yaml-rust2",
 ]
 
 [[package]]
@@ -8011,6 +8013,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a8af4469040402b7fe43c26575bab9a3069f0717c4a2931ecf4fb8728ee4cec"
 dependencies = [
  "arraydeque",
+ "encoding_rs",
  "hashlink",
 ]
 

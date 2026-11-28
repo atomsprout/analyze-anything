@@ -1,0 +1,35 @@
+name: Linux image native comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/format-breadth-b]
+  pull_request:
+    paths:
+      - crates/aa-linux/src/squashfs.rs
+      - crates/aa-linux/src/appimage.rs
+      - crates/aa-linux/src/snap.rs
+      - tools/native-compare/linux-image*.py
+      - .github/workflows/linux-images-native.yml
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y squashfs-tools python3-yaml
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build -p aa-cli --no-default-features
+      - run: /usr/bin/python3 tools/native-compare/linux-image-fixtures.py out/linux-images-external
+      - run: >-
+          /usr/bin/python3 tools/native-compare/linux-images.py target/debug/analyze-anything
+          crates/aa-linux/tests/data/upstream-hello-world-29.snap
+          out/linux-images-external/appimagetool-12-x86_64.AppImage
+          --record out/linux-images-native/reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-images-native-reference
+          path: |
+            out/linux-images-native/*.json
+            out/linux-images-external/*.json
