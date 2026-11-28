@@ -73,9 +73,13 @@ complete qualification of every version, compression method or platform.
   candidates and incomplete listings cannot produce confirmed targets.
 
 Windows read-only CLI comparisons passed 22 ar checks over three archives and 68
-declaration checks over four upstream files. These are local reference records, not
-Linux native-validator qualification; the native-comparison workflow runs the same
-fixtures with Linux tools before release. No local Linux VM was qualified.
+declaration checks over four upstream files. Linux native-comparison run
+[46104680253](https://github.com/atomsprout/analyze-anything/actions/runs/46104680253)
+at 9731df0 passed 22 ar, 56 Arch and 68 declaration checks, plus the existing 125
+Debian/RPM checks. Native declaration validators retain their actual diagnostics;
+unsupported templates or absent host executables are not represented as validation
+success. No local Linux VM was qualified. Later source changes still require their
+own final CI and package checks.
 
 ## Parts not verified on real samples
 

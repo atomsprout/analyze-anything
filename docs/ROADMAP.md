@@ -40,8 +40,8 @@ are foundations to deepen. Comparing two software versions is not a delivery pri
 |---|---|---|---|
 | Completed foundation | Read a useful report and reliably finish or stop an analysis | Five representative real-input scenarios, source corrections and packaged CLI/agent automation, shipped through PR #8 in 0.2.1 | [Recorded report review](spikes/report-workflow.md); platform-specific CI/release gates retain their own revision and runtime scope |
 | Completed in 0.2.2: MSI action context | Follow a declared operation to its condition, source and supplied target | MSI action sequences, phase/order, literal conditions and supported Binary-table payload links; reuse existing entry-point relationships and evidence navigation | Preserve original table/row evidence, ambiguous or missing targets and unread semantics; validate real redistributable samples against read-only native inspection. Reports and queries must expose the same facts without asserting execution. |
-| Next: establish the format catalogue | Know how many format families have useful readers and which profiles were qualified | Audit the implementation baseline below; give every family a stable ID, aliases, supported profiles, analysis depth and sample/reference records | Separate implemented, independently qualified and recognition-only states; derive public counts from one catalogue and never count a filename alias as another format |
-| Linux expansion A | Explain Arch packages, static libraries and application/service entry declarations | Arch package metadata over TAR/streams; general ar members; bounded systemd, Desktop Entry and AppStream readers; supplied ELF library relationships | Two new primary families, targeting 30 including streams; three declaration families tracked separately. Real package/library samples, source evidence, link metadata and explicit unresolved references |
+| Implemented: format catalogue | Know how many format families have useful readers and which profiles were qualified | One catalogue with stable IDs, aliases, bounded profiles, evidence and limits; `formats --json` and generated public counts | Implementation and qualification boundaries are explicit; CI checks the matrix and public counts; extracted-package checks compare the compiled catalogue and version with source |
+| Implemented, release gates pending: Linux expansion A | Explain Arch packages, static libraries and application/service entry declarations | Arch package metadata over TAR/streams; general ar members; bounded systemd, Desktop Entry and AppStream readers; supplied ELF library relationships | 30 primary/compression families in the source catalogue. Linux references at 9731df0 passed 22 ar, 56 Arch and 68 declaration checks; final cross-platform CI and package gates still required |
 | Linux expansion B | Open filesystem-backed Linux applications | Bounded standalone SquashFS, then AppImage Type 2 and snap package profiles | Three new primary families, targeting 33 including streams. Each package needs its own identity/declaration evidence and qualified sample; no mounting, runtime invocation or installation |
 | Language package expansion | Explain software delivered through language ecosystems | Python wheel, npm package tarball and Java archive profiles over existing ZIP/TAR; integrate captured components and declaration relationships | Three new primary families, targeting 36 including streams. Count Java archive profiles together; generic extraction alone does not qualify a package reader |
 | Following depth work: explain static code references | See which method contains a capability-related reference and why it matters | Start with one .NET IL profile using existing CLR metadata; bounded method-body decoding, supported call/string/token references and a small set of explainable same-method evidence combinations | Real licensed samples and independent static-reader references; method/token and proven byte locations, malformed/unsupported cases and budgets; no runtime loading and no inferred execution or complete reachability. Deepening this existing family adds no format count |
@@ -64,7 +64,10 @@ The source inventory for 0.2.2 yields **24 selected primary input-format familie
 compressed-stream formats**, or **28 implemented catalogue entries**. This is a conservative
 inventory of registered implementations, not a claim that every variant has independent
 real-sample qualification. It does not enumerate every nested structure or declaration
-reader. The catalogue audit is the first delivery gate before using an exact public total.
+reader. The first breadth increment implements [the audited source catalogue](FORMATS.md)
+with **26 primary families + four compression formats = 30**, and 11 separately tracked
+declaration families (including the existing Windows readers). Every entry lists its
+bounded implementation profile and evidence; this does not expand the qualification scope.
 
 | Category | Count | Families in the implementation baseline |
 |---|---:|---|
@@ -106,15 +109,12 @@ Use stable family IDs and these rules for every later count:
   reference where available, deterministic evidence, bounded resources and tested limits.
   Record sample hash, source/licence, qualified profile and reference-tool revision.
 
-Create one machine-readable catalogue for README, website and release-note counts rather
-than maintaining several totals; check unique IDs, aliases and public totals in CI.
-Keep aliases, nested capabilities, qualification status
-and limitations visible in its support matrix. Until that audit is complete, suitable public
-wording is: **"Readers for more than 20 families of software artifacts and archives, plus
-gzip, bzip2, xz and Zstandard streams, with documented profile limits."**
-After the audit, an exact headline should retain the split, such as **"24 primary format
-families + 4 compression formats"**, and link to the same matrix. Planned additions are
-never included in the released total.
+The [machine-readable catalogue](../crates/aa-core/src/formats.json) now supplies README,
+website-source and support-matrix totals. CI checks unique IDs, aliases and matching public
+counts. Keep aliases, nested capabilities, qualification records and limitations visible.
+An exact headline retains the split: **"26 primary format families + 4 compression
+formats"**, linked to the same matrix. Planned additions are never included in released
+totals. Counts describe implemented profiles, not complete support for every variant.
 
 ### Linux breadth increments
 
