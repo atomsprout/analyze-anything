@@ -9,6 +9,7 @@ pub struct AppImage;
 const MAX_SECTIONS: usize = 8192;
 const MAX_PROGRAMS: usize = 1024;
 const IMAGE_NAME: &str = "[filesystem].squashfs";
+const MAX_RELATIONSHIP_BYTES: usize = 16 * 1024 * 1024;
 type Result<T> = std::result::Result<T, &'static str>;
 
 const RULES: &[Rule] = &[
@@ -265,6 +266,29 @@ fn relative_target(value: &str) -> Option<String> {
     Some(value.to_string())
 }
 
+fn record_fact(out: &mut Output, key: &str, value: serde_json::Value, source: &Artifact, used: &mut usize) -> bool {
+    let bytes = json!({"artifact":source.path,"key":key,"value":value}).to_string().len();
+    if bytes > MAX_RELATIONSHIP_BYTES.saturating_sub(*used) {
+        return false;
+    }
+    *used += bytes;
+    out.fact(source, key, value);
+    true
+}
+
+fn record_finding(out: &mut Output, finding: Finding, used: &mut usize) -> bool {
+    let Ok(serialized) = serde_json::to_vec(&finding) else {
+        return false;
+    };
+    let bytes = serialized.len().saturating_add(64);
+    if bytes > MAX_RELATIONSHIP_BYTES.saturating_sub(*used) {
+        return false;
+    }
+    *used += bytes;
+    out.finding(finding);
+    true
+}
+
 impl Analyzer for AppImage {
     fn id(&self) -> &'static str {
         "appimage"
@@ -303,6 +327,19 @@ impl Analyzer for AppImage {
         out.limitation("appimage.authenticity-unchecked", Some(file), None);
     }
     fn analyze_tree(&self, tree: &dyn Tree, out: &mut Output) {
+        let files = tree.artifacts();
+        if files.len() > 100_000
+            || files.iter().any(|file| file.path.len() > 8192)
+            || files.iter().fold(0usize, |sum, file| sum.saturating_add(file.path.len())) > 32 * 1024 * 1024
+        {
+            out.limitation(
+                "appimage.entry-unresolved",
+                None,
+                Some("AppImage relationship index exceeds its count, 8192-byte path or 32 MiB aggregate path budget".into()),
+            );
+            return;
+        }
+        let mut output_bytes = 0usize;
         for (index, file) in tree.artifacts().iter().filter(|file| file.facts.contains_key("appimage.container")).enumerate() {
             if index == 1024 {
                 out.limitation("appimage.entry-unresolved", None, Some("AppImage relationship source budget exhausted".into()));
@@ -324,7 +361,8 @@ impl Analyzer for AppImage {
                 out.limitation("appimage.entry-unresolved", Some(file), Some("filesystem directory was not read".into()));
                 continue;
             };
-            let complete = image.facts.get("engine.container-listing").is_some_and(|listing| listing["complete"] == true);
+            let complete = image.facts.get("engine.container-listing").is_some_and(|listing| listing["complete"] == true)
+                && image.facts.get("squashfs.directory").is_some_and(|directory| directory["entries_truncated"] != true);
             let mut desktops = entries.iter().filter(|entry| {
                 entry["path"].as_str().is_some_and(|name| {
                     let name = name.trim_start_matches('/');
@@ -347,17 +385,30 @@ impl Analyzer for AppImage {
                             .is_some_and(|fact| fact["name"].as_str().is_some_and(|name| !name.is_empty()))
                 });
             if let Some(desktop) = desktop {
-                out.fact(
-                    file,
-                    "appimage.identity",
-                    json!({"name":desktop.facts["linux.desktop-entry"]["name"],"source":desktop.path,
-                    "source_sha256":desktop.digests.as_ref().map(|digest|&digest.sha256),"publisher_authenticated":false}),
-                );
-                out.finding(
+                let value = json!({"name":desktop.facts["linux.desktop-entry"]["name"],"source":desktop.path,
+                    "source_sha256":desktop.digests.as_ref().map(|digest|&digest.sha256),"publisher_authenticated":false});
+                if !record_fact(out, "appimage.identity", value, file, &mut output_bytes) {
+                    out.limitation(
+                        "appimage.entry-unresolved",
+                        Some(file),
+                        Some("shared AppImage relationship output exceeds 16 MiB".into()),
+                    );
+                    break;
+                }
+                if !record_finding(
+                    out,
                     Finding::new(Section::Identity, "appimage", "appimage.identity", Confidence::Verified, Severity::Info)
                         .param("name", desktop.facts["linux.desktop-entry"]["name"].clone())
                         .evidence(Evidence::field(desktop, "Desktop Entry/Name", desktop.facts["linux.desktop-entry"]["name"].clone())),
-                );
+                    &mut output_bytes,
+                ) {
+                    out.limitation(
+                        "appimage.entry-unresolved",
+                        Some(file),
+                        Some("shared AppImage relationship output exceeds 16 MiB".into()),
+                    );
+                    break;
+                }
             } else {
                 out.limitation("appimage.metadata-unresolved", Some(file), None);
             }
@@ -375,16 +426,28 @@ impl Analyzer for AppImage {
                 "status":if target.is_some(){"matched-supplied-declaration"}else{"unresolved"},
                 "target":target.map(|target|&target.path),"target_sha256":target.and_then(|target|target.digests.as_ref().map(|digest|&digest.sha256)),
                 "source_entry":entry,"runtime_target_resolved":false});
-            out.fact(file, "appimage.entry", relation);
+            if !record_fact(out, "appimage.entry", relation, file, &mut output_bytes) {
+                out.limitation("appimage.entry-unresolved", Some(file), Some("shared AppImage relationship output exceeds 16 MiB".into()));
+                break;
+            }
             if let (Some(entry), Some(target)) = (entry, target) {
-                out.finding(
+                if !record_finding(
+                    out,
                     Finding::new(Section::Structure, "appimage", "appimage.entry", Confidence::Verified, Severity::Info)
                         .evidence(Evidence::field(image, "SquashFS/AppRun", entry.clone()))
                         .evidence(Evidence::whole(
                             target,
                             json!({"path":target.path,"sha256":target.digests.as_ref().map(|digest|&digest.sha256)}),
                         )),
-                );
+                    &mut output_bytes,
+                ) {
+                    out.limitation(
+                        "appimage.entry-unresolved",
+                        Some(file),
+                        Some("shared AppImage relationship output exceeds 16 MiB".into()),
+                    );
+                    break;
+                }
             } else {
                 out.limitation(
                     "appimage.entry-unresolved",
@@ -548,10 +611,44 @@ mod tests {
         let out = check(vec![source.clone(), partial, target.clone(), desktop.clone()]);
         assert!(!out.facts.iter().any(|fact| fact.key == "appimage.identity"));
         assert!(out.facts.iter().any(|fact| fact.key == "appimage.entry" && fact.value["status"] == "unresolved"));
+        let mut preview = filesystem.clone();
+        preview.facts.get_mut("squashfs.directory").expect("directory")["entries_truncated"] = true.into();
+        let out = check(vec![source.clone(), preview, target.clone(), desktop.clone()]);
+        assert!(!out.facts.iter().any(|fact| fact.key == "appimage.identity"));
+        assert!(
+            out.facts.iter().any(|fact| fact.key == "appimage.entry" && fact.value["status"] == "unresolved"),
+            "a clipped directory cannot establish unique root declarations"
+        );
+        let out = check(vec![source.clone(), filesystem.clone(), target.clone(), desktop.clone(), artifact(&"x".repeat(8193), None)]);
+        assert!(out.facts.is_empty());
+        assert!(out.findings.is_empty());
+        assert!(out.limitations.iter().any(|limit| limit.code == "appimage.entry-unresolved"));
         let mut changed = target;
         changed.facts.insert("engine.entry-name".into(), json!({"colliding":true}));
         let out = check(vec![source, filesystem, changed, desktop]);
         assert!(out.facts.iter().any(|fact| fact.key == "appimage.entry" && fact.value["status"] == "unresolved"));
         assert!(out.facts.iter().all(|fact| fact.value.get("runtime_target_resolved").is_none_or(|value| value == &Value::Bool(false))));
+    }
+
+    #[test]
+    fn facts_and_findings_are_charged_by_their_full_serialized_paths_and_values() {
+        let source = artifact(&format!("{}.AppImage", "p".repeat(4000)), None);
+        let value = json!({"target":format!("{}/AppRun",source.path),"source":source.path});
+        let mut output = Output::default();
+        let mut used = MAX_RELATIONSHIP_BYTES - 1;
+        assert!(!record_fact(&mut output, "appimage.entry", value.clone(), &source, &mut used));
+        assert!(output.facts.is_empty());
+        let finding = Finding::new(Section::Structure, "appimage", "appimage.entry", Confidence::Verified, Severity::Info)
+            .evidence(Evidence::whole(&source, value.clone()));
+        assert!(!record_finding(&mut output, finding, &mut used));
+        assert!(output.findings.is_empty());
+        let mut used = 0;
+        assert!(record_fact(&mut output, "appimage.entry", value.clone(), &source, &mut used));
+        let fact_bytes = json!({"artifact":source.path,"key":"appimage.entry","value":value}).to_string().len();
+        assert_eq!(used, fact_bytes);
+        let finding = Finding::new(Section::Structure, "appimage", "appimage.entry", Confidence::Verified, Severity::Info)
+            .evidence(Evidence::whole(&source, json!({"path":source.path})));
+        assert!(record_finding(&mut output, finding, &mut used));
+        assert_eq!(used, fact_bytes + serde_json::to_vec(&output.findings[0]).expect("sealed finding").len());
     }
 }

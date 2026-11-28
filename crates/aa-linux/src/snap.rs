@@ -16,6 +16,7 @@ const MAX_DEPTH: usize = 24;
 const MAX_SCALAR: usize = 16 * 1024;
 const MAX_APPS: usize = 256;
 const MAX_REFERENCES: usize = 1024;
+const MAX_RELATIONSHIP_BYTES: usize = 16 * 1024 * 1024;
 type Result<T> = std::result::Result<T, &'static str>;
 
 const RULES: &[Rule] = &[
@@ -217,12 +218,15 @@ struct Context<'a> {
     metadata: &'a Artifact,
     references: Vec<Value>,
     incomplete: bool,
+    references_truncated: bool,
+    output_bytes: &'a mut usize,
 }
 
 impl Context<'_> {
-    fn reference(&mut self, field: &str, node: Option<&Node>, literal: &str, command: bool) {
-        if self.references.len() == MAX_REFERENCES {
+    fn reference(&mut self, field: &str, node: Option<&Node>, literal: &str, command: bool, observed: Option<&Artifact>) {
+        if self.references.len() == MAX_REFERENCES || *self.output_bytes >= MAX_RELATIONSHIP_BYTES {
             self.incomplete = true;
+            self.references_truncated = true;
             return;
         }
         let declared = match redact_named_value(field, literal) {
@@ -240,14 +244,38 @@ impl Context<'_> {
         if target.is_none() || literal.contains(['$', '%', '\\', '\'', '"']) {
             self.incomplete = true;
         }
-        self.references.push(json!({"field":field,"line":node.map(|node|node.line),"basis":"captured-package-root",
+        let source = observed.unwrap_or(self.metadata);
+        let value = json!({"field":field,"line":node.map(|node|node.line),"basis":"captured-package-root",
+            "source":source.path,"source_kind":if observed.is_some(){"captured-hook-file"}else{"metadata-field"},
             "declared":declared,"status":if target.is_some(){"matched-supplied-declaration"}else{"unresolved"},
             "target":target.map(|file|&file.path),"target_sha256":target.and_then(|file|file.digests.as_ref().map(|digest|&digest.sha256)),
-            "runtime_target_resolved":false,"reason":if target.is_some(){None}else{Some("no unambiguous original captured regular file for the supported literal path")}}));
+            "runtime_target_resolved":false,"reason":if target.is_some(){None}else{Some("no unambiguous original captured regular file for the supported literal path")}});
+        let size = value.to_string().len();
+        if size > MAX_RELATIONSHIP_BYTES.saturating_sub(*self.output_bytes) {
+            self.incomplete = true;
+            self.references_truncated = true;
+            return;
+        }
+        *self.output_bytes += size;
+        self.references.push(value);
     }
 }
 
-fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &mut Output) -> Result<()> {
+fn record_finding(out: &mut Output, finding: Finding, bytes: &mut usize) -> bool {
+    let Ok(serialized) = serde_json::to_vec(&finding) else {
+        return false;
+    };
+    // Sealing replaces the empty id with 64 hexadecimal bytes.
+    let size = serialized.len().saturating_add(64);
+    if size > MAX_RELATIONSHIP_BYTES.saturating_sub(*bytes) {
+        return false;
+    }
+    *bytes += size;
+    out.finding(finding);
+    true
+}
+
+fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &mut Output, output_bytes: &mut usize) -> Result<()> {
     if metadata.size > MAX_BYTES as u64 {
         return Err("snap.yaml exceeds the 256 KiB byte budget");
     }
@@ -255,7 +283,8 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
     let root = parse(&bytes)?;
     let name = root.identity("name").ok_or("missing, nonliteral or redacted snap name")?;
     let version = root.identity("version").ok_or("missing, nonliteral or redacted snap version")?;
-    let mut context = Context { tree, package, metadata, references: Vec::new(), incomplete: false };
+    let mut context =
+        Context { tree, package, metadata, references: Vec::new(), incomplete: false, references_truncated: false, output_bytes };
     let known = [
         "name",
         "version",
@@ -336,7 +365,7 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
                 for key in ["command", "stop-command", "reload-command", "post-stop-command", "completer"] {
                     if let Some(node) = settings.get(key) {
                         if let Some(value) = node.scalar() {
-                            context.reference(&format!("apps/{app_name}/{key}"), Some(node), value, key != "completer");
+                            context.reference(&format!("apps/{app_name}/{key}"), Some(node), value, key != "completer", None);
                         } else {
                             context.incomplete = true;
                         }
@@ -346,7 +375,7 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
                     if let Yaml::Sequence(values) = &chain.value {
                         for (index, node) in values.iter().enumerate() {
                             if let Some(value) = node.scalar() {
-                                context.reference(&format!("apps/{app_name}/command-chain/{index}"), Some(node), value, false);
+                                context.reference(&format!("apps/{app_name}/command-chain/{index}"), Some(node), value, false, None);
                             } else {
                                 context.incomplete = true;
                             }
@@ -373,7 +402,7 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
                     name.clone(),
                     json!({"name":name,"line":node.line,"declarations":node.retained(name)?,"source":"meta/snap.yaml"}),
                 );
-                context.reference(&format!("hooks/{name}"), Some(node), &format!("meta/hooks/{name}"), false);
+                context.reference(&format!("hooks/{name}"), Some(node), &format!("meta/hooks/{name}"), false, None);
             }
         } else {
             context.incomplete = true;
@@ -394,20 +423,18 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
         }
         if !hooks.contains_key(name) {
             hooks.insert(name.to_string(),json!({"name":name,"source":"captured meta/hooks file","path":file.path,"sha256":file.digests.as_ref().map(|digest|&digest.sha256)}));
-            context.reference(&format!("meta/hooks/{name}"), None, &format!("meta/hooks/{name}"), false);
+            context.reference(&format!("meta/hooks/{name}"), None, &format!("meta/hooks/{name}"), false, Some(file));
         }
     }
     let metadata_value = root.retained("snap.yaml")?;
     out.kind(package, "snap");
-    out.fact(
-        package,
-        "snap.package",
-        json!({"name":name,"version":version,"source":metadata.path,
+    let mut package_value = json!({"name":name,"version":version,"source":metadata.path,
         "source_sha256":metadata.digests.as_ref().map(|digest|&digest.sha256),"metadata":metadata_value,
-        "applications":applications,"hooks":hooks.into_values().collect::<Vec<_>>(),"references":context.references,
-        "schema_validated":false,"runtime_target_resolved":false,"store_queried":false,"signatures_verified":false}),
-    );
-    out.finding(
+        "applications":applications,"hooks":hooks.into_values().collect::<Vec<_>>(),"references":context.references,"references_truncated":context.references_truncated,
+        "schema_validated":false,"runtime_target_resolved":false,"store_queried":false,"signatures_verified":false});
+    let mut findings_truncated = false;
+    if !record_finding(
+        out,
         Finding::new(Section::Identity, "snap", "snap.identity", Confidence::Verified, Severity::Info)
             .param("name", name)
             .param("version", version)
@@ -421,13 +448,22 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
                 format!("snap.yaml/version (line {})", root.field("version").expect("validated version").line),
                 root.field("version").expect("validated version").retained("version")?,
             )),
-    );
-    if !applications.is_empty() {
-        out.finding(
+        context.output_bytes,
+    ) {
+        findings_truncated = true;
+        context.incomplete = true;
+    }
+    if !applications.is_empty()
+        && !record_finding(
+            out,
             Finding::new(Section::Capabilities, "snap", "snap.applications", Confidence::Verified, Severity::Info)
                 .param("count", applications.len())
                 .evidence(Evidence::field(metadata, "snap.yaml/apps", json!(applications))),
-        );
+            context.output_bytes,
+        )
+    {
+        findings_truncated = true;
+        context.incomplete = true;
     }
     let hook_count = context
         .references
@@ -437,35 +473,64 @@ fn read_package(tree: &dyn Tree, package: &Artifact, metadata: &Artifact, out: &
         })
         .count();
     if hook_count > 0 {
-        out.finding(
-            Finding::new(Section::Capabilities, "snap", "snap.hooks", Confidence::Verified, Severity::Info)
-                .param("count", hook_count)
-                .evidence(Evidence::field(
+        let mut finding =
+            Finding::new(Section::Capabilities, "snap", "snap.hooks", Confidence::Verified, Severity::Info).param("count", hook_count);
+        for reference in context
+            .references
+            .iter()
+            .filter(|reference| {
+                reference["field"].as_str().is_some_and(|field| field.starts_with("hooks/") || field.starts_with("meta/hooks/"))
+            })
+            .take(64)
+        {
+            if reference["source_kind"] == "captured-hook-file" {
+                if let Some(source) = reference["source"].as_str().and_then(|path| tree.get(path)) {
+                    finding = finding.evidence(Evidence::whole(source,json!({"path":source.path,"role":"observed snap hook file","sha256":source.digests.as_ref().map(|digest|&digest.sha256)})));
+                }
+            } else {
+                finding = finding.evidence(Evidence::field(
                     metadata,
-                    "snap hook declarations and captured files",
-                    json!(
-                        context
-                            .references
-                            .iter()
-                            .filter(|reference| reference["field"]
-                                .as_str()
-                                .is_some_and(|field| field.starts_with("hooks/") || field.starts_with("meta/hooks/")))
-                            .collect::<Vec<_>>()
-                    ),
-                )),
-        );
+                    reference["field"].as_str().unwrap_or("snap hook declaration"),
+                    reference.clone(),
+                ));
+            }
+        }
+        if !finding.evidence.is_empty() && !record_finding(out, finding, context.output_bytes) {
+            findings_truncated = true;
+            context.incomplete = true;
+        }
     }
     for reference in context.references.iter().filter(|reference| reference["status"] == "matched-supplied-declaration").take(64) {
         let target = reference["target"].as_str().and_then(|path| tree.get(path)).expect("matched captured reference");
-        out.finding(
+        let source = if reference["source_kind"] == "captured-hook-file" {
+            let Some(source) = reference["source"].as_str().and_then(|path| tree.get(path)) else {
+                context.incomplete = true;
+                continue;
+            };
+            Evidence::whole(
+                source,
+                json!({"path":source.path,"role":"observed snap hook file","sha256":source.digests.as_ref().map(|digest|&digest.sha256)}),
+            )
+        } else {
+            Evidence::field(context.metadata, reference["field"].as_str().unwrap_or("snap declaration"), reference.clone())
+        };
+        if !record_finding(
+            out,
             Finding::new(Section::Structure, "snap", "snap.supplied-target", Confidence::Verified, Severity::Info)
-                .evidence(Evidence::field(context.metadata, reference["field"].as_str().unwrap_or("snap declaration"), reference.clone()))
+                .evidence(source)
                 .evidence(Evidence::whole(
                     target,
                     json!({"path":target.path,"sha256":target.digests.as_ref().map(|digest|&digest.sha256)}),
                 )),
-        );
+            context.output_bytes,
+        ) {
+            findings_truncated = true;
+            context.incomplete = true;
+            break;
+        }
     }
+    package_value["finding_preview_truncated"] = findings_truncated.into();
+    out.fact(package, "snap.package", package_value);
     if context.incomplete {
         out.limitation(
             "snap.partial",
@@ -489,11 +554,19 @@ impl Analyzer for Snap {
         if !artifacts.iter().any(|file| file.unpacked_by.as_deref() == Some("squashfs")) {
             return;
         }
-        if artifacts.len() > 100_000 {
-            out.limitation("snap.partial", None, Some("snap namespace index exceeds 100,000 artifacts".into()));
+        if artifacts.len() > 100_000
+            || artifacts.iter().any(|file| file.path.len() > 8192)
+            || artifacts.iter().fold(0usize, |sum, file| sum.saturating_add(file.path.len())) > 32 * 1024 * 1024
+        {
+            out.limitation(
+                "snap.partial",
+                None,
+                Some("snap namespace index exceeds its count, 8192-byte path or 32 MiB aggregate path budget".into()),
+            );
             return;
         }
         let mut metadata_bytes = 0u64;
+        let mut output_bytes = 0usize;
         for (index, package) in artifacts.iter().filter(|file| file.unpacked_by.as_deref() == Some("squashfs")).enumerate() {
             if index == 1024 {
                 out.limitation("snap.partial", None, Some("snap candidate count budget exhausted".into()));
@@ -515,7 +588,7 @@ impl Analyzer for Snap {
             let result = if !complete || !original(package) {
                 Err("filesystem listing or original package name is incomplete or ambiguous")
             } else if let Some(metadata) = metadata.filter(|metadata| original(metadata)) {
-                read_package(tree, package, metadata, out)
+                read_package(tree, package, metadata, out, &mut output_bytes)
             } else {
                 Err("one original root meta/snap.yaml was not captured")
             };
@@ -613,6 +686,65 @@ mod tests {
         let again = analyze(&tree);
         assert_eq!(out.facts, again.facts);
         assert_eq!(out.findings, again.findings);
+    }
+
+    #[test]
+    fn observed_only_hooks_are_evidence_from_the_captured_hook_file() {
+        let tree = supplied_yaml(b"name: example\nversion: 1\n");
+        let output = analyze(&tree);
+        let hooks = output.findings.iter().find(|finding| finding.rule == "snap.hooks").expect("observed hook finding");
+        assert!(
+            hooks
+                .evidence
+                .iter()
+                .all(|evidence| evidence.artifact == "example.snap/meta/hooks/install" && evidence.location == aa_core::Location::Whole)
+        );
+        let reference = &package(&output)["references"][0];
+        assert_eq!(reference["source_kind"], "captured-hook-file");
+        assert_eq!(reference["source"], "example.snap/meta/hooks/install");
+        assert!(reference["line"].is_null());
+        let target = output.findings.iter().find(|finding| finding.rule == "snap.supplied-target").expect("captured hook relation");
+        assert_eq!(target.evidence[0].artifact, "example.snap/meta/hooks/install");
+        assert_eq!(target.evidence[0].location, aa_core::Location::Whole);
+        assert!(
+            hooks.evidence.iter().all(|evidence| !evidence.artifact.ends_with("snap.yaml")),
+            "an absent YAML field cannot establish an observed hook"
+        );
+    }
+
+    #[test]
+    fn relationship_and_finding_bytes_share_one_budget_and_long_paths_are_refused() {
+        let tree = supplied_yaml(b"name: example\nversion: 1\napps:\n  example:\n    command: bin/example\n");
+        let source = tree.get("example.snap").expect("package");
+        let metadata = tree.get("example.snap/meta/snap.yaml").expect("metadata");
+        let mut output = Output::default();
+        let mut bytes = MAX_RELATIONSHIP_BYTES - 1;
+        read_package(&tree, source, metadata, &mut output, &mut bytes).expect("valid metadata with an exhausted preview budget");
+        assert!(package(&output)["references"].as_array().expect("rows").is_empty());
+        assert_eq!(package(&output)["references_truncated"], true);
+        assert_eq!(package(&output)["finding_preview_truncated"], true);
+        assert!(output.findings.is_empty());
+        assert_eq!(bytes, MAX_RELATIONSHIP_BYTES - 1);
+        assert!(output.limitations.iter().any(|limit| limit.code == "snap.partial"));
+
+        let mut bytes = 0usize;
+        let mut first = Output::default();
+        read_package(&tree, source, metadata, &mut first, &mut bytes).expect("first package");
+        let rows = package(&first)["references"].as_array().expect("rows").iter().map(|row| row.to_string().len()).sum::<usize>();
+        let findings = first.findings.iter().map(|finding| serde_json::to_vec(finding).expect("finding JSON").len()).sum::<usize>();
+        assert_eq!(bytes, rows + findings, "both emitted rows and sealed findings consume the shared byte budget");
+        let previous = bytes;
+        let mut second = Output::default();
+        read_package(&tree, source, metadata, &mut second, &mut bytes).expect("second package");
+        assert_eq!(bytes, previous * 2, "the budget is shared across package calls");
+
+        let mut tree = tree;
+        tree.files.push(artifact(&"x".repeat(8193), None, b"unrelated input"));
+        tree.files.sort_by(|a, b| a.path.cmp(&b.path));
+        let output = analyze(&tree);
+        assert!(output.facts.is_empty());
+        assert!(output.findings.is_empty());
+        assert!(output.limitations.iter().any(|limit| limit.code == "snap.partial"));
     }
 
     #[test]

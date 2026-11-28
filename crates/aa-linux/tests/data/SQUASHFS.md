@@ -35,6 +35,14 @@ file, 262,144 shared file-block descriptors, 512 MiB shared data decompression a
 16 MiB fragment cache. XZ dictionary/decoder memory is limited to 32 MiB before
 dictionary allocation. Sparse blocks are supplied as logical zero bytes.
 
+Retained symlink targets share a 16 MiB aggregate budget, including aliases of
+the same inode. Directory facts have a separate 16 MiB serialized entry preview
+with `entries_total` / `entries_truncated`; an explicit limitation identifies
+omitted declarations. Captured full artifact paths are capped at 8,192 bytes
+and 32 MiB combined per filesystem before files are offered to the engine.
+Fragment cache identity includes its compressed/raw declaration, so overlapping
+extents with different interpretation flags cannot share decoded bytes.
+
 LZMA/LZO/LZ4/Zstandard compression, other filesystem versions and non-UTF-8 names
 are explicit unsupported profiles. Symlinks/devices/sockets/FIFOs remain metadata;
 xattr/ACL semantics, export indexes, mounting eligibility and runtime behavior

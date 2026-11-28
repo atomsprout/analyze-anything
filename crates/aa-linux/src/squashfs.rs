@@ -55,6 +55,13 @@ const RULES: &[Rule] = &[
         text_en: "Filesystem ownership and mode values are declarations. Extended attributes, ACL effects, export lookup semantics, mounting eligibility and runtime behavior were not established.",
         text_zh: "文件系统所有者和模式值是声明，没有确定扩展属性、ACL 效果、导出索引语义、挂载条件或运行时行为。",
     },
+    Rule {
+        id: "squashfs.output-limit",
+        title_en: "SquashFS directory preview reached its limit",
+        title_zh: "SquashFS 目录预览达到上限",
+        text_en: "Some directory declarations were omitted from the bounded report preview. The total entry count and captured regular-file artifacts remain available.",
+        text_zh: "受限报告预览省略了部分目录声明，仍保留总条目数和已捕获的普通文件制品。",
+    },
 ];
 
 fn u16_at(bytes: &[u8], at: usize) -> Result<u16> {
@@ -285,6 +292,7 @@ fn parse(bytes: &[u8]) -> Result<Filesystem> {
     let mut path_bytes = 0usize;
     let mut block_count = 0usize;
     let mut directory_bytes = 0usize;
+    let mut target_bytes = 0usize;
     while let Some((path, reference, depth, expected_type, expected_inode)) = stack.pop() {
         if entries.len() >= MAX_ENTRIES || depth > 64 {
             return Err("SquashFS path count or directory depth exceeds its profile".into());
@@ -446,6 +454,10 @@ fn parse(bytes: &[u8]) -> Result<Filesystem> {
                 if length > 4096 {
                     entry.unread = Some("symlink target exceeds 4096 bytes".into());
                 } else {
+                    target_bytes = target_bytes.checked_add(length).ok_or("SquashFS symlink target budget overflow")?;
+                    if target_bytes > MAX_METADATA {
+                        return Err("SquashFS retained symlink targets exceed the shared 16 MiB budget".into());
+                    }
                     let raw = metadata.read(bytes, &sb, block, offset, 24 + length, sb.directory_table)?;
                     entry.target = Some(std::str::from_utf8(&raw[24..]).map_err(|_| "SquashFS symlink target is not UTF-8")?.to_string());
                     entry.size = length as u64;
@@ -464,7 +476,7 @@ fn parse(bytes: &[u8]) -> Result<Filesystem> {
 #[derive(Default)]
 struct DataBudget {
     decoded: usize,
-    fragments: BTreeMap<(usize, usize), Arc<Vec<u8>>>,
+    fragments: BTreeMap<(usize, usize, bool), Arc<Vec<u8>>>,
     fragment_bytes: usize,
 }
 struct FileReader<'a> {
@@ -481,7 +493,7 @@ impl FileReader<'_> {
     fn next(&mut self) -> Result<bool> {
         let Some(chunk) = self.chunks.get(self.index) else { return Ok(false) };
         self.index += 1;
-        let key = (chunk.offset.unwrap_or(0), chunk.stored);
+        let key = (chunk.offset.unwrap_or(0), chunk.stored, chunk.compressed);
         let cached = chunk.fragment.then(|| self.budget.fragments.get(&key).cloned()).flatten();
         self.current = if let Some(data) = cached {
             data
@@ -540,18 +552,31 @@ impl Unpacker for Squashfs {
     fn rules(&self) -> &'static [Rule] {
         RULES
     }
-    fn unpack(&self, _file: &Artifact, bytes: &[u8], sink: &mut dyn UnpackSink) -> Unpack {
+    fn unpack(&self, file: &Artifact, bytes: &[u8], sink: &mut dyn UnpackSink) -> Unpack {
         if !bytes.starts_with(b"hsqs") && !bytes.starts_with(b"sqsh") {
             return Unpack::NotMine;
+        }
+        if file.path.len() > 8192 {
+            return Unpack::Failed { kind: "squashfs", detail: "SquashFS container path exceeds 8192 bytes".into() };
         }
         let fs = match parse(bytes) {
             Ok(fs) => fs,
             Err(detail) => return Unpack::Failed { kind: "squashfs", detail },
         };
         let mut budget = DataBudget::default();
+        let mut path_bytes = 0usize;
         for entry in &fs.entries {
             if entry.kind != "file" {
                 continue;
+            }
+            let length = file.path.len().saturating_add(1).saturating_add(entry.path.len());
+            path_bytes = path_bytes.saturating_add(length);
+            if length > 8192 || path_bytes > 32 * 1024 * 1024 {
+                sink.limitation(
+                    "squashfs.entry-unread",
+                    Some("captured filesystem paths exceed the 8192-byte individual or 32 MiB aggregate output profile".into()),
+                );
+                break;
             }
             if let Some(error) = &entry.unread {
                 sink.limitation("squashfs.entry-unread", Some(format!("{}: {error}", entry.path)));
@@ -597,9 +622,23 @@ impl Analyzer for Squashfs {
                 return;
             }
         };
-        let entries:Vec<_>=fs.entries.iter().map(|entry|json!({"path":entry.path,"inode":entry.inode,"inode_reference":entry.reference,
-            "type":entry.kind,"mode":entry.mode,"uid":entry.uid,"gid":entry.gid,"size":entry.size,"link_target":entry.target,"unread":entry.unread})).collect();
-        out.fact(file,"squashfs.directory",json!({"superblock":{"bytes_used":fs.sb.used,"version_major":4,"version_minor":0,"compression":fs.sb.compression,"block_size":fs.sb.block,"inodes":fs.sb.inodes},"entries":entries}));
+        let mut entries = Vec::new();
+        let mut output_bytes = 0usize;
+        for entry in &fs.entries {
+            let value = json!({"path":entry.path,"inode":entry.inode,"inode_reference":entry.reference,
+                "type":entry.kind,"mode":entry.mode,"uid":entry.uid,"gid":entry.gid,"size":entry.size,"link_target":entry.target,"unread":entry.unread});
+            let size = value.to_string().len();
+            if size > MAX_METADATA.saturating_sub(output_bytes) {
+                break;
+            }
+            output_bytes += size;
+            entries.push(value);
+        }
+        let truncated = entries.len() != fs.entries.len();
+        if truncated {
+            out.limitation("squashfs.output-limit", Some(file), None);
+        }
+        out.fact(file,"squashfs.directory",json!({"superblock":{"bytes_used":fs.sb.used,"version_major":4,"version_minor":0,"compression":fs.sb.compression,"block_size":fs.sb.block,"inodes":fs.sb.inodes},"entries":entries,"entries_total":fs.entries.len(),"entries_truncated":truncated}));
         out.finding(
             Finding::new(Section::Structure, "squashfs", "squashfs.contents", Confidence::Verified, Severity::Info)
                 .param("count", fs.entries.len())
@@ -739,6 +778,64 @@ mod tests {
         reader.read_to_end(&mut data).map_err(|error| error.to_string())?;
         Ok(data)
     }
+
+    fn symlink_aliases(count: usize) -> Vec<u8> {
+        let mut bytes = vec![0; 96];
+        let mut inodes = base(3, 2);
+        inodes.resize(24, 0);
+        put32(&mut inodes, 16, count as u32);
+        put32(&mut inodes, 20, 4096);
+        inodes.extend([b't'; 4096]);
+        let root_offset = inodes.len();
+        let mut root = base(8, 1);
+        root.resize(40, 0);
+        put32(&mut root, 16, 2);
+        put32(&mut root, 28, 1);
+        put32(&mut root, 36, u32::MAX);
+        let mut directory = Vec::new();
+        for start in (0..count).step_by(256) {
+            let end = (start + 256).min(count);
+            let at = directory.len();
+            directory.resize(at + 12, 0);
+            put32(&mut directory, at, (end - start - 1) as u32);
+            put32(&mut directory, at + 8, 2);
+            for index in start..end {
+                let name = format!("link{index:04}");
+                let at = directory.len();
+                directory.resize(at + 8, 0);
+                put16(&mut directory, at + 4, 3);
+                put16(&mut directory, at + 6, name.len() as u16 - 1);
+                directory.extend(name.as_bytes());
+            }
+        }
+        put32(&mut root, 20, directory.len() as u32 + 3);
+        inodes.extend(root);
+        let inode_table = meta(&mut bytes, &inodes);
+        let directory_table = bytes.len();
+        for block in directory.chunks(8192) {
+            meta(&mut bytes, block);
+        }
+        let id = meta(&mut bytes, &0u32.to_le_bytes());
+        let id_table = bytes.len();
+        bytes.extend((id as u64).to_le_bytes());
+        let used = bytes.len();
+        bytes[..4].copy_from_slice(b"hsqs");
+        put32(&mut bytes, 4, 2);
+        put32(&mut bytes, 12, 4096);
+        put16(&mut bytes, 20, 1);
+        put16(&mut bytes, 22, 12);
+        put16(&mut bytes, 26, 1);
+        put16(&mut bytes, 28, 4);
+        put64(&mut bytes, 32, root_offset as u64);
+        put64(&mut bytes, 40, used as u64);
+        put64(&mut bytes, 48, id_table as u64);
+        put64(&mut bytes, 56, NONE);
+        put64(&mut bytes, 64, inode_table as u64);
+        put64(&mut bytes, 72, directory_table as u64);
+        put64(&mut bytes, 80, NONE);
+        put64(&mut bytes, 88, NONE);
+        bytes
+    }
     #[test]
     fn published_xz_snap_exposes_its_captured_files_without_execution() {
         let bytes = include_bytes!("../tests/data/upstream-hello-world-29.snap");
@@ -798,6 +895,101 @@ mod tests {
                 assert_eq!(budget.fragments.len(), 1);
             }
         }
+    }
+
+    #[test]
+    fn fragment_cache_distinguishes_raw_and_compressed_interpretations_of_one_extent() {
+        let bytes = fixture(true);
+        let fs = parse(&bytes).expect("fragment image");
+        let mut budget = DataBudget::default();
+        assert_eq!(contents(&bytes, &fs, &mut budget).expect("compressed fragment"), b"bounded-file\n");
+        let compressed = &fs.entries[0].chunks[0];
+        let offset = compressed.offset.expect("stored fragment");
+        let raw = chunk(&fs.sb, offset as u64, compressed.stored as u32 | 0x0100_0000, fs.sb.block, 0, compressed.stored, true)
+            .expect("raw declaration");
+        let chunks = [raw];
+        let mut reader = FileReader {
+            bytes: &bytes,
+            sb: &fs.sb,
+            chunks: &chunks,
+            index: 0,
+            current: Arc::new(Vec::new()),
+            position: 0,
+            end: 0,
+            budget: &mut budget,
+        };
+        let mut actual = Vec::new();
+        reader.read_to_end(&mut actual).expect("raw fragment");
+        assert_eq!(actual, bytes[offset..offset + compressed.stored]);
+        assert_ne!(actual, b"bounded-file\n");
+        assert_eq!(budget.fragments.len(), 2);
+    }
+
+    struct ImageTree {
+        files: Vec<Artifact>,
+        bytes: Vec<u8>,
+    }
+    impl Tree for ImageTree {
+        fn artifacts(&self) -> &[Artifact] {
+            &self.files
+        }
+        fn read(&self, _: &str) -> std::io::Result<aa_core::plugin::Bytes> {
+            Ok(aa_core::plugin::Bytes::from_vec(self.bytes.clone()))
+        }
+    }
+    fn artifact(name: &str, bytes: &[u8]) -> Artifact {
+        Artifact {
+            path: name.into(),
+            parent: None,
+            size: bytes.len() as u64,
+            digests: None,
+            detected: None,
+            kind: Some("squashfs".into()),
+            entropy: None,
+            unpacked_by: Some("squashfs".into()),
+            facts: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn repeated_symlink_inodes_cannot_multiply_targets_or_directory_output_without_a_limit() {
+        let bytes = symlink_aliases(MAX_METADATA / 4096 + 1);
+        let error = parse(&bytes).err().expect("shared target budget must stop aliases");
+        assert!(error.contains("symlink targets"), "{error}");
+        let bytes = symlink_aliases(MAX_METADATA / 4096);
+        let tree = ImageTree { files: vec![artifact("aliases.squashfs", &bytes)], bytes };
+        let mut output = Output::default();
+        Squashfs.analyze_file(&tree, &tree.files[0], &mut output);
+        let fact = &output.facts[0].value;
+        assert_eq!(fact["entries_total"], MAX_METADATA / 4096);
+        assert_eq!(fact["entries_truncated"], true);
+        let rows = fact["entries"].as_array().expect("bounded directory preview");
+        assert!(rows.len() < MAX_METADATA / 4096);
+        assert!(rows.iter().map(|row| row.to_string().len()).sum::<usize>() <= MAX_METADATA);
+        assert!(output.limitations.iter().any(|limit| limit.code == "squashfs.output-limit"));
+    }
+
+    #[test]
+    fn full_captured_paths_are_limited_before_the_sink_can_clone_them() {
+        struct Refuse {
+            calls: usize,
+            gaps: usize,
+        }
+        impl UnpackSink for Refuse {
+            fn add(&mut self, _: &str, _: &mut dyn Read) -> std::result::Result<(), SinkError> {
+                self.calls += 1;
+                panic!("long output path must be refused before a member is offered")
+            }
+            fn limitation(&mut self, code: &str, _: Option<String>) {
+                assert_eq!(code, "squashfs.entry-unread");
+                self.gaps += 1;
+            }
+        }
+        let bytes = fixture(false);
+        let mut sink = Refuse { calls: 0, gaps: 0 };
+        assert_eq!(Squashfs.unpack(&artifact(&"x".repeat(8191), &bytes), &bytes, &mut sink), Unpack::Done { kind: "squashfs" });
+        assert_eq!(sink.calls, 0);
+        assert_eq!(sink.gaps, 1);
     }
 
     #[test]

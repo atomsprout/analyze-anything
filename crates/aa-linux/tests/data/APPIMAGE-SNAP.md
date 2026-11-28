@@ -21,6 +21,10 @@ evidence. A regular AppRun or a supported literal package-relative link can matc
 an original captured regular file. Absolute links, parent traversal, substitutions,
 multiple hops, missing/changed entries and incomplete namespaces remain unresolved.
 The target's digest is evidence of bytes, never execution or publisher trust.
+Relationship indexing refuses full artifact paths above 8,192 bytes or an
+aggregate above 32 MiB. Serialized identity/entry facts and findings share a
+16 MiB budget. A clipped SquashFS directory preview cannot establish a unique
+root Desktop Entry or AppRun relationship.
 
 `appimage-external.ref.json` records AppImageKit 12's public
 `appimagetool-x86_64.AppImage`, SHA-256
@@ -53,6 +57,10 @@ metadata remain declarations. Literal package-relative command tokens, command
 chains and `meta/hooks` paths can match captured original regular files, without
 following symlinks or querying the host. Confinement, dependency satisfaction,
 store assertions, signatures, command evaluation and hook activation are unchecked.
+Full artifact paths are capped at 8,192 bytes and 32 MiB combined. Relationship
+rows and emitted findings share a 16 MiB serialized budget across packages;
+omissions are explicit. An observed hook file without a YAML declaration cites
+the captured hook artifact as evidence, rather than an absent YAML field.
 
 The unchanged MIT-declared Canonical hello-world 6.4 revision 29 fixture is described
 in [SQUASHFS.md](SQUASHFS.md). Its captured metadata and all four application targets
