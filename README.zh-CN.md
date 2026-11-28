@@ -64,7 +64,7 @@ target/release/analyze-anything <文件或文件夹>
 ## 使用
 
 [0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)
-改进了身份摘要、Apple 组件证据关联，以及安装程序和 .NET 的语义限制说明。
+增加了 Arch 软件包与 ar 归档解析、Linux 入口声明，以及明确支持范围的共享格式目录。
 发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
 详见[真实报告验收记录](docs/spikes/report-workflow.md)。
 
