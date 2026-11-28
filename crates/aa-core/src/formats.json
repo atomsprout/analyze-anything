@@ -649,57 +649,73 @@
       "id": "alpine-apk",
       "name": "Alpine Linux package",
       "group": "primary",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
         "Alpine apk"
       ],
-      "profile": "Explicitly qualified Alpine package metadata, payload and signature-declaration profiles.",
-      "evidence": [],
+      "profile": "Alpine APK v2 exact gzip members, control identity/dependencies/scripts and separately captured payload declarations.",
+      "evidence": [
+        "crates/aa-linux/src/alpine.rs",
+        "crates/aa-linux/tests/data/ALPINE.md",
+        "tools/native-compare/alpine-packages.py"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "APK v3/ADB and unsupported TAR profiles remain unread. Signature bytes and gzip integrity do not establish package authenticity. Scripts are never run."
       ]
     },
     {
       "id": "flatpak",
       "name": "Flatpak single-file bundle",
       "group": "primary",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
         "flatpak"
       ],
-      "profile": "Bounded OSTree-backed application-bundle structures and captured object relationships.",
-      "evidence": [],
+      "profile": "Full single-file Flatpak bundles with empty-base OSTree inline V0 stored/XZ literal operations, checked objects and application declarations.",
+      "evidence": [
+        "crates/aa-linux/src/flatpak.rs",
+        "crates/aa-linux/tests/data/FLATPAK.md",
+        "tools/native-compare/flatpak-bundles.py"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "Other base/fallback/opcode profiles are explicit limitations. No importing, installation, runtime loading or signature-trust claim."
       ]
     },
     {
       "id": "oci-image",
       "name": "OCI/Docker image family",
       "group": "primary",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
         "OCI image layout",
         "docker-save archive"
       ],
-      "profile": "Bounded image manifests, ordered layers, whiteout declarations and digest/source relationships.",
-      "evidence": [],
+      "profile": "One OCI/Docker-save family: captured manifest/configuration, checked SHA-256 descriptors, ordered separate layers and whiteout/link declarations.",
+      "evidence": [
+        "crates/aa-linux/src/image.rs",
+        "crates/aa-linux/tests/data/OCI.md",
+        "tools/native-compare/oci-images.py"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "No registry lookup, merged filesystem, image execution or signature trust. Global PAX, sparse and unfinished layer TAR profiles remain unsupported."
       ]
     },
     {
       "id": "lz4",
       "name": "LZ4 framed stream",
       "group": "compression",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
         "lz4"
       ],
-      "profile": "Bounded LZ4 framed decoding; raw blocks are a separate unsupported profile.",
-      "evidence": [],
+      "profile": "One modern independent-block LZ4 frame, bounded stored/compressed decoding with optional content size and declared checksums.",
+      "evidence": [
+        "crates/aa-unpack/src/lz4.rs",
+        "crates/aa-unpack/tests/data/LZ4.md",
+        "tools/native-compare/lz4-frames.py"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "Linked blocks, external dictionaries, legacy/raw/skippable and concatenated streams are unsupported. Checksums do not authenticate contents."
       ]
     },
     {
