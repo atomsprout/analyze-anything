@@ -12,6 +12,8 @@ const MAX_FIELDS: usize = 4096;
 const MAX_LINE: usize = 32 * 1024;
 const MAX_XML_NODES: u32 = 16_384;
 const MAX_XML_DEPTH: usize = 32;
+const MAX_XML_NAMESPACE: usize = 1024;
+const MAX_XML_EXPANDED: usize = 4 * 1024 * 1024;
 const MAX_ISSUES: usize = 32;
 const MAX_REFERENCE_PATH: usize = 8192;
 const MAX_REFERENCE_OUTPUT: usize = 16 * 1024 * 1024;
@@ -385,6 +387,7 @@ fn appstream(file: &Artifact, text: &str, out: &mut Output) -> Result<(), &'stat
     }
     let mut state = State::default();
     let mut declarations = Vec::new();
+    let mut expanded_bytes = 0usize;
     for node in root.descendants().filter(roxmltree::Node::is_element) {
         if declarations.len() == MAX_FIELDS || node.ancestors().count() > MAX_XML_DEPTH {
             return Err("AppStream declaration count or XML depth budget exceeded");
@@ -440,6 +443,11 @@ fn appstream(file: &Artifact, text: &str, out: &mut Output) -> Result<(), &'stat
             if attribute.value().len() > MAX_LINE || attributes.len() == 32 {
                 return Err("AppStream attribute budget exceeded");
             }
+            // Namespace URIs are interned by XML readers. Repeating a short prefix
+            // must not expand a shared long URI into every retained attribute key.
+            if attribute.name().len() > 512 || attribute.namespace().is_some_and(|namespace| namespace.len() > MAX_XML_NAMESPACE) {
+                return Err("AppStream namespace or attribute-name budget exceeded");
+            }
             let key = if attribute.namespace() == Some("http://www.w3.org/XML/1998/namespace") {
                 format!("xml:{}", attribute.name())
             } else if let Some(namespace) = attribute.namespace() {
@@ -463,9 +471,15 @@ fn appstream(file: &Artifact, text: &str, out: &mut Output) -> Result<(), &'stat
         if matches!(name, "id" | "launchable") && !literal_text {
             state.issue(line, "structured identity or launchable text is outside the literal profile");
         }
-        declarations.push(json!({"element": name, "parent": parent, "line": line, "offset": range.start,
+        let declaration = json!({"element": name, "parent": parent, "line": line, "offset": range.start,
             "length": range.len(), "attributes": attributes, "value": value,
-            "direct_component_child": node.parent_element() == Some(root), "literal_text": literal_text, "interpreted": supported && matches!(node.tag_name().namespace(), None | Some(APPSTREAM_NS))}));
+            "direct_component_child": node.parent_element() == Some(root), "literal_text": literal_text, "interpreted": supported && matches!(node.tag_name().namespace(), None | Some(APPSTREAM_NS))});
+        let needed = declaration.to_string().len();
+        if needed > MAX_XML_EXPANDED.saturating_sub(expanded_bytes) {
+            return Err("AppStream expanded declaration budget exceeded");
+        }
+        expanded_bytes += needed;
+        declarations.push(declaration);
     }
     let ids: Vec<_> = declarations
         .iter()
@@ -821,6 +835,23 @@ mod tests {
         let out = analyze("org.flameshot.Flameshot.desktop", template);
         assert!(fact(&out, "linux.desktop-entry")["commands"][0]["value"].as_str().expect("command").contains("@LAUNCHER_EXECUTABLE@"));
         assert!(out.limitations.iter().any(|limit| limit.code == "linux.declaration-partial"));
+    }
+
+    #[test]
+    fn shared_xml_namespace_uris_cannot_multiply_into_unbounded_attribute_keys() {
+        let attributes = (0..32).map(|index| format!(" n:a{index}=\"\"")).collect::<String>();
+        for namespace_length in [16 * 1024, 700] {
+            let namespace = format!("urn:foreign:{}", "a".repeat(namespace_length));
+            let nodes = format!("<name{attributes}>x</name>").repeat(1000);
+            let text = format!("<component xmlns:n=\"{namespace}\"><id>example</id>{nodes}</component>");
+            assert!(text.len() < MAX_BYTES, "small XML source");
+            let output = analyze("example.metainfo.xml", text.as_bytes());
+            assert!(!output.facts.iter().any(|fact| fact.key == "linux.appstream"));
+            assert!(output.limitations.iter().any(|limit| limit.code == "linux.declaration-unread"));
+        }
+        let valid = format!("<component xmlns:n=\"urn:foreign\"><id>example</id><name{attributes}>x</name></component>");
+        let output = analyze("example.metainfo.xml", valid.as_bytes());
+        assert_eq!(fact(&output, "linux.appstream")["name"], "example");
     }
 
     #[test]
