@@ -605,44 +605,61 @@
       "id": "wheel",
       "name": "Python wheel",
       "group": "primary",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
         "whl"
       ],
-      "profile": "Wheel identity, dependency/entry-point metadata and captured distribution contents.",
-      "evidence": [],
+      "profile": "Core Metadata 2.x and Wheel 1.x identity, literal Requires-Dist/entry-point declarations and captured ZIP member inventory.",
+      "evidence": [
+        "crates/aa-packages/src/wheel.rs",
+        "crates/aa-packages/tests/data/SOURCES.md",
+        "tools/native-compare/language-packages.py",
+        "crates/aa-engine/tests/language_packages.rs"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "Qualified on the unchanged MIT sampleproject 4.0.0 wheel with independent ZIP/native listing checks.",
+        "RECORD hashes/signatures, installation layout, dependency markers/extras and entry-point runtime effects are not evaluated."
       ]
     },
     {
       "id": "npm",
       "name": "npm package tarball",
       "group": "primary",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
         "npm tgz"
       ],
-      "profile": "Package identity, dependencies, literal lifecycle scripts and captured component contents.",
-      "evidence": [],
+      "profile": "Canonical package/package.json identity, dependency groups, literal lifecycle scripts, selected exports/engines and original TAR/link declarations.",
+      "evidence": [
+        "crates/aa-packages/src/npm.rs",
+        "crates/aa-packages/tests/data/SOURCES.md",
+        "tools/native-compare/language-packages.py",
+        "crates/aa-engine/tests/language_packages.rs"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "Qualified on the unchanged MIT isarray 2.0.5 tarball with independent TAR/native listing checks.",
+        "No lifecycle script execution, dependency resolution, registry lookup, runtime module selection or authenticity verification."
       ]
     },
     {
       "id": "java-archive",
       "name": "Java archive family",
       "group": "primary",
-      "state": "planned",
+      "state": "implemented",
       "aliases": [
-        "jar",
-        "war",
-        "ear"
+        "jar"
       ],
-      "profile": "Start with a qualified JAR manifest/entry/dependency profile; WAR/EAR require separate profile qualification.",
-      "evidence": [],
+      "profile": "JAR manifest 1.0 identity/main-class/class-path declarations, path-validated literal Maven properties and captured ZIP entries.",
+      "evidence": [
+        "crates/aa-packages/src/java.rs",
+        "crates/aa-packages/tests/data/java/README.md",
+        "crates/aa-packages/tests/data/java/native.ref.json",
+        "tools/native-compare/language-packages.py",
+        "crates/aa-engine/tests/language_packages.rs"
+      ],
       "limitations": [
-        "Not implemented or included in the supported total."
+        "JAR only: the MIT SLF4J API 2.0.16 fixture is compared with OpenJDK JarFile and native member listings. WAR/EAR profiles remain unqualified.",
+        "No class loading, runtime class-path or multi-release selection, Java properties escape/legacy encoding support, signature trust or code semantics."
       ]
     },
     {

@@ -235,6 +235,7 @@ impl Registry {
         registry.analyzers.extend(aa_windows::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_android::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_linux::analyzers().into_iter().map(Arc::from));
+        registry.analyzers.extend(aa_packages::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_unpack::analyzers().into_iter().map(Arc::from));
         registry.analyzers.extend(aa_correlate::analyzers().into_iter().map(Arc::from));
         registry

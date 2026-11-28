@@ -85,7 +85,7 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 ## 能读什么
 
 <!-- formats:begin -->
-**26 类主要格式＋4 种压缩格式（共 30 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
+**29 类主要格式＋4 种压缩格式（共 33 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
 <!-- formats:end -->
 
 | | |
@@ -171,10 +171,10 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 当前发布版本是 0.2.3。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
-0.2.3 增加了 Arch 包与 ar 归档、systemd/Desktop Entry/AppStream 声明，以及有边界的随附库关系。格式数量来自同一份目录。接下来按这个顺序做：
+0.2.3 增加了 Arch 包与 ar 归档、systemd/Desktop Entry/AppStream 声明，以及有边界的随附库关系。0.2.5 源码还可读取 wheel、npm TAR 包和 JAR 声明，记录捕获的组件身份与尚未解析的字面依赖；发布仍待完成。格式数量来自同一份目录。接下来按这个顺序做：
 
 1. **Linux 应用格式**：验收 SquashFS、AppImage Type 2 与 snap，主要格式与压缩格式合计目标为 33 类。
-2. **语言软件包**：增加 wheel、npm tarball 与 Java 归档范围，目标为 36 类。
+2. **语言软件包**：交付已实现的 wheel、npm TAR 包和 JAR 范围，在 Linux 应用批次之后达到 36 类。WAR/EAR 仍是 Java 家族中尚未验收的范围。
 3. **后续覆盖**：验收 Alpine APK、Flatpak、一个 OCI/Docker 格式家族与 LZ4，目标为 40 类。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。

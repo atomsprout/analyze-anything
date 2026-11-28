@@ -14,6 +14,8 @@ use aa_core::plugin::{Analyzer, Output, Rule, Tree};
 use aa_core::{Artifact, Confidence, Evidence, Finding, Section, Severity};
 use serde_json::{Value, json};
 
+#[path = "language_packages.rs"]
+mod language_packages;
 #[path = "nuget_relationships.rs"]
 mod nuget_relationships;
 #[path = "winget_relationships.rs"]
@@ -69,10 +71,11 @@ impl Component {
     /// A package URL, for ecosystems that have a registry the name and version identify it in.
     fn purl(&self) -> Option<String> {
         let version = self.version.as_ref()?;
+        if matches!(self.ecosystem, "pypi" | "npm" | "maven") {
+            return language_packages::purl(self.ecosystem, &self.name, version);
+        }
         let kind = match self.ecosystem {
             "nuget" => "nuget",
-            "npm" => "npm",
-            "maven" => "maven",
             _ => return None,
         };
         let version = if kind == "nuget" && version.contains('+') {
@@ -151,6 +154,7 @@ impl Analyzer for Components {
         }
         electron(tree, &mut found);
         android(tree, &mut found);
+        language_packages::collect(tree, &mut found);
         for artifact in tree.artifacts() {
             for (key, ecosystem) in
                 [("deb.control", "deb"), ("rpm.package", "rpm"), ("arch.package", "alpm"), ("alpine-apk.package", "apk")]
