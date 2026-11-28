@@ -19,12 +19,19 @@ the script uses `7z l -slt` and `7z x -so` and creates no extracted file tree.
 The complementary `linux-images.py` compares supported inputs with Linux
 `unsquashfs -lln` and `-cat`, without mounting them or executing their contents.
 
-The qualified real profile is SquashFS v4.0, little endian, with XZ data and
-metadata blocks. Constructed Rust inputs additionally exercise zlib-compressed
+The qualified real profiles are SquashFS v4.0, little endian: Canonical's XZ snap
+and external AppImageKit 12's gzip filesystem, including three fragment blocks.
+`linux-images-native.ref.json` records 84 successful Linux `unsquashfs` 4.6.1
+checks at source `a600591`, covering complete paths, literal links, every regular
+file's size/hash and selected snap declarations. The corresponding workflow is
+https://github.com/atomsprout/analyze-anything/actions/runs/46109240238.
+AppImage provenance and its Windows reference are in `APPIMAGE-SNAP.md` and
+`appimage-external.ref.json`; the external executable is not redistributed.
+Constructed Rust inputs additionally exercise zlib-compressed
 file blocks, fragments, symlinks, cross-block metadata cursors, count/extent/type
 disagreements, cycles/depth, decompression limits, shared data/fragment budgets
-and oversized XZ dictionaries. The gzip/fragment profile still requires native
-Linux-generated fixture qualification. No claim is made for all SquashFS tools,
+and oversized XZ dictionaries. Broader Linux-generated fragment/inode combinations
+remain separate qualification work. No claim is made for all SquashFS tools,
 extended inode combinations or compressor options.
 
 The implementation reads common and extended file/directory inodes, symlinks,

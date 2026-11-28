@@ -301,3 +301,13 @@ External AppImage qualification record:
   source, Copyright (c) 2004-18 Simon Peter. Bundled dependencies retain their own
   licences; that MIT notice is not asserted to cover the complete executable.
   APPIMAGE-SNAP.md records scope and the independent static 7-Zip comparison.
+
+Linux image comparison records in crates/aa-linux/tests/data:
+- linux-images-native.ref.json and appimage-source.ref.json are project-authored
+  Apache-2.0 static observations and external download provenance, recorded at
+  a600591 by tools/native-compare/linux-images.py and linux-image-fixtures.py.
+  Linux unsquashfs 4.6.1 independently listed and read Canonical hello-world 29
+  and the external AppImageKit 12 sample; no image was mounted or executed.
+  The native tool's version/licence banner is preserved as output, not tool code.
+  These records do not redistribute the external AppImage executable or change
+  the original fixtures' licences. APPIMAGE-SNAP.md records hashes and scope.

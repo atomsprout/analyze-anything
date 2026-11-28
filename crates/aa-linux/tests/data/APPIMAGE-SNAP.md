@@ -21,6 +21,8 @@ evidence. A regular AppRun or a supported literal package-relative link can matc
 an original captured regular file. Absolute links, parent traversal, substitutions,
 multiple hops, missing/changed entries and incomplete namespaces remain unresolved.
 The target's digest is evidence of bytes, never execution or publisher trust.
+Desktop Entry `Version` is the declaration's format version. It is never copied
+as an AppImage software release version; the application version remains unresolved.
 Relationship indexing refuses full artifact paths above 8,192 bytes or an
 aggregate above 32 MiB. Serialized identity/entry facts and findings share a
 16 MiB budget. A clipped SquashFS directory preview cannot establish a unique
@@ -35,8 +37,17 @@ AppRun file. Windows 7-Zip 25.00 independently qualified all directory paths/typ
 modes/owners, ordinary-file hashes and link targets in 135 checks. The AppImage
 executable is **not redistributed**: AppImageKit's source is MIT, and its bundled
 dependencies keep their own licences. Other ELF classes/byte orders and hostile
-header profiles currently have constructed tests only. Linux `unsquashfs`
-qualification remains a separate gate until its result is recorded.
+header profiles currently have constructed tests only.
+
+`linux-images-native.ref.json` records Linux `unsquashfs` 4.6.1 at source `a600591`:
+62 AppImage and 22 snap checks passed in
+[workflow 46109240238](https://github.com/atomsprout/analyze-anything/actions/runs/46109240238).
+The native record covers header values, complete paths, literal link targets and
+every regular-file size/SHA-256, plus selected snap declarations. The gzip image's
+three fragment blocks are exercised through its captured regular files.
+`appimage-source.ref.json` preserves the pinned external download provenance.
+The executable remains outside the repository; the records do not establish
+runtime execution, trust or coverage of other ELF/fragment/inode combinations.
 
 ## Snap metadata
 
@@ -65,6 +76,9 @@ the captured hook artifact as evidence, rather than an absent YAML field.
 The unchanged MIT-declared Canonical hello-world 6.4 revision 29 fixture is described
 in [SQUASHFS.md](SQUASHFS.md). Its captured metadata and all four application targets
 are exercised together by the snap reader's unit test. No fixture script is run.
+Engine tests replay the Linux record for its captured paths, owners and all six
+regular-file sizes/hashes, then verify identity, four supplied targets and component
+provenance. Both report languages render these facts and relationships deterministically.
 
 ## Reproduction
 

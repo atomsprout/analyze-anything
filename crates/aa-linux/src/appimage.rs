@@ -14,6 +14,13 @@ type Result<T> = std::result::Result<T, &'static str>;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "appimage.version-unresolved",
+        title_en: "AppImage application version remains unresolved",
+        title_zh: "AppImage 应用版本未确定",
+        text_en: "Desktop Entry Version describes that declaration's format. This profile did not establish an application release version from supplied metadata.",
+        text_zh: "Desktop Entry 的 Version 描述该声明的格式。本支持范围未从提供的元数据中确定应用发布版本。",
+    },
+    Rule {
         id: "appimage.identity",
         title_en: "Declared AppImage application identity",
         title_zh: "AppImage 应用身份声明",
@@ -385,7 +392,7 @@ impl Analyzer for AppImage {
                             .is_some_and(|fact| fact["name"].as_str().is_some_and(|name| !name.is_empty()))
                 });
             if let Some(desktop) = desktop {
-                let value = json!({"name":desktop.facts["linux.desktop-entry"]["name"],"source":desktop.path,
+                let value = json!({"name":desktop.facts["linux.desktop-entry"]["name"],"version":null,"software_version_established":false,"source":desktop.path,
                     "source_sha256":desktop.digests.as_ref().map(|digest|&digest.sha256),"publisher_authenticated":false});
                 if !record_fact(out, "appimage.identity", value, file, &mut output_bytes) {
                     out.limitation(
@@ -409,6 +416,7 @@ impl Analyzer for AppImage {
                     );
                     break;
                 }
+                out.limitation("appimage.version-unresolved", Some(file), None);
             } else {
                 out.limitation("appimage.metadata-unresolved", Some(file), None);
             }
@@ -425,7 +433,8 @@ impl Analyzer for AppImage {
             let relation = json!({"field":"AppRun","basis":"captured-filesystem-entry","declared":declared,
                 "status":if target.is_some(){"matched-supplied-declaration"}else{"unresolved"},
                 "target":target.map(|target|&target.path),"target_sha256":target.and_then(|target|target.digests.as_ref().map(|digest|&digest.sha256)),
-                "source_entry":entry,"runtime_target_resolved":false});
+                "source_entry":entry,"runtime_target_resolved":false,
+                "reason":target.is_none().then_some("AppRun was not matched to one original regular file in a complete captured directory")});
             if !record_fact(out, "appimage.entry", relation, file, &mut output_bytes) {
                 out.limitation("appimage.entry-unresolved", Some(file), Some("shared AppImage relationship output exceeds 16 MiB".into()));
                 break;

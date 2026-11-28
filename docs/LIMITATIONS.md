@@ -48,7 +48,9 @@ portable raw-evidence retention remain later roadmap work.
 
 ## Linux breadth A profiles
 
-The first breadth increment adds Arch Linux packages and general ar archives. The
+The 0.2.3 candidate implements the first breadth increment, with Arch Linux packages
+and general ar archives. Its build/release qualification is in progress and it is not
+published; the native records below qualify only their named source and inputs. The
 machine-readable [format catalogue](FORMATS.md) distinguishes primary families,
 compression and declaration readers; its counts describe implemented profiles, not
 complete qualification of every version, compression method or platform.
@@ -80,6 +82,57 @@ Debian/RPM checks. Native declaration validators retain their actual diagnostics
 unsupported templates or absent host executables are not represented as validation
 success. No local Linux VM was qualified. Later source changes still require their
 own final CI and package checks.
+
+## Linux breadth B image profiles
+
+The 0.2.4 source increment implements three additional primary families: SquashFS,
+AppImage Type 2 and snap. The source catalogue contains 29 primary + four compression
+families (33 total); declaration families are counted separately. Implementation does
+not establish publication, complete format coverage or new OS/runtime qualification.
+
+- SquashFS: little-endian v4.0 metadata and file bytes with gzip/XZ compression,
+  common/extended file and directory inodes, ID/fragment tables and sparse blocks.
+  Blocks are bounded to 8 KiB metadata / 1 MiB data; shared decoded metadata and
+  fragment caches are each capped at 16 MiB, individual files at 256 MiB, total
+  data decoding at 512 MiB and XZ decoder memory at 32 MiB. Symlinks and special
+  files remain declarations; xattr/ACL effects, export lookup, mounting and runtime
+  behavior remain unresolved. Other versions, compressors and unsupported names
+  have explicit gaps. [Fixture, limits and native record](../crates/aa-linux/tests/data/SQUASHFS.md).
+- AppImage: the initial Type 2 profile proves its filesystem offset from ordinary
+  ELF section/program extents, captures only the checked SquashFS `bytes_used`,
+  and records root Desktop Entry identity and literal AppRun-to-supplied-file
+  evidence. Type 1, absent/extended section counts and unsupported layouts remain
+  unread. Absolute/escaping links, multiple hops, renamed or ambiguous entries and
+  incomplete namespaces cannot establish a target. No AppImage runtime or extract
+  option is invoked. Desktop Entry `Version` describes its declaration format;
+  application release version remains unresolved. [Scope and external reference](../crates/aa-linux/tests/data/APPIMAGE-SNAP.md).
+- snap: one original direct `meta/snap.yaml` in a complete captured SquashFS
+  namespace supplies name/version and literal application/interface/daemon/environment/
+  hook declarations. YAML is bounded to 256 KiB per file, 16 MiB aggregate, 12000
+  events and depth 24. Duplicate keys, aliases/anchors/tags, merge keys and multiple
+  documents are explicit gaps. Supplied commands and observed hook files have source
+  evidence, without host lookup, symlink following, command evaluation, confinement
+  enforcement or signature/store-assertion verification. [Scope and sample](../crates/aa-linux/tests/data/APPIMAGE-SNAP.md#snap-metadata).
+
+The unchanged MIT-declared Canonical hello-world 6.4 revision 29 fixture is a real XZ
+SquashFS input. Its hash-bound 7-Zip 25.00 reference covers all nine paths/types/modes/
+owners and all six regular-file sizes and SHA-256 values; snap tests also exercise
+its four application targets. The external AppImageKit 12 `appimagetool` sample is
+ELF64 little endian with gzip SquashFS; its Windows 7-Zip record contains 135 checks.
+The AppImage binary is not redistributed. Other ELF classes/byte orders and broader
+fragment/inode combinations retain constructed-test or pending native qualification.
+Linux `unsquashfs` 4.6.1 passed 84 checks (22 snap and 62 AppImage) at `a600591` in
+[the native workflow](https://github.com/atomsprout/analyze-anything/actions/runs/46109240238).
+The [hash-bound reference](../crates/aa-linux/tests/data/linux-images-native.ref.json)
+records header values, complete paths, link targets and every regular-file size/hash,
+plus selected snap declarations. The AppImage's three fragment blocks are exercised
+by its captured file bytes; this does not qualify all fragment/inode combinations.
+Reports include image identity components with their captured metadata path/hash and
+an index of supplied AppRun/command/hook relationships. Image component records share
+a 4 MiB budget; omitted records mark the inventory truncated. The real snap and a
+constructed Type 2 AppImage have deterministic engine/report integration checks.
+Final integrated-head CI and packaged 0.2.4 qualification still require their own
+results before publication; earlier checks do not qualify later source or packages.
 
 ## Parts not verified on real samples
 
