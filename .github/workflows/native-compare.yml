@@ -39,10 +39,22 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y rpm rpm2cpio python3-rpm libarchive-tools
+      - run: sudo apt-get update && sudo apt-get install -y rpm rpm2cpio python3-rpm libarchive-tools zstd binutils desktop-file-utils appstream
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
       - run: cargo build -p aa-cli --no-default-features
+      - run: >-
+          /usr/bin/python3 tools/native-compare/ar.py --cli target/debug/analyze-anything
+          --record out/native-linux/ar-reference.json
+          crates/aa-linux/tests/data/native-gnu.a crates/aa-linux/tests/data/native-bsd.a
+          crates/aa-linux/tests/data/upstream-libxxhash-0.8.1.a
+      - run: >-
+          /usr/bin/python3 tools/native-compare/arch-packages.py target/debug/analyze-anything
+          crates/aa-linux/tests/data/libutf8proc-2.12.0-1-x86_64.pkg.tar.zst
+          --record out/native-linux/arch-reference.json
+      - run: >-
+          /usr/bin/python3 tools/native-compare/linux-declarations.py target/debug/analyze-anything
+          --native --record out/native-linux/declarations-reference.json
       - run: /usr/bin/python3 tools/native-compare/linux-package-fixtures.py out/native-linux
       - run: >-
           /usr/bin/python3 tools/native-compare/linux-packages.py

@@ -59,12 +59,12 @@ cargo build --release
 target/release/analyze-anything <文件或文件夹>
 ```
 
-签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.2 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
+签名的 macOS/Homebrew 发行版仍是面向 Apple 芯片 Mac 的 0.1.1。[0.2.3 版本](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)提供 Windows x64、Linux x64/ARM64 和 Apple 芯片 macOS 的未签名 CLI 归档，以及 Windows x64 桌面便携 ZIP 和离线 NSIS 安装包。下载对应平台的归档，核对随附的 SHA-256 后解压，运行其中的 CLI。Windows CLI 静态链接 C 运行库，无需另装 Visual C++ 运行库。托管环境的 Windows 和 Ubuntu 24.04 x64 桌面检查已通过；Windows 10 离线安装检查使用的是较早的桌面候选包。具体安装包和运行环境范围见[平台验收记录](docs/LIMITATIONS.md#published-preview-and-report-workflow)。
 
 ## 使用
 
-[0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
-改进了身份摘要、Apple 组件证据关联，以及安装程序和 .NET 的语义限制说明。
+[0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)
+增加了 Arch 软件包与 ar 归档解析、Linux 入口声明，以及明确支持范围的共享格式目录。
 发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
 详见[真实报告验收记录](docs/spikes/report-workflow.md)。
 
@@ -84,12 +84,16 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 
 ## 能读什么
 
+<!-- formats:begin -->
+**26 类主要格式＋4 种压缩格式（共 30 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
+<!-- formats:end -->
+
 | | |
 |---|---|
 | Apple | `.app` 等 bundle、IPA、DMG（HFS+ 和 APFS）、pkg；Info.plist、代码签名与证书链、封存资源、权利、描述文件、隐私清单、FairPlay 加密 |
 | Android | APK、AAB、XAPK / APKS / APKM；清单、资源、签名方案 v1–v3.1、DEX、SDK 与加固壳 |
 | Windows | PE、Authenticode、.NET 程序集与有边界的单文件包、PyInstaller CArchive 内容、MSI（含它自身的签名）、NSIS、Inno Setup、CAB、自解压程序、Electron（asar）、MSIX、已安装程序目录 |
-| Linux 软件包 | 有边界的 deb 与 RPM v4 支持：包元数据、依赖与安装脚本的字面声明、TAR/CPIO 载荷及链接声明；不安装或验证签名 |
+| Linux 软件包 | 有边界的 deb、RPM v4 与 Arch 支持：包元数据、依赖与安装脚本的字面声明、TAR/CPIO 载荷及链接声明；ar 静态库、systemd/Desktop Entry/AppStream 声明；不安装或认证软件包 |
 | 通用 | Mach-O、ELF、PE 的结构与加固选项；zip、tar、7z、gzip、bzip2、xz、zstd，任意嵌套；URL、疑似凭据、熵、相同文件 |
 
 ## 工作原理
@@ -165,13 +169,13 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-当前发布版本是 0.2.2。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
+当前发布版本是 0.2.3。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
-0.2.2 增加了 MSI 动作顺序与条件上下文，并将支持的 Binary 表来源关联到采集的载荷。原始表行和哈希都是证据；不求值条件，也不推断实际执行。之前的 0.2–0.5 规划组已一起交付，作为完成记录保留。接下来按这个顺序做：
+0.2.3 增加了 Arch 包与 ar 归档、systemd/Desktop Entry/AppStream 声明，以及有边界的随附库关系。格式数量来自同一份目录。接下来按这个顺序做：
 
-1. **静态代码证据**：验收一个有边界的 .NET IL 范围，给出方法级引用和可解释的能力证据。
-2. **软件组成**：深入一个 Electron/npm 元数据范围，区分依赖声明、实际采集组件和来源字段。
-3. **便于携带的证据复查**：定义选择和存储控制后，再考虑为保存的报告保留有上限、绑定哈希的字节片段。
+1. **Linux 应用格式**：验收 SquashFS、AppImage Type 2 与 snap，主要格式与压缩格式合计目标为 33 类。
+2. **语言软件包**：增加 wheel、npm tarball 与 Java 归档范围，目标为 36 类。
+3. **后续覆盖**：验收 Alpine APK、Flatpak、一个 OCI/Docker 格式家族与 LZ4，目标为 40 类。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
 

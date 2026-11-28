@@ -15,6 +15,7 @@ import sys
 import tempfile
 import threading
 import time
+import tomllib
 
 
 def require(condition, message):
@@ -298,12 +299,27 @@ def main():
     parser.add_argument("--record", type=Path)
     args = parser.parse_args()
     program = args.program.resolve(strict=True)
+    repository = Path(__file__).resolve().parents[2]
+    expected_version = tomllib.loads((repository / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
+    version = run(program, ["--version"], os.environ).stdout.strip()
+    require(version.split()[-1] == expected_version, "packaged program version differs from the source release version")
     help_text = run(program, ["analyze", "--help"], os.environ).stdout
     offline = ["--no-ai"] if "--no-ai" in help_text else []
+    expected_catalogue = json.loads((repository / "crates/aa-core/src/formats.json").read_text(encoding="utf-8"))
+    catalogue = json.loads(run(program, ["formats", "--json"], os.environ).stdout)
+    require(catalogue["formats"] == expected_catalogue["formats"], "packaged format profiles differ from the source catalogue")
+    counts = {}
+    for entry in expected_catalogue["formats"]:
+        if entry["state"] == "implemented":
+            counts[entry["group"]] = counts.get(entry["group"], 0) + 1
+    require(catalogue["counts"] == counts, "packaged format family counts differ")
+    total = counts.get("primary", 0) + counts.get("compression", 0)
+    require(catalogue["primary_total_including_compression"] == total, "planned formats or aliases inflated the packaged count")
     with tempfile.TemporaryDirectory(prefix="aa-packaged-workflow-") as folder:
         results = [check(program, Path(folder) / name, aged, offline) for name, aged in (("fresh", False), ("aged", True))]
         msi = check_msi(program, Path(folder) / "msi", offline)
-    record = {"program_sha256": hashlib.sha256(program.read_bytes()).hexdigest(), "results": results, "msi": msi}
+    record = {"program_sha256": hashlib.sha256(program.read_bytes()).hexdigest(), "program_version": version, "results": results, "msi": msi,
+              "formats": {"counts": counts, "primary_total_including_compression": total}}
     if args.record:
         args.record.parent.mkdir(parents=True, exist_ok=True)
         args.record.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")

@@ -15,3 +15,8 @@ crates/aa-linux/tests/data/*.deb -text
 crates/aa-linux/tests/data/*.rpm -text
 crates/aa-linux/tests/data/COPYRIGHT-node-isarray.txt -text
 crates/aa-linux/tests/data/LICENSE-xxhash.txt -text
+crates/aa-linux/tests/data/*.a -text
+crates/aa-linux/tests/data/*.pkg.tar.zst -text
+crates/aa-linux/tests/data/ar-native.c text eol=lf
+crates/aa-linux/tests/data/ar-native.ref.json text eol=lf
+crates/aa-linux/tests/data/declarations/* -text

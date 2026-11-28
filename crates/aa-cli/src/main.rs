@@ -110,6 +110,12 @@ enum Command {
     },
     /// Check that this build works: analyze built-in samples and compare with known results
     Selftest,
+    /// List built-in format families, supported profiles and evidence records
+    Formats {
+        /// Print the complete machine-readable catalogue, including planned formats
+        #[arg(long)]
+        json: bool,
+    },
     /// Write other formats from an existing report.json, without analyzing again
     Render {
         /// A report.json written by `analyze-anything analyze`
@@ -914,6 +920,36 @@ fn run(cli: Cli) -> Result<u8, String> {
         }
         Command::Inspect { path, limits } => return inspect(&path, &limits),
         Command::Selftest => return selftest::run(),
+        Command::Formats { json } => {
+            let catalogue = aa_core::formats::catalogue().map_err(|error| error.to_string())?;
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "schema_version": catalogue.schema_version,
+                        "counting_policy": catalogue.counting_policy,
+                        "counts": catalogue.counts(),
+                        "primary_total_including_compression": catalogue.primary_total(),
+                        "formats": catalogue.formats,
+                    }))
+                    .map_err(|error| error.to_string())?
+                );
+            } else {
+                let counts = catalogue.counts();
+                println!(
+                    "{} primary format families + {} compression formats ({} total); {} declaration families",
+                    counts.get("primary").copied().unwrap_or_default(),
+                    counts.get("compression").copied().unwrap_or_default(),
+                    catalogue.primary_total(),
+                    counts.get("declaration").copied().unwrap_or_default(),
+                );
+                for format in catalogue.formats.iter().filter(|format| format.state == "implemented") {
+                    println!("{} [{}]: {}", format.name, format.group, format.profile);
+                }
+                println!("Counts describe implemented profiles; qualification evidence and limits: formats --json");
+            }
+            return Ok(0);
+        }
         Command::Render { report, output } => (load(&report)?, output, None),
         Command::Explain { report, id, lang } => return explain(&load(&report)?, &id, lang).map(|()| 0),
         Command::Query { report, view, args, list_tools, lang } => {

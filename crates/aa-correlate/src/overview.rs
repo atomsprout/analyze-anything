@@ -10,6 +10,34 @@ pub struct Overview;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "overview.kind-arch",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is an Arch Linux package. Package metadata, literal installation declarations and supported payload contents were read as data.",
+        text_zh: "这是 Arch Linux 软件包。包元数据、字面安装声明与受支持的载荷内容作为数据读取。",
+    },
+    Rule {
+        id: "overview.kind-systemd-unit",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a systemd unit declaration. Commands, relationships and configuration are source declarations; no service was started.",
+        text_zh: "这是 systemd 单元声明。命令、关系与配置均为源文件声明，没有启动服务。",
+    },
+    Rule {
+        id: "overview.kind-desktop-entry",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a Desktop Entry declaration describing application identity and literal launch properties.",
+        text_zh: "这是 Desktop Entry 声明，描述应用身份与字面启动属性。",
+    },
+    Rule {
+        id: "overview.kind-appstream",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is AppStream component metadata. Identity, launchable and provided declarations were read without consulting a repository.",
+        text_zh: "这是 AppStream 组件元数据。身份、可启动项与提供项声明在未查询仓库的情况下读取。",
+    },
+    Rule {
         id: "overview.kind-deb",
         title_en: "Kind of input",
         title_zh: "输入类型",
@@ -460,6 +488,10 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let unpacker = root.unpacked_by.as_deref().unwrap_or("");
     let installer_format = root.facts.get("windows.installer").and_then(|f| text(f, "format").or_else(|| text(f, "kind")));
     let made = match (kind, unpacker) {
+        ("arch-package", _) => finding("overview.kind-arch", Confidence::Verified),
+        ("systemd-unit", _) => finding("overview.kind-systemd-unit", Confidence::Verified),
+        ("desktop-entry", _) => finding("overview.kind-desktop-entry", Confidence::Verified),
+        ("appstream", _) => finding("overview.kind-appstream", Confidence::Verified),
         (_, "deb") => finding("overview.kind-deb", Confidence::Verified),
         (_, "rpm") => finding("overview.kind-rpm", Confidence::Verified),
         (_, "dotnet-bundle") => finding("overview.kind-dotnet-bundle", Confidence::Verified),

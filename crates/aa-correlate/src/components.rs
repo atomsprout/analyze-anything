@@ -152,7 +152,7 @@ impl Analyzer for Components {
         electron(tree, &mut found);
         android(tree, &mut found);
         for artifact in tree.artifacts() {
-            for (key, ecosystem) in [("deb.control", "deb"), ("rpm.package", "rpm")] {
+            for (key, ecosystem) in [("deb.control", "deb"), ("rpm.package", "rpm"), ("arch.package", "alpm")] {
                 if let Some(package) = artifact.facts.get(key)
                     && let (Some(name), Some(version)) = (text(package, "name"), text(package, "version"))
                 {

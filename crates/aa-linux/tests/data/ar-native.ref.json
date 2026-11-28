@@ -1,0 +1,272 @@
+{
+  "tools": {
+    "ar": "LLVM version 22.1.3",
+    "nm": "LLVM version 22.1.3"
+  },
+  "records": [
+    {
+      "file": "native-gnu.a",
+      "sha256": "5e43db44de8d4577fbc2749883159e77f14bbe1eb3ee64a6ff39ddef711947aa",
+      "size": 2446,
+      "members": [
+        {
+          "name": "a-long-member-name-for-gnu-and-bsd.o",
+          "size": 1048,
+          "sha256": "c264d6e0c5988e81c806ca8620e8a639c57e1b29a80e13e1ab9d83bb3e661214"
+        },
+        {
+          "name": "short.o",
+          "size": 1056,
+          "sha256": "98e3c1fdc81f71256e2bc52bddb4919eb4765f37e66334f05981b16b9e4e751e"
+        }
+      ],
+      "symbol_map": [
+        {
+          "name": "archive_fixture_add",
+          "member": "a-long-member-name-for-gnu-and-bsd.o"
+        },
+        {
+          "name": "archive_fixture_version",
+          "member": "short.o"
+        }
+      ]
+    },
+    {
+      "file": "native-bsd.a",
+      "sha256": "9218d399a79d69e348fbbc4271e4f5716f006d3909cab5c065b3660700496c25",
+      "size": 2424,
+      "members": [
+        {
+          "name": "a-long-member-name-for-gnu-and-bsd.o",
+          "size": 1048,
+          "sha256": "c264d6e0c5988e81c806ca8620e8a639c57e1b29a80e13e1ab9d83bb3e661214"
+        },
+        {
+          "name": "short.o",
+          "size": 1056,
+          "sha256": "98e3c1fdc81f71256e2bc52bddb4919eb4765f37e66334f05981b16b9e4e751e"
+        }
+      ],
+      "symbol_map": [
+        {
+          "name": "archive_fixture_add",
+          "member": "a-long-member-name-for-gnu-and-bsd.o"
+        },
+        {
+          "name": "archive_fixture_version",
+          "member": "short.o"
+        }
+      ]
+    },
+    {
+      "file": "upstream-libxxhash-0.8.1.a",
+      "sha256": "87fab2338536120cd3475971ea17eb9a842f36a9931f8766a4cd1cbca4b79b53",
+      "size": 39792,
+      "members": [
+        {
+          "name": "xxhash.o",
+          "size": 38504,
+          "sha256": "779071397117f0da7e664da13df96fd3a5bf2995490bd24f3eb49055a5ab100c"
+        }
+      ],
+      "symbol_map": [
+        {
+          "name": "XXH_versionNumber",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_createState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_freeState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_copyState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_reset",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_update",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_digest",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_canonicalFromHash",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH32_hashFromCanonical",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_createState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_freeState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_copyState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_reset",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_update",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_digest",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_canonicalFromHash",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH64_hashFromCanonical",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_withSecret",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_withSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_withSecretandSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_createState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_freeState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_copyState",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_reset",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_reset_withSecret",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_reset_withSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_reset_withSecretandSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_update",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_64bits_digest",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_withSecret",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_withSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_withSecretandSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH128",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_reset",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_reset_withSecret",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_reset_withSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_reset_withSecretandSeed",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_update",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_128bits_digest",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH128_isEqual",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH128_cmp",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH128_canonicalFromHash",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH128_hashFromCanonical",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_generateSecret",
+          "member": "xxhash.o"
+        },
+        {
+          "name": "XXH3_generateSecret_fromSeed",
+          "member": "xxhash.o"
+        }
+      ]
+    }
+  ]
+}

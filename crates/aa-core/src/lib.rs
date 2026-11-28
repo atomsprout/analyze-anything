@@ -14,6 +14,7 @@
 //! Formats are added through [`plugin`]: an [`plugin::Unpacker`] opens a container into child
 //! artifacts, an [`plugin::Analyzer`] turns artifacts into findings and facts.
 
+pub mod formats;
 pub mod plugin;
 pub mod text;
 

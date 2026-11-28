@@ -13,6 +13,8 @@ workspace = true
 aa-core.workspace = true
 serde_json.workspace = true
 tar.workspace = true
+roxmltree = "0.20"
 
 [dev-dependencies]
 flate2.workspace = true
+ruzstd.workspace = true

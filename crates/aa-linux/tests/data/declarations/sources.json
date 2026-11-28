@@ -1,0 +1,38 @@
+[
+  {
+    "file": "syncthing.service",
+    "source": "https://raw.githubusercontent.com/syncthing/syncthing/1107b3cd11dbe267a8b80bbe1f89fb86a070b5c3/etc/linux-systemd/user/syncthing.service",
+    "sha256": "9b3ede4c5b54acd453a81daca9e37bb5fd9af2079e216e4111200b7e638e40c2",
+    "size": 722
+  },
+  {
+    "file": "LICENSE-syncthing.txt",
+    "source": "https://raw.githubusercontent.com/syncthing/syncthing/1107b3cd11dbe267a8b80bbe1f89fb86a070b5c3/LICENSE",
+    "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04",
+    "size": 16726
+  },
+  {
+    "file": "org.flameshot.Flameshot.desktop",
+    "source": "https://raw.githubusercontent.com/flameshot-org/flameshot/dcc3bd3175495e04832c4aac0868f1dd15aba2ca/data/desktopEntry/package/org.flameshot.Flameshot.desktop",
+    "sha256": "c7459e1b399f46ed6496c351a603e31ba9dbd3ede3f317baa3989139674572e2",
+    "size": 3806
+  },
+  {
+    "file": "org.flameshot.Flameshot.metainfo.xml",
+    "source": "https://raw.githubusercontent.com/flameshot-org/flameshot/dcc3bd3175495e04832c4aac0868f1dd15aba2ca/data/appdata/org.flameshot.Flameshot.metainfo.xml",
+    "sha256": "492893fbedc4f9936e918db0cd3af23524e6c20b3983ddaabdf2ea4d06d6ccd8",
+    "size": 4060
+  },
+  {
+    "file": "LICENSE-flameshot.txt",
+    "source": "https://raw.githubusercontent.com/flameshot-org/flameshot/dcc3bd3175495e04832c4aac0868f1dd15aba2ca/LICENSE",
+    "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "size": 35149
+  },
+  {
+    "file": "syncthing-start.desktop",
+    "source": "https://raw.githubusercontent.com/syncthing/syncthing/1107b3cd11dbe267a8b80bbe1f89fb86a070b5c3/etc/linux-desktop/syncthing-start.desktop",
+    "sha256": "c614dc27de5e1e5bbc9cd96ba013a4b8fd4ed83945195e70f10ce2ae54816bed",
+    "size": 299
+  }
+]
