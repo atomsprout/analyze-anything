@@ -82,3 +82,26 @@ fn only_validated_maven_rows_produce_coordinates_and_war_ear_are_unqualified() {
         assert!(report.limitations.iter().any(|gap| gap.code == "java.variant-unread"));
     }
 }
+
+#[test]
+fn licensed_real_language_packages_render_identity_and_evidence_in_both_languages() {
+    for (name, bytes, identity) in [
+        (
+            "sampleproject.whl",
+            include_bytes!("../../aa-packages/tests/data/wheel/sampleproject-4.0.0-py3-none-any.whl").as_slice(),
+            "sampleproject",
+        ),
+        ("isarray.tgz", include_bytes!("../../aa-packages/tests/data/npm/isarray-2.0.5.tgz").as_slice(), "isarray"),
+        ("slf4j-api.jar", include_bytes!("../../aa-packages/tests/data/java/slf4j-api-2.0.16.jar").as_slice(), "slf4j-api"),
+    ] {
+        let report = analyze_bytes(&Registry::standard(), name, bytes.to_vec(), &Options::default(), &mut NoProgress);
+        assert!(report.findings.iter().all(|finding| !finding.evidence.is_empty()), "{name} findings require source evidence");
+        for lang in [Lang::En, Lang::Zh] {
+            for format in [Format::Text, Format::Markdown, Format::Html] {
+                let output = render(&report, format, lang).expect("real language package report");
+                assert_eq!(output, render(&report, format, lang).expect("deterministic report"));
+                assert!(String::from_utf8(output).expect("UTF-8 report").contains(identity));
+            }
+        }
+    }
+}

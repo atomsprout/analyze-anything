@@ -31,6 +31,27 @@ const RULES: &[Rule] = &[
         text_zh: "这是 Java JAR。受支持的清单和 Maven 声明以及捕获的条目作为数据读取，没有加载类或解析运行时类路径。",
     },
     Rule {
+        id: "overview.kind-squashfs",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a SquashFS v4 filesystem. Supported contents were read without mounting it; links and special files remain declarations.",
+        text_zh: "这是 SquashFS v4 文件系统。受支持的内容在未挂载的情况下读取；链接和特殊文件保留为声明。",
+    },
+    Rule {
+        id: "overview.kind-appimage",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a Type 2 AppImage with a checked ELF runtime boundary and a captured SquashFS image. The runtime and AppRun were not executed.",
+        text_zh: "这是 Type 2 AppImage，具有经过检查的 ELF 运行时边界和已捕获的 SquashFS 映像。没有执行运行时或 AppRun。",
+    },
+    Rule {
+        id: "overview.kind-snap",
+        title_en: "Kind of input",
+        title_zh: "输入类型",
+        text_en: "This is a snap package with captured meta/snap.yaml declarations and supported filesystem contents. Installation, commands and confinement were not evaluated.",
+        text_zh: "这是 snap 软件包，具有已捕获的 meta/snap.yaml 声明和受支持的文件系统内容。没有求值安装、命令或隔离效果。",
+    },
+    Rule {
         id: "overview.kind-arch",
         title_en: "Kind of input",
         title_zh: "输入类型",
@@ -533,6 +554,9 @@ fn kind_of_file(tree: &dyn Tree, root: &Artifact, out: &mut Output) {
     let unpacker = root.unpacked_by.as_deref().unwrap_or("");
     let installer_format = root.facts.get("windows.installer").and_then(|f| text(f, "format").or_else(|| text(f, "kind")));
     let made = match (kind, unpacker) {
+        ("snap", _) => finding("overview.kind-snap", Confidence::Verified),
+        (_, "appimage") => finding("overview.kind-appimage", Confidence::Verified),
+        (_, "squashfs") => finding("overview.kind-squashfs", Confidence::Verified),
         ("arch-package", _) => finding("overview.kind-arch", Confidence::Verified),
         ("systemd-unit", _) => finding("overview.kind-systemd-unit", Confidence::Verified),
         ("desktop-entry", _) => finding("overview.kind-desktop-entry", Confidence::Verified),

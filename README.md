@@ -57,14 +57,14 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
+The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
 
 ## Use
 
-Version [0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3)
-adds Arch Linux package and ar archive readers, Linux entry declarations and a shared
-format catalogue with explicit supported profiles. Its release pipeline checks the extracted CLI's analysis, offline queries,
-agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
+The 0.2.3 candidate adds Arch Linux package and ar archive readers, Linux entry declarations
+and a shared format catalogue with explicit supported profiles. Its build and release
+qualification are in progress; 0.2.2 remains the published download baseline. Packaged
+workflow checks retain their [recorded source and artifact scope](docs/spikes/report-workflow.md).
 
 ```
 analyze-anything <file or folder>                 # analyze; the report goes to <name>.report/
@@ -82,8 +82,10 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 
 ## What it reads
 
+The catalogue below describes the integrated 0.2.5 source candidate. Published 0.2.2 packages retain their recorded profiles; 0.2.3 is still building, and the later image and language readers require their own release qualification.
+
 <!-- formats:begin -->
-**29 primary format families + 4 compression formats (33 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
+**32 primary format families + 4 compression formats (36 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
 <!-- formats:end -->
 
 | | |
@@ -92,7 +94,8 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 | Android | APK, AAB, XAPK / APKS / APKM; manifest, resources, signature schemes v1–v3.1, DEX, SDKs and packers |
 | Windows | PE, Authenticode, .NET assemblies and bounded single-file bundles, PyInstaller CArchive contents, MSI (with its own signature), NSIS, Inno Setup, CAB, self-extractors, Electron (asar), MSIX, installed program folders |
 | Linux packages | Bounded deb, RPM v4 and Arch profiles: package metadata, literal dependencies and installation scripts, TAR/CPIO payloads and link declarations; ar static libraries, systemd/Desktop Entry/AppStream declarations; no installation or package authentication |
-| General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested to any depth; URLs, likely credentials, entropy, duplicate files |
+| Linux applications | SquashFS v4 gzip/XZ file contents and metadata; AppImage Type 2 image boundaries, identity and AppRun evidence; snap identity, application/interface/hook declarations and supplied-file links; no mounting or runtime invocation |
+| General | Mach-O, ELF and PE structure and hardening; zip, tar, 7z, gzip, bzip2, xz, zstd, nested within configured limits; URLs, likely credentials, entropy, duplicate files |
 
 ## How it works
 
@@ -167,12 +170,12 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The current release is 0.2.3. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
+The current published release is 0.2.2; the 0.2.3 candidate is still building. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-Version 0.2.3 adds Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. The 0.2.5 source also reads wheel, npm tarball and JAR declarations, with captured component identities and literal unresolved dependencies; publication is pending. Format counts come from one catalogue. Next, in order:
+The 0.2.3 candidate implements Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. The later 0.2.4 candidate adds SquashFS, AppImage Type 2 and snap. The 0.2.5 source candidate also reads wheel, npm tarball and JAR declarations, with captured component identities and literal unresolved dependencies, bringing the source catalogue to 36 primary/compression families. [Image](docs/LIMITATIONS.md#linux-breadth-b-image-profiles) and [language package](docs/LIMITATIONS.md#language-package-breadth-c-profiles) records distinguish implemented profiles from qualification and publication. Next, in order:
 
-1. **Linux application formats**: qualify SquashFS, AppImage Type 2 and snap, targeting 33 primary/compression families.
-2. **Language packages**: deliver the implemented wheel, npm tarball and JAR profiles, targeting 36 families after the Linux application batch. WAR/EAR remain unqualified profiles within the Java family.
+1. **Linux application qualification**: complete the integrated native, cross-platform and packaged checks for the 0.2.4 candidate before publication; broaden the documented image profiles separately.
+2. **Language package qualification**: deliver the implemented wheel, npm tarball and JAR profiles after the Linux application batch, with their own native, cross-platform and packaged checks. WAR/EAR remain unqualified profiles within the Java family.
 3. **Further breadth**: qualify Alpine APK, Flatpak, one OCI/Docker family and LZ4, targeting 40 families. .NET IL and deeper component relationships follow; optional evidence retention remains separate.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).

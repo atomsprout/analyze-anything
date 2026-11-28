@@ -1,0 +1,797 @@
+{
+  "tool": "unsquashfs",
+  "tool_version": [
+    "unsquashfs version 4.6.1 (2023/03/25)",
+    "copyright (C) 2023 Phillip Lougher <phillip@squashfs.org.uk>",
+    "",
+    "This program is free software; you can redistribute it and/or",
+    "modify it under the terms of the GNU General Public License",
+    "as published by the Free Software Foundation; either version 2,",
+    "or (at your option) any later version.",
+    "",
+    "This program is distributed in the hope that it will be useful,",
+    "but WITHOUT ANY WARRANTY; without even the implied warranty of",
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the",
+    "GNU General Public License for more details."
+  ],
+  "samples": [
+    {
+      "file": "upstream-hello-world-29.snap",
+      "sha256": "a14a4c44b085499d45f4182388b941fc9d5d87c5fe04f7405e087f52da61c407",
+      "filesystem_offset": 0,
+      "bytes_used": 19330,
+      "scope": "Native header, complete directory paths, link targets and every captured regular-file digest; selected snap declarations",
+      "checks": [
+        {
+          "check": "source SHA-256",
+          "matches": true
+        },
+        {
+          "check": "native image magic",
+          "matches": true
+        },
+        {
+          "check": "SquashFS bytes_used",
+          "matches": true
+        },
+        {
+          "check": "SquashFS block size",
+          "matches": true
+        },
+        {
+          "check": "SquashFS inode count",
+          "matches": true
+        },
+        {
+          "check": "native directory paths",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: bin/echo",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: bin/echo",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: bin/env",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: bin/env",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: bin/evil",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: bin/evil",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: bin/sh",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: bin/sh",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: meta/gui/icon.png",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: meta/gui/icon.png",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: meta/snap.yaml",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: meta/snap.yaml",
+          "matches": true
+        },
+        {
+          "check": "snap name",
+          "matches": true
+        },
+        {
+          "check": "snap version",
+          "matches": true
+        },
+        {
+          "check": "snap metadata SHA-256",
+          "matches": true
+        },
+        {
+          "check": "snap application names",
+          "matches": true
+        }
+      ],
+      "passed": 22,
+      "native_entries": [
+        {
+          "path": "bin",
+          "mode": "drwxrwxr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 60,
+          "link_target": null
+        },
+        {
+          "path": "bin/echo",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 31,
+          "link_target": null,
+          "sha256": "ee4b6d1b0ff6ca50336bc2ac3026e3ecef4794f63cef52d2087cdecd5e5816c3"
+        },
+        {
+          "path": "bin/env",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 27,
+          "link_target": null,
+          "sha256": "fefaf91b06cff122faea5162e890b60f18e45dc5480976fcf36c2d070c0236ac"
+        },
+        {
+          "path": "bin/evil",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 274,
+          "link_target": null,
+          "sha256": "710e372f691e9747de5f3f5dcda2d5d3aa9bbaec8b11c450bcade6b2697d06a5"
+        },
+        {
+          "path": "bin/sh",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 271,
+          "link_target": null,
+          "sha256": "51e322b098fa84ec2c42f9d89598e3b8ca7171bdf1e4670c244986b2740796a7"
+        },
+        {
+          "path": "meta",
+          "mode": "drwxrwxr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 43,
+          "link_target": null
+        },
+        {
+          "path": "meta/gui",
+          "mode": "drwxrwxr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 31,
+          "link_target": null
+        },
+        {
+          "path": "meta/gui/icon.png",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 18267,
+          "link_target": null,
+          "sha256": "6be05eb656db3fd5819455186e49854953a456bc775b49a93b087ce004ede12a"
+        },
+        {
+          "path": "meta/snap.yaml",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 598,
+          "link_target": null,
+          "sha256": "66ab56dfacd057a098488f7762c929cd07e4604fdd9640355e2c415cb7be3865"
+        }
+      ]
+    },
+    {
+      "file": "appimagetool-12-x86_64.AppImage",
+      "sha256": "d918b4df547b388ef253f3c9e7f6529ca81a885395c31f619d9aaf7030499a13",
+      "filesystem_offset": 188392,
+      "bytes_used": 1785619,
+      "scope": "Native header, complete directory paths, link targets and every captured regular-file digest; selected snap declarations",
+      "checks": [
+        {
+          "check": "source SHA-256",
+          "matches": true
+        },
+        {
+          "check": "AppImage ELF-proven filesystem offset",
+          "matches": true
+        },
+        {
+          "check": "native image magic",
+          "matches": true
+        },
+        {
+          "check": "SquashFS bytes_used",
+          "matches": true
+        },
+        {
+          "check": "SquashFS block size",
+          "matches": true
+        },
+        {
+          "check": "SquashFS inode count",
+          "matches": true
+        },
+        {
+          "check": "native directory paths",
+          "matches": true
+        },
+        {
+          "check": "link target: .DirIcon",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: AppRun",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: AppRun",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: appimagetool.desktop",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: appimagetool.desktop",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: appimagetool.svg",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: appimagetool.svg",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/bin/AppRun",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/bin/AppRun",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/bin/appimagetool",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/bin/appimagetool",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/bin/desktop-file-validate",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/bin/desktop-file-validate",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/bin/zsyncmake",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/bin/zsyncmake",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/appimagekit/mksquashfs",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/appimagekit/mksquashfs",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libffi.so.5",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libffi.so.5",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgio-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgio-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgio-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgio-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgio-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgio-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libglib-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libglib-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libglib-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libglib-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libglib-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libglib-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgmodule-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgmodule-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgmodule-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgmodule-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgmodule-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgmodule-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgobject-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgobject-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgobject-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgobject-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgobject-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgobject-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgthread-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgthread-2.0.so",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgthread-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgthread-2.0.so.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/lib/libgthread-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/lib/libgthread-2.0.so.0.4000.0",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/share/applications/appimagetool.desktop",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/share/applications/appimagetool.desktop",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+          "matches": true
+        },
+        {
+          "check": "regular-file size: usr/share/metainfo/appimagetool.appdata.xml",
+          "matches": true
+        },
+        {
+          "check": "regular-file SHA-256: usr/share/metainfo/appimagetool.appdata.xml",
+          "matches": true
+        }
+      ],
+      "passed": 62,
+      "native_entries": [
+        {
+          "path": ".DirIcon",
+          "mode": "lrwxrwxrwx",
+          "uid": 0,
+          "gid": 0,
+          "size": 16,
+          "link_target": "appimagetool.svg"
+        },
+        {
+          "path": "AppRun",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 1330,
+          "link_target": null,
+          "sha256": "396a51cff782859a287d9f367485d1a39edbe007658ceab729ba403cd6ca1be3"
+        },
+        {
+          "path": "appimagetool.desktop",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 174,
+          "link_target": null,
+          "sha256": "64483fc0330f0ba61fe440331fd8f7f8371e460cc7832826733f715d759d3776"
+        },
+        {
+          "path": "appimagetool.svg",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 21585,
+          "link_target": null,
+          "sha256": "92feb5a08d153f430ad1ef791a32344f86cedbaec5cd9ddbc952edd7a16f87e7"
+        },
+        {
+          "path": "usr",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 50,
+          "link_target": null
+        },
+        {
+          "path": "usr/bin",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 95,
+          "link_target": null
+        },
+        {
+          "path": "usr/bin/AppRun",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 26010,
+          "link_target": null,
+          "sha256": "d69a9c8463d8b38f47112dec3f751d9d2bcb126f137e4753beaeeda8eb1e89a1"
+        },
+        {
+          "path": "usr/bin/appimagetool",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 492043,
+          "link_target": null,
+          "sha256": "bf743501b8639faff51bb7447c37e5727742f5853d12285ea4bbfcfd9886e9b9"
+        },
+        {
+          "path": "usr/bin/desktop-file-validate",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 42296,
+          "link_target": null,
+          "sha256": "8fa058a9b457149811a3134d0a4751ed656914e1f74d853fc72c762bb7d612b6"
+        },
+        {
+          "path": "usr/bin/zsyncmake",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 95479,
+          "link_target": null,
+          "sha256": "97012ad6d55bfa194f4889b511b89b9b746af160ec9ee610a969170c75dba749"
+        },
+        {
+          "path": "usr/lib",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 462,
+          "link_target": null
+        },
+        {
+          "path": "usr/lib/appimagekit",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 33,
+          "link_target": null
+        },
+        {
+          "path": "usr/lib/appimagekit/mksquashfs",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 390071,
+          "link_target": null,
+          "sha256": "0e8d607151b9b41421057011ad75cf65a73635f92c1599f335c167fb1185ddb6"
+        },
+        {
+          "path": "usr/lib/libffi.so.5",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 31720,
+          "link_target": null,
+          "sha256": "2009cab32d65011e653d7c87b49ad74541484467b3dc96be05bb2198b6c7a730"
+        },
+        {
+          "path": "usr/lib/libgio-2.0.so",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 2213919,
+          "link_target": null,
+          "sha256": "75dcbcc4c49b4866cf16bae30c885153779f0e7ebaca67e560cee87aa0a0ec53"
+        },
+        {
+          "path": "usr/lib/libgio-2.0.so.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 2213919,
+          "link_target": null,
+          "sha256": "75dcbcc4c49b4866cf16bae30c885153779f0e7ebaca67e560cee87aa0a0ec53"
+        },
+        {
+          "path": "usr/lib/libgio-2.0.so.0.4000.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 2213919,
+          "link_target": null,
+          "sha256": "75dcbcc4c49b4866cf16bae30c885153779f0e7ebaca67e560cee87aa0a0ec53"
+        },
+        {
+          "path": "usr/lib/libglib-2.0.so",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 1583066,
+          "link_target": null,
+          "sha256": "82c6753f405dfd5744c1df0cc178e168235f133b255a65db332561f8003cdd87"
+        },
+        {
+          "path": "usr/lib/libglib-2.0.so.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 1583066,
+          "link_target": null,
+          "sha256": "82c6753f405dfd5744c1df0cc178e168235f133b255a65db332561f8003cdd87"
+        },
+        {
+          "path": "usr/lib/libglib-2.0.so.0.4000.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 1583066,
+          "link_target": null,
+          "sha256": "82c6753f405dfd5744c1df0cc178e168235f133b255a65db332561f8003cdd87"
+        },
+        {
+          "path": "usr/lib/libgmodule-2.0.so",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 18302,
+          "link_target": null,
+          "sha256": "41ffd378dd85ecede58ab666fabaeacda6a5ea06f12e441703a08ab7929d0545"
+        },
+        {
+          "path": "usr/lib/libgmodule-2.0.so.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 18302,
+          "link_target": null,
+          "sha256": "41ffd378dd85ecede58ab666fabaeacda6a5ea06f12e441703a08ab7929d0545"
+        },
+        {
+          "path": "usr/lib/libgmodule-2.0.so.0.4000.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 18302,
+          "link_target": null,
+          "sha256": "41ffd378dd85ecede58ab666fabaeacda6a5ea06f12e441703a08ab7929d0545"
+        },
+        {
+          "path": "usr/lib/libgobject-2.0.so",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 424203,
+          "link_target": null,
+          "sha256": "323b9dde961971f4b6fd2c0d1ddf31140e4ba3fc2af53fcb94c2f836bcbcdca6"
+        },
+        {
+          "path": "usr/lib/libgobject-2.0.so.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 424203,
+          "link_target": null,
+          "sha256": "323b9dde961971f4b6fd2c0d1ddf31140e4ba3fc2af53fcb94c2f836bcbcdca6"
+        },
+        {
+          "path": "usr/lib/libgobject-2.0.so.0.4000.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 424203,
+          "link_target": null,
+          "sha256": "323b9dde961971f4b6fd2c0d1ddf31140e4ba3fc2af53fcb94c2f836bcbcdca6"
+        },
+        {
+          "path": "usr/lib/libgthread-2.0.so",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 7071,
+          "link_target": null,
+          "sha256": "453855b953b1a718f980205691fe7e234f57281dfad76960a18ac8b904d0ed9c"
+        },
+        {
+          "path": "usr/lib/libgthread-2.0.so.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 7071,
+          "link_target": null,
+          "sha256": "453855b953b1a718f980205691fe7e234f57281dfad76960a18ac8b904d0ed9c"
+        },
+        {
+          "path": "usr/lib/libgthread-2.0.so.0.4000.0",
+          "mode": "-rwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 7071,
+          "link_target": null,
+          "sha256": "453855b953b1a718f980205691fe7e234f57281dfad76960a18ac8b904d0ed9c"
+        },
+        {
+          "path": "usr/share",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 64,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/applications",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 43,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/applications/appimagetool.desktop",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 174,
+          "link_target": null,
+          "sha256": "64483fc0330f0ba61fe440331fd8f7f8371e460cc7832826733f715d759d3776"
+        },
+        {
+          "path": "usr/share/icons",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 30,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/icons/hicolor",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 31,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/icons/hicolor/scalable",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 27,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/icons/hicolor/scalable/apps",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 39,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/icons/hicolor/scalable/apps/appimagetool.svg",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 21585,
+          "link_target": null,
+          "sha256": "92feb5a08d153f430ad1ef791a32344f86cedbaec5cd9ddbc952edd7a16f87e7"
+        },
+        {
+          "path": "usr/share/metainfo",
+          "mode": "drwxr-xr-x",
+          "uid": 0,
+          "gid": 0,
+          "size": 47,
+          "link_target": null
+        },
+        {
+          "path": "usr/share/metainfo/appimagetool.appdata.xml",
+          "mode": "-rw-r--r--",
+          "uid": 0,
+          "gid": 0,
+          "size": 1247,
+          "link_target": null,
+          "sha256": "c57ad0df9a1600ed8da8555bd4c38c2183291ee0f0ceb6b4094dc76b2a467a12"
+        }
+      ]
+    }
+  ],
+  "passed": 84
+}

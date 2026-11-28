@@ -174,12 +174,76 @@ impl Analyzer for Content {
             .param("hosts", hosts.len())
             .param("urls", total_urls)
             .param("files", files);
-        // A few examples as evidence; the summary fact and the per-file facts hold the rest.
-        for (host, (_, files)) in hosts.iter().filter(|(host, _)| !urls::is_namespace_host(host)).take(10) {
+        // Prefer ordinary addresses, but namespace-only inputs still need source evidence.
+        // The per-file URL facts contain already redacted values read from that file's bytes.
+        let examples = hosts
+            .iter()
+            .filter(|(host, _)| !urls::is_namespace_host(host))
+            .chain(hosts.iter().filter(|(host, _)| urls::is_namespace_host(host)));
+        for (host, (_, files)) in examples.take(10) {
             if let Some(file) = files.first() {
-                finding = finding.evidence(Evidence::whole(file, host.as_str()));
+                let example = file.facts["content.urls"]["urls"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str)
+                    .find(|url| urls::host(url).as_deref() == Some(host));
+                finding = finding.evidence(Evidence::field(
+                    file,
+                    "content.urls",
+                    json!({
+                        "host":host,"example_url":example,"namespace":urls::is_namespace_host(host)
+                    }),
+                ));
             }
         }
         out.finding(finding);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    struct Supplied(Artifact);
+    impl Tree for Supplied {
+        fn artifacts(&self) -> &[Artifact] {
+            std::slice::from_ref(&self.0)
+        }
+        fn read(&self, _: &str) -> std::io::Result<aa_core::plugin::Bytes> {
+            Err(std::io::Error::other("tree pass reads captured URL facts"))
+        }
+    }
+
+    #[test]
+    fn namespace_only_url_summary_has_redacted_source_evidence() {
+        let bytes = b"xmlns='http://www.w3.org/2000/svg' https://user:fixture-password@www.w3.org/path?token=fixture-token";
+        let found = urls::find(bytes);
+        let tree = Supplied(Artifact {
+            path: "image.svg".into(),
+            parent: None,
+            size: bytes.len() as u64,
+            digests: Some(aa_core::Digests { md5: "0".repeat(32), sha1: "0".repeat(40), sha256: aa_core::sha256_hex(bytes) }),
+            detected: None,
+            kind: None,
+            entropy: None,
+            unpacked_by: None,
+            facts: BTreeMap::from([("content.urls".into(), json!({"urls":found.urls,"truncated":false}))]),
+        });
+        let mut out = Output::default();
+        Content.analyze_tree(&tree, &mut out);
+        let finding = out.findings.iter().find(|finding| finding.rule == "content.hosts").expect("namespace URL finding");
+        assert_eq!(finding.evidence.len(), 1);
+        let evidence = &finding.evidence[0];
+        assert_eq!(evidence.artifact, "image.svg");
+        assert_eq!(evidence.sha256.as_deref(), Some(aa_core::sha256_hex(bytes).as_str()));
+        assert_eq!(evidence.value["host"], "www.w3.org");
+        assert_eq!(evidence.value["namespace"], true);
+        assert!(tree.0.facts["content.urls"]["urls"].as_array().expect("URLs").contains(&evidence.value["example_url"]));
+        let output = serde_json::to_string(finding).expect("finding JSON");
+        assert!(!output.contains("fixture-password"));
+        assert!(!output.contains("fixture-token"));
+        let mut again = Output::default();
+        Content.analyze_tree(&tree, &mut again);
+        assert_eq!(out.findings, again.findings);
     }
 }
