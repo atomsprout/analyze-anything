@@ -165,7 +165,9 @@ impl Analyzer for Components {
         let mut image_component_bytes = 0usize;
         let mut image_components_omitted = false;
         for artifact in tree.artifacts() {
-            for (key, ecosystem) in [("deb.control", "deb"), ("rpm.package", "rpm"), ("arch.package", "alpm")] {
+            for (key, ecosystem) in
+                [("deb.control", "deb"), ("rpm.package", "rpm"), ("arch.package", "alpm"), ("alpine-apk.package", "apk")]
+            {
                 if let Some(package) = artifact.facts.get(key)
                     && let (Some(name), Some(version)) = (text(package, "name"), text(package, "version"))
                 {
@@ -183,6 +185,19 @@ impl Analyzer for Components {
                         source: artifact.path.clone(),
                     });
                 }
+            }
+            if let Some(package) = artifact.facts.get("flatpak.bundle")
+                && let Some(name) = text(package, "name")
+            {
+                found.push(Component {
+                    ecosystem: "flatpak",
+                    name: name.to_owned(),
+                    // A Flatpak branch identifies a ref, not a software version.
+                    version: None,
+                    kind: "application",
+                    declared_range: None,
+                    source: artifact.path.clone(),
+                });
             }
             image_components_omitted |= image_components(tree, artifact, &mut found, &mut image_component_bytes);
         }

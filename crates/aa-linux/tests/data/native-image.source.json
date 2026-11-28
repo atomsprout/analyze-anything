@@ -1,0 +1,196 @@
+{
+  "archives": [
+    {
+      "config": {
+        "architecture": "amd64",
+        "config": {
+          "Cmd": [
+            "literal-argument",
+            "--literal-option"
+          ],
+          "Entrypoint": [
+            "/never-run"
+          ],
+          "Env": [
+            "FIXTURE_LITERAL=present",
+            "PASSWORD=synthetic-redaction-probe"
+          ],
+          "ExposedPorts": {
+            "8080/tcp": {}
+          },
+          "User": "123:456",
+          "Volumes": {
+            "/state": {}
+          },
+          "WorkingDir": "/fixture"
+        },
+        "created": "2020-01-01T00:00:00Z",
+        "os": "linux",
+        "rootfs": {
+          "diff_ids": [
+            "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+            "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+            "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df"
+          ],
+          "type": "layers"
+        }
+      },
+      "manifest": {
+        "annotations": {
+          "org.opencontainers.image.title": "Inert native image fixture"
+        },
+        "config": {
+          "digest": "sha256:7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 585
+        },
+        "layers": [
+          {
+            "digest": "sha256:3dd53b9d24fa1db91afd6d470dd9de24d10587132054ff15db558558c62fefb4",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 458
+          },
+          {
+            "digest": "sha256:959bfe142446c9aec560de53255083b8cddb9405ab3ab6d33304c462fd2864af",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 123
+          },
+          {
+            "digest": "sha256:09906c3bffdd910501ac3daf7f143744ecfc123d202f76f70635ee801866092d",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 214
+          }
+        ],
+        "schemaVersion": 2
+      },
+      "sample": "native-inert.oci.tar",
+      "sha256": "2f2df7cea6652176d4dd23de2e143510ab423a9ec45ad89daeb1c46c16a686c5",
+      "size": 10240
+    },
+    {
+      "config": {
+        "architecture": "amd64",
+        "config": {
+          "Cmd": [
+            "literal-argument",
+            "--literal-option"
+          ],
+          "Entrypoint": [
+            "/never-run"
+          ],
+          "Env": [
+            "FIXTURE_LITERAL=present",
+            "PASSWORD=synthetic-redaction-probe"
+          ],
+          "ExposedPorts": {
+            "8080/tcp": {}
+          },
+          "User": "123:456",
+          "Volumes": {
+            "/state": {}
+          },
+          "WorkingDir": "/fixture"
+        },
+        "created": "2020-01-01T00:00:00Z",
+        "os": "linux",
+        "rootfs": {
+          "diff_ids": [
+            "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+            "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+            "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df"
+          ],
+          "type": "layers"
+        }
+      },
+      "manifest": {
+        "config": {
+          "digest": "sha256:7bd58835fc85d5209ac24dae7e61250407d8f44e677d19c4d962342a627f1016",
+          "mediaType": "application/vnd.docker.container.image.v1+json",
+          "size": 585
+        },
+        "layers": [
+          {
+            "digest": "sha256:d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 10240
+          },
+          {
+            "digest": "sha256:4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 10240
+          },
+          {
+            "digest": "sha256:dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df",
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 10240
+          }
+        ],
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "schemaVersion": 2
+      },
+      "sample": "native-inert.docker.tar",
+      "sha256": "7f212f0198616f6618b5d0dc1b2a66de9f25b2fa2e1ab8a1bc80c1070626d2fd",
+      "size": 45056
+    }
+  ],
+  "source_entries": [
+    {
+      "link_target": "message.txt",
+      "path": "fixture/alias"
+    },
+    {
+      "path": "fixture/empty",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "fixture/hardlink",
+      "sha256": "ac56b9c2bedcf52d2ebeaf7878b3471c131bb8f6950d6494917a998674c0ed13",
+      "size": 40
+    },
+    {
+      "path": "fixture/message.txt",
+      "sha256": "ac56b9c2bedcf52d2ebeaf7878b3471c131bb8f6950d6494917a998674c0ed13",
+      "size": 40
+    },
+    {
+      "path": "fixture/obsolete.txt",
+      "sha256": "a4d30a2680ff314cdf78a5fad52990e7d7faeb1c5a8d22d490ca8f52547280fe",
+      "size": 49
+    },
+    {
+      "path": "fixture/\u4e2d\u6587.txt",
+      "sha256": "0bb5546474ca6e8ffd3af8c7db3d842da2e607016356850d68f32f215fe07b01",
+      "size": 19
+    },
+    {
+      "path": "opaque/replacement.txt",
+      "sha256": "8868d0228b82729741b5a15e57392baf324f5aa626dc58fda8da950bcd075d8a",
+      "size": 37
+    }
+  ],
+  "source_layers": [
+    {
+      "sample": "source-layer.tar",
+      "sha256": "d2bf8c0dca6989159d9b7b519bad22005a937dc64c7449b100e88ce35ed50c64",
+      "size": 10240
+    },
+    {
+      "sample": "whiteout-layer.tar",
+      "sha256": "4b7829be2a672a956d16308c68fe6c722ceab3effac1b4ada19214150a3ba672",
+      "size": 10240
+    },
+    {
+      "sample": "opaque-layer.tar",
+      "sha256": "dfa4a01666cef0768bc4df7001f9b21f0c1e6d3367c74deb3abed54ac78374df",
+      "size": 10240
+    }
+  ],
+  "tools": {
+    "skopeo": "skopeo version 1.13.3",
+    "umoci": "umoci version 0.4.7+ds-4ubuntu0.24.04.3"
+  },
+  "umoci_stat": {
+    "history": null
+  }
+}

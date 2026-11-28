@@ -63,10 +63,10 @@ target/release/analyze-anything <文件或文件夹>
 
 ## 使用
 
-0.2.3 候选版增加了 Arch 软件包与 ar 归档解析、Linux 入口声明，
-以及明确支持范围的共享格式目录。其构建与发行验收仍在进行；
-已发布的下载基线仍是 0.2.2。发布包的流程检查仍以
-[已记录的源码与制品范围](docs/spikes/report-workflow.md)为准。
+0.2.6 源码包含 Arch/ar、Linux 声明、SquashFS/AppImage/snap、wheel/npm/JAR 以及
+Alpine/Flatpak/OCI/Docker/LZ4 范围。0.2.3 至 0.2.6 的各次交付仍待完成发布验收。
+发布流程会检查解压后的 CLI 分析、离线查询、agent 取消和 EOF 清理。
+详见[真实报告验收记录](docs/spikes/report-workflow.md)。
 
 ```
 analyze-anything <文件或文件夹>                    # 分析；报告写到 <名字>.report/
@@ -84,10 +84,10 @@ analyze-anything verify out/                      # 输出文件有没有被改�
 
 ## 能读什么
 
-下面的目录描述已集成的 0.2.5 源码候选版。已发布的 0.2.2 安装包仍以其验收记录为准；0.2.3 仍在构建，后续映像与语言软件包读取器还需完成各自的发行验收。
+下面的目录描述合并后的 0.2.6 源码候选版。已发布的 0.2.2 安装包仍以其验收记录为准；0.2.3 至 0.2.6 的各次交付仍需完成自己的发行验收。
 
 <!-- formats:begin -->
-**32 类主要格式＋4 种压缩格式（共 36 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
+**35 类主要格式＋5 种压缩格式（共 40 类）**，另列 11 类声明格式。详见[支持范围与限制](docs/FORMATS.md)，或运行 `analyze-anything formats --json`。
 <!-- formats:end -->
 
 | | |
@@ -172,13 +172,13 @@ analyze-anything App.ipa --ai       # 分析，然后在报告旁边写出 ai.md
 
 ## 现状与规划
 
-当前已发布版本是 0.2.2；0.2.3 候选版仍在构建。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
+当前已发布版本是 0.2.2；0.2.3 覆盖增量构建仍待正式发布。GitHub 安装包覆盖四个目标的 CLI 和 Windows 桌面版，这些安装包未签名。签名的 macOS/Homebrew 发行版仍为 0.1.1。五类真实报告及发布包的分析、查询和 agent 流程已有明确范围的验收记录；下一步见[路线图](docs/ROADMAP.md)。更广的平台和格式验收仍在推进。
 
-0.2.3 候选版已实现 Arch 包与 ar 归档、systemd/Desktop Entry/AppStream 声明，以及有边界的随附库关系。后续的 0.2.4 候选版增加了 SquashFS、AppImage Type 2 与 snap。0.2.5 源码候选版还可读取 wheel、npm TAR 包和 JAR 声明，记录捕获的组件身份与尚未解析的字面依赖，使源码目录中的主要格式与压缩格式合计达到 36 类。[映像](docs/LIMITATIONS.md#linux-breadth-b-image-profiles)与[语言软件包](docs/LIMITATIONS.md#language-package-breadth-c-profiles)记录区分了实现、验收和发布。接下来按这个顺序做：
+合并后的源码已实现 Arch/ar、Linux 入口声明、SquashFS/AppImage/snap、wheel/npm/JAR、Alpine APK、完整 Flatpak 包、一个 OCI/Docker 家族和 LZ4：35 类主要格式加 5 种压缩格式，共 40 类，另列 11 类声明格式。这些数量来自同一份有界支持范围目录；各次发布仍待完成。按顺序继续发布工作：
 
-1. **Linux 应用验收**：发布前完成 0.2.4 候选版的集成原生工具、跨平台及发布包检查；更广的映像支持范围单独扩展。
-2. **语言软件包验收**：在 Linux 应用批次之后交付已实现的 wheel、npm TAR 包和 JAR 范围，并完成各自的原生工具、跨平台与发布包检查。WAR/EAR 仍是 Java 家族中尚未验收的范围。
-3. **后续覆盖**：验收 Alpine APK、Flatpak、一个 OCI/Docker 格式家族与 LZ4，目标为 40 类。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
+1. **Linux 应用格式**：完成集成原生工具、跨平台及发布包检查后，以 0.2.4 交付已实现的 SquashFS、AppImage Type 2 与 snap 范围。见[已记录的支持边界](docs/LIMITATIONS.md#linux-breadth-b-image-profiles)。
+2. **语言软件包**：交付已实现的 wheel、npm TAR 包和 JAR 范围，在 Linux 应用批次之后达到 36 类。WAR/EAR 仍是 Java 家族中尚未验收的范围。
+3. **最终覆盖增量**：在前述批次之后，以 0.2.6 交付已实现的 Alpine APK v2、空基础 Flatpak 包、OCI/Docker 镜像和独立块 LZ4 范围，目标为 40 类。见[具体范围](docs/spikes/final-format-breadth.md)。之后深入 .NET IL 与组件关系；可选证据保留单独推进。
 
 不会变的：纯静态、分析过程离线、同样的输入得到同样的报告、每条结论都有证据、不下判决。完整内容见 [docs/ROADMAP.md](docs/ROADMAP.md)（英文），逐条的待办见 [docs/TODO.md](docs/TODO.md)。
 

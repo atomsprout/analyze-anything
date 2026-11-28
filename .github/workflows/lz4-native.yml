@@ -1,0 +1,30 @@
+name: LZ4 native reader comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/format-breadth-d]
+    paths:
+      - crates/aa-unpack/src/lz4.rs
+      - tools/native-compare/lz4-frames.py
+      - .github/workflows/lz4-native.yml
+  pull_request:
+    paths:
+      - crates/aa-unpack/src/lz4.rs
+      - tools/native-compare/lz4-frames.py
+      - .github/workflows/lz4-native.yml
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y lz4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build -p aa-cli --no-default-features
+      - run: /usr/bin/python3 tools/native-compare/lz4-frames.py target/debug/analyze-anything out/lz4-native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lz4-native-reference
+          path: out/lz4-native

@@ -5,6 +5,7 @@
 
 mod dotnet;
 mod inflate;
+mod lz4;
 mod pyinstaller;
 mod sevenz;
 mod stream;
@@ -29,10 +30,10 @@ pub fn executable_unpackers() -> Vec<Box<dyn Unpacker>> {
 
 /// General archives and compressed streams, most specific first.
 pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
-    vec![Box::new(zip::Zip), Box::new(sevenz::SevenZ), Box::new(tar::Tar), Box::new(stream::Stream)]
+    vec![Box::new(zip::Zip), Box::new(sevenz::SevenZ), Box::new(tar::Tar), Box::new(lz4::Lz4), Box::new(stream::Stream)]
 }
 
 /// Metadata for the executable containers whose members the unpackers expose.
 pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
-    vec![Box::new(dotnet::Dotnet), Box::new(pyinstaller::PyInstaller)]
+    vec![Box::new(dotnet::Dotnet), Box::new(pyinstaller::PyInstaller), Box::new(lz4::Lz4)]
 }

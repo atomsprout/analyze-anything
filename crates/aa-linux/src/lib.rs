@@ -1,11 +1,14 @@
 //! Linux packages and their declared contents, without installation or script evaluation.
 
+mod alpine;
 mod appimage;
 mod ar;
 mod arch;
 mod cpio;
 mod deb;
 mod declarations;
+mod flatpak;
+mod image;
 mod rpm;
 mod snap;
 mod squashfs;
@@ -33,6 +36,9 @@ fn number(bytes: &[u8], radix: u32) -> Result<u32> {
 /// Package containers precede generic archives; compressed payloads use the shared engine.
 pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
     vec![
+        Box::new(alpine::Alpine),
+        Box::new(flatpak::Flatpak),
+        Box::new(flatpak::Part),
         Box::new(deb::Deb),
         Box::new(rpm::Rpm),
         Box::new(ar::Ar),
@@ -45,6 +51,7 @@ pub fn unpackers() -> Vec<Box<dyn Unpacker>> {
 /// Ordered metadata declarations and installation scripts remain source data.
 pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
     vec![
+        Box::new(alpine::Alpine),
         Box::new(deb::Deb),
         Box::new(rpm::Rpm),
         Box::new(squashfs::Squashfs),
@@ -54,5 +61,7 @@ pub fn analyzers() -> Vec<Box<dyn Analyzer>> {
         Box::new(arch::Arch),
         Box::new(cpio::Cpio),
         Box::new(declarations::Declarations),
+        Box::new(flatpak::Flatpak),
+        Box::new(image::Image),
     ]
 }

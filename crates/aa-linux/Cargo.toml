@@ -12,10 +12,13 @@ workspace = true
 [dependencies]
 aa-core.workspace = true
 serde_json.workspace = true
+serde.workspace = true
 tar.workspace = true
 roxmltree = "0.20"
-flate2.workspace = true
+hex.workspace = true
+sha2.workspace = true
 lzma-bounded = { package = "lzma-rust2", version = "0.25", default-features = false, features = ["std", "xz"] }
+flate2.workspace = true
 yaml-rust2 = "0.13.2"
 
 [dev-dependencies]

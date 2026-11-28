@@ -1,0 +1,38 @@
+name: Flatpak native reader comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/format-breadth-d]
+    paths:
+      - crates/aa-linux/src/flatpak/**
+      - crates/aa-linux/src/flatpak.rs
+      - tools/native-compare/flatpak-*.py
+      - .github/workflows/flatpak-native.yml
+  pull_request:
+    paths:
+      - crates/aa-linux/src/flatpak/**
+      - crates/aa-linux/src/flatpak.rs
+      - tools/native-compare/flatpak-*.py
+      - .github/workflows/flatpak-native.yml
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y flatpak ostree python3-gi gir1.2-flatpak-1.0
+      - run: cargo build -p aa-cli --no-default-features
+      - run: /usr/bin/python3 tools/native-compare/flatpak-bundle-fixture.py out/flatpak-native
+      - name: Fetch hash-bound external reference as data
+        run: |
+          mkdir -p out/flatpak-external
+          curl --fail --location https://github.com/rustdesk/rustdesk/releases/download/1.5.3/rustdesk-1.5.3-x86_64.flatpak -o out/flatpak-external/rustdesk-1.5.3-x86_64.flatpak
+          printf '%s  %s\n' 947239551c8758479a55aa8d03e863655e5c8e4e52c4f79a39d9bb51cc4184f8 out/flatpak-external/rustdesk-1.5.3-x86_64.flatpak | sha256sum --check
+      - run: /usr/bin/python3 tools/native-compare/flatpak-bundles.py target/debug/analyze-anything crates/aa-linux/tests/data/native-inert.flatpak out/flatpak-native/native-inert.flatpak out/flatpak-external/rustdesk-1.5.3-x86_64.flatpak --record out/flatpak-native/reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flatpak-native-reference
+          path: out/flatpak-native

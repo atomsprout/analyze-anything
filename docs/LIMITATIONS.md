@@ -86,10 +86,10 @@ own final CI and package checks.
 ## Linux breadth B image profiles
 
 The 0.2.4 source increment implements three additional primary families: SquashFS,
-AppImage Type 2 and snap. This increment brought the catalogue to 29 primary + four
-compression families (33 total); the later integrated 0.2.5 source contains 36.
-Declaration families are counted separately. Implementation does
-not establish publication, complete format coverage or new OS/runtime qualification.
+AppImage Type 2 and snap. With A, C and D now merged, the 0.2.6 source catalogue has
+35 primary + five compression families (40 total); 11 declaration families are counted
+separately. Implementation does not establish publication, complete format coverage or
+new OS/runtime qualification.
 
 - SquashFS: little-endian v4.0 metadata and file bytes with gzip/XZ compression,
   common/extended file and directory inodes, ID/fragment tables and sparse blocks.
@@ -197,6 +197,85 @@ The engine integration test covers all three
 readers through the shared container pipeline, evidence presence and repeated-report
 equality. These records do not establish hosted cross-platform, final release-package or
 every tool-version qualification; those release gates remain pending.
+
+## Final format breadth D profiles
+
+D implements three primary families (Alpine APK, full Flatpak single-file bundles and
+one OCI/Docker-save image family) and one compression family (LZ4 frames). With A, B and
+C merged, the 0.2.6 source catalogue contains **35 primary + five
+compression families = 40**, with 11 separately counted declaration families. These are
+implemented source profiles for the pending 0.2.6 release. A's 0.2.3 candidate build and
+promotion, B's PR #12 source/release pipeline, and later release/package gates remain
+separate. See [the D scope and references](spikes/final-format-breadth.md).
+
+- Alpine APK v2: at most eight exact gzip members, separating signature, control and
+  payload namespaces. Gzip CRC/ISIZE, TAR header checksums and extents are checked.
+  Identity, literal dependency/provider/replacement/install-if/trigger declarations and
+  script text come only from the authoritative control member. Effective local PAX names
+  are checked before assigning that role; aliases and duplicate controls cannot establish
+  identity. Links and special files remain declarations. Limits include 256 MiB compressed
+  input, 1 MiB per signature/control member, 128 MiB payload, 136 MiB total decoded data,
+  100,000 entries per TAR, 16 MiB of names and 1 MiB of PAX metadata per TAR. Full artifact
+  paths are capped at 8,192 bytes, offered paths at 32 MiB and serialized previews at
+  16 MiB. APK v3/ADB, global PAX, GNU long-name/sparse metadata, PAX size overrides and
+  base-256 numbers remain unsupported. Package signatures, declared datahash/member hashes,
+  installation eligibility and script effects are not verified or evaluated.
+- Flatpak: empty-base OSTree static-delta single-file bundles, inline version-0 parts,
+  stored or bounded XZ compression and complete literal `S` object records. The reader
+  checks typed GVariant framing, canonical object labels and the captured
+  commit/dirtree/dirmeta/file graph; identity, runtime and permission declarations cite
+  original metadata. A branch is never treated as a software version. Compressed inline
+  parts, decoded layers and payload/filename source spans remain separate evidence.
+  Limits include 256 MiB input, 64 MiB per decoded part, 256 MiB total decoded data and
+  256 MiB of hashing work,
+  4,096 parts and 100,000 objects. The output guards added at 56fce92 cap full artifact
+  paths at 8,192 bytes, aggregate offered paths at 32 MiB and the shared serialized
+  part/file/directory inventory at 16 MiB; exhaustion reports `flatpak.output-limited`.
+  Missing objects preserve independently readable siblings. Nonempty bases, fallback or
+  external objects, other opcodes/compression and signed-superblock envelopes remain
+  unsupported. Signatures, remotes, runtime availability and effective sandbox policy
+  are unresolved; links and extended attributes remain declarations.
+- OCI/Docker-save: original layout/index/manifest/config sources, ordered layers,
+  descriptor SHA-256/size agreement and config `rootfs.diff_ids` against captured
+  uncompressed TAR bytes. Docker-save's measured layer hashes are distinguished from
+  original declared descriptors. Literal argv, redacted environment, ports, volumes,
+  labels and annotations are configuration declarations. Entry metadata preserves links,
+  whiteouts and local PAX/GNU extension spans, distinct from the actual base header.
+  The profile caps TAR inputs and the captured-data budget at 256 MiB, JSON at
+  2 MiB per document/16 MiB
+  aggregate, published layer-entry data to 16 MiB, manifests to 64 and layers to 1,024,
+  with a shared entry budget. Duplicate/noncanonical namespaces, missing or mismatched
+  blobs, graph cycles, global PAX, sparse metadata and unfinished TARs remain explicit.
+  Layers are never merged or applied. No effective filesystem/configuration, registry
+  resolution, signature trust, installation eligibility or runtime behavior is established.
+- LZ4: one modern independent-block frame, stored/compressed blocks, optional content
+  size and declared header/block/content checksum checks. Bounds are 4 MiB per block,
+  65,536 blocks and 256 MiB decoded data. Linked blocks, dictionaries, legacy/raw streams,
+  skippable frames and concatenated frames remain unsupported. Checksum agreement does
+  not authenticate the input.
+
+The pinned samples and independent native scopes are recorded separately:
+
+| Profile | Checked evidence and boundary |
+|---|---|
+| [Alpine](../crates/aa-linux/tests/data/ALPINE.md) | Unchanged BSD-2-Clause libxxhash 0.8.3-r0 and two project-authored inert packages; 227 recorded Windows checks using independent gzip/TAR readers and native tools. Broader real script packages and APK v3 remain unqualified. |
+| [Flatpak](../crates/aa-linux/tests/data/FLATPAK.md) | Native project-authored Apache-2.0 writer fixtures and an external hash-bound RustDesk 1.5.3 bundle; run 46107713148 passed 1,104 Flatpak BundleRef/GLib/object/payload/source-span checks. The external bundle is not redistributed; this record precedes later output guards. |
+| [OCI/Docker](../crates/aa-linux/tests/data/OCI.md) | Native umoci/skopeo exports of project-authored Apache-2.0 inert data; run 46108449511 passed 326 checks over two three-layer profiles. Later local PAX provenance probes have separate writer records; the original pinned bytes are unchanged. An unfinished native-writer TAR remains a negative fixture. |
+| [LZ4](../crates/aa-unpack/tests/data/LZ4.md) | Four native LZ4 1.9.4 frames of project-authored Apache-2.0 text; run 46107713119 passed 40 checks against `lz4 -dc`, original bytes and digests. |
+
+The later Flatpak native run
+[46109882704](https://github.com/atomsprout/analyze-anything/actions/runs/46109882704)
+passed at `56fce923d295a7fe093b8e626fed0013590516fd`, including the output guards above.
+It built the no-AI CLI and compared the checked-in writer bundle, a fresh native-writer
+bundle and the external hash-bound RustDesk bundle. This qualifies those three inputs
+at that revision, without broadening the supported base/opcode/compression profile.
+
+Constructed regressions cover malformed profiles, ambiguity, missing captures and exhausted
+budgets; real/native-writer records qualify their named bytes and tools. Native helpers do
+not install/import bundles or packages, load/run images, mount filesystems or execute hooks.
+Analysis itself remains offline and uses no external program. Complete capture, inventory,
+digest agreement and authenticity are distinct claims; final integrated-source CI and
+extracted release-package qualification retain their own gates.
 
 ## Parts not verified on real samples
 

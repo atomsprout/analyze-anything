@@ -61,10 +61,10 @@ The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release
 
 ## Use
 
-The 0.2.3 candidate adds Arch Linux package and ar archive readers, Linux entry declarations
-and a shared format catalogue with explicit supported profiles. Its build and release
-qualification are in progress; 0.2.2 remains the published download baseline. Packaged
-workflow checks retain their [recorded source and artifact scope](docs/spikes/report-workflow.md).
+Source version 0.2.6 includes the Arch/ar, Linux declaration, SquashFS/AppImage/snap, wheel/npm/JAR and
+Alpine/Flatpak/OCI/Docker/LZ4 profiles. The separate 0.2.3–0.2.6 deliveries remain
+pending their release gates. The release pipeline checks extracted CLI analysis, offline queries,
+agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
 
 ```
 analyze-anything <file or folder>                 # analyze; the report goes to <name>.report/
@@ -82,10 +82,10 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 
 ## What it reads
 
-The catalogue below describes the integrated 0.2.5 source candidate. Published 0.2.2 packages retain their recorded profiles; 0.2.3 is still building, and the later image and language readers require their own release qualification.
+The catalogue below describes the combined 0.2.6 source candidate. Published 0.2.2 packages retain their recorded profiles; the separate 0.2.3–0.2.6 deliveries still require their own release qualification.
 
 <!-- formats:begin -->
-**32 primary format families + 4 compression formats (36 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
+**35 primary format families + 5 compression formats (40 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
 <!-- formats:end -->
 
 | | |
@@ -170,13 +170,13 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The current published release is 0.2.2; the 0.2.3 candidate is still building. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
+The current published release is 0.2.2; the 0.2.3 breadth build is pending promotion. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
 
-The 0.2.3 candidate implements Arch packages and ar archives, systemd/Desktop Entry/AppStream declarations and bounded supplied-library relationships. The later 0.2.4 candidate adds SquashFS, AppImage Type 2 and snap. The 0.2.5 source candidate also reads wheel, npm tarball and JAR declarations, with captured component identities and literal unresolved dependencies, bringing the source catalogue to 36 primary/compression families. [Image](docs/LIMITATIONS.md#linux-breadth-b-image-profiles) and [language package](docs/LIMITATIONS.md#language-package-breadth-c-profiles) records distinguish implemented profiles from qualification and publication. Next, in order:
+The combined source implements Arch/ar, Linux entry declarations, SquashFS/AppImage/snap, wheel/npm/JAR, Alpine APK, full Flatpak bundles, one OCI/Docker family and LZ4: 35 primary plus five compression families, 40 in total, with 11 declaration families tracked separately. These are bounded profiles from one catalogue; their releases remain pending. Release work continues in order:
 
-1. **Linux application qualification**: complete the integrated native, cross-platform and packaged checks for the 0.2.4 candidate before publication; broaden the documented image profiles separately.
-2. **Language package qualification**: deliver the implemented wheel, npm tarball and JAR profiles after the Linux application batch, with their own native, cross-platform and packaged checks. WAR/EAR remain unqualified profiles within the Java family.
-3. **Further breadth**: qualify Alpine APK, Flatpak, one OCI/Docker family and LZ4, targeting 40 families. .NET IL and deeper component relationships follow; optional evidence retention remains separate.
+1. **Linux application formats**: deliver the implemented SquashFS, AppImage Type 2 and snap profiles as 0.2.4 after integrated native, cross-platform and packaged checks. [Recorded profile boundaries](docs/LIMITATIONS.md#linux-breadth-b-image-profiles).
+2. **Language packages**: deliver the implemented wheel, npm tarball and JAR profiles, targeting 36 families after the Linux application batch. WAR/EAR remain unqualified profiles within the Java family.
+3. **Final breadth**: deliver the implemented Alpine APK v2, empty-base Flatpak bundle, OCI/Docker image and independent-block LZ4 profiles as 0.2.6 after the preceding batches, targeting 40 families. [Exact scope](docs/spikes/final-format-breadth.md). .NET IL and deeper component relationships follow; optional evidence retention remains separate.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
 

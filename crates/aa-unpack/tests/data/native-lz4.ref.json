@@ -1,0 +1,254 @@
+{
+  "source_license": "Apache-2.0",
+  "native_writer": "*** LZ4 command line interface 64-bits v1.9.4, by Yann Collet ***",
+  "checks": [
+    {
+      "check": "default: native decompression agrees with original data",
+      "matches": true
+    },
+    {
+      "check": "default: LZ4 identity",
+      "matches": true
+    },
+    {
+      "check": "default: complete captured child count",
+      "matches": true
+    },
+    {
+      "check": "default: captured output size",
+      "matches": true
+    },
+    {
+      "check": "default: captured output SHA-256",
+      "matches": true
+    },
+    {
+      "check": "default: complete frame decoding",
+      "matches": true
+    },
+    {
+      "check": "default: header checksum",
+      "matches": true
+    },
+    {
+      "check": "default: declared checksums checked",
+      "matches": true
+    },
+    {
+      "check": "default: checksum agreement does not authenticate",
+      "matches": true
+    },
+    {
+      "check": "default: original frame digest",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: native decompression agrees with original data",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: LZ4 identity",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: complete captured child count",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: captured output size",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: captured output SHA-256",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: complete frame decoding",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: header checksum",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: declared checksums checked",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: checksum agreement does not authenticate",
+      "matches": true
+    },
+    {
+      "check": "all-checksums: original frame digest",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: native decompression agrees with original data",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: LZ4 identity",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: complete captured child count",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: captured output size",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: captured output SHA-256",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: complete frame decoding",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: header checksum",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: declared checksums checked",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: checksum agreement does not authenticate",
+      "matches": true
+    },
+    {
+      "check": "no-content-checksum: original frame digest",
+      "matches": true
+    },
+    {
+      "check": "short-stored: native decompression agrees with original data",
+      "matches": true
+    },
+    {
+      "check": "short-stored: LZ4 identity",
+      "matches": true
+    },
+    {
+      "check": "short-stored: complete captured child count",
+      "matches": true
+    },
+    {
+      "check": "short-stored: captured output size",
+      "matches": true
+    },
+    {
+      "check": "short-stored: captured output SHA-256",
+      "matches": true
+    },
+    {
+      "check": "short-stored: complete frame decoding",
+      "matches": true
+    },
+    {
+      "check": "short-stored: header checksum",
+      "matches": true
+    },
+    {
+      "check": "short-stored: declared checksums checked",
+      "matches": true
+    },
+    {
+      "check": "short-stored: checksum agreement does not authenticate",
+      "matches": true
+    },
+    {
+      "check": "short-stored: original frame digest",
+      "matches": true
+    }
+  ],
+  "passed": 40,
+  "samples": [
+    {
+      "file": "default.txt.lz4",
+      "sha256": "b55c3be24e073a1b93904982f6eba6b6cec7fb44bf0e5047def51f3c1c46ad3c",
+      "source_sha256": "3b9268c9aaa53e34d2976a7aa090a68087a02873ad05bde5035f0939f24e88b9",
+      "source_size": 213000,
+      "writer_flags": [
+        "-B4"
+      ],
+      "header": {
+        "authenticated": false,
+        "block_checksum_declared": false,
+        "block_independent": true,
+        "complete_decoding": true,
+        "content_checksum_declared": true,
+        "content_size": null,
+        "declared_checksums_checked": true,
+        "header_checksum_matches": true,
+        "maximum_block_size": 65536
+      }
+    },
+    {
+      "file": "all-checksums.txt.lz4",
+      "sha256": "a34744ff4d2e03c06bd21ccaa93e7362596d6fd34800737366710e8b59eec105",
+      "source_sha256": "3b9268c9aaa53e34d2976a7aa090a68087a02873ad05bde5035f0939f24e88b9",
+      "source_size": 213000,
+      "writer_flags": [
+        "-B4",
+        "-BX",
+        "--content-size"
+      ],
+      "header": {
+        "authenticated": false,
+        "block_checksum_declared": true,
+        "block_independent": true,
+        "complete_decoding": true,
+        "content_checksum_declared": true,
+        "content_size": 213000,
+        "declared_checksums_checked": true,
+        "header_checksum_matches": true,
+        "maximum_block_size": 65536
+      }
+    },
+    {
+      "file": "no-content-checksum.txt.lz4",
+      "sha256": "9c18225e868036def9706cba982288822744e29a788cc5ebb1c6948cc766f558",
+      "source_sha256": "3b9268c9aaa53e34d2976a7aa090a68087a02873ad05bde5035f0939f24e88b9",
+      "source_size": 213000,
+      "writer_flags": [
+        "-B5",
+        "--no-frame-crc"
+      ],
+      "header": {
+        "authenticated": false,
+        "block_checksum_declared": false,
+        "block_independent": true,
+        "complete_decoding": true,
+        "content_checksum_declared": false,
+        "content_size": null,
+        "declared_checksums_checked": true,
+        "header_checksum_matches": true,
+        "maximum_block_size": 262144
+      }
+    },
+    {
+      "file": "short-stored.txt.lz4",
+      "sha256": "1c9031389fddefa6e4b0b0892be4e5372a9a74022dd4c481f24a9ed4fe70c426",
+      "source_sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "source_size": 3,
+      "writer_flags": [
+        "-B4",
+        "-BX",
+        "--content-size"
+      ],
+      "header": {
+        "authenticated": false,
+        "block_checksum_declared": true,
+        "block_independent": true,
+        "complete_decoding": true,
+        "content_checksum_declared": true,
+        "content_size": 3,
+        "declared_checksums_checked": true,
+        "header_checksum_matches": true,
+        "maximum_block_size": 65536
+      }
+    }
+  ]
+}

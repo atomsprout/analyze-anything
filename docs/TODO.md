@@ -7,8 +7,8 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 Current published baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
 uses unsigned packages with the report-workflow corrections and MSI action context.
 The 0.2.3 breadth A candidate is still building and undergoing release qualification;
-the later 0.2.4 candidate implements breadth B, and the integrated 0.2.5 source candidate
-implements breadth C. Each retains its own qualification and publication gates.
+the later 0.2.4 source candidate implements breadth B with its own publication gates.
+The merged A/B/C/D source is version 0.2.6; none of these four releases is published yet.
 Signed macOS/Homebrew remains at 0.1.1. The priorities
 and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
 
@@ -33,8 +33,8 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   distinguish implementation from independent qualification. Produce one machine-readable
   catalogue/support matrix from which README, website and release totals can be derived;
   check unique IDs, aliases and matching public totals in CI.
-  The integrated 0.2.5 source catalogue now lists 32 primary + four compression families, and 11 separately
-  tracked declaration families. Extracted-package checks verify the compiled profiles/count
+  The merged 0.2.6 source catalogue now lists 35 primary + five compression families,
+  and 11 separately tracked declaration families. Extracted-package checks verify the compiled profiles/count
   and program version against source. See [count policy](ROADMAP.md#format-inventory-and-count-policy).
 - [x] **Linux breadth A implementation: Arch packages and general ar archives.** Target two new primary
   families (28 to 30 including streams), subject to the baseline audit. Reuse TAR/streams
@@ -57,10 +57,12 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   SquashFS v4 gzip/XZ metadata/file decoding, checked Type 2 extents and AppRun evidence,
   and snap metadata/application/interface/hook declarations with supplied-file links.
   Canonical hello-world 29 and external AppImageKit 12 have hash-bound Windows 7-Zip
-  records and 84 Linux unsquashfs checks at a600591; other ELF and fragment/inode profiles retain constructed or pending native
-  qualification. Never mount an image or invoke its runtime, including extract switches.
+  records and 84 Linux unsquashfs checks at a600591; other ELF and fragment/inode
+  profiles retain constructed or pending native qualification. Never mount an image or
+  invoke its runtime, including extract switches.
 - [ ] **Qualify and publish breadth B as 0.2.4.** Linux native comparisons passed at
-  a600591; retain that source/sample scope. Record final integrated-head native,
+  a600591; retain that source/sample scope. PR #12 and the source/release pipeline are
+  underway; no 0.2.4 release is published. Record final integrated-head native,
   cross-platform CI, release-build and extracted-package checks, and verify public asset
   checksums before publication. Keep the exact sample/compressor and platform scope in
   [the image limitations](LIMITATIONS.md#linux-breadth-b-image-profiles). The later C/D
@@ -77,14 +79,21 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   Windows read-only reference records with 15 matching CLI comparisons (seven wheel,
   six npm, two JAR), plus the OpenJDK manifest/member reference. Final hosted native,
   cross-platform CI, release builds, extracted-package checks and public asset checksums
-  remain release gates. C adds three primary families to the integrated B baseline of 33, giving 36 in the
-  source catalogue. Implementation counts do not establish release qualification; WAR/EAR
-  aliases add no families.
-- [ ] **Later breadth feasibility.** Evaluate Alpine APK, full Flatpak single-file bundles,
-  one OCI/Docker image family and LZ4 framed streams for a later 40-entry target. Reference
-  documents alone do not qualify Flatpak bundles; image layer/whiteout semantics and
-  profile-specific compression need their own gates. Do not include candidates in released
-  counts. See [Linux increments](ROADMAP.md#linux-breadth-increments).
+  remain release gates. C adds three primary families, reaching 36 in the ordered
+  A/B/C delivery sequence. WAR/EAR aliases add no family and remain unqualified.
+- [x] **Final breadth D implementation.** Alpine APK v2, full empty-base inline V0
+  Flatpak bundles, one OCI/Docker-save family and independent-block LZ4 frames are
+  registered with bounded metadata/payload provenance, licensed or project-owned native
+  fixtures, independent static references and real engine/component tests. Flatpak
+  output/path guards at 56fce92 passed native run 46109882704. Other base/opcode,
+  filesystem/runtime and compression profiles remain explicit unknowns. See
+  [D scope and records](spikes/final-format-breadth.md).
+- [ ] **Publish breadth D as formal 0.2.6 after A/B/C.** A promotion remains pending;
+  do not treat source versions as published releases. The combined A/B/C/D source
+  catalogue is 35 primary + five compression families = 40, with 11 declaration families
+  separately counted. Wait for combined-source CI, all native comparisons, release builds,
+  extracted-package checks and public asset checksums.
+  OCI/Docker variants count once; JAR does not automatically qualify WAR/EAR.
 - [ ] **Following breadth: bounded .NET IL references and capability explanations.** Qualify one
   profile using existing CLR metadata: method bodies, supported call/string/token
   references, and a small set of explicit same-method evidence combinations. Establish

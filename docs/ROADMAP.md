@@ -1,6 +1,6 @@
 # Roadmap
 
-The published download baseline is [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2), including bounded MSI action context. The 0.2.3 candidate implements Arch/ar and Linux declarations, but its build and release qualification are still in progress; it has not been published. The later 0.2.4 source candidate implements SquashFS, AppImage Type 2 and snap, with its own integrated qualification and publication gates. The integrated 0.2.5 source candidate also implements wheel, npm tarball and JAR profiles, bringing the source catalogue to 36 families; its release gates remain open. Artifact and platform checks retain their recorded source and package scope. The latest signed and notarized macOS/Homebrew release remains [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1).
+The published download baseline is [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2), including bounded MSI action context. The 0.2.3 candidate implements Arch/ar and Linux declarations, but its build and release qualification are still in progress; it has not been published. The later 0.2.4 source candidate implements SquashFS, AppImage Type 2 and snap, with its own integrated qualification and publication gates. Artifact and platform checks retain their recorded source and package scope. The latest signed and notarized macOS/Homebrew release remains [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1).
 
 The preceding [v0.2.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.1) passed [source CI](https://github.com/atomsprout/analyze-anything/actions/runs/45893998208) and [release gates](https://github.com/atomsprout/analyze-anything/actions/runs/45893998676), including extracted-package analysis/query/agent workflows. Its Windows portable app passed 67 real-window checks. That record does not qualify later installers: the earlier disconnected Windows guest qualification was not repeated with the 0.2.1 or 0.2.2 installer.
 
@@ -41,18 +41,20 @@ are foundations to deepen. Comparing two software versions is not a delivery pri
 | Completed foundation | Read a useful report and reliably finish or stop an analysis | Five representative real-input scenarios, source corrections and packaged CLI/agent automation, shipped through PR #8 in 0.2.1 | [Recorded report review](spikes/report-workflow.md); platform-specific CI/release gates retain their own revision and runtime scope |
 | Completed in 0.2.2: MSI action context | Follow a declared operation to its condition, source and supplied target | MSI action sequences, phase/order, literal conditions and supported Binary-table payload links; reuse existing entry-point relationships and evidence navigation | Preserve original table/row evidence, ambiguous or missing targets and unread semantics; validate real redistributable samples against read-only native inspection. Reports and queries must expose the same facts without asserting execution. |
 | Implemented: format catalogue | Know how many format families have useful readers and which profiles were qualified | One catalogue with stable IDs, aliases, bounded profiles, evidence and limits; `formats --json` and generated public counts | Implementation and qualification boundaries are explicit; CI checks the matrix and public counts; extracted-package checks compare the compiled catalogue and version with source |
-| Implemented in 0.2.3 candidate; building/qualification gates open: Linux expansion A | Explain Arch packages, static libraries and application/service entry declarations | Arch package metadata over TAR/streams; general ar members; bounded systemd, Desktop Entry and AppStream readers; supplied ELF library relationships | 30 primary/compression families in source. Linux references at 9731df0 passed 22 ar, 56 Arch and 68 declaration checks; these do not establish final candidate/package qualification or publication |
-| Implemented in 0.2.4 source; qualification/publication gates open: Linux expansion B | Open filesystem-backed Linux applications | Little-endian SquashFS v4 gzip/XZ, AppImage Type 2 extents/AppRun evidence and snap declarations/supplied-file links | 33 primary/compression families in the source catalogue. Canonical hello-world and external AppImageKit 12 have Windows 7-Zip references and 84 Linux unsquashfs checks at a600591; final integrated/package gates remain separate. No mounting, runtime invocation or installation |
-| Implemented, 0.2.5 release gates pending: language package expansion C | Explain software delivered through language ecosystems | Registered wheel, npm tarball and JAR readers over ZIP/TAR/streams; identity, literal dependency/entry/script/manifest declarations, metadata provenance and captured member inventories | Three MIT-licensed published samples; 15 matching Windows CLI reference checks and a separate OpenJDK manifest/member reference at 929703f. Engine integration covers evidence and deterministic reports. C adds three families to the integrated B baseline of 33, giving 36 in the source catalogue; final integrated and package qualification remains pending. JAR qualifies one Java family; WAR/EAR remain unqualified |
+| Implemented in 0.2.3 candidate; building/qualification gates open: Linux expansion A | Explain Arch packages, static libraries and application/service entry declarations | Arch package metadata over TAR/streams; general ar members; bounded systemd, Desktop Entry and AppStream readers; supplied ELF library relationships | The A increment reaches 30 primary/compression families in release order. Linux references at 9731df0 passed 22 ar, 56 Arch and 68 declaration checks; these do not establish final candidate/package qualification or publication |
+| Implemented in 0.2.4 source; qualification/publication gates open: Linux expansion B | Open filesystem-backed Linux applications | Little-endian SquashFS v4 gzip/XZ, AppImage Type 2 extents/AppRun evidence and snap declarations/supplied-file links | The B increment reaches 33 primary/compression families in release order. PR #12 and the source/release pipeline are underway; 0.2.4 is not published. Canonical hello-world and external AppImageKit 12 have Windows 7-Zip references and 84 Linux unsquashfs checks at a600591; final integrated/package gates remain separate. No mounting, runtime invocation or installation |
+| Implemented, 0.2.5 release gates pending: language package expansion C | Explain software delivered through language ecosystems | Registered wheel, npm tarball and JAR readers over ZIP/TAR/streams; identity, literal dependency/entry/script/manifest declarations, metadata provenance and captured member inventories | Three MIT-licensed published samples; 15 matching Windows CLI reference checks and a separate OpenJDK manifest/member reference at 929703f. Engine integration covers evidence and deterministic reports. C adds three families, reaching 36 in the A/B/C delivery sequence. JAR qualifies one Java family; WAR/EAR remain unqualified |
+| Implemented, 0.2.6 release gates pending: final breadth D | Explain Alpine packages, complete Flatpak bundles and supplied container image layers | Alpine APK v2; empty-base inline V0 Flatpak bundles; one OCI/Docker-save family; independent-block LZ4 frames | Licensed or project-owned native-writer fixtures, independent static references, deterministic engine/component integration and hostile-input budgets. The merged A/B/C/D source catalogue has 35 primary + five compression families = 40; 11 declaration families are separate. [Exact profiles and references](spikes/final-format-breadth.md); no installation, bundle import, image execution or merged-filesystem claim |
 | Following depth work: explain static code references | See which method contains a capability-related reference and why it matters | Start with one .NET IL profile using existing CLR metadata; bounded method-body decoding, supported call/string/token references and a small set of explainable same-method evidence combinations | Real licensed samples and independent static-reader references; method/token and proven byte locations, malformed/unsupported cases and budgets; no runtime loading and no inferred execution or complete reachability. Deepening this existing family adds no format count |
 | Following depth work: clarify software composition | Distinguish a declared dependency from a component actually present | Extend packaged manifest/lockfile relationships from the npm increment and existing Electron profile, reusing component IDs and CycloneDX | Source file/field, declared range versus captured version, missing/ambiguous targets and declared licence provenance remain distinct; no registry lookup or host dependency resolution |
 | Optional follow-up: retain raw evidence | Revisit selected byte evidence after the original input is unavailable | User-selected bounded fragments for saved reports/history, with hashes, explicit omissions and export controls | Define storage caps and secret/redaction handling first; reopened fragments verify against their manifest; do not delay semantic readers for a full portable-evidence archive |
 
-The breadth delivery sequence uses the 0.2.3 candidate for A, the 0.2.4 candidate for B, then the 0.2.5 source candidate for C and a planned 0.2.6 delivery for the later 40-entry scope. Each requires its own qualified
-source and packages before publication. Evidence navigation and explicit unknowns are
-acceptance requirements for every increment. Format breadth takes priority, while each
-addition must explain useful structure or declarations. .NET IL remains the first
-code-depth candidate; Python bytecode/PYZ and hybrid JavaScript remain separate later profiles.
+Breadth A, B, C and D are separate formal-release deliveries (0.2.3, 0.2.4, 0.2.5 and
+0.2.6); implementation does not complete their CI, packaging or publication gates.
+Evidence navigation and explicit unknowns are acceptance requirements for every increment.
+Format breadth now takes priority, starting with Linux software, while each addition must
+explain useful structure or declarations. .NET IL remains the first code-depth candidate;
+Python bytecode/PYZ and hybrid JavaScript remain separate later profiles.
 
 Signing/notarization, broader OS baselines and installed-package qualification continue as
 separate delivery work, with claims limited to the actual artifacts and environments tested.
@@ -64,12 +66,11 @@ compressed-stream formats**, or **28 implemented catalogue entries**. This is a 
 inventory of registered implementations, not a claim that every variant has independent
 real-sample qualification. It does not enumerate every nested structure or declaration
 reader. The first breadth increment implements [the audited source catalogue](FORMATS.md)
-with **26 primary families + four compression formats = 30**. The 0.2.4 source increment
-adds SquashFS, AppImage Type 2 and snap for **29 primary families + four compression
-formats = 33**. The integrated 0.2.5 source adds wheel, npm tarball and JAR for
-**32 primary families + four compression formats = 36**, with 11 separately tracked
-declaration families (including the existing Windows readers). Every entry lists its bounded implementation profile and evidence;
-the source count does not expand qualification or assert publication.
+with **26 primary families + four compression formats = 30**. The merged A/B/C/D
+source, version 0.2.6, contains **35 primary families + five compression formats = 40**,
+with 11 separately tracked declaration families (including the existing Windows readers).
+Every entry lists its bounded implementation profile and evidence; the source count does
+not expand qualification or assert publication.
 
 | Category | Count | Families in the implementation baseline |
 |---|---:|---|
@@ -85,7 +86,8 @@ The registrations are in [the standard engine](../crates/aa-engine/src/lib.rs),
 [Windows readers](../crates/aa-windows/src/lib.rs),
 [Linux readers](../crates/aa-linux/src/lib.rs) and
 [general/executable unpackers](../crates/aa-unpack/src/lib.rs).
-The [stream reader](../crates/aa-unpack/src/stream.rs) implements the four compressed streams.
+The [stream reader](../crates/aa-unpack/src/stream.rs) implements the four baseline compressed streams;
+the D increment adds the bounded [LZ4 frame reader](../crates/aa-unpack/src/lz4.rs).
 
 Use stable family IDs and these rules for every later count:
 
@@ -114,29 +116,31 @@ Use stable family IDs and these rules for every later count:
 The [machine-readable catalogue](../crates/aa-core/src/formats.json) now supplies README,
 website-source and support-matrix totals. CI checks unique IDs, aliases and matching public
 counts. Keep aliases, nested capabilities, qualification records and limitations visible.
-The A headline retains the split: **"26 primary format families + 4 compression
-formats"**, linked to the same matrix. Planned additions are never included in released
-totals. Counts describe implemented profiles, not complete support for every variant.
+The combined-source headline retains the split: **"35 primary format families + five
+compression formats"**, linked to the same matrix. Planned additions are never included
+in released totals. Counts describe implemented profiles, not complete support for every
+variant. A/B/C/D are merged in the 0.2.6 source, while their formal releases retain
+separate qualification and promotion gates; the published baseline remains 0.2.2.
 
-The implemented C readers add wheel, npm tarball and one Java archive family to A's
-33-entry B source baseline: **32 primary families + four compression formats = 36**
-in the integrated candidate. The A/B/C release sequence retains separate qualification
-and publication gates. A JAR's suffix variants, npm's `.tgz` wrapper and
-wheel's ZIP container do not create additional entries. WAR/EAR application profiles remain
-unqualified. The C reader boundaries and scoped native records are in
-[LIMITATIONS.md](LIMITATIONS.md#language-package-breadth-c-profiles); 0.2.5 publication is pending.
+Wheel, npm tarball and Java archives contribute three families; JAR is the qualified
+Java profile, and WAR/EAR application profiles remain unqualified. npm's `.tgz` wrapper
+and wheel's ZIP container add no entries. Alpine APK, full Flatpak bundles, OCI/Docker
+variants counted together, and LZ4 contribute four families. See
+[the C boundaries](LIMITATIONS.md#language-package-breadth-c-profiles) and
+[D scope and native records](spikes/final-format-breadth.md).
 
 ### Linux breadth increments
 
-The counts below start from the implementation baseline of 28. A, B and C are implemented
-profiles; D is a planned target. Source counts become release claims only after each
-new family's integrated and packaged qualification gates pass.
+The counts below show the ordered progression from the implementation baseline of 28.
+All four increments are implemented in the merged source. Source counts become release
+claims only after each increment's integrated and packaged qualification gates pass.
 
 | Increment | New primary families | Projected total | Minimum useful scope |
 |---|---|---:|---|
 | A implemented: packages and libraries | Arch package; general ar archive | 30 | Bounded `.PKGINFO`, selected build/install declarations and payload/link inventory; normal GNU/BSD ar members reach existing ELF analysis, while symbol indexes remain declarations and thin references stay external |
 | B implemented in 0.2.4 source: filesystem-backed applications | SquashFS; AppImage Type 2; snap | 33 | Bounded v4 gzip/XZ metadata/file decoding; proven Type 2 image extents and AppRun evidence; `meta/snap.yaml`, application/interface/hook declarations and supplied-file links. [Qualification boundaries](LIMITATIONS.md#linux-breadth-b-image-profiles) remain explicit |
 | C: language packages, implemented; 0.2.5 pending | Python wheel; npm package tarball; Java archive family | 36 | Registered wheel metadata/dependency/entry-point reader; npm identity/dependency/script/TAR-declaration reader; JAR manifest/main-class/class-path and literal Maven-property reader, with captured inventories and source evidence. Three published samples and scoped native records are retained. WAR/EAR remain unqualified profiles in the same Java family |
+| D: final breadth, implemented; 0.2.6 pending | Alpine APK; full Flatpak bundle; OCI/Docker image family; LZ4 frames | 40 | APK v2 control/payload authority; bounded empty-base inline V0 Flatpak object graph; descriptor/config/DiffID-bound ordered image layers; independent-block LZ4 integrity. Native and real fixtures qualify the documented profiles, without execution, installation, bundle import or merged image filesystems |
 
 A also implements systemd unit, Desktop Entry and AppStream declaration readers. Keep these
 three additions separate from the primary total. Relate literal entry targets and ELF
@@ -156,13 +160,13 @@ are specified by [systemd](https://www.freedesktop.org/software/systemd/man/late
 [AppStream](https://www.freedesktop.org/software/appstream/docs/chap-Metadata.html).
 These are implementation priorities, not measured popularity or effort rankings.
 
-Evaluate a **40-entry** later target from four further candidates: Alpine APK packages,
-Flatpak single-file bundles, one OCI/Docker image family, and LZ4 framed streams. Each needs
-its own feasibility and sample gate; OCI and Docker variants share this candidate family.
-Flatpak reference/repository documents do not qualify application-bundle support:
-[Flatpak uses OSTree](https://docs.flatpak.org/en/latest/under-the-hood.html), so its bundle
-reader is a separate project. Layer ordering, whiteouts and digest/source relationships
-need an explicit image profile. ISO/ext4 and other disk/firmware formats remain later work.
+The four D profiles are implemented and have licensed or project-authored native-writer
+fixtures with independent static references. [Flatpak uses OSTree](https://docs.flatpak.org/en/latest/under-the-hood.html);
+the reader handles the bounded complete-bundle profile recorded in [D scope](spikes/final-format-breadth.md),
+rather than counting repository/reference documents as bundle support. OCI/Docker layer
+order, whiteout/link declarations, descriptor digests and captured sources stay separate
+from merged-filesystem or runtime semantics. Broader Flatpak operations, OCI profiles,
+ISO/ext4 and other disk/firmware formats remain later work.
 
 ### First work package: real reports and packaged workflows
 
@@ -252,8 +256,8 @@ Select from this backlog when the report reviews establish a recurring blind spo
 new format retains the independent completion gates in [ANALYZERS.md](ANALYZERS.md).
 
 - **Executable bundles and installers.** Broaden the documented .NET single-file and PyInstaller profiles (W8), broaden MSI declaration/payload profiles, and evaluate Burn separately (W9).
-- **Linux and language packages.** Arch/ar and the bounded SquashFS/AppImage/snap source profiles are implemented above. Next add wheel/npm/Java, broaden deb/rpm and image profiles, and evaluate Alpine and Flatpak. Reuse the component inventory and keep package declarations distinct from captured dependencies.
-- **Containers, platforms and documents.** Add OCI and Docker archives with layer provenance, HarmonyOS HAP, browser and VS Code extensions, Office macro and embedded-object analysis (W11), and PDF scripts and attachments.
+- **Linux and language packages.** The Arch/ar, SquashFS/AppImage/snap and wheel/npm/Java increments are implemented above. Broaden the implemented deb/rpm, Alpine and Flatpak profiles after their scoped deliveries. Reuse the component inventory and keep package declarations distinct from captured dependencies.
+- **Containers, platforms and documents.** Broaden the implemented OCI/Docker archive profile with its layer provenance; add HarmonyOS HAP, browser and VS Code extensions, Office macro and embedded-object analysis (W11), and PDF scripts and attachments.
 - **Disk images and firmware.** Evaluate ISO, WIM and virtual disks separately (W12). Broaden the initial SquashFS profile and evaluate ext4 and FAT where they enable useful, bounded readers.
 - **Deeper analysis and policy.** Add offline advisory matching, broader API and call-flow analysis, IDA and desktop deep-analysis integration, configurable rules and CI policy files.
 - **Integration and report workflows.** Build on the documented JSON contract and rooted agent server, add GitHub Action recipes, and make optional AI interpretation easier to configure, query and include in reports.

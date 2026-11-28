@@ -1,0 +1,34 @@
+name: OCI and Docker archive native comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/format-breadth-d]
+    paths:
+      - crates/aa-linux/src/image.rs
+      - crates/aa-linux/src/image/**
+      - tools/native-compare/oci-*.py
+      - .github/workflows/oci-native.yml
+  pull_request:
+    paths:
+      - crates/aa-linux/src/image.rs
+      - crates/aa-linux/src/image/**
+      - tools/native-compare/oci-*.py
+      - .github/workflows/oci-native.yml
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y umoci skopeo
+      - name: Write inert local image archives without execution
+        run: /usr/bin/python3 tools/native-compare/oci-image-fixtures.py out/oci-native
+      - run: cargo build -p aa-cli --no-default-features
+      - run: /usr/bin/python3 tools/native-compare/oci-images.py target/debug/analyze-anything out/oci-native/native-inert.oci.tar out/oci-native/native-inert.docker.tar --record out/oci-native/reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oci-native-reference
+          path: out/oci-native

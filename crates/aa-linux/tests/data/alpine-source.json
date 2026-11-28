@@ -1,0 +1,9 @@
+{
+  "file": "libxxhash-0.8.3-r0.apk",
+  "source": "https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/libxxhash-0.8.3-r0.apk",
+  "sha256": "e3140cf609508b32db2aec81c8736e7db5d96c351857c99b364a6d1a913bb850",
+  "size": 23642,
+  "license": "BSD-2-Clause",
+  "license_source": "https://raw.githubusercontent.com/Cyan4973/xxHash/v0.8.3/LICENSE",
+  "packaging_source": "https://gitlab.alpinelinux.org/alpine/aports/-/blob/6e7967375f3dc136a45daa394d61ff677d9485f3/main/xxhash/APKBUILD"
+}
