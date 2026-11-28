@@ -21,4 +21,3 @@ bzip2.workspace = true
 lzma-rust2.workspace = true
 ruzstd.workspace = true
 sevenz-rust2.workspace = true
-
