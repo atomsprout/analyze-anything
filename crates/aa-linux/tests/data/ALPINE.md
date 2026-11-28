@@ -87,8 +87,15 @@ those bytes and tools; it does not substitute for integrated-head Linux checks.
 With `--native`, it also requires `gzip -t` and `bsdtar -tf`; optional `apk manifest`
 output checks actual payload digests. `.github/workflows/alpine-native.yml` obtains
 that manifest using a network-disabled, read-only Alpine container. No `apk add`,
-package installation, mounting or script invocation occurs. Native Linux results
-remain pending until the workflow record for the integrated source is available.
+package installation, mounting or script invocation occurs.
+
+Linux [native run 46111060884](https://github.com/atomsprout/analyze-anything/actions/runs/46111060884)
+at `3a51020f6e680c611b46876461bf52c5f2947638` passed 228 checks, including the
+read-only `apk manifest` digest comparison. The final merged main,
+`d4f14a30d9465b6866f19822d2950906529b7f7a`, also passed
+[Alpine native run 46114786549](https://github.com/atomsprout/analyze-anything/actions/runs/46114786549).
+These are separate source-scoped Linux records. They do not broaden the qualified
+package/profile set or verify package signatures.
 
 ```
 python3 tools/native-compare/alpine-fixtures.py out/native-alpine

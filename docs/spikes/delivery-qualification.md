@@ -1,4 +1,4 @@
-# Delivery qualification: 0.2 through 0.5
+# Delivery qualification
 
 The candidate observations below are historical. The published preview.2 packages,
 their exact qualification boundaries and the subsequent real-report/process review
@@ -88,3 +88,42 @@ passed all seven jobs on that revision; the local default-member `cargo test --r
 run and separate no-AI release agent/query integration tests also passed. See
 [workflow qualification](report-workflows.md) for the regression cases. The rehearsal
 archive above predates that cancellation correction; it is not a published release.
+
+
+## Format breadth releases
+
+Four stable unsigned releases completed the **30 → 33 → 36 → 40** family expansion.
+The final catalogue contains **35 primary families + five compression formats**;
+**11 declaration families** are separate. Aliases, compressed combinations and nested
+structures do not increase these totals. The [format matrix](../FORMATS.md) records
+bounded profiles and input/reference limitations.
+
+| Published release | Primary + compression | Frozen package source | Source/desktop CI | Packaged release gates |
+|---|---:|---|---|---|
+| [v0.2.3](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.3) | 30 | `8d8f4787f57d9ecb595e95584a4957b3abb0fc4d` | [CI 46109531777](https://github.com/atomsprout/analyze-anything/actions/runs/46109531777) | [Release 46109532580](https://github.com/atomsprout/analyze-anything/actions/runs/46109532580) |
+| [v0.2.4](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.4) | 33 | `2d92c117f26ff33eb1bd7c0e9c5090c4c2a31225` | [CI 46110780131](https://github.com/atomsprout/analyze-anything/actions/runs/46110780131) | [Release 46110779197](https://github.com/atomsprout/analyze-anything/actions/runs/46110779197) |
+| [v0.2.5](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.5) | 36 | `ccce4f795114e342c38c789318be0d35f96b2213` | [CI 46111054798](https://github.com/atomsprout/analyze-anything/actions/runs/46111054798) | [Release 46111053815](https://github.com/atomsprout/analyze-anything/actions/runs/46111053815) |
+| [v0.2.6](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.6) | 40 | `3a51020f6e680c611b46876461bf52c5f2947638` | [CI 46111060815](https://github.com/atomsprout/analyze-anything/actions/runs/46111060815) | [Release 46111059121](https://github.com/atomsprout/analyze-anything/actions/runs/46111059121) |
+
+Each named release passed its source/desktop and native-reference gates before
+publication. Release jobs verify extracted CLI analysis, offline queries, rooted-agent
+cancellation/EOF cleanup, self-tests and the Windows static-CRT import contract.
+Linux x64/ARM64 archives are checksum-checked and self-tested in Ubuntu 24.04 and Debian
+trixie-slim containers with no network, read-only roots/program mounts and writable
+temporary storage. These runs do not qualify older glibc or physical Linux displays.
+
+`tools/release/verify-published.py` checked all 11 assets of each release, GitHub API
+digests when supplied, four CLI SHA-256 sidecars, desktop `SHA256SUMS`, archive CRC/path
+sanity and only the extracted Windows CLI's exact version and `formats --json` count.
+Published-state checks confirmed stable flags, the frozen tag/source and attachment
+bytes. Verification never launches an installer or supplied analysis input. The earlier
+disconnected Windows 10 guest was not rerun with these four installers.
+
+The final merged main, `d4f14a30d9465b6866f19822d2950906529b7f7a`, passed
+[source/desktop CI 46114786562](https://github.com/atomsprout/analyze-anything/actions/runs/46114786562)
+and [Alpine native 46114786549](https://github.com/atomsprout/analyze-anything/actions/runs/46114786549).
+That integration record does not retarget the four frozen package sources above.
+Native sample/tool records remain linked from [LIMITATIONS.md](../LIMITATIONS.md).
+Signed/notarized macOS and Homebrew remain at [v0.1.1](https://github.com/atomsprout/analyze-anything/releases/tag/v0.1.1).
+Bounded .NET IL references, deeper component relationships, broader runtime/sample
+qualification and optional raw-evidence retention remain future work.

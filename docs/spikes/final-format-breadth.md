@@ -1,12 +1,13 @@
 # Final format breadth increment
 
-The fourth increment adds three primary families and one compression family:
-Alpine APK, full Flatpak single-file bundles, OCI/Docker-save images as one
-family, and LZ4 frames. With B merged, the combined A/B/C/D source catalogue
-contains 35 primary plus five compression families: 40 in total. Eleven
-declaration families remain separately counted. These are
-implemented source profiles for the pending 0.2.6 delivery; no 0.2.6 release is
-claimed here. Release notes identify immutable source and packaged runtime checks.
+[Release 0.2.6](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.6)
+delivered three primary families and one compression family: Alpine APK, full Flatpak
+single-file bundles, OCI/Docker-save images as one family, and LZ4 frames. The four
+completed stable increments contain 35 primary plus five compression families:
+40 in total. Eleven declaration families remain separately counted. These are bounded
+released profiles. [Delivery qualification](delivery-qualification.md#format-breadth-releases)
+records the immutable sources, source/native/package gates and public attachment checks;
+the input and runtime boundaries below remain explicit.
 
 ## Qualified inputs and references
 

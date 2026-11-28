@@ -57,14 +57,16 @@ cargo build --release
 target/release/analyze-anything <file or folder>
 ```
 
-The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-preview-and-report-workflow) for exact package and runtime boundaries.
+The signed macOS/Homebrew distribution is 0.1.1 for Apple silicon Macs. [Release 0.2.6](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.6) provides unsigned CLI archives for Windows x64, Linux x64/ARM64 and Apple silicon macOS, plus Windows x64 desktop portable ZIP and offline NSIS installer. Download the archive for your platform, check its SHA-256 sidecar and extract it; run the CLI executable inside. The Windows CLI is statically linked to the C runtime and needs no separate Visual C++ runtime installation. Hosted Windows and Ubuntu 24.04 x64 desktop checks passed; the offline Windows 10 installation check used an earlier desktop candidate. See [platform qualification](docs/LIMITATIONS.md#published-format-breadth-releases) for exact package and runtime boundaries.
 
 ## Use
 
-Source version 0.2.6 includes the Arch/ar, Linux declaration, SquashFS/AppImage/snap, wheel/npm/JAR and
-Alpine/Flatpak/OCI/Docker/LZ4 profiles. The separate 0.2.3–0.2.6 deliveries remain
-pending their release gates. The release pipeline checks extracted CLI analysis, offline queries,
-agent cancellation and EOF cleanup. See the [real-report review](docs/spikes/report-workflow.md).
+Release 0.2.6 includes the Arch/ar, Linux declaration, SquashFS/AppImage/snap, wheel/npm/JAR and
+Alpine/Flatpak/OCI/Docker/LZ4 profiles. Four stable releases completed the ordered
+30 → 33 → 36 → 40 family expansion. The release pipeline checks extracted CLI analysis,
+offline queries, agent cancellation and EOF cleanup. See the
+[release qualification](docs/spikes/delivery-qualification.md#format-breadth-releases) and
+[real-report review](docs/spikes/report-workflow.md).
 
 ```
 analyze-anything <file or folder>                 # analyze; the report goes to <name>.report/
@@ -82,7 +84,7 @@ Reports about public releases of open-source software, as PDFs, are on the [webs
 
 ## What it reads
 
-The catalogue below describes the combined 0.2.6 source candidate. Published 0.2.2 packages retain their recorded profiles; the separate 0.2.3–0.2.6 deliveries still require their own release qualification.
+The catalogue below describes the bounded profiles shipped in 0.2.6. Each sample, source revision and runtime retains its documented qualification scope; see the [release record](docs/spikes/delivery-qualification.md#format-breadth-releases).
 
 <!-- formats:begin -->
 **35 primary format families + 5 compression formats (40 total)**, with 11 declaration families tracked separately. See the [supported profiles and limits](docs/FORMATS.md), or run `analyze-anything formats --json`.
@@ -170,13 +172,13 @@ You choose who does it: a model service you have an API key for (Claude, or anyt
 
 ## Status and roadmap
 
-The current published release is 0.2.2; the 0.2.3 breadth build is pending promotion. GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. Five real-report workflows and packaged analysis/query/agent behavior have scoped acceptance records; [the roadmap](docs/ROADMAP.md) tracks the next work. Broader platform and format qualification remains open.
+The current published release is [0.2.6](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.6). GitHub packages cover the CLI on four targets and the Windows desktop; these packages are unsigned. The signed macOS/Homebrew distribution remains 0.1.1. The four breadth releases passed their source, native and packaged checks; [the qualification record](docs/spikes/delivery-qualification.md#format-breadth-releases) identifies their frozen sources and delivery boundaries. Broader platform and format qualification remains open.
 
-The combined source implements Arch/ar, Linux entry declarations, SquashFS/AppImage/snap, wheel/npm/JAR, Alpine APK, full Flatpak bundles, one OCI/Docker family and LZ4: 35 primary plus five compression families, 40 in total, with 11 declaration families tracked separately. These are bounded profiles from one catalogue; their releases remain pending. Release work continues in order:
+The completed 0.2.3–0.2.6 releases grew the catalogue from 30 to 33, 36 and 40 families: 35 primary plus five compression families, with 11 declaration families tracked separately. Aliases and compressed combinations add no entries. The next work deepens these readers:
 
-1. **Linux application formats**: deliver the implemented SquashFS, AppImage Type 2 and snap profiles as 0.2.4 after integrated native, cross-platform and packaged checks. [Recorded profile boundaries](docs/LIMITATIONS.md#linux-breadth-b-image-profiles).
-2. **Language packages**: deliver the implemented wheel, npm tarball and JAR profiles, targeting 36 families after the Linux application batch. WAR/EAR remain unqualified profiles within the Java family.
-3. **Final breadth**: deliver the implemented Alpine APK v2, empty-base Flatpak bundle, OCI/Docker image and independent-block LZ4 profiles as 0.2.6 after the preceding batches, targeting 40 families. [Exact scope](docs/spikes/final-format-breadth.md). .NET IL and deeper component relationships follow; optional evidence retention remains separate.
+1. **Bounded .NET IL references**: connect supported method-body call, string and token references to proven byte locations and small evidence combinations. Assemblies are never loaded; static references do not establish execution or complete reachability. This deepens an existing family and adds no format count.
+2. **Component relationships**: distinguish declared dependency ranges from captured versions and present components, reusing source manifests, component IDs, offline queries and CycloneDX.
+3. **Broader qualification and optional evidence retention**: extend named sample/runtime profiles and define user-selected raw-evidence limits separately. [Exact format boundaries](docs/LIMITATIONS.md) and [next acceptance work](docs/ROADMAP.md) remain explicit.
 
 What will not change: static only, offline analysis, the same report for the same input, evidence for every finding, and no verdict. The whole picture is in [docs/ROADMAP.md](docs/ROADMAP.md); the itemized list is [docs/TODO.md](docs/TODO.md).
 

@@ -12,6 +12,24 @@ This lists what the tool itself cannot do or has not been verified to do. Specif
 - The AI interpretation checks only that the findings each statement cites exist in the report. It does not check that the model understood them, or that it drew no conclusion of its own from several of them. Each of its engines has produced a full answer for real at least once; [AI.md](AI.md) says exactly what was tried and with which model.
 - It gives no "safe / unsafe" verdict and no single score; it only lists findings and their severity.
 
+## Published format breadth releases
+
+The current unsigned download release is [v0.2.6](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.6).
+The four stable releases 0.2.3–0.2.6 completed the 30 → 33 → 36 → 40 family
+progression: 35 primary families, five compression formats and 11 separately counted
+declaration families. The [delivery record](spikes/delivery-qualification.md#format-breadth-releases)
+binds each release to its frozen source and source/native/packaged checks. Published
+attachment checks verify 11 assets per release, checksum manifests, archive CRC/path
+sanity and the extracted Windows CLI version/catalogue. This qualifies those package
+bytes, not every format variant or operating system.
+
+The archives target Windows x64, Linux x64/ARM64 and macOS ARM64; Windows desktop
+portable/offline NSIS packages remain unsigned. Linux packaged-runtime checks use
+Ubuntu 24.04 and Debian trixie-slim with no network and read-only program/root mounts.
+The earlier offline Windows 10 installer qualification was not repeated for these
+four installers. Signed/notarized macOS and Homebrew remain at 0.1.1. Native input
+comparisons below retain their own sample, tool and source scope.
+
 ## Published preview and report workflow
 
 [v0.2.0-preview.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.0-preview.2)
@@ -48,12 +66,13 @@ portable raw-evidence retention remain later roadmap work.
 
 ## Linux breadth A profiles
 
-The 0.2.3 candidate implements the first breadth increment, with Arch Linux packages
-and general ar archives. Its build/release qualification is in progress and it is not
-published; the native records below qualify only their named source and inputs. The
-machine-readable [format catalogue](FORMATS.md) distinguishes primary families,
-compression and declaration readers; its counts describe implemented profiles, not
-complete qualification of every version, compression method or platform.
+Release 0.2.3 shipped the first breadth increment, with Arch Linux packages and
+general ar archives, reaching 30 primary/compression families. Its frozen-source and
+package checks are in [delivery qualification](spikes/delivery-qualification.md#format-breadth-releases).
+The native records below retain their named source and input scope. The
+machine-readable [format catalogue](FORMATS.md) separates primary families,
+compression and declaration readers; counts describe bounded profiles, not complete
+qualification of every version, compression method or platform.
 
 - Arch: bounded root `.PKGINFO`/`.BUILDINFO`, literal dependencies and `.INSTALL`
   text, `.MTREE` identity/digest only, and TAR entry/link declarations. Duplicate or
@@ -80,16 +99,16 @@ declaration checks over four upstream files. Linux native-comparison run
 at 9731df0 passed 22 ar, 56 Arch and 68 declaration checks, plus the existing 125
 Debian/RPM checks. Native declaration validators retain their actual diagnostics;
 unsupported templates or absent host executables are not represented as validation
-success. No local Linux VM was qualified. Later source changes still require their
-own final CI and package checks.
+success. No local Linux VM was qualified. The later frozen release source passed its
+separate final CI/package gates; those results do not broaden the earlier sample scope.
 
 ## Linux breadth B image profiles
 
-The 0.2.4 source increment implements three additional primary families: SquashFS,
-AppImage Type 2 and snap. With A, C and D now merged, the 0.2.6 source catalogue has
-35 primary + five compression families (40 total); 11 declaration families are counted
-separately. Implementation does not establish publication, complete format coverage or
-new OS/runtime qualification.
+Release 0.2.4 shipped three additional primary families: SquashFS, AppImage Type 2
+and snap, reaching 33 primary/compression families. The completed 0.2.6 catalogue has
+35 primary + five compression families (40 total); 11 declaration families remain
+separate. [Source and package qualification](spikes/delivery-qualification.md#format-breadth-releases)
+does not establish complete format coverage or new OS/runtime baselines.
 
 - SquashFS: little-endian v4.0 metadata and file bytes with gzip/XZ compression,
   common/extended file and directory inodes, ID/fragment tables and sparse blocks.
@@ -132,16 +151,18 @@ Reports include image identity components with their captured metadata path/hash
 an index of supplied AppRun/command/hook relationships. Image component records share
 a 4 MiB budget; omitted records mark the inventory truncated. The real snap and a
 constructed Type 2 AppImage have deterministic engine/report integration checks.
-Final integrated-head CI and packaged 0.2.4 qualification still require their own
-results before publication; earlier checks do not qualify later source or packages.
+Final-source native/CI and packaged 0.2.4 gates passed for the frozen release source
+in [the delivery record](spikes/delivery-qualification.md#format-breadth-releases). Earlier
+input comparisons do not independently qualify later source or packages.
 
 ## Language package breadth C profiles
 
-The C source at 929703f registers three semantic readers over already captured ZIP,
-TAR and compressed-stream children. This is implemented scope for the pending 0.2.5
-delivery, not a published release or qualification of every package variant. The Java
-archive family is counted once, with JAR qualified; WAR/EAR application profiles remain
-explicitly unread. See [the reader profile](../crates/aa-packages/README.md).
+Release 0.2.5 shipped three semantic readers over already captured ZIP, TAR and
+compressed-stream children, reaching 36 primary/compression families. Its frozen-source
+and package gates are in [delivery qualification](spikes/delivery-qualification.md#format-breadth-releases).
+This does not qualify every package variant. The Java archive family is counted once,
+with JAR qualified; WAR/EAR application profiles remain explicitly unread.
+See [the reader profile](../crates/aa-packages/README.md).
 
 - Wheel: one root `.dist-info` directory, numeric WHEEL 1.x/Core Metadata 2.x,
   literal identity, compatibility tags, repeated `Requires-Dist` and entry-point metadata.
@@ -195,18 +216,19 @@ become inferred Maven coordinates. Dependency markers/ranges and class-path entr
 literal unresolved declarations in every report view, without resolved CycloneDX edges.
 The engine integration test covers all three
 readers through the shared container pipeline, evidence presence and repeated-report
-equality. These records do not establish hosted cross-platform, final release-package or
-every tool-version qualification; those release gates remain pending.
+equality. Those input/reference records do not independently establish cross-platform,
+final release-package or every tool-version qualification. The separate source and
+packaged gates passed for the frozen 0.2.5 release in
+[the delivery record](spikes/delivery-qualification.md#format-breadth-releases).
 
 ## Final format breadth D profiles
 
-D implements three primary families (Alpine APK, full Flatpak single-file bundles and
-one OCI/Docker-save image family) and one compression family (LZ4 frames). With A, B and
-C merged, the 0.2.6 source catalogue contains **35 primary + five
-compression families = 40**, with 11 separately counted declaration families. These are
-implemented source profiles for the pending 0.2.6 release. A's 0.2.3 candidate build and
-promotion, B's PR #12 source/release pipeline, and later release/package gates remain
-separate. See [the D scope and references](spikes/final-format-breadth.md).
+Release 0.2.6 shipped three primary families (Alpine APK, full Flatpak single-file
+bundles and one OCI/Docker-save image family) and one compression family (LZ4 frames).
+The completed catalogue contains **35 primary + five compression families = 40**,
+with 11 separately counted declaration families. Each release retains its frozen
+source and package evidence in [delivery qualification](spikes/delivery-qualification.md#format-breadth-releases).
+See [the D scope and references](spikes/final-format-breadth.md) for exact profiles.
 
 - Alpine APK v2: at most eight exact gzip members, separating signature, control and
   payload namespaces. Gzip CRC/ISIZE, TAR header checksums and extents are checked.
@@ -274,8 +296,10 @@ Constructed regressions cover malformed profiles, ambiguity, missing captures an
 budgets; real/native-writer records qualify their named bytes and tools. Native helpers do
 not install/import bundles or packages, load/run images, mount filesystems or execute hooks.
 Analysis itself remains offline and uses no external program. Complete capture, inventory,
-digest agreement and authenticity are distinct claims; final integrated-source CI and
-extracted release-package qualification retain their own gates.
+digest agreement and authenticity are distinct claims. Final source/native and extracted
+release-package gates passed as recorded in
+[delivery qualification](spikes/delivery-qualification.md#format-breadth-releases), without
+extending these named input and runtime scopes.
 
 ## Parts not verified on real samples
 

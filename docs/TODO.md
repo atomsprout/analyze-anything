@@ -4,13 +4,13 @@ Phase one (the command line) and the macOS desktop app of phase two (D0–D5) ar
 
 ## Next delivery cycle
 
-Current published baseline: [v0.2.2](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.2)
-uses unsigned packages with the report-workflow corrections and MSI action context.
-The 0.2.3 breadth A candidate is still building and undergoing release qualification;
-the later 0.2.4 source candidate implements breadth B with its own publication gates.
-The merged A/B/C/D source is version 0.2.6; none of these four releases is published yet.
-Signed macOS/Homebrew remains at 0.1.1. The priorities
-and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
+Current published baseline: [v0.2.6](https://github.com/atomsprout/analyze-anything/releases/tag/v0.2.6)
+uses unsigned CLI/Windows desktop packages. Four stable breadth releases completed
+30 → 33 → 36 → 40 primary/compression families: 35 primary, five compression and 11
+separately tracked declaration families. Their frozen sources, CI/package gates and
+public attachment checks are in [delivery qualification](spikes/delivery-qualification.md#format-breadth-releases).
+Signed macOS/Homebrew remains at 0.1.1. The next depth and qualification priorities
+are in [ROADMAP.md](ROADMAP.md#delivery-order-from-022).
 
 - [x] **Complete the current report workflow.** [Review and reproduction](spikes/report-workflow.md),
   with five hash-bound real-input scenarios, reading/native/process records and concrete
@@ -33,11 +33,11 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   distinguish implementation from independent qualification. Produce one machine-readable
   catalogue/support matrix from which README, website and release totals can be derived;
   check unique IDs, aliases and matching public totals in CI.
-  The merged 0.2.6 source catalogue now lists 35 primary + five compression families,
+  The published 0.2.6 catalogue lists 35 primary + five compression families,
   and 11 separately tracked declaration families. Extracted-package checks verify the compiled profiles/count
   and program version against source. See [count policy](ROADMAP.md#format-inventory-and-count-policy).
-- [x] **Linux breadth A implementation: Arch packages and general ar archives.** Target two new primary
-  families (28 to 30 including streams), subject to the baseline audit. Reuse TAR/streams
+- [x] **Linux breadth A implementation: Arch packages and general ar archives.** Added two primary
+  families (28 to 30 including streams), following the baseline audit. Reuse TAR/streams
   for package identity, bounded `.PKGINFO`, build/install declarations and payload/link
   evidence. Qualify normal GNU/BSD ar names, indexes and captured member bytes; retain
   thin references without reading outside the supplied input. Generic deb ar parsing is
@@ -46,27 +46,25 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   AppStream readers as three separately counted declaration families. Preserve source
   fields/lines, unknown keys and unsupported substitutions. Add unambiguous supplied-file
   entry and ELF-library relationships; no host lookup, startup or runtime-loader claims.
-- [ ] **Qualify and publish breadth A as 0.2.3.** Candidate builds and release
-  qualification are in progress; no 0.2.3 release is published yet. Linux native references
-  passed 22 ar, 56 Arch, 68 declaration and 125 existing Debian/RPM checks at 9731df0;
-  those checks qualify their recorded source and inputs, not final candidate packages.
-  Complete the final source, build and extracted-package gates and verify asset digests
-  before publication.
+- [x] **Qualify and publish breadth A as 0.2.3.** Frozen source
+  `8d8f4787f57d9ecb595e95584a4957b3abb0fc4d` passed source/native/package gates;
+  all 11 published attachments, their checksums and the extracted CLI version/catalogue
+  were verified. [Delivery record](spikes/delivery-qualification.md#format-breadth-releases).
+  Native records retain their named source and input scope.
 - [x] **Linux breadth B implementation: SquashFS, AppImage Type 2 and snap.** The 0.2.4
-  source candidate adds three primary families (30 to 33 including streams): bounded
+  release adds three primary families (30 to 33 including streams): bounded
   SquashFS v4 gzip/XZ metadata/file decoding, checked Type 2 extents and AppRun evidence,
   and snap metadata/application/interface/hook declarations with supplied-file links.
   Canonical hello-world 29 and external AppImageKit 12 have hash-bound Windows 7-Zip
   records and 84 Linux unsquashfs checks at a600591; other ELF and fragment/inode
   profiles retain constructed or pending native qualification. Never mount an image or
   invoke its runtime, including extract switches.
-- [ ] **Qualify and publish breadth B as 0.2.4.** Linux native comparisons passed at
-  a600591; retain that source/sample scope. PR #12 and the source/release pipeline are
-  underway; no 0.2.4 release is published. Record final integrated-head native,
-  cross-platform CI, release-build and extracted-package checks, and verify public asset
-  checksums before publication. Keep the exact sample/compressor and platform scope in
-  [the image limitations](LIMITATIONS.md#linux-breadth-b-image-profiles). The later C/D
-  batches retain their own releases (0.2.5 and 0.2.6), targeting 36 and 40 families.
+- [x] **Qualify and publish breadth B as 0.2.4.** Frozen source
+  `2d92c117f26ff33eb1bd7c0e9c5090c4c2a31225` passed final-source native,
+  cross-platform and packaged gates. Published attachment checks and the extracted CLI
+  confirmed 33 families. [Delivery record](spikes/delivery-qualification.md#format-breadth-releases).
+  Keep the sample/compressor and platform scope in
+  [the image limitations](LIMITATIONS.md#linux-breadth-b-image-profiles).
 - [x] **Language package breadth C implementation: wheel, npm tarball and JAR.** Three
   semantic readers are registered over the existing ZIP/TAR/stream pipeline. They retain
   identity, literal dependency/entry/script/manifest declarations, source metadata and
@@ -75,12 +73,11 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   in; the engine integration test covers source evidence and deterministic repeated reports.
   Java contributes one family with a qualified JAR profile; WAR/EAR remain unqualified.
   See [profile boundaries and records](LIMITATIONS.md#language-package-breadth-c-profiles).
-- [ ] **Publish breadth C as formal 0.2.5 after breadth B.** The C source at 929703f has
-  Windows read-only reference records with 15 matching CLI comparisons (seven wheel,
-  six npm, two JAR), plus the OpenJDK manifest/member reference. Final hosted native,
-  cross-platform CI, release builds, extracted-package checks and public asset checksums
-  remain release gates. C adds three primary families, reaching 36 in the ordered
-  A/B/C delivery sequence. WAR/EAR aliases add no family and remain unqualified.
+- [x] **Publish breadth C as formal 0.2.5 after breadth B.** Frozen source
+  `ccce4f795114e342c38c789318be0d35f96b2213` passed source/native/package gates;
+  public attachment and extracted CLI checks confirmed 36 families. Independent package
+  references retain their source/sample scope. WAR/EAR add no family and remain unqualified.
+  [Delivery record](spikes/delivery-qualification.md#format-breadth-releases).
 - [x] **Final breadth D implementation.** Alpine APK v2, full empty-base inline V0
   Flatpak bundles, one OCI/Docker-save family and independent-block LZ4 frames are
   registered with bounded metadata/payload provenance, licensed or project-owned native
@@ -88,12 +85,12 @@ and official-source review are in [ROADMAP.md](ROADMAP.md#delivery-order-from-02
   output/path guards at 56fce92 passed native run 46109882704. Other base/opcode,
   filesystem/runtime and compression profiles remain explicit unknowns. See
   [D scope and records](spikes/final-format-breadth.md).
-- [ ] **Publish breadth D as formal 0.2.6 after A/B/C.** A promotion remains pending;
-  do not treat source versions as published releases. The combined A/B/C/D source
-  catalogue is 35 primary + five compression families = 40, with 11 declaration families
-  separately counted. Wait for combined-source CI, all native comparisons, release builds,
-  extracted-package checks and public asset checksums.
-  OCI/Docker variants count once; JAR does not automatically qualify WAR/EAR.
+- [x] **Publish breadth D as formal 0.2.6 after A/B/C.** Frozen source
+  `3a51020f6e680c611b46876461bf52c5f2947638` passed source/native/package gates;
+  public attachment and extracted CLI checks confirmed 35 primary + five compression
+  families = 40, with 11 declaration families separately counted. Final merged-main CI
+  and Alpine native checks also passed. OCI/Docker variants count once; JAR does not
+  qualify WAR/EAR. [Delivery record](spikes/delivery-qualification.md#format-breadth-releases).
 - [ ] **Following breadth: bounded .NET IL references and capability explanations.** Qualify one
   profile using existing CLR metadata: method bodies, supported call/string/token
   references, and a small set of explicit same-method evidence combinations. Establish
@@ -299,7 +296,7 @@ These formats were tested with constructed data only:
 
 - [ ] D6: the desktop app for Windows and Linux (build, installers, platform differences, end-to-end automation on Linux).
   Local Windows x64 acceptance passed. Windows portable and NSIS-installed builds each passed 67 native WebView2 checks on the development host. A clean, disconnected Windows 10 x64 guest verified per-user WebView2 installation, 40 native self-checks, byte-for-byte CLI export parity, Explorer drag and drop and 100% and 125% scaling. Hosted Windows WebView2 and Ubuntu 24.04 x64 WebKitGTK checks each passed 67 checks at d047df8. Linux physical-display acceptance, broader packaging and signed delivery remain open. See [DESKTOP.md](DESKTOP.md).
-- [ ] Prepare Linux and Windows CLI builds for formal distribution beyond the qualified unsigned archives. Rehearsal 45382485314 passed packaged self-tests and Linux x64/ARM64 checks in Ubuntu 24.04 and Debian trixie-slim. The downloaded Windows CLI passed its checksum, self-test and independent CRT import checks. The earlier statically linked preview.2 candidate passed a clean Windows 10 guest self-test; later archives were not rerun in that guest. Release promotion, broader OS baselines and signed delivery remain separate work.
+- [ ] Broaden Linux and Windows delivery beyond the qualified unsigned 0.2.6 archives. The four stable breadth releases passed their packaged and public attachment checks; [delivery qualification](spikes/delivery-qualification.md#format-breadth-releases) records the frozen sources and runtime boundaries. The earlier statically linked preview.2 candidate passed a clean Windows 10 guest self-test; these later archives/installers were not rerun there. Broader OS baselines and signed delivery remain separate work.
 - [ ] Automatic updates (out of scope for phase two).
 - [ ] The signed release build is made on a developer's Mac with `tools/release/macos.sh`. Moving it into CI needs the certificate and the notarization credentials as repository secrets.
 
