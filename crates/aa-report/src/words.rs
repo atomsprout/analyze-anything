@@ -218,8 +218,8 @@ pub const UI: &[(&str, &str, &str)] = &[
     ("relationships", "声明与随附文件的关系", "Declarations and supplied files"),
     (
         "relationships_note",
-        "这里只整理已记录的文件引用、驱动源文件、目录成员摘要和包依赖关系，保留原始状态及未解决原因。匹配声明或摘要不代表运行目标、安装资格或系统信任已确定。最多预览 50 行；一个声明可能对应多个候选。原始文件事实与报告摘要保留全部已捕获的记录。",
-        "This index covers recorded file references, driver source candidates, catalog member digests and package dependencies, preserving their status and unresolved reasons. A declaration or digest match does not establish runtime resolution, installation eligibility or system trust. At most 50 rows are previewed; one declaration may have several candidates. Artifact facts and report summary retain all captured rows.",
+        "这里只整理已记录的文件引用、驱动源文件、目录成员摘要、包依赖及应用镜像入口和命令，保留原始状态及未解决原因。匹配声明或摘要不代表运行目标、安装资格或系统信任已确定。最多预览 50 行；一个声明可能对应多个候选。原始文件事实与报告摘要保留全部已捕获的记录。",
+        "This index covers recorded file references, driver source candidates, catalog member digests, package dependencies, and application image entries and commands, preserving their status and unresolved reasons. A declaration or digest match does not establish runtime resolution, installation eligibility or system trust. At most 50 rows are previewed; one declaration may have several candidates. Artifact facts and report summary retain all captured rows.",
     ),
     (
         "relationships_none",

@@ -273,6 +273,15 @@ ar archive fixtures in crates/aa-linux/tests/data:
   Native clang/ar produced the GNU/BSD/thin archives; ar/nm read the normal archives.
   No archived object was linked, loaded or executed, and thin references were not followed.
   Sources, hashes, supported profiles and reproduction are in crates/aa-linux/tests/data/AR.md.
+
+SquashFS/snap qualification fixture in crates/aa-linux/tests/data:
+- upstream-hello-world-29.snap is Canonical's unchanged hello-world revision 29,
+  https://api.snapcraft.io/api/v1/snaps/download/buPKUD3TKqCOgLEjjHx5kSiCpIs5cMuQ_29.snap
+  Publisher Canonical; publisher-declared MIT license, recorded with the standard
+  license text in LICENSE-hello-world.txt. No separate notice file occurs in the
+  archive. The fixture is never installed, mounted, loaded or executed.
+  Its digest, bounded scope and independent 7-Zip observations are documented in
+  SQUASHFS.md and squashfs-native.ref.json in that fixture directory.
 Linux declaration fixtures in crates/aa-linux/tests/data/declarations:
 - syncthing.service and syncthing-start.desktop are unchanged source files from
   syncthing/syncthing commit 1107b3cd11dbe267a8b80bbe1f89fb86a070b5c3.
@@ -284,3 +293,21 @@ Linux declaration fixtures in crates/aa-linux/tests/data/declarations:
   upstream desktop build template is GPL-3.0-or-later; LICENSE-flameshot.txt
   preserves that licence. Its build placeholders are retained, never substituted.
   Only declaration text is redistributed; no input program is run or installed.
+External AppImage qualification record:
+- crates/aa-linux/tests/data/appimage-external.ref.json describes the unchanged
+  appimagetool-x86_64.AppImage from AppImage/AppImageKit release 12, fetched only
+  into ignored developer scratch space. The executable is not redistributed.
+  Source project: https://github.com/AppImage/AppImageKit/tree/12 ; MIT original
+  source, Copyright (c) 2004-18 Simon Peter. Bundled dependencies retain their own
+  licences; that MIT notice is not asserted to cover the complete executable.
+  APPIMAGE-SNAP.md records scope and the independent static 7-Zip comparison.
+
+Linux image comparison records in crates/aa-linux/tests/data:
+- linux-images-native.ref.json and appimage-source.ref.json are project-authored
+  Apache-2.0 static observations and external download provenance, recorded at
+  a600591 by tools/native-compare/linux-images.py and linux-image-fixtures.py.
+  Linux unsquashfs 4.6.1 independently listed and read Canonical hello-world 29
+  and the external AppImageKit 12 sample; no image was mounted or executed.
+  The native tool's version/licence banner is preserved as output, not tool code.
+  These records do not redistribute the external AppImage executable or change
+  the original fixtures' licences. APPIMAGE-SNAP.md records hashes and scope.

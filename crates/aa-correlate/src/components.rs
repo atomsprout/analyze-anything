@@ -26,6 +26,13 @@ const LISTED: usize = 5000;
 
 const RULES: &[Rule] = &[
     Rule {
+        id: "composition.image-component-budget",
+        title_en: "Image component inventory budget reached",
+        title_zh: "镜像组件清单达到上限",
+        text_en: "Some AppImage or snap identities were omitted from the component inventory because their source paths or combined records exceeded the bounded inventory profile. Their captured metadata remains available in file facts.",
+        text_zh: "部分 AppImage 或 snap 身份因来源路径或合计记录超过有界清单范围而未列入组件清单。其已捕获元数据仍保留在文件事实中。",
+    },
+    Rule {
         id: "composition.components",
         title_zh: "组件清单",
         title_en: "Component list",
@@ -151,6 +158,8 @@ impl Analyzer for Components {
         }
         electron(tree, &mut found);
         android(tree, &mut found);
+        let mut image_component_bytes = 0usize;
+        let mut image_components_omitted = false;
         for artifact in tree.artifacts() {
             for (key, ecosystem) in [("deb.control", "deb"), ("rpm.package", "rpm"), ("arch.package", "alpm")] {
                 if let Some(package) = artifact.facts.get(key)
@@ -171,6 +180,10 @@ impl Analyzer for Components {
                     });
                 }
             }
+            image_components_omitted |= image_components(tree, artifact, &mut found, &mut image_component_bytes);
+        }
+        if image_components_omitted {
+            out.limitation("composition.image-component-budget", None, None);
         }
         let extensions: BTreeMap<_, _> = tree
             .artifacts()
@@ -272,10 +285,16 @@ impl Analyzer for Components {
                     row["display_name"] = package["display_name"].clone();
                     row["declared_license"] = package["license"].clone();
                 }
+                if matches!(c.ecosystem, "snap" | "appimage")
+                    && let Some(source) = tree.get(&c.source)
+                {
+                    row["manifest"] = json!({"path": source.path, "sha256": source.digests.as_ref().map(|digest| &digest.sha256)});
+                }
                 row
             })
             .collect();
-        let mut summary = json!({ "components": listed, "total": found.len(), "truncated": found.len() > LISTED });
+        let mut summary =
+            json!({ "components": listed, "total": found.len(), "truncated": found.len() > LISTED || image_components_omitted });
         nuget_relationships::attach(tree, out, &manifests, &listed, &mut summary);
         vsix_relationships(out, &extensions, &vsix_occurrences, &listed, &mut summary);
         winget_relationships::attach(tree, out, &winget, &mut summary);
@@ -294,6 +313,44 @@ impl Analyzer for Components {
         }
         out.finding(finding);
     }
+}
+
+/// Image identity comes from captured metadata, never a wrapper filename or host installation.
+fn image_components(tree: &dyn Tree, artifact: &Artifact, found: &mut Vec<Component>, used: &mut usize) -> bool {
+    let mut omitted = false;
+    for (key, ecosystem) in [("snap.package", "snap"), ("appimage.identity", "appimage")] {
+        let Some(package) = artifact.facts.get(key) else { continue };
+        let (Some(name), Some(source)) = (text(package, "name"), text(package, "source")) else { continue };
+        if source.len() > 8192 || name.len() > 8192 {
+            omitted = true;
+            continue;
+        }
+        let Some(captured) = tree.get(source).filter(|file| file.digests.is_some()) else { continue };
+        // Desktop Entry Version describes its file format, not an application release.
+        let version = (ecosystem == "snap").then(|| text(package, "version")).flatten();
+        if version.is_some_and(|version| version.len() > 8192) {
+            omitted = true;
+            continue;
+        }
+        let row = json!({"name":name,"version":version,"kind":"application","ecosystem":ecosystem,
+            "purl":null,"source":source,"declared_range":null,
+            "manifest":{"path":source,"sha256":captured.digests.as_ref().map(|digest|&digest.sha256)}});
+        let size = row.to_string().len();
+        if size > 4 * 1024 * 1024 - *used {
+            omitted = true;
+            continue;
+        }
+        *used += size;
+        found.push(Component {
+            ecosystem,
+            name: name.to_owned(),
+            version: version.map(str::to_owned),
+            kind: "application",
+            declared_range: None,
+            source: source.to_owned(),
+        });
+    }
+    omitted
 }
 
 fn vsix_relationships(
@@ -458,5 +515,60 @@ fn android(tree: &dyn Tree, found: &mut Vec<Component>) {
                 });
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod image_tests {
+    use super::*;
+
+    struct Supplied(Vec<Artifact>);
+    impl Tree for Supplied {
+        fn artifacts(&self) -> &[Artifact] {
+            &self.0
+        }
+        fn read(&self, _: &str) -> std::io::Result<aa_core::plugin::Bytes> {
+            Err(std::io::Error::other("only captured facts are needed"))
+        }
+    }
+    fn file(path: &str) -> Artifact {
+        Artifact {
+            path: path.into(),
+            parent: None,
+            size: 0,
+            digests: Some(aa_core::Digests { md5: "0".repeat(32), sha1: "0".repeat(40), sha256: "0".repeat(64) }),
+            detected: None,
+            kind: None,
+            entropy: None,
+            unpacked_by: None,
+            facts: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn image_inventory_caps_actual_rows_and_marks_omissions_without_inventing_versions() {
+        let source = file("sample.AppImage/[filesystem].squashfs/sample.desktop");
+        let mut image = file("sample.AppImage");
+        image.facts.insert("appimage.identity".into(), json!({"name":"Sample","version":"1.0","source":source.path}));
+        let tree = Supplied(vec![image.clone(), source]);
+        let mut found = Vec::new();
+        let mut used = 0;
+        assert!(!image_components(&tree, &image, &mut found, &mut used));
+        assert_eq!(found.len(), 1);
+        assert!(found[0].version.is_none(), "Desktop Entry Version cannot become a release version");
+        let accepted = used;
+        let mut found = Vec::new();
+        let mut used = 4 * 1024 * 1024 - accepted + 1;
+        assert!(image_components(&tree, &image, &mut found, &mut used));
+        assert!(found.is_empty());
+        assert_eq!(used, 4 * 1024 * 1024 - accepted + 1, "rejected rows consume no additional output");
+
+        image.facts.get_mut("appimage.identity").expect("image identity")["source"] = json!("x".repeat(8193));
+        let mut out = Output::default();
+        let mut snap = file("sample.snap");
+        snap.facts.insert("snap.package".into(), json!({"name":"sample","version":"1","source":tree.0[1].path}));
+        Components.analyze_tree(&Supplied(vec![image, tree.0[1].clone(), snap]), &mut out);
+        assert!(out.limitations.iter().any(|limit| limit.code == "composition.image-component-budget"));
+        assert_eq!(out.facts.iter().find(|fact| fact.key == "composition.components").expect("component summary").value["truncated"], true);
     }
 }

@@ -58,6 +58,19 @@ impl Relationships {
 pub fn collect(report: &Report) -> Relationships {
     let mut result = Relationships::default();
     for artifact in &report.artifacts {
+        if let Some(fact) = artifact.facts.get("snap.package") {
+            result.source_truncated |= fact["references_truncated"] == true;
+            for (ordinal, row) in fact["references"].as_array().into_iter().flatten().enumerate() {
+                result.add(row["source"].as_str().unwrap_or(&artifact.path), "snap.package/references", ordinal, row);
+            }
+        }
+        if let Some(fact) = artifact.facts.get("appimage.entry") {
+            let mut row = fact.clone();
+            if row["declared"].is_null() {
+                row["declared"] = fact["source_entry"]["path"].clone();
+            }
+            result.add(&artifact.path, "appimage.entry", 0, &row);
+        }
         for (key, list) in [
             ("windows.input-references", "references"),
             ("windows.source-files", "records"),
